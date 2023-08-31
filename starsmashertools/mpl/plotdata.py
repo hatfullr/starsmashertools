@@ -56,6 +56,7 @@ class PlotData(list, object):
             read=True,
             write=True,
             overwrite=False,
+            asynchronous=True,
     ):
         if filenames is None and write:
             raise ValueError("Argument 'filenames' cannot be 'None' if keyword argument 'write' is 'True'")
@@ -119,6 +120,8 @@ class PlotData(list, object):
                     kwargs['max_buffer_size'] = iterator.max_buffer_size
                     kwargs['verbose'] = iterator.verbose
                     kwargs['asynchronous'] = iterator.asynchronous
+                else:
+                    kwargs['asynchronous'] = asynchronous
                 iterator = starsmashertools.lib.output.OutputIterator(list(missing.keys()), simulation, **kwargs)
 
                 # Step through the iterator, obtaining any data needed for missing methods
