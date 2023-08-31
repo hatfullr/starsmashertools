@@ -1,0 +1,35 @@
+# A leading '#' character is a comment line and is ignored by the formatter. Empty
+# lines are also ignored.
+
+# There are two format 'blocks' which you must define: the 'header' and the 'body'.
+# To define a block, on a new line type 'BEGIN' followed by either 'HEADER' or 'BODY'.
+# When you want to end the block, type 'END' followed by the block identifier.
+# Every line in a block must feature the same "|" characters in the same positions.
+
+# In each block you can access variables from the output files. Any variable normally
+# accessible by the keys of a starsmashertools.lib.output.Output can be used. To
+# specify that a value from the Output should be used, encapsulate it with "{}", otherwise
+# it will be parsed as normal text.
+
+# By default all values are written in cgs units, but you can modify this.
+
+# You can insert a newline outside of block declarations by typing "NEWLINE" in between
+# block declarations.
+
+BEGIN HEADER
+|          {:15.7E}| {:15.7E}| {:15d}|  {:15d}|  {:15.7E}|   {:15.7E}| {:15.7E}|      {:15.7E}|
+| 1. / (3600. * 24)|         |       |        | 1./length|           |         |              |
+|                 t|       dt|   ntot|   nnopt|       hco|       Rsun|     Msun|        Gconst|
+|            [days]|      [s]|       |        |    [Rsun]|       [cm]|      [g]|  [cm^3/g/s^2]|
+|               {t}|     {dt}| {ntot}| {nnopt}|     {hco}| {u:length}| {u:mass}| {u:gravconst}|
+END HEADER
+
+NEWLINE
+
+BEGIN BODY
+| {:15d}|   {:15.7E}|     {:15.7E}|     {:15.7E}|     {:15.7E}|     {:15.7E}| {:15.7E}| {:15.7E}| {:15.7E}| {:15.7E}|  {:15.7E}| {:15.7E}| {:15.7E}|        {:15.7E}|   {:15.7E}|       {:15.7E}| {:15.7E}|  {:15.7E}|    {:15.7E}|   {:15.7E}|      {:15.7E}|
+|       |    1./mass|    1./length|    1./length|    1./length|    1./length|         |         |         |         |          |         |         |                |           |               |         |          |            |           |              |
+|     ID|          m|            x|            y|            z|            h|      rho|       vr|    vrdot|        u|      udot|    grpot|     ekin|            mumH|      kappa|    temperature|      tau|   uraddot|   dEemergdt|   dEdiffdt|   dEmaxdiffdt|
+|       |     [Msun]|       [Rsun]|       [Rsun]|       [Rsun]|       [Rsun]| [g/cm^3]|   [cm/s]| [cm/s^2]|  [erg/g]| [erg/g/s]|  [erg/g]|  [erg/g]|             [g]|   [cm^2/g]|            [K]|         | [erg/g/s]|     [erg/s]|    [erg/s]|       [erg/s]|
+|   {ID}|       {am}|          {x}|          {y}|          {z}|         {hp}|    {rho}|      {v}|   {vdot}|      {u}|    {udot}|  {grpot}|   {ekin}| {meanmolecular}| {popacity}| {temperatures}|    {tau}| {uraddot}| {dEemergdt}| {dEdiffdt}| {dEmaxdiffdt}|
+END BODY

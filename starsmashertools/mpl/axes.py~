@@ -1,0 +1,93 @@
+# This contains shortcut methods for working on matplotlib Axes objects.
+
+import matplotlib.axes
+import matplotlib.transforms
+import numpy as np
+
+# Returns a bbox that encapsulates all the given axes
+def get_bbox(ax : matplotlib.axes._axes.Axes):
+    if isinstance(ax, np.ndarray): ax = ax.flatten()
+    if isinstance(ax, matplotlib.axes.Axes): ax = [ax]
+    x0, x1 = 1., 0.
+    y0, y1 = 1., 0.
+    for a in ax:
+        pos = a.get_position()
+        x0, x1 = min(x0, pos.x0), max(x1, pos.x1)
+        y0, y1 = min(y0, pos.y0), max(y1, pos.y1)
+    return matplotlib.transforms.Bbox([[x0, y0], [x1, y1]])
+    
+
+# Use a power law to set the x or y axis scale of an Axes or 
+def set_tickscale_power_law(
+        ax : matplotlib.axes._axes.Axes,
+        power : int | float,
+        which : str = 'both',
+):
+    if which not in ['both', 'x', 'y']:
+        raise ValueError("Keyword argument 'which' must be one of 'both', 'x', or 'y', not '%s'" % str(which))
+
+    scale = lambda axis: matplotlib.scale.FuncScale(
+        axis,
+        (
+            lambda arr: np.sign(arr) * np.abs(arr)**power,
+            lambda arr: np.sign(arr) * np.abs(arr)**(1./power),
+        ),
+    )
+    
+    def update_ticks(ax):
+        if ax.stale: ax.get_figure().canvas.draw()
+        if which in ['both', 'x']:
+            # Make sure there are ticks to affect in the plot
+            xticks = ax.xaxis.get_majorticklabels()
+            if xticks:
+                xlim = ax.get_xlim()
+                for xtick in xticks:
+                    if ((xlim[0] <= xtick._x and xtick._x <= xlim[1]) and
+                        xtick.get_text()):
+                        # Set the scale and update the margins so that
+                        # the plot looks proper
+                        ax.set_xscale(scale(ax))
+                        xmargin, ymargin = ax.margins()
+                        xmargin = np.sign(xmargin) * abs(xmargin)**power
+                        ax.margins(xmargin, ymargin)
+                        break
+            
+        if which in ['both', 'y']:
+            yticks = ax.yaxis.get_majorticklabels()
+            if yticks:
+                ylim = ax.get_ylim()
+                for ytick in yticks:
+                    if ((ylim[0] <= ytick._y and xtick._y <= ylim[1]) and
+                        ytick.get_text()):
+                        ax.set_yscale(scale(ax))
+                        xmargin, ymargin = ax.margins()
+                        ymargin = np.sign(ymargin) * abs(ymargin)**power
+                        ax.margins(xmargin, ymargin)
+                        break
+
+    fig = ax.get_figure()
+    fig.canvas.mpl_connect("draw_event", lambda *args, **kwargs: update_ticks(ax))
+    
+    
+def text(
+        ax : matplotlib.axes._axes.Axes,
+        string : str,
+        position : list[float, float],
+        **kwargs
+):
+    # Check the arguments
+    if not isinstance(ax, matplotlib.axes._axes.Axes):
+        raise TypeError("Argument 'ax' must be of type 'matplotlib.axes._axes.Axes', not '%s'" % type(ax).__name__)
+    if not isinstance(string, str):
+        raise TypeError("Argument 'string' must have type 'str', not '%s'" % type(string).__name__)
+    if isinstance(position, str) or not hasattr(position, "__iter__"):
+        raise TypeError("Argument 'position' must be a non-string iterable, not '%s'" % type(position).__name__)
+    if len(position) != 2:
+        raise ValueError("Argument 'position' must have length 2, not %d" % len(position))
+    
+    return ax.annotate(
+        string,
+        position,
+        xycoords='axes fraction',
+        **kwargs
+    )
