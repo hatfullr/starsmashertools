@@ -5,7 +5,7 @@ To install from source, download the code and run
 ./install
 ```
 
-## Basic Usage
+## Basic usage
 
 Using the tools requires a normal `StarSmasher` simulation directory. The minimum required files should be structured as follows:
 ```
@@ -120,7 +120,7 @@ We also have access to the simulations that may have preceeded the current one. 
 In order to use this functionality you need to inform `starsmashertools` about where to look for your simulations in the `preferences.py` file. The process of finding child simulations for the first time can take up to a few minutes depending on how many directories and subdirectories need to be searched. However, once a child is located it is stored in memory for instant access later, in `<starsmashertools directory>/data/children.json.gz`.
 
 
-## Making Plots
+## Making plots and PDC files
 
 `starsmashertools` has integrated Matplotlib functionality to help streamline the plotting of data. It is very common to have a simulation directory which contains perhaps hundreds of GB worth of data such that reading and processing all the data can take a long time. If your plotting code has an error in it after reading all that data then you have to start the whole process again. `starsmashertools` combats this problem with the `PlotData` object which creates a checkpoint file during data processing.
 ```python
@@ -173,6 +173,8 @@ time, Mejecta = starsmashertools.mpl.plotdata.PlotData(
     write = True, # Overwrite the pdc.json.gz if it exists
 )
 ```
+
+You can quickly check the contents of a PDC file using `inspectpdc pdc.json.gz` which is automatically installed after you run `./install`, but it is also available in `<starsmashertools directory>/bin/inspectpdc`. See `inspectpdc -h` for more details.
 
 ## Generating .txt files from out*.sph files
 
