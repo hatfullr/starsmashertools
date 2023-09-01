@@ -50,9 +50,11 @@ def colorbar(
 
 # Returns a bbox that encapsulates all the given axes
 @starsmashertools.helpers.argumentenforcer.enforcetypes
-def get_bbox(ax : matplotlib.axes._axes.Axes | np.ndarray):
-    if isinstance(ax, matplotlib.axes._axes.Axes):
-        ax = np.array(ax, dtype = matplotlib.axes._axes.Axes)
+def get_bbox(ax : matplotlib.axes._axes.Axes | np.ndarray | list | tuple):
+    if not isinstance(ax, np.ndarray):
+        ax = np.asarray(ax, dtype=matplotlib.axes._axes.Axes)
+    #if isinstance(ax, matplotlib.axes._axes.Axes):
+    #    ax = np.array(ax, dtype = matplotlib.axes._axes.Axes)
     x0, x1 = 1., 0.
     y0, y1 = 1., 0.
     for a in ax.flatten():
@@ -117,11 +119,10 @@ def set_tickscale_power_law(
     fig.canvas.mpl_connect("draw_event", lambda *args, **kwargs: update_ticks(ax))
 
 
-@starsmashertools.helpers.argumentenforcer.enforcetypes
 def text(
         ax : matplotlib.axes._axes.Axes,
         string : str,
-        position : list[float, float] | tuple[float, float],
+        position : list[float, float],
         **kwargs
 ):
     return ax.annotate(
