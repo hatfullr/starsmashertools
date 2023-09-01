@@ -5,9 +5,9 @@ To install from source, download the code and run
 ./install
 ```
 
-## Usage
+## Basic Usage
 
-Using the tools requires a normal StarSmasher simulation directory. The minimum required files should be structured as follows:
+Using the tools requires a normal `StarSmasher` simulation directory. The minimum required files should be structured as follows:
 ```
 simulation
    |- sph.input
@@ -108,3 +108,68 @@ We also have access to other information about a simulation:
 ```
 This information comes both from the `sph.input` file and the `init.f` file in the source code directory. The `init.f` file is read first to set the default values and then those are overwritten by the values in `sph.input`.
 
+We also have access to the simulations that may have preceeded the current one. For example, making a binary merger in `StarSmasher` starts with at least one stellar relaxation, which is then placed in a corotating frame in a binary scan, and then a dynamical simulation is created from the binary. To trace this pipeline in `starsmashertools` you can use the `get_children()` method:
+```
+>>> simulation = starsmashertools.get_simulation("/path/to/dynamical")
+>>> children = simulation.get_children()
+>>> children
+[<starsmashertools.lib.binary.Binary object at 0x7f1543e0ec20>]
+>>> children[0].get_children()
+[<starsmashertools.lib.relaxation.Relaxation object at 0x7f15471670a0>, <starsmashertools.lib.relaxation.Relaxation object at 0x7f1543e0ee60>]
+```
+In order to use this functionality you need to inform `starsmashertools` about where to look for your simulations in the `preferences.py` file. The process of finding child simulations for the first time can take up to a few minutes depending on how many directories and subdirectories need to be searched. However, once a child is located it is stored in memory for instant access later, in `<starsmashertools directory>/data/children.json.gz`.
+
+
+## Making Plots
+
+`starsmashertools` has integrated Matplotlib functionality to help streamline the plotting of data. It is very common to have a simulation directory which contains perhaps hundreds of GB worth of data such that reading and processing all the data can take a long time. If your plotting code has an error in it after reading all that data then you have to start the whole process again. `starsmashertools` combats this problem with the `PlotData` object which creates a checkpoint file during data processing.
+```python
+import starsmashertools
+import starsmashertools.mpl.plotdata
+import matplotlib.pyplot as plt
+import numpy as np
+
+# Get the total mass of ejected particles
+def get_Mejecta(output):
+    idx = output['unbound'] # 'unbound' is defined in preferences.py
+    if np.any(idx):
+        return np.sum(output['am'][idx])
+    return 0.
+
+# Get the time in days
+def get_time(output):
+    output.mode = 'cgs'
+    return output['t'] / (3600. * 24.)
+
+simulation = starsmashertools.get_simulation('simulation')
+
+time, Mejecta = starsmashertools.mpl.plotdata.PlotData(
+    simulation.get_outputfiles(),
+    [get_time, get_Mejecta],
+    simulation = simulation,
+    checkpointfile = 'pdc.json.gz', # The default name ('pdc' = 'PlotData Checkpoint')
+    read = True, # Read pdc.json.gz if it already exists
+    write = True, # Overwrite the pdc.json.gz if it exists
+    # You can also specify instead of 'checkpointfile' separate files for
+    # reading and writing with the 'readfiles' and 'writefile' keywords.
+    # 'readfiles' can be either a string or an iterable of strings.
+    #readfiles = ['pdc0.json.gz', 'pdc1.json.gz'],
+    #writefile = 'mypdc.json.gz',
+)
+
+plt.plot(time, Mejecta)
+
+plt.show()
+```
+You may notice that the checkpoint file is created only on every 100 output files read. You can modify this behavior in the `preferences.py` file under `OutputIterator`, `max buffer size`, or you can set it manually in your code by passing in an `OutputIterator` to the `PlotData` object instead of a list of filenames:
+```
+iterator = simulation.get_output_iterator(max_buffer_size=10)
+time, Mejecta = starsmashertools.mpl.plotdata.PlotData(
+    iterator,
+    [get_time, get_Mejecta],
+    simulation = simulation,
+    checkpointfile = 'pdc.json.gz', # The default name ('pdc' = 'PlotData Checkpoint')
+    read = True, # Read pdc.json.gz if it already exists
+    write = True, # Overwrite the pdc.json.gz if it exists
+)
+```

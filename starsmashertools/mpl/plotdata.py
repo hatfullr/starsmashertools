@@ -76,10 +76,14 @@ class PlotData(list, object):
         
         # First step is to read all the given readfiles and combine them into one object
         obj = JSONObject(writefile)
-        if not isinstance(readfiles, str) and hasattr(readfiles, "__iter__"):
-            obj.combine(self.read_files(readfiles), overwrite=True)
-        elif isinstance(readfiles, str):
-            obj.combine(self.read(readfiles), overwrite=True)
+        if read:
+            read_obj = None
+            if not isinstance(readfiles, str) and hasattr(readfiles, "__iter__"):
+                read_obj = self.read_files(readfiles)
+            elif isinstance(readfiles, str):
+                read_obj = self.read(readfiles)
+            
+            if read_obj is not None: obj.combine(read_obj, overwrite=True)
         
         # Now that we have a singular object from which we can read all existing data,
         # retrieve the appropriate data from the single object
@@ -202,18 +206,22 @@ class PlotData(list, object):
         
 
     def read(self, filename):
-        obj = JSONObject(filename)
-        obj.load()
-        return obj
+        if starsmashertools.helpers.path.isfile(filename):
+            obj = JSONObject(filename)
+            obj.load()
+            return obj
+        return None
 
     # read all the given readfiles and combine them into one object
     def read_files(self, filenames):
         objects = []
         modtimes = []
         for filename in filenames:
-            obj = self.read(filename)
-            objects += [obj]
-            modtimes += [starsmashertools.helpers.path.getmtime(obj.filename)]
+            if starsmashertools.helpers.path.isfile(filename):
+                obj = self.read(filename)
+                objects += [obj]
+                modtimes += [starsmashertools.helpers.path.getmtime(obj.filename)]
+        if not objects: return None
         # Combine all the objects into a single file, starting with the file which was written
         # the longest time ago. Each consecutive file overwrites that data so that the result
         # is the most up-to-date object we can get.
