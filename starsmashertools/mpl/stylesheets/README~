@@ -1,7 +1,0 @@
-This directory simply contains some (hopefully) useful Matplotlib stylesheets.
-To use them, you must copy them into your ~/.config/matplotlib/stylelib
-directory (default). To check the location of your stylelib, use
-matplotlib.get_configdir(). To use a style, you simply do:
-
-import matplotlib.pyplot as plt
-plt.style.use('supermongo')
