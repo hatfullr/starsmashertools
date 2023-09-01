@@ -173,3 +173,7 @@ time, Mejecta = starsmashertools.mpl.plotdata.PlotData(
     write = True, # Overwrite the pdc.json.gz if it exists
 )
 ```
+
+## Generating .txt files from out*.sph files
+
+To convert an `out*.sph` file to some abstract human-readable format, use the command `outtotxt` which is automatically installed after you run `./install`, but it is also available in `<starsmashertools directory>/bin/outtotxt`. You can create your own file format by using a format sheet. See `<starsmashertools directory>/format_sheets/default.format` and `outtotxt -h` for more instructions.
