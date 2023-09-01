@@ -109,7 +109,7 @@ We also have access to other information about a simulation:
 This information comes both from the `sph.input` file and the `init.f` file in the source code directory. The `init.f` file is read first to set the default values and then those are overwritten by the values in `sph.input`.
 
 We also have access to the simulations that may have preceeded the current one. For example, making a binary merger in `StarSmasher` starts with at least one stellar relaxation, which is then placed in a corotating frame in a binary scan, and then a dynamical simulation is created from the binary. To trace this pipeline in `starsmashertools` you can use the `get_children()` method:
-```
+```python
 >>> simulation = starsmashertools.get_simulation("/path/to/dynamical")
 >>> children = simulation.get_children()
 >>> children
@@ -162,7 +162,7 @@ plt.plot(time, Mejecta)
 plt.show()
 ```
 You may notice that the checkpoint file is created only on every 100 output files read. You can modify this behavior in the `preferences.py` file under `OutputIterator`, `max buffer size`, or you can set it manually in your code by passing in an `OutputIterator` to the `PlotData` object instead of a list of filenames:
-```
+```python
 iterator = simulation.get_output_iterator(max_buffer_size=10)
 time, Mejecta = starsmashertools.mpl.plotdata.PlotData(
     iterator,
