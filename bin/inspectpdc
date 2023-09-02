@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
-import starsmashertools.helpers.jsonfile
+import starsmashertools.mpl.plotdata #helpers.jsonfile
 import starsmashertools.helpers.path
 import re
 import sys
@@ -65,8 +65,9 @@ def run():
 
     simulation = args.simulation
 
-    pdc = starsmashertools.helpers.jsonfile.load(args.filename)
-
+    pdc = starsmashertools.mpl.plotdata.JSONObject(args.filename)
+    pdc.load()
+    
     # Split things up by simulation
     simdirs = []
     outfiles = {}
@@ -88,7 +89,10 @@ def run():
     
 def simulation_mode(pdc, simulation, outfiles):
     files = sorted(outfiles[simulation])
-    all_methods = get_methods(simulation, pdc, files)
+    
+    all_methods = pdc.get_all_method_names()
+    
+    #all_methods = get_methods(simulation, pdc, files)
     
     indent = " "
     padding = " "
