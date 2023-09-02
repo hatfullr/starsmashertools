@@ -331,8 +331,39 @@ class JSONObject(collections.OrderedDict, object):
         if not self.contains(filename): return []
         return list(self[filename].keys())
 
+    def get_all_method_names(self):
+        method_names = []
+        for obj in self.values():
+            for method_name in obj.keys():
+                if method_name not in method_names: method_names += [method_name]
+        return method_names
+    
     def get_missing(self, filenames):
-        # Obtain all the method names available
+        keys = list(self.keys())
+        missing = []
+        notmissing = []
+        for filename in filenames:
+            if filename in keys: notmissing += [filename]
+            else: missing += [filename]
+        if len(notmissing) == 0: return missing
+            
+        # Obtain all the method names
+        all_method_names = self.get_all_method_names()
+
+        actually_missing = copy.copy(missing)
+        actually_notmissing = copy.copy(notmissing)
+        for filename in notmissing:
+            methods = self.get_method_names(filename)
+            for method in all_method_names:
+                if method not in methods:
+                    actually_notmissing.remove(filename)
+                    actually_missing += [filename]
+                    break
+
+        return actually_missing
+    
+            
+    """    
         method_names = []
         for filename in filenames:
             for m in self.get_method_names(filename):
@@ -349,6 +380,7 @@ class JSONObject(collections.OrderedDict, object):
                         missing += [filename]
                         break
         return missing
+    """
 
     def add(self, filename, methods, values):
         names = self.get_method_names(filename)

@@ -48,8 +48,16 @@ def get_methods(simdir, pdc, files):
         for key in pdc[starsmashertools.helpers.path.join(simdir, f)].keys():
             if key not in methods: methods += [key]
     return methods
-def print_methods(name, methods):
-    print(("      %s = "+", ".join(["'"+a+"'" for a in methods])) % name)
+def print_methods(name, methods, all_existing_methods = None):
+    string = "      %s = " % name
+    arr = ["'"+method+"'" for method in methods]
+    if all_existing_methods is not None:
+        arr = ["'"+method+"'" for method in all_existing_methods]
+        for i, method in enumerate(all_existing_methods):
+            if method in methods: arr[i] = green + arr[i] + normal
+            else: arr[i] = red + arr[i] + normal
+    string += ", ".join(arr)
+    print(string)
 
 
 def run():
@@ -211,7 +219,8 @@ def default(pdc, simdirs, outfiles):
             else:
                 diff = nums[idx2] - nums[idx1]
 
-
+    all_existing_methods = pdc.get_all_method_names()
+    
     for simdir in sorted(simdirs):
         files = sorted(outfiles[simdir])
 
@@ -237,10 +246,12 @@ def default(pdc, simdirs, outfiles):
             if (None in obj.values() or any([a not in keys for a in all_methods])):
                 needs_calculating += [f]
 
-        if needs_calculating: print(red+"X"+normal+"  "+simdir)
+        missing_methods = [method for method in all_existing_methods if method not in all_methods]
+                
+        if needs_calculating or missing_methods: print(red+"X"+normal+"  "+simdir)
         else: print(green+checkmark+normal+"  "+simdir)
 
-        print_methods("all methods", all_methods)
+        print_methods("all methods", all_methods, all_existing_methods=all_existing_methods)
         
         files = [f for f in files if f not in needs_calculating]
 
@@ -260,7 +271,7 @@ def default(pdc, simdirs, outfiles):
         if groups:
             strings = ["         " + " ... ".join(group) for group in groups]
             string = "\n".join(strings)
-            print("      Up-to-date")
+            print("      Up-to-date (existing methods)")
             print(string)
 
         nums = []
@@ -278,7 +289,7 @@ def default(pdc, simdirs, outfiles):
         if groups:
             strings = ["         " + " ... ".join(group) for group in groups]
             string = "\n".join(strings)
-            print(red+"      Needs calculating")
+            print(red+"      Needs calculating (existing methods)")
             print(string+normal)
         print("")
 
