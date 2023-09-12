@@ -172,7 +172,7 @@ class Simulation(object):
 
         if stop is None: stop = len(filenames)
         
-        indices = np.arange(start, stop + 1, step)
+        indices = np.arange(start, stop, step)
         filenames = filenames[indices].tolist()
 
         # Now that we have all the file names, we can create an output iterator
