@@ -175,8 +175,8 @@ def discretize(
         # Turn it into an iterable otherwise
         else: objects = [objects]
 
-    if colorbar.mappable not in objects:
-        objects += [colorbar.mappable]
+    #if colorbar.mappable not in objects:
+    #    objects += [colorbar.mappable]
 
     for i, obj in enumerate(objects):
         objproperties = obj.properties()
