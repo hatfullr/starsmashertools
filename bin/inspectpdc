@@ -22,7 +22,7 @@ number_pattern = re.compile(r"[0-9]+")
 
 parser = argparse.ArgumentParser(
     prog='inspectpdc',
-    description="A tool for viewing the contents of a checkpoint file created by starsmashertools, called 'pdc.json.gzip' by default.",
+    description="A tool for viewing the contents of a checkpoint file created by starsmashertools, called 'pdc.json.gz' by default.",
 )
 
 parser.add_argument(
@@ -37,7 +37,7 @@ parser.add_argument(
 
 parser.add_argument(
     'filename',
-    help='The path to a checkpoint PDC file',
+    help='The checkpoint PDC file to inspect',
 )
 
 
