@@ -45,6 +45,9 @@ args = parser.parse_args()
 filename = args.filename
 output = args.output
 
+if filename is None:
+    raise Exception("Missing positional argument 'filename'")
+
 if not os.path.isfile(filename):
     raise FileNotFoundError(filename)
 
