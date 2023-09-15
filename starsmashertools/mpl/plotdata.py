@@ -130,7 +130,7 @@ class PlotData(list, object):
                     max_buffer_size = max_buffer_size,
                 )
                 for i, output in enumerate(iterator):
-                    result = obj.add(output, methods, overwrite=False)
+                    result = obj.add(output, callable_methods, overwrite=False)
                     if result == 'break':
                         break
 
