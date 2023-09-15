@@ -425,28 +425,33 @@ class PDCFile(collections.OrderedDict, object):
         
         if self.contains(output.path):
             if not overwrite:
-                self._append(output, methods)
-                return
-        
-        values = [method(output) for method in methods]
-        self[output.path] = PDCData(methods, values)
+                return self._append(output, methods)
+        broken = False
+        values = []
+        done_methods = []
+        for method in methods:
+            value = method(output)
+            if value == 'break':
+                broken = True
+                break
+            done_methods += [method]
+            values += [value]
+        self[output.path] = PDCData(done_methods, values)
+        if broken: return 'break'
 
     # When the given output object is already included in a PDCFile, this function
     # appends output from methods in 'methods' that are missing in the PDCFile.
     def _append(self, output, methods):
-        # Save time by not checking the inputs
-        #if not self.contains(output.path):
-        #    raise KeyError("No key matching '%s'" % output.path)
-        #if not hasattr(methods, "__iter__") or isinstance(methods, str):
-        #    raise TypeError("Argument 'methods' must be an iterable, non-string object")
-        item = self[output.path]
-        _methods = item.keys()
+        _methods = self[output.path].keys()
+        broken = False
         for method in methods:
-            #if not callable(method):
-            #    raise ValueError("Element in 'methods' is not callable: '%s'" % str(method))
             if method.__name__ not in _methods:
-                item[method.__name__] = method(output)
-        self[output.path] = item
+                value = method(output)
+                if value == 'break':
+                    broken = True
+                    break
+                self[output.path][method.__name__] = method(output)
+        if broken: return 'break'
 
     # Remove the given filenames from the dictionary
     def remove_filenames(self, filenames):
