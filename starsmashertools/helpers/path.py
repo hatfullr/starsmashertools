@@ -6,6 +6,7 @@ import starsmashertools.helpers.ssh
 import numpy as np
 import fnmatch
 import collections
+import warnings
 
 #@profile
 def realpath(path):
@@ -137,7 +138,6 @@ def get_src(directory, throw_error=False):
     
     src_identifiers = preferences.get_default('Simulation', 'src identifiers', throw_error=True)
 
-
     if starsmashertools.helpers.ssh.isRemote(directory):
         address, remote_path = starsmashertools.helpers.ssh.split_address(directory)
         result = starsmashertools.helpers.ssh.run_python(
@@ -159,14 +159,24 @@ print('')
         if result:
             return address + ":" + result
     else:
-        for obj in scandir(directory):
-            if obj.is_dir():
-                path = obj.path
-                contents = [o.name for o in scandir(path) if o.is_file()]
-                for filename in src_identifiers:
-                    if filename not in contents: break
-                else:
-                    return path
+        # Sometimes it seems we get a strange warning like:
+        # 
+        # : ResourceWarning: unclosed scandir iterator <posix.ScandirIterator object at 0x7f94c5907b40>
+        #   return path
+        # ResourceWarning: Enable tracemalloc to get the object allocation traceback
+        #
+        # This doesn't seem to be our fault, so we ignore the warnings here.
+
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=ResourceWarning)
+            for obj in scandir(directory):
+                if obj.is_dir():
+                    path = obj.path
+                    contents = [o.name for o in scandir(path) if o.is_file()]
+                    for filename in src_identifiers:
+                        if filename not in contents: break
+                    else:
+                        return path
 
     if throw_error:
         raise Exception("Failed to find the source directory in '%s'" % directory)

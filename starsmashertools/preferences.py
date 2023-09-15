@@ -68,6 +68,9 @@ defaults = {
             'angular momentum' : lambda obj: obj['am'] * np.sqrt(obj['r2'] * obj['v2']),
         },
     },
+    'PDCFile' : {
+        'filename' : 'pdc.json.gz',
+    }
 }
 
 #constants = {
