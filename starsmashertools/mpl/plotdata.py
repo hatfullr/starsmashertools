@@ -80,7 +80,7 @@ class PlotData(list, object):
         if write and starsmashertools.helpers.path.isfile(writefile) and not overwrite:
             raise Exception("Keyword argument 'overwrite' is 'False' and the writefile already exists: '%s'" % writefile)
 
-        obj = PDCFile(writefile)
+        obj = PDCFile(filename = writefile)
 
         # Read files and combine them into obj
         if read:
@@ -483,8 +483,8 @@ class PDCFile(collections.OrderedDict, object):
         if not isinstance(other, PDCFile):
             raise TypeError("Argument 'other' must be of type PDCFile, not '%s'" % type(other).__name__)
         
-        if not self.loaded: self.load()
-        if not other.loaded: other.load()
+        if not self.loaded and starsmashertools.helpers.path.isfile(self.filename): self.load()
+        if not other.loaded and starsmashertools.helpers.path.isfile(other.filename): other.load()
         
         for filename, data in other.items():
             if self.contains(filename):
