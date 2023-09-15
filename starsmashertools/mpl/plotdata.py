@@ -792,7 +792,7 @@ class JSONObject(collections.OrderedDict, object):
 
 
 
-
+"""
 @starsmashertools.helpers.argumentenforcer.enforcetypes
 def make_pdc(
         filename : str,
@@ -884,4 +884,4 @@ def make_pdc(
 
         if not parallel: do_serial(outputfiles, simulation, **kwargs)
         else: do_parallel(outputfiles, simulation, **kwargs)
-            
+"""
