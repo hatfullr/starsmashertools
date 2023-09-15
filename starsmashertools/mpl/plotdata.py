@@ -120,7 +120,7 @@ class PlotData(list, object):
             # If there's missing files
             if filenames:
                 # Create an iterator
-                if write: onFlush = [obj.save] + onFlush
+                if write: onFlush = [lambda overwrite=overwrite: obj.save(overwrite=overwrite)] + onFlush
                 iterator = starsmashertools.lib.output.OutputIterator(
                     filenames,
                     simulation,
@@ -140,12 +140,12 @@ class PlotData(list, object):
                 existing_obj = PDCFile(filename = writefile)
                 existing_obj.load()
                 existing_obj.combine(obj, overwrite=overwrite)
-                if existing_obj.stale: existing_obj.save()
+                if existing_obj.stale: existing_obj.save(overwrite=overwrite)
                 write_obj = copy.copy(existing_obj)
             else:
                 write_obj = copy.copy(obj)
                 write_obj.filename = writefile
-                write_obj.save()
+                write_obj.save(overwrite=overwrite)
             obj = write_obj
 
             
