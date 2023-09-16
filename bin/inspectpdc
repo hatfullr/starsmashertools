@@ -1,304 +1,98 @@
 #!/usr/bin/env python3
 
-import argparse
-import starsmashertools.mpl.plotdata #helpers.jsonfile
+import starsmashertools.mpl.plotdata
 import starsmashertools.helpers.path
-import re
-import sys
+import starsmashertools.bintools.cli
+import starsmashertools.bintools
+import collections
+import os
 
-bold = '\033[1m'
-green = '\033[92m'
-red = '\033[91m'
-checkmark = u'\N{check mark}'
-normal = '\033[0m'
 
-if not sys.stdout.isatty(): # Output is being redirected, i.e. to a file
-    green = ''
-    red = ''
-    bold = ''
-    normal = ''
 
-number_pattern = re.compile(r"[0-9]+")
+newline = starsmashertools.bintools.Style.get('characters', 'newline')
+starsmashertools.bintools.Style.set('formatting', 'footer', newline)
 
-parser = argparse.ArgumentParser(
-    prog='inspectpdc',
-    description="A tool for viewing the contents of a checkpoint file created by starsmashertools, called 'pdc.json.gz' by default.",
+
+cli = starsmashertools.bintools.cli.CLI(
+    'inspectpdc',
+    "A tool for viewing the contents of a checkpoint file created by starsmashertools, called 'pdc.json.gz' by default.",
 )
 
-parser.add_argument(
-    '-s',
-    '--simulation',
-    nargs='?',
-    required=False,
-    metavar='path',
-    type=str,
-    help='A path to a simulation included in the PDC file. If specified, shows additional information about the files and methods for only that simulation.'
-)
-
-parser.add_argument(
+cli.parser.add_argument(
     'filename',
     help='The checkpoint PDC file to inspect',
 )
 
 
 
-def get_methods(simdir, pdc, files):
-    methods = []
-    for f in files:
-        for key in pdc[starsmashertools.helpers.path.join(simdir, f)].keys():
-            if key not in methods: methods += [key]
-    return methods
-def print_methods(name, methods, all_existing_methods = None):
-    string = "      %s = " % name
-    arr = ["'"+method+"'" for method in methods]
-    if all_existing_methods is not None:
-        arr = ["'"+method+"'" for method in all_existing_methods]
-        for i, method in enumerate(all_existing_methods):
-            if method in methods: arr[i] = green + arr[i] + normal
-            else: arr[i] = red + arr[i] + normal
-    string += ", ".join(arr)
-    print(string)
 
 
-def run():
-    args = parser.parse_args()
+# Get the simulations from the pdc file
+filename = cli.args['filename']
+if not starsmashertools.helpers.path.isfile(filename):
+    raise FileNotFoundError(filename)
 
-    simulation = args.simulation
+pdc = starsmashertools.mpl.plotdata.PDCFile(filename = filename)
+pdc.load()
 
-    pdc = starsmashertools.mpl.plotdata.JSONObject(args.filename)
-    pdc.load()
-    
-    # Split things up by simulation
-    simdirs = []
-    outfiles = {}
-    for key, val in pdc.items():
-        simdir = starsmashertools.helpers.path.dirname(key)
-        if simdir not in simdirs: simdirs += [simdir]
-        outfile = starsmashertools.helpers.path.basename(key)
-        if simdir not in outfiles.keys(): outfiles[simdir] = []
-        outfiles[simdir] += [outfile]
+methods = pdc.get_methods()
 
-    if simulation is None: default(pdc, simdirs, outfiles)
-    else:
-        if simulation not in simdirs:
-            raise ValueError("Simulation not found in PDC file: '%s'" % simulation)
-        simulation_mode(pdc, simulation, outfiles)
+simulation_names = []
+for filename in pdc.keys():
+    name = starsmashertools.helpers.path.dirname(pdc._simplify_filename(filename))
+    if name not in simulation_names: simulation_names += [name]
+simulation_names = sorted(simulation_names)
 
 
+mainmenu = cli.add_list(
+    [int, str],
+    items=simulation_names,
+    bullet='%5d)',
+    header=newline + starsmashertools.bintools.Style.bold("Main Menu") + newline + newline + 'Choose a simulation' + newline,
+)
+
+labels = [
+    starsmashertools.bintools.Style.bold("Filename"),
+]
+for method in methods:
+    labels += [starsmashertools.bintools.Style.bold(method)]
 
     
-def simulation_mode(pdc, simulation, outfiles):
-    files = sorted(outfiles[simulation])
+for i, name in enumerate(simulation_names):
+    # Obtain file names to show in table
+    file_methods = collections.OrderedDict()
+    for filename, data in pdc.items():
+        if name in filename:
+            file_methods[os.path.basename(filename)] = [list(data.keys()), list(data.values())]
     
-    all_methods = pdc.get_all_method_names()
+    columns = [[None] * len(list(file_methods.keys())) for label in labels]
+    columns[0] = list(file_methods.keys())
     
-    #all_methods = get_methods(simulation, pdc, files)
-    
-    indent = " "
-    padding = " "
-    separator = "│"
-    top_separator = "┬"
-    middle_separator = "┼"
-    bottom_separator = "┴"
-    top_left = "┌"
-    top_right = "┐"
-    middle_left = "├"
-    middle_right = "┤"
-    bottom_left = "└"
-    bottom_right = "┘"
-    line = "─"
+    for row, (fname, _methods) in enumerate(file_methods.items()):
+        for j, method in enumerate(methods):
+            value = None
+            if method in _methods[0]:
+                value = _methods[1][_methods[0].index(method)]
 
-    # Determine column widths
-    column_widths = [max([len(f) for f in files])] + [len(method) for method in all_methods]
-    ncols = len(column_widths)
-
-    fmt_arr = ["%%%ds" % width for width in column_widths]
-
-    def get_line(content, separator, indent, padding, first_separator=None, last_separator=None, styles=None):
-        if first_separator is None: first_separator = separator
-        if last_separator is None: last_separator = separator
-        if styles is not None:
-            my_fmt_arr = [style+a+normal for style, a in zip(styles, fmt_arr)]
-        else:
-            my_fmt_arr = fmt_arr
-        fmt = indent + first_separator + padding + (padding + separator + padding).join(my_fmt_arr) + padding + last_separator
-        return fmt % tuple(content)
-    
-    top = get_line(
-        [line*width for width in column_widths],
-        top_separator,
-        indent, line,
-        first_separator=top_left,
-        last_separator=top_right,
-    )
-
-    
-    header = get_line(
-        ["file"] + all_methods,
-        separator,
-        indent,
-        padding,
-        styles = [bold for i in range(len(all_methods)+1)],
-    )
-
-    middle = get_line(
-        [line*width for width in column_widths],
-        middle_separator,
-        indent,
-        line,
-        first_separator=middle_left,
-        last_separator=middle_right,
-    )
-
-    bottom = get_line(
-        [line*width for width in column_widths],
-        bottom_separator,
-        indent,
-        line,
-        first_separator=bottom_left,
-        last_separator=bottom_right,
-    )
-
-
-    print(top)
-    print(header)
-    print(middle)
-    
-    for f in files:
-        methods = list(pdc[starsmashertools.helpers.path.join(simulation, f)].keys())
-        toprint = [f]
-        styles = [""]
-        for method in all_methods:
-            if method in methods:
-                toprint += [checkmark]
-                styles += [green]
+            if value is not None:
+                columns[j+1][row] = starsmashertools.bintools.Style.color(
+                    str(value),
+                    'green',
+                )
             else:
-                toprint += ["X"]
-                styles += [red]
-        print(get_line(
-            toprint,
-            separator,
-            indent,
-            padding,
-            styles = styles,
-        ))
-    
-    print(bottom)
-    
-
-diff = 0
-nums = None
-def default(pdc, simdirs, outfiles):
-    global diff, nums
-    def get_file_groups(files, is_ingroup, on_newgroup):
-        groups = []
-        for i, f in enumerate(files):
-            if i == 0:
-                groups = [[files[0]]]
-                continue
-
-            if is_ingroup(files[i-1], files[i], i-1, i):
-                # Update the 'last' member of the group
-                if len(groups[-1]) == 1:
-                    groups[-1] += [f]
-                else:
-                    groups[-1][1] = f
-            else:
-                # Start a new group
-                groups += [[f]]
-                on_newgroup(i-1, i)
-        return groups
-
-    diff = 0
-    def is_ingroup_filenumber_aligned_methods(file1, file2, idx1, idx2):
-        global diff, nums
-        matches_current_file_patterns = None not in [nums[idx1], nums[idx2]] and nums[idx2] - nums[idx1] == diff
-        return matches_current_file_patterns
-
-    def on_newgroup_filenumber_aligned_methods(idx1, idx2):
-        global diff, nums
-        if None not in [nums[idx1], nums[idx2]]:
-            if idx2 + 1 < len(nums):
-                diff = nums[idx2+1] - nums[idx2]
-            else:
-                diff = nums[idx2] - nums[idx1]
-
-    all_existing_methods = pdc.get_all_method_names()
-    
-    for simdir in sorted(simdirs):
-        files = sorted(outfiles[simdir])
-
-        # Move through the files to find "contiguous groupings".
-        # We are trying to detect patterns to the outputs, i.e.,
-        # if we have out0000.sph, out0001.sph, out0002.sph,
-        # out0010.sph, then we should display something like
-        # 'out0000.sph .. out0002.sph, out0010.sph'. But only
-        # do this if all the output files are actually numbered.
-
-        # For testing
-        #pdc[starsmashertools.helpers.path.join(simdir, files[10])]['get_x'] = None
-        #pdc[starsmashertools.helpers.path.join(simdir, files[11])]['get_x'] = None
-        #pdc[starsmashertools.helpers.path.join(simdir, files[12])]['get_x'] = None
-        #pdc[starsmashertools.helpers.path.join(simdir, files[50])]['get_x'] = None
-
-        all_methods = get_methods(simdir, pdc, files)
+                columns[j+1][row] = starsmashertools.bintools.Style.color('None', 'red')
         
-        needs_calculating = []
-        for i,f in enumerate(files):
-            obj = pdc[starsmashertools.helpers.path.join(simdir,f)]
-            keys = obj.keys()
-            if (None in obj.values() or any([a not in keys for a in all_methods])):
-                needs_calculating += [f]
+    table = cli.add_table(
+        [],
+        columns = columns,
+        labels = labels,
+        back = mainmenu,
+    )
+    
+    mainmenu.connect(table, [i, name])
 
-        missing_methods = [method for method in all_existing_methods if method not in all_methods]
-                
-        if needs_calculating or missing_methods: print(red+"X"+normal+"  "+simdir)
-        else: print(green+checkmark+normal+"  "+simdir)
-
-        print_methods("all methods", all_methods, all_existing_methods=all_existing_methods)
-        
-        files = [f for f in files if f not in needs_calculating]
-
-        nums = []
-        for f in files:
-            match = number_pattern.search(f)
-            if match is not None:
-                nums += [int(match.group(0))]
-        diff = 0
-        if len(nums) > 1 and None not in [nums[0], nums[1]]: diff = nums[1] - nums[0]
-
-        groups = get_file_groups(
-            files,
-            is_ingroup_filenumber_aligned_methods,
-            on_newgroup_filenumber_aligned_methods
-        )
-        if groups:
-            strings = ["         " + " ... ".join(group) for group in groups]
-            string = "\n".join(strings)
-            print("      Up-to-date (existing methods)")
-            print(string)
-
-        nums = []
-        for f in needs_calculating:
-            match = number_pattern.search(f)
-            if match is not None:
-                nums += [int(match.group(0))]
-        diff = 0
-        if len(nums) > 1 and None not in [nums[0], nums[1]]: diff = nums[1] - nums[0]
-        groups = get_file_groups(
-            needs_calculating,
-            is_ingroup_filenumber_aligned_methods,
-            on_newgroup_filenumber_aligned_methods,
-        )
-        if groups:
-            strings = ["         " + " ... ".join(group) for group in groups]
-            string = "\n".join(strings)
-            print(red+"      Needs calculating (existing methods)")
-            print(string+normal)
-        print("")
+cli.set_mainmenu(mainmenu)
 
 
-
-
-
-run()
+# Run the program
+cli.run()

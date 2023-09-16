@@ -529,6 +529,14 @@ class PDCFile(collections.OrderedDict, object):
                     missing += [filename]
                     break
         return missing
+
+    def get_all_method_names(self):
+        if not self.loaded: self.load()
+        names = []
+        for filename, data in self.items():
+            for key in data.keys():
+                if key not in names: names += [key]
+        return names
                 
             
     
