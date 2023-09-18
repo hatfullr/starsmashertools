@@ -132,6 +132,9 @@ def find_duplicate_file(filepath, search_directory, pattern="out*.sph", throw_er
 
 
 def get_src(directory, throw_error=False):
+    if not isdir(directory):
+        raise FileNotFoundError("Directory does not exist: '%s'" % str(directory))
+    
     if directory == '/': raise Exception
     #print("get_src",directory)
     directory = realpath(directory)

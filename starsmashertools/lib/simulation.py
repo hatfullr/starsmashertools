@@ -104,7 +104,13 @@ class Simulation(object):
                 if path.isfile(fname):
                     with open(fname, 'r') as f:
                         for line in f:
-                            children += [starsmashertools.get_simulation(line)]
+                            line = line.strip()
+                            if not line: continue
+                            try:
+                                children += [starsmashertools.get_simulation(line)]
+                            except FileNotFoundError as e:
+                                if 'Directory does not exist' in str(e):
+                                    warnings.warn("Failed to find directory in children hint file '%s': '%s'" % (fname, line))
         return children
 
     # Load the children from the file saved in data/
