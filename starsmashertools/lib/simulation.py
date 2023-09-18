@@ -33,7 +33,7 @@ class Simulation(object):
 
         self.input = starsmashertools.lib.input.Input(self.directory)
         self._children = None
-        self._children_object = None
+        #self._children_object = None
         self._units = None
         self._teos = None
         self._logfiles = None
@@ -114,7 +114,7 @@ class Simulation(object):
         return children
 
     # Load the children from the file saved in data/
-    def _load_children_from_children_object(self, verbose=False):
+    def _load_children(self, verbose=False):
         filename = preferences.get_default('Simulation', 'children file', throw_error=True)
         if verbose: print("Loading children from file")
         children = []
@@ -129,17 +129,20 @@ class Simulation(object):
         
         return children
 
-    def _save_children_to_children_object(self, verbose=False):
+    def _save_children(self, children_object=None, verbose=False):
         if verbose: print("Saving children to file")
         filename = preferences.get_default('Simulation', 'children file', throw_error=True)
 
         if not hasattr(self._children, '__iter__') or isinstance(self._children, str):
             raise TypeError("Property Simulation._children must be a non-str iterable")
 
-        if not isinstance(self._children_object, dict):
-            raise TypeError("Property Simulation._children_object must be a dictionary")
+        if children_object is None:
+            children_object = jsonfile.load(filename)
         
-        self._children_object[self.directory] = [child.directory for child in self._children]
+        if not isinstance(children_object, dict):
+            raise TypeError("The object saved in '%s' must be a dictionary. Try deleting or renaming the file and running your code again." % str(filename))
+        
+        children_object[self.directory] = [child.directory for child in self._children]
         jsonfile.save(filename, children_object)
 
     # Return a list of Simulation objects used to create this simulation.
@@ -152,7 +155,7 @@ class Simulation(object):
             # First see if the children are given to us in the data/ directory.
             # Load in the object for the first time if needed.
             try:
-                self._children = self._load_children_from_children_object(verbose=verbose)
+                self._children = self._load_children(verbose=verbose)
             except FileNotFoundError:
                 # If there wasn't a file to load in the data/ directory, locate
                 # the children manually and save them to the data/ directory.
@@ -167,7 +170,7 @@ class Simulation(object):
                     raise Exception("Children found was 'None'. If you want to specify that a Simulation has no children, then its get_children() method should return empty list '[]', not 'None'.")
 
                 # Now save the children to the data/ directory
-                self._save_children_to_children_object(verbose=verbose)
+                self._save_children(verbose=verbose)
                 
         return self._children
 
