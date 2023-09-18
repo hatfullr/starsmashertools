@@ -61,20 +61,24 @@ class Binary(simulation.Simulation, object):
     def get_start2u(self): return path.join(self.directory, "sph.start2u")
 
     def _get_children(self, *args, **kwargs):
-        relaxations = [None, None]
+        children = []
 
         search_directory = kwargs.get('search_directory', preferences.get_default('Simulation', 'search directory'))
         search_directory = path.realpath(search_directory)
-        
-        if not self.isPrimaryPointMass():
-            duplicate = path.find_duplicate_file(self.get_start1u(), search_directory, throw_error=True)
-            relaxations[0] = relaxation.Relaxation(path.dirname(duplicate))
 
-        if not self.isSecondaryPointMass():
-            duplicate = path.find_duplicate_file(self.get_start2u(), search_directory, throw_error=True)
-            relaxations[1] = relaxation.Relaxation(path.dirname(duplicate))
+        if self.isPrimaryPointMass():
+            children += ['point mass']
+        else:
+            duplicate = path.find_duplicate_file(self.get_start1u(), search_directory, throw_error=True)
+            children += [relaxation.Relaxation(path.dirname(duplicate))]
         
-        return relaxations
+        if self.isSecondaryPointMass():
+            children += ['point mass']
+        else:
+            duplicate = path.find_duplicate_file(self.get_start2u(), search_directory, throw_error=True)
+            children += [relaxation.Relaxation(path.dirname(duplicate))]
+        
+        return children
 
 
     def get_primary_IDs(self): return np.arange(self.get_n1())

@@ -95,6 +95,11 @@ class Simulation(object):
                         for line in f:
                             line = line.strip()
                             if not line: continue
+
+                            if line.lower() == 'point mass':
+                                if children is None: children = []
+                                children += ['point mass']
+                                continue
                             
                             simulation = None
                             try:
@@ -122,7 +127,11 @@ class Simulation(object):
             simulation = starsmashertools.get_simulation(directory)
             if simulation == self:
                 if children is None: children = []
-                children += [starsmashertools.get_simulation(child) for child in _children]
+                # Sometimes children can be 'point mass'
+                for child in _children:
+                    if isinstance(child, str) and child.lower() != 'point mass':
+                        child = starsmashertools.get_simulation(child)
+                    children += [child]
         
         return children
 
@@ -140,6 +149,7 @@ class Simulation(object):
             if not isinstance(children_object, dict):
                 raise TypeError("The object saved in '%s' must be a dictionary. Try deleting or renaming the file and running your code again." % str(filename))
 
+        # Children can sometimes be 'None'
         to_save = []
         for child in self._children:
             if isinstance(child, Simulation):
