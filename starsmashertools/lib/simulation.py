@@ -124,7 +124,7 @@ class Simulation(object):
     def _load_children(self, verbose=False):
         filename = preferences.get_default('Simulation', 'children file', throw_error=True)
         if verbose: print("Loading children from file")
-        children = []
+        children = None
         if not path.isfile(filename):
             raise FileNotFoundError(filename)
         
@@ -132,16 +132,17 @@ class Simulation(object):
         for directory, _children in children_object.items():
             simulation = starsmashertools.get_simulation(directory)
             if simulation == self:
+                if children is None: children = []
                 children += [starsmashertools.get_simulation(child) for child in _children]
         
         return children
 
     def _save_children(self, children_object=None, verbose=False):
         if verbose: print("Saving children to file")
-        filename = preferences.get_default('Simulation', 'children file', throw_error=True)
-
         if not hasattr(self._children, '__iter__') or isinstance(self._children, str):
             raise TypeError("Property Simulation._children must be a non-str iterable")
+
+        filename = preferences.get_default('Simulation', 'children file', throw_error=True)
 
         children_object = {}
         if path.isfile(filename):
@@ -165,23 +166,24 @@ class Simulation(object):
             try:
                 self._children = self._load_children(verbose=verbose)
             except FileNotFoundError:
+                pass
+
+            # If loading the children didn't work
+            if self._children is None:
                 # If there wasn't a file to load in the data/ directory, locate
                 # the children manually and save them to the data/ directory.
-                children = self._get_children_from_hint_files()
-                if children is not None:
-                    print("Getting from hint files worked "+str(self))
-                    self._children = children
-                else:
+                self._children = self._get_children_from_hint_files()
+                if self._children is None:
                     # If we didn't get the children from the hint files,
-                    # Search for the children using the overidden method
+                    # search for the children using the overidden method
                     self._children = self._get_children(*args, **kwargs)
                     
-                if self._children is None:
-                    raise Exception("Children found was 'None'. If you want to specify that a Simulation has no children, then its get_children() method should return empty list '[]', not 'None'.")
+                    if self._children is None:
+                        raise Exception("Children found was 'None'. If you want to specify that a Simulation has no children, then its get_children() method should return empty list '[]', not 'None'.")
 
-                # Now save the children to the data/ directory
-                self._save_children(verbose=verbose)
-                
+        # Now save the children to the data/ directory
+        self._save_children(verbose=verbose)
+        
         return self._children
 
     #def to_json(self):
