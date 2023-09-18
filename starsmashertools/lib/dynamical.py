@@ -26,7 +26,7 @@ class Dynamical(simulation.Simulation, object):
         return filename
         
     def get_relaxations(self, *args, **kwargs):
-        print(self.get_children(*args, **kwargs))
+        print(self.get_children(*args, **kwargs)[0].get_children(*args, **kwargs))
         quit()
         return self.get_children(*args, **kwargs)[0].get_children(*args, **kwargs)
 
