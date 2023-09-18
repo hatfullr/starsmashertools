@@ -4,6 +4,7 @@ import starsmashertools.lib.dynamical
 import starsmashertools.lib.simulation
 import starsmashertools.lib.output
 import starsmashertools.helpers.argumentenforcer
+import numpy as np
 
 
 # Return the type of simulation that a directory is
