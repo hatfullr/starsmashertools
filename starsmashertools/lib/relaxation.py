@@ -108,7 +108,7 @@ class Relaxation(starsmashertools.lib.simulation.Simulation, object):
             result = self.__class__.__new__(self.__class__)
             memo[id(self)] = result
             for k, v in self.__dict__.items():
-                setattr(result, k, deepcopy(v, memo))
+                setattr(result, k, copy.deepcopy(v, memo))
             return result
 
         def __getitem__(self, *args, **kwargs):
