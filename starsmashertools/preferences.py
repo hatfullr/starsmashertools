@@ -5,7 +5,8 @@ import numpy as np
 defaults = {
     'Simulation' : {
         'search directory' : '~/data/',
-        # Used to identify the directories which contain the StarSmasher source code
+        # Used to identify the directories which contain the StarSmasher source
+        # code
         'src identifiers' : [
             'starsmasher.h',
             'init.f',
@@ -16,6 +17,13 @@ defaults = {
             'data',
             'children.json.gz',
         ),
+        # You can create a file with one of these names in your simulation
+        # directories to instruct starsmashertools on where to find the children
+        # simulations. Each file should be a text file with one directory per
+        # line.
+        'children hint filenames' : [
+            'children.sstools',
+        ],
         'output files' : 'out*.sph',
         # Edit this object to add/overwrite the simulation units. You can
         # define either a number or a string, where the string is code which

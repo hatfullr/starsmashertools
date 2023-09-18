@@ -28,7 +28,7 @@ class Relaxation(starsmashertools.lib.simulation.Simulation, object):
                 self._profile = Relaxation.Profile(profilefile)
 
     def _get_children(self, *args, **kwargs):
-        return None
+        return []
 
     def get_profilefile(self):
         return starsmashertools.helpers.path.join(self.directory, self['profilefile'])

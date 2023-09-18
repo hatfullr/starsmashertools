@@ -1,6 +1,7 @@
 import starsmashertools.preferences as preferences
 import starsmashertools.helpers.path as path
 import starsmashertools.helpers.jsonfile as jsonfile
+import starsmashertools
 import starsmashertools.lib.input
 import starsmashertools.lib.output
 import starsmashertools.lib.logfile
@@ -11,14 +12,14 @@ from glob import glob
 
 class Simulation(object):
     # A list of attribute names to exclude in the JSON object
-    json_exclude = [
-        '__dict__',
-        '_teos',
-        'teos',
-        'units',
-        '_units',
-        '_logfiles',
-    ]
+    #json_exclude = [
+    #    '__dict__',
+    #    '_teos',
+    #    'teos',
+    #    'units',
+    #    '_units',
+    #    '_logfiles',
+    #]
     
     def __init__(self, directory):
         directory = path.realpath(directory)
@@ -90,66 +91,97 @@ class Simulation(object):
                 self._logfiles += [starsmashertools.lib.logfile.LogFile(path)]
         return self._logfiles
 
-    # Override this in children. Must return a list of children
+    # Override this in children. Must return a list of Simulation objects
     def _get_children(self, *args, **kwargs):
         raise NotImplementedError
 
-    # Return a list of simulations used to create this simulation.
+    def _get_children_from_hint_files(self):
+        children = []
+        hint_filenames = preferences.get_default('Simulation', 'children hint filenames', throw_error=False)
+        if hint_filenames is not None:
+            for name in hint_filenames:
+                fname = path.join(self.directory, name)
+                if path.isfile(fname):
+                    with open(fname, 'r') as f:
+                        for line in f:
+                            children += [starsmashertools.get_simulation(line)]
+        return children
+
+    # Load the children from the file saved in data/
+    def _load_children_from_children_object(self, verbose=False):
+        filename = preferences.get_default('Simulation', 'children file', throw_error=True)
+        if verbose: print("Loading children from file")
+        children = []
+        if not path.isfile(filename):
+            raise FileNotFoundError(filename)
+        
+        children_object = jsonfile.load(filename)
+        for directory, _children in children_object.items():
+            simulation = starsmashertools.get_simulation(directory)
+            if simulation == self:
+                children += [starsmashertools.get_simulation(child) for child in _children]
+        
+        return children
+
+    def _save_children_to_children_object(self, verbose=False):
+        if verbose: print("Saving children to file")
+        filename = preferences.get_default('Simulation', 'children file', throw_error=True)
+
+        if not hasattr(self._children, '__iter__') or isinstance(self._children, str):
+            raise TypeError("Property Simulation._children must be a non-str iterable")
+
+        if not isinstance(self._children_object, dict):
+            raise TypeError("Property Simulation._children_object must be a dictionary")
+        
+        self._children_object[self.directory] = [child.directory for child in self._children]
+        jsonfile.save(filename, children_object)
+
+    # Return a list of Simulation objects used to create this simulation.
     # For example, if this Simulation is a dynamical simulation (nrelax = 0),
     # then it has one child, which is the binary scan that it originated from.
     #@profile
     def get_children(self, *args, **kwargs):
-        
         verbose = kwargs.get('verbose', False)
         if self._children is None:
-            filename = preferences.get_default('Simulation', 'children file', throw_error=True)
+            # First see if the children are given to us in the data/ directory.
+            # Load in the object for the first time if needed.
+            try:
+                self._children = self._load_children_from_children_object(verbose=verbose)
+            except FileNotFoundError:
+                # If there wasn't a file to load in the data/ directory, locate
+                # the children manually and save them to the data/ directory.
+                self._children = self._get_children_from_hint_files()
 
-            # Try to load the children file
-            if self._children_object is None:
-                if path.isfile(filename):
-                    if verbose: print("Loading children from file")
-                    self._children_object = jsonfile.load(filename)
+                # If we didn't get the children from the hint files,
+                if not self._children:
+                    # Search for the children using the overidden method
+                    self._children = self._get_children(*args, **kwargs)
+                
+                if self._children is None:
+                    raise Exception("Children found was 'None'. If you want to specify that a Simulation has no children, then its get_children() method should return empty list '[]', not 'None'.")
 
-            # If we didn't find and read the children file, make our own
-            if self._children_object is None: self._children_object = {}
-            
-            if self.directory in self._children_object.keys():
-                # Load the children from the file
-                if verbose: print("Loading children from file")
-                self._children_object = jsonfile.load(filename)
-                children = self._children_object[self.directory]
-                if children is not None:
-                    self._children = [None if child is None else Simulation.from_json(child) for child in children]
-            else:
-                print("Getting children for the first time for '%s'" % self.directory)
-                children = self._get_children(*args, **kwargs)
-                children_to_save = None
-                if children is not None:
-                    children_to_save = [child if not hasattr(child, 'to_json') else child.to_json() for child in children]
-                self._children_object[self.directory] = children_to_save
-                if verbose: print("Saving children to file")
-                jsonfile.save(filename, self._children_object)
-                self._children = children
-        
+                # Now save the children to the data/ directory
+                self._save_children_to_children_object(verbose=verbose)
+                
         return self._children
 
-    def to_json(self):
-        ret = {'type' : self.__module__+"."+type(self).__name__ }
-        for attr in dir(self):
-            if hasattr(self, 'json_exclude'):
-                if attr in self.json_exclude: continue
-            val = getattr(self, attr)
-            if isinstance(val, (str, int, float, bool, list, dict, np.ndarray)):
-                ret[attr] = val
-        return ret
+    #def to_json(self):
+    #    ret = {'type' : self.__module__+"."+type(self).__name__ }
+    #    for attr in dir(self):
+    #        if hasattr(self, 'json_exclude'):
+    #            if attr in self.json_exclude: continue
+    #        val = getattr(self, attr)
+    #        if isinstance(val, (str, int, float, bool, list, dict, np.ndarray)):
+    #            ret[attr] = val
+    #    return ret
 
-    @staticmethod
-    def from_json(obj):
-        instance = eval((obj['type']+"('%s')") % obj['directory'])
-        for key, val in obj.items():
-            if hasattr(instance, key):
-                setattr(instance, key, val)
-        return instance
+    #@staticmethod
+    #def from_json(obj):
+    #    instance = eval((obj['type']+"('%s')") % obj['directory'])
+    #    for key, val in obj.items():
+    #        if hasattr(instance, key):
+    #            setattr(instance, key, val)
+    #    return instance
 
 
     def get_outputfiles(self, pattern=None):
