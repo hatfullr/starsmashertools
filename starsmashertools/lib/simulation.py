@@ -169,12 +169,13 @@ class Simulation(object):
                 # the children manually and save them to the data/ directory.
                 children = self._get_children_from_hint_files()
                 if children is not None:
+                    print("Getting from hint files worked "+str(self))
                     self._children = children
                 else:
                     # If we didn't get the children from the hint files,
                     # Search for the children using the overidden method
                     self._children = self._get_children(*args, **kwargs)
-                
+                    
                 if self._children is None:
                     raise Exception("Children found was 'None'. If you want to specify that a Simulation has no children, then its get_children() method should return empty list '[]', not 'None'.")
 
