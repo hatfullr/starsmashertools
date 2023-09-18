@@ -100,6 +100,17 @@ class Relaxation(starsmashertools.lib.simulation.Simulation, object):
         @property
         def isMESA(self): return isinstance(self, Relaxation.MESA)
 
+        def __copy__(self):
+            result = self.__class__.__new__(self.__class__)
+            result.__dict__.update(self.__dict__)
+            return result
+        def __deepcopy__(self, memo):
+            result = self.__class__.__new__(self.__class__)
+            memo[id(self)] = result
+            for k, v in self.__dict__.items():
+                setattr(result, k, deepcopy(v, memo))
+            return result
+
         def __getitem__(self, *args, **kwargs):
             if not self._initialized and not self._initializing: self.initialize()
             return super(Relaxation.Profile, self).__getitem__(*args, **kwargs)
