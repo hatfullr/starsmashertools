@@ -39,3 +39,23 @@ def output(*args, **kwargs):
 def iterator(*args, **kwargs):
     return starsmashertools.lib.output.OutputIterator(*args, **kwargs)
 
+@starsmashertools.helpers.argumentenforcer.enforcetypes
+def get_particles(
+        mask : np.ndarray | list | tuple,
+        output : starsmashertools.lib.output.Output | starsmashertools.lib.output.OutputIterator | np.ndarray | list | tuple,
+):
+    def convert(o):
+        return {key:val[mask] for key, val in o.items()}
+        
+    if isinstance(output, starsmashertools.lib.output.Output):
+        return convert(output)
+
+    if not hasattr(output, '__iter__'):
+        output = [output]
+
+    ret = []
+    for o in output:
+        ret += [convert(o)]
+    
+    if len(ret) == 1: return ret[0]
+    return ret

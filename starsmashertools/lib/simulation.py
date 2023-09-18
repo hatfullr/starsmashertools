@@ -250,7 +250,6 @@ class Simulation(object):
         
     
 
-
     class OutputNotInSimulationError(Exception):
         def __init__(self, simulation, output, message=None):
             if message is None:

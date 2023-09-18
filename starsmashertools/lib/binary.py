@@ -3,6 +3,7 @@ import starsmashertools.helpers.path as path
 import starsmashertools.lib.relaxation as relaxation
 import starsmashertools.preferences as preferences
 import starsmashertools.math
+import starsmashertools
 import numpy as np
 
 class Binary(simulation.Simulation, object):
@@ -11,6 +12,18 @@ class Binary(simulation.Simulation, object):
         self._n1 = None
         self._n2 = None
 
+    # Returns the particles in the output file which correspond
+    # to the primary (donor) star
+    def get_primary(self, output):
+        return starsmashertools.get_particles(self.get_primary_IDs(), output)
+            
+    def get_secondary(self, output):
+        return starsmashertools.get_particles(self.get_secondary_IDs(), output)
+
+    def get_donor(self, *args, **kwargs):
+        return self.get_primary(*args, **kwargs)
+    def get_accretor(self, *args, **kwargs):
+        return self.get_secondary(*args, **kwargs)
 
     def get_n1(self):
         if self._n1 is None: self._get_n1_n2()
