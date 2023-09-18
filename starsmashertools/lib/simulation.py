@@ -136,11 +136,12 @@ class Simulation(object):
         if not hasattr(self._children, '__iter__') or isinstance(self._children, str):
             raise TypeError("Property Simulation._children must be a non-str iterable")
 
-        if children_object is None:
+        children_object = {}
+        if path.isfile(filename):
             children_object = jsonfile.load(filename)
-        
-        if not isinstance(children_object, dict):
-            raise TypeError("The object saved in '%s' must be a dictionary. Try deleting or renaming the file and running your code again." % str(filename))
+            
+            if not isinstance(children_object, dict):
+                raise TypeError("The object saved in '%s' must be a dictionary. Try deleting or renaming the file and running your code again." % str(filename))
         
         children_object[self.directory] = [child.directory for child in self._children]
         jsonfile.save(filename, children_object)
