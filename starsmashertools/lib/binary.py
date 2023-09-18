@@ -120,19 +120,19 @@ class Binary(simulation.Simulation, object):
         primary_IDs = self.get_primary_IDs()
         secondary_IDs = self.get_secondary_IDs()
         
-        with starsmashertools.mask(output, primary_IDs) as masked_output:
-            m = masked_output['am']
+        with starsmashertools.mask(output, primary_IDs) as masked:
+            m = masked['am']
             m1 = np.sum(m)
-            xcom1 = np.sum(masked_output['x'] * m) / m1
-            ycom1 = np.sum(masked_output['y'] * m) / m1
-            zcom1 = np.sum(masked_output['z'] * m) / m1
+            xcom1 = np.sum(masked['x'] * m) / m1
+            ycom1 = np.sum(masked['y'] * m) / m1
+            zcom1 = np.sum(masked['z'] * m) / m1
 
-        with starsmashertools.mask(output, secondary_IDs) as masked_output:
-            m = masked_output['am']
+        with starsmashertools.mask(output, secondary_IDs) as masked:
+            m = masked['am']
             m2 = np.sum(m)
-            xcom2 = np.sum(masked_output['x'] * m) / m2
-            ycom2 = np.sum(masked_output['y'] * m) / m2
-            zcom2 = np.sum(masked_output['z'] * m) / m2
+            xcom2 = np.sum(masked['x'] * m) / m2
+            ycom2 = np.sum(masked['y'] * m) / m2
+            zcom2 = np.sum(masked['z'] * m) / m2
 
         return np.array([xcom1, ycom1, zcom1]), np.array([xcom2, ycom2, zcom2])
 
@@ -163,10 +163,10 @@ class Binary(simulation.Simulation, object):
         
         primary_IDs = self.get_primary_IDs()
         secondary_IDs = self.get_secondary_IDs()
-        with starsmashertools.mask(output, primary_IDs) as masked_output:
-            m1 = np.sum(masked_output['am'])
-        with starsmashertools.mask(output, secondary_IDs) as masked_output:
-            m2 = np.sum(masked_output['am'])
+        with starsmashertools.mask(output, primary_IDs) as masked:
+            m1 = np.sum(masked['am'])
+        with starsmashertools.mask(output, secondary_IDs) as masked:
+            m2 = np.sum(masked['am'])
         G = self.units.gravconst
         m1 *= self.units.mass
         m2 *= self.units.mass
@@ -193,13 +193,13 @@ class Binary(simulation.Simulation, object):
         primary = self.get_primary_IDs()
         secondary = self.get_secondary_IDs()
 
-        with starsmashertools.mask(output, primary) as masked_output:
-            m1 = np.sum(masked_output['am'])
-            V1 = np.sum(masked_output['am'] / masked_output['rho'])
+        with starsmashertools.mask(output, primary) as masked:
+            m1 = np.sum(masked['am'])
+            V1 = np.sum(masked['am'] / masked['rho'])
 
-        with starsmashertools.mask(output, secondary) as masked_output:
-            m2 = np.sum(masked_output['am'])
-            V2 = np.sum(masked_output['am'] / maksed_output['rho'])
+        with starsmashertools.mask(output, secondary) as masked:
+            m2 = np.sum(masked['am'])
+            V2 = np.sum(masked['am'] / masked['rho'])
 
         r_RL1 = starsmashertools.math.rocheradius(m1, m2, separation)
         r_RL2 = starsmashertools.math.rocheradius(m2, m1, separation)
@@ -217,8 +217,8 @@ class Binary(simulation.Simulation, object):
                 pass
         # If the log files failed, check the first output file
         output = self.get_output(0)
-        with starsmashertools.mask(output, self.get_primary_IDs()) as masked_output:
-            return np.sum(masked_output['am'])
+        with starsmashertools.mask(output, self.get_primary_IDs()) as masked:
+            return np.sum(masked['am'])
 
     def get_secondary_mass(self):
         logfiles = self.get_logfiles()
@@ -230,5 +230,5 @@ class Binary(simulation.Simulation, object):
                 pass
         # If the log files failed, check the first output file
         output = self.get_output(0)
-        with starsmashertools.mask(output, self.get_secondary_IDs()) as masked_output:
-            return np.sum(masked_output['am'])
+        with starsmashertools.mask(output, self.get_secondary_IDs()) as masked:
+            return np.sum(masked['am'])
