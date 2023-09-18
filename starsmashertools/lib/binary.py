@@ -13,7 +13,7 @@ class Binary(simulation.Simulation, object):
         self._n2 = None
 
     # Returns the particles in the output file which correspond
-    # to the primary (donor) star
+    # to the primary star (usually the donor)
     def get_primary(self, output):
         if not isinstance(output, starsmashertools.lib.output.Output):
             raise TypeError("Argument 'output' must be of type 'starsmashertools.lib.output.Output', not '%s'" % type(output).__name__)
@@ -27,11 +27,6 @@ class Binary(simulation.Simulation, object):
         if output not in self:
             raise ValueError("Argument 'output' must be an output file from simulation '%s', not '%s'" % (self.directory, output.simulation.directory))
         return starsmashertools.get_particles(self.get_secondary_IDs(), output)
-
-    def get_donor(self, *args, **kwargs):
-        return self.get_primary(*args, **kwargs)
-    def get_accretor(self, *args, **kwargs):
-        return self.get_secondary(*args, **kwargs)
 
     def get_n1(self):
         if self._n1 is None: self._get_n1_n2()
@@ -78,6 +73,7 @@ class Binary(simulation.Simulation, object):
     # Returns True if the secondary is a point mass
     def isSecondaryPointMass(self): return self.get_n2() == 1
 
+
     def get_start1u(self): return path.join(self.directory, "sph.start1u")
     def get_start2u(self): return path.join(self.directory, "sph.start2u")
 
@@ -103,7 +99,7 @@ class Binary(simulation.Simulation, object):
 
 
     def get_primary_IDs(self): return np.arange(self.get_n1())
-
+        
     def get_secondary_IDs(self):
         n1, n2 = self.get_n1(), self.get_n2()
         # This needs checked
