@@ -146,6 +146,9 @@ class Output(dict, object):
 
     def mask(self, mask):
         self._mask = mask
+
+    def unmask(self):
+        self._mask = None
         
 
 
