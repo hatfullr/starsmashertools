@@ -96,7 +96,7 @@ class Simulation(object):
         raise NotImplementedError
 
     def _get_children_from_hint_files(self):
-        children = []
+        children = None
         hint_filenames = preferences.get_default('Simulation', 'children hint filenames', throw_error=False)
         if hint_filenames is not None:
             for name in hint_filenames:
@@ -106,11 +106,18 @@ class Simulation(object):
                         for line in f:
                             line = line.strip()
                             if not line: continue
+                            
+                            simulation = None
                             try:
-                                children += [starsmashertools.get_simulation(line)]
+                                simulation = starsmashertools.get_simulation(line)
                             except FileNotFoundError as e:
                                 if 'Directory does not exist' in str(e):
                                     warnings.warn("Failed to find directory in children hint file '%s': '%s'" % (fname, line))
+                                else: raise
+
+                            if simulation is not None:
+                                if children is None: children = []
+                                children += [simulation]
         return children
 
     # Load the children from the file saved in data/
@@ -160,10 +167,11 @@ class Simulation(object):
             except FileNotFoundError:
                 # If there wasn't a file to load in the data/ directory, locate
                 # the children manually and save them to the data/ directory.
-                self._children = self._get_children_from_hint_files()
-
-                # If we didn't get the children from the hint files,
-                if not self._children:
+                children = self._get_children_from_hint_files()
+                if children is not None:
+                    self._children = children
+                else:
+                    # If we didn't get the children from the hint files,
                     # Search for the children using the overidden method
                     self._children = self._get_children(*args, **kwargs)
                 
