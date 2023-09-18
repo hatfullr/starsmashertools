@@ -139,8 +139,13 @@ class Simulation(object):
             
             if not isinstance(children_object, dict):
                 raise TypeError("The object saved in '%s' must be a dictionary. Try deleting or renaming the file and running your code again." % str(filename))
-        
-        children_object[self.directory] = [child.directory for child in self._children]
+
+        to_save = []
+        for child in self._children:
+            if isinstance(child, Simulation):
+                child = child.directory
+            to_save += [child]
+        children_object[self.directory] = to_save
         jsonfile.save(filename, children_object)
 
     # Return a list of Simulation objects used to create this simulation.
@@ -172,7 +177,7 @@ class Simulation(object):
                     
                     if self._children is None:
                         raise Exception("Children found was 'None'. If you want to specify that a Simulation has no children, then its get_children() method should return empty list '[]', not 'None'.")
-
+                
                 # Now save the children to the data/ directory
                 self._save_children(verbose=verbose)
         
