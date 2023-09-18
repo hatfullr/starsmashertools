@@ -6,14 +6,7 @@ import starsmashertools.math
 import numpy as np
 import copy
 
-class Relaxation(starsmashertools.lib.simulation.Simulation, object):
-    #json_exclude = starsmashertools.lib.simulation.Simulation.json_exclude + [
-    #    'isPolytrope',
-    #    '_isPolytrope',
-    #    '_profile',
-    #    'profile',
-    #]
-    
+class Relaxation(starsmashertools.lib.simulation.Simulation, object):    
     def __init__(self, *args, **kwargs):
         super(Relaxation, self).__init__(*args, **kwargs)
         self._isPolytrope = None

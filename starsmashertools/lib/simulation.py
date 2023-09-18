@@ -11,16 +11,6 @@ import numpy as np
 from glob import glob
 
 class Simulation(object):
-    # A list of attribute names to exclude in the JSON object
-    #json_exclude = [
-    #    '__dict__',
-    #    '_teos',
-    #    'teos',
-    #    'units',
-    #    '_units',
-    #    '_logfiles',
-    #]
-    
     def __init__(self, directory):
         directory = path.realpath(directory)
         
@@ -33,7 +23,6 @@ class Simulation(object):
 
         self.input = starsmashertools.lib.input.Input(self.directory)
         self._children = None
-        #self._children_object = None
         self._units = None
         self._teos = None
         self._logfiles = None
@@ -167,43 +156,27 @@ class Simulation(object):
                 self._children = self._load_children(verbose=verbose)
             except FileNotFoundError:
                 pass
-
+            
             # If loading the children didn't work
             if self._children is None:
+                if verbose: print("Searching for child simulations for the first time for '%s'" % self.directory)
+                
                 # If there wasn't a file to load in the data/ directory, locate
                 # the children manually and save them to the data/ directory.
                 self._children = self._get_children_from_hint_files()
                 if self._children is None:
                     # If we didn't get the children from the hint files,
                     # search for the children using the overidden method
+                    
                     self._children = self._get_children(*args, **kwargs)
                     
                     if self._children is None:
                         raise Exception("Children found was 'None'. If you want to specify that a Simulation has no children, then its get_children() method should return empty list '[]', not 'None'.")
 
-        # Now save the children to the data/ directory
-        self._save_children(verbose=verbose)
+                # Now save the children to the data/ directory
+                self._save_children(verbose=verbose)
         
         return self._children
-
-    #def to_json(self):
-    #    ret = {'type' : self.__module__+"."+type(self).__name__ }
-    #    for attr in dir(self):
-    #        if hasattr(self, 'json_exclude'):
-    #            if attr in self.json_exclude: continue
-    #        val = getattr(self, attr)
-    #        if isinstance(val, (str, int, float, bool, list, dict, np.ndarray)):
-    #            ret[attr] = val
-    #    return ret
-
-    #@staticmethod
-    #def from_json(obj):
-    #    instance = eval((obj['type']+"('%s')") % obj['directory'])
-    #    for key, val in obj.items():
-    #        if hasattr(instance, key):
-    #            setattr(instance, key, val)
-    #    return instance
-
 
     def get_outputfiles(self, pattern=None):
         if pattern is None:
