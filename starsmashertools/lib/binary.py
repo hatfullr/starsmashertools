@@ -15,9 +15,17 @@ class Binary(simulation.Simulation, object):
     # Returns the particles in the output file which correspond
     # to the primary (donor) star
     def get_primary(self, output):
+        if not isinstance(output, starsmashertools.lib.output.Output):
+            raise TypeError("Argument 'output' must be of type 'starsmashertools.lib.output.Output', not '%s'" % type(output).__name__)
+        if output not in self:
+            raise ValueError("Argument 'output' must be an output file from simulation '%s', not '%s'" % (self.directory, output.simulation.directory))
         return starsmashertools.get_particles(self.get_primary_IDs(), output)
-            
+    
     def get_secondary(self, output):
+        if not isinstance(output, starsmashertools.lib.output.Output):
+            raise TypeError("Argument 'output' must be of type 'starsmashertools.lib.output.Output', not '%s'" % type(output).__name__)
+        if output not in self:
+            raise ValueError("Argument 'output' must be an output file from simulation '%s', not '%s'" % (self.directory, output.simulation.directory))
         return starsmashertools.get_particles(self.get_secondary_IDs(), output)
 
     def get_donor(self, *args, **kwargs):

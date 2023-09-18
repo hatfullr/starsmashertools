@@ -16,6 +16,7 @@ class Output(dict, object):
         'raw',
         'cgs',
     ]
+    
     def __init__(self, path, simulation, mode='raw'):
         if mode not in Output.modes:
             s = ", ".join(["'"+str(m)+"'" for m in Output.modes])
@@ -33,6 +34,8 @@ class Output(dict, object):
         # If no cache is defined in preferences
         if self._cache is None: self._cache = {}
 
+        self._mask = None
+    
     def __str__(self): return "Output('%s')" % starsmashertools.helpers.path.basename(self.path)
 
     def __repr__(self): return str(self)
@@ -50,6 +53,18 @@ class Output(dict, object):
         if item not in self.keys(ensure_read=False):
             self._ensure_read()
         ret = super(Output, self).__getitem__(item)
+
+        if isinstance(ret, np.ndarray):
+            # Try to mask the output data if we have a mask
+            if self._mask is not None:
+                if not isinstance(self._mask, np.ndarray):
+                    raise TypeError("Property 'Output._mask' must be of type 'np.ndarray', not '%s'" % type(self._mask).__name__)
+                try:
+                    ret = ret[self._mask]
+                except IndexError as e:
+                    if 'boolean index did not match indexed array' in str(e):
+                        pass
+        
         if self.mode == 'cgs':
             if item in self.simulation.units.keys():
                 ret = _copy.copy(ret) * self.simulation.units[item]
@@ -128,6 +143,10 @@ class Output(dict, object):
             if callable(self._cache[key]):
                 self._cache[key] = self._cache[key](self)
         return self._cache[key]
+
+    def mask(self, mask):
+        self._mask = mask
+        
 
 
 # Asynchronous output file reading

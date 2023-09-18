@@ -39,22 +39,24 @@ def output(*args, **kwargs):
 def iterator(*args, **kwargs):
     return starsmashertools.lib.output.OutputIterator(*args, **kwargs)
 
+# Returns an Output object which contains only the particles specified
+# by the given mask. The mask can be either a numpy boolean array
 @starsmashertools.helpers.argumentenforcer.enforcetypes
 def get_particles(
         mask : np.ndarray | list | tuple,
-        output : starsmashertools.lib.output.Output | starsmashertools.lib.output.OutputIterator | np.ndarray | list | tuple,
+        output : starsmashertools.lib.output.Output,
 ):
-    def convert(o):
-        return {key:val[mask] for key, val in o.items()}
         
     if isinstance(output, starsmashertools.lib.output.Output):
-        return convert(output)
+        output.mask(mask)
+        return output
 
     if not hasattr(output, '__iter__'):
         output = [output]
 
     ret = []
     for o in output:
+        o.mask(mask)
         ret += [convert(o)]
     
     if len(ret) == 1: return ret[0]
