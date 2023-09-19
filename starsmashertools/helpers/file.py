@@ -6,11 +6,13 @@ import builtins
 import os
 import filecmp
 import numpy as np
+import contextlib
 
 fortran_comment_characters = ['c','C','!','*']
 
 downloaded_files = []
 
+@contextlib.contextmanager
 def open(path, mode, **kwargs):
     path = starsmashertools.helpers.path.realpath(path)
     if starsmashertools.helpers.ssh.isRemote(path):
@@ -30,10 +32,15 @@ def open(path, mode, **kwargs):
 
         print("Downloaded '%s' as '%s'" % (path, tfile.name))
         downloaded_files += [tfile.name]
-        
-        return builtins.open(tfile.name, mode, **kwargs)        
+
+        f = builtins.open(tfile.name, mode, **kwargs)
+    else:
+        f = builtins.open(path, mode, **kwargs)
     
-    return builtins.open(path, mode, **kwargs)
+    try:
+        yield f
+    finally:
+        f.close()
 
 
 
@@ -41,62 +48,60 @@ def open(path, mode, **kwargs):
 def isMESA(path):
     if not starsmashertools.helpers.path.isfile(path): return False
     
-    f = starsmashertools.helpers.file.open(path, 'r')
+    with starsmashertools.helpers.file.open(path, 'r') as f:
 
-    # The first line is always a bunch of sequential numbers
-    line = f.readline()
-    linesplit = line.split()
-    ncols = len(linesplit)
+        # The first line is always a bunch of sequential numbers
+        line = f.readline()
+        linesplit = line.split()
+        ncols = len(linesplit)
 
-    for i, item in enumerate(linesplit):
-        parsed = starsmashertools.helpers.string.parse(item)
-        if not isinstance(parsed, int): return False
-        if i + 1 != parsed: return False
+        for i, item in enumerate(linesplit):
+            parsed = starsmashertools.helpers.string.parse(item)
+            if not isinstance(parsed, int): return False
+            if i + 1 != parsed: return False
 
-    # The next line is always a header with only strings. It should
-    # have the same length as the previous line
-    line = f.readline()
-    linesplit = line.split()
-    if len(linesplit) != ncols: return False
-    for item in linesplit:
-        parsed = starsmashertools.helpers.string.parse(item)
-        if not isinstance(parsed, str): return False
-        
-    # The next line contains a bunch of data, but it's not all necessarily
-    # numerical data
-    line = f.readline()
-    linesplit = line.split()
-    if len(linesplit) != ncols: return False
-
-    # A newline is next
-    line = f.readline().strip()
-    if len(line) != 0: return False
-
-    # More numbers now
-    line = f.readline()
-    linesplit = line.split()
-    ncols = len(linesplit)
-    for i, item in enumerate(linesplit):
-        parsed = starsmashertools.helpers.string.parse(item)
-        if not isinstance(parsed, int): return False
-        if i + 1 != parsed: return False
-
-    # Another header
-    line = f.readline()
-    linesplit = line.split()
-    if len(linesplit) != ncols: return False
-    for item in linesplit:
-        parsed = starsmashertools.helpers.string.parse(item)
-        if not isinstance(parsed, str): return False
-
-    # The rest of the file should be data with the same number of columns
-    # as the previous header
-    for line in f:
+        # The next line is always a header with only strings. It should
+        # have the same length as the previous line
+        line = f.readline()
         linesplit = line.split()
         if len(linesplit) != ncols: return False
-    
-    f.close()
+        for item in linesplit:
+            parsed = starsmashertools.helpers.string.parse(item)
+            if not isinstance(parsed, str): return False
 
+        # The next line contains a bunch of data, but it's not all necessarily
+        # numerical data
+        line = f.readline()
+        linesplit = line.split()
+        if len(linesplit) != ncols: return False
+
+        # A newline is next
+        line = f.readline().strip()
+        if len(line) != 0: return False
+
+        # More numbers now
+        line = f.readline()
+        linesplit = line.split()
+        ncols = len(linesplit)
+        for i, item in enumerate(linesplit):
+            parsed = starsmashertools.helpers.string.parse(item)
+            if not isinstance(parsed, int): return False
+            if i + 1 != parsed: return False
+
+        # Another header
+        line = f.readline()
+        linesplit = line.split()
+        if len(linesplit) != ncols: return False
+        for item in linesplit:
+            parsed = starsmashertools.helpers.string.parse(item)
+            if not isinstance(parsed, str): return False
+
+        # The rest of the file should be data with the same number of columns
+        # as the previous header
+        for line in f:
+            linesplit = line.split()
+            if len(linesplit) != ncols: return False
+    
     return True
 
 """

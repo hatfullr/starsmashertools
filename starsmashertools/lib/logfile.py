@@ -3,16 +3,17 @@ import starsmashertools.helpers.path
 import starsmashertools.helpers.file
 from glob import glob
 
-
 def find(directory, pattern=None, throw_error=False):
     if pattern is None:
         pattern = preferences.get_default('LogFile', 'file pattern', throw_error=True)
+    direc = starsmashertools.helpers.path.realpath(directory)
     tosearch = starsmashertools.helpers.path.join(
-        starsmashertools.helpers.path.realpath(directory),
+        direc,
+        '**',
         pattern,
     )
 
-    matches = glob(tosearch)
+    matches = glob(tosearch, recursive=True)
     if matches: matches = sorted(matches)
     elif throw_error: raise FileNotFoundError("No log files matching pattern '%s' in directory '%s'" % (pattern, directory))
 
@@ -37,9 +38,13 @@ class LogFile(object):
             self._contents += line
         f.close()
 
-    def get(self, phrase, end="\n"):
+    def get(self, phrase, end="\n", reverse=False):
         if phrase not in self.contents: raise LogFile.PhraseNotFoundError("Failed to find '%s' in '%s'" % (phrase, self.path))
-        i0 = self.contents.index(phrase) + len(phrase)
+        if reverse:
+            i0 = self.contents.rindex(phrase)
+        else:
+            i0 = self.contents.index(phrase)
+        i0 += len(phrase)
         i1 = i0 + self.contents[i0:].index(end)
         return self.contents[i0:i1]
 

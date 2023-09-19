@@ -56,7 +56,10 @@ class Page(object):
 
     # Keywords go to the input manager
     def show(self, **kwargs):
-        content = newline.join([" "*self.indent + c for c in self.contents.split(newline)])
+        if callable(self.contents): content = self.contents()
+        else: content = copy.copy(self.contents)
+        
+        content = newline.join([" "*self.indent + c for c in content.split(newline)])
         
         header = copy.copy(self.header)
         footer = copy.copy(self.footer)

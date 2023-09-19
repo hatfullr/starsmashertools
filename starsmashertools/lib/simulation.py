@@ -73,10 +73,11 @@ class Simulation(object):
             self._teos = TEOS(path.realpath(path.join(self.directory, self['eosfile'])))
         return self._teos
 
-    def get_logfiles(self, pattern=None):
+    # Keywords are passed to logfile.find() method
+    def get_logfiles(self, **kwargs):
         if self._logfiles is None:
             self._logfiles = []
-            for path in starsmashertools.lib.logfile.find(self.directory, pattern=pattern):
+            for path in starsmashertools.lib.logfile.find(self.directory, **kwargs):
                 self._logfiles += [starsmashertools.lib.logfile.LogFile(path)]
         return self._logfiles
 

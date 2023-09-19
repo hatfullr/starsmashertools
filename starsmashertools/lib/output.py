@@ -304,51 +304,48 @@ class Reader(object):
             return ret
 
 
-        f = starsmashertools.helpers.file.open(filename, 'rb')
+        with starsmashertools.helpers.file.open(filename, 'rb') as f:
+            # This speeds up reading significantly.
+            buffer = mmap.mmap(f.fileno(),0,access=mmap.ACCESS_READ)
+            
+            header = do(
+                buffer=buffer,
+                shape=1,
+                dtype=self._dtype['header'],
+                offset=4,
+                strides=self._stride['header'],
+            )
+            
+            ntot = header['ntot'][0]
+            
+            # Check for corrupted files
+            
+            filesize = starsmashertools.helpers.file.getsize(filename)
+            
+            ntot_check = do(
+                buffer=buffer,
+                shape=1,
+                dtype='<i4',
+                offset=filesize - 8,
+                strides=8,
+            )[0]
+            if ntot != ntot_check:
+                f.close()
+                raise Reader.CorruptedFileError(filename)
 
-        # This speeds up reading significantly.
-        buffer = mmap.mmap(f.fileno(),0,access=mmap.ACCESS_READ)
+            if return_headers and not return_data:
+                f.close()
+                return header
 
-        header = do(
-            buffer=buffer,
-            shape=1,
-            dtype=self._dtype['header'],
-            offset=4,
-            strides=self._stride['header'],
-        )
-
-        ntot = header['ntot'][0]
-
-        # Check for corrupted files
-
-        filesize = starsmashertools.helpers.file.getsize(filename)
+            # There are 'ntot' particles to read
+            data = do(
+                buffer=buffer,
+                shape=ntot,
+                dtype=self._dtype['data'],
+                offset=self._stride['header'] + self._EOL_size + 4,
+                strides=self._stride['data'] + self._EOL_size,
+            )
         
-        ntot_check = do(
-            buffer=buffer,
-            shape=1,
-            dtype='<i4',
-            offset=filesize - 8,
-            strides=8,
-        )[0]
-        if ntot != ntot_check:
-            f.close()
-            raise Reader.CorruptedFileError(filename)
-
-        if return_headers and not return_data:
-            f.close()
-            return header
-
-        # There are 'ntot' particles to read
-        data = do(
-            buffer=buffer,
-            shape=ntot,
-            dtype=self._dtype['data'],
-            offset=self._stride['header'] + self._EOL_size + 4,
-            strides=self._stride['data'] + self._EOL_size,
-        )
-        
-        f.close()
-
         # Now organize the data into Pythonic structures
         new_data = {}
         for name in data[0].dtype.names:
@@ -378,22 +375,21 @@ class Reader(object):
         
         # Read the output.f file
         subroutine_text = ""
-        f = starsmashertools.helpers.file.open(writerfile, 'r')
-        for line in f:
-            if len(line.strip()) == 0 or line[0] in starsmashertools.helpers.file.fortran_comment_characters:
-                continue
-            if '!' in line: line = line[:line.index('!')] + "\n"
-            if len(line.strip()) == 0: continue
-            
-            ls = line.strip()
-            
-            if ls == 'subroutine dump(iu)':
-                listening = True
+        with starsmashertools.helpers.file.open(writerfile, 'r') as f:
+            for line in f:
+                if len(line.strip()) == 0 or line[0] in starsmashertools.helpers.file.fortran_comment_characters:
+                    continue
+                if '!' in line: line = line[:line.index('!')] + "\n"
+                if len(line.strip()) == 0: continue
 
-            if listening:
-                subroutine_text += line
-                if ls == 'end': break
-        f.close()
+                ls = line.strip()
+
+                if ls == 'subroutine dump(iu)':
+                    listening = True
+
+                if listening:
+                    subroutine_text += line
+                    if ls == 'end': break
 
         # Use the subroutine text to get the variable names and their types
         vtypes = {}
@@ -408,12 +404,10 @@ class Reader(object):
                 # On 'include' lines, we find the file that is being included
                 dname = starsmashertools.helpers.path.dirname(writerfile)
                 fname = starsmashertools.helpers.path.join(dname, ls.replace('include','').replace('"','').replace("'", '').strip())
-                f = starsmashertools.helpers.file.open(fname, 'r')
-                for key, val in starsmashertools.helpers.string.get_fortran_variable_types(f.read(), data_types).items():
-                    if key not in vtypes.keys(): vtypes[key] = val
-                    else: vtypes[key] += val
-                
-                f.close()
+                with starsmashertools.helpers.file.open(fname, 'r') as f:
+                    for key, val in starsmashertools.helpers.string.get_fortran_variable_types(f.read(), data_types).items():
+                        if key not in vtypes.keys(): vtypes[key] = val
+                        else: vtypes[key] += val
         
         for key, val in starsmashertools.helpers.string.get_fortran_variable_types(subroutine_text, data_types).items():
             if key not in vtypes.keys(): vtypes[key] = val

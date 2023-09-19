@@ -9,5 +9,6 @@ setup(
         os.path.join('bin','inspectpdc'),
         os.path.join('bin','outtotxt'),
         os.path.join('bin','editpdc'),
+        os.path.join('bin','timing'),
     ],
 )

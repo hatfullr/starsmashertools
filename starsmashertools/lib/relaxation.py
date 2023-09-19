@@ -53,11 +53,9 @@ class Relaxation(starsmashertools.lib.simulation.Simulation, object):
             # If searching the log files was a bust, try looking for an sph.init file
             initfile = starsmashertools.helpers.path.join(self.directory, 'sph.init')
             if starsmashertools.helpers.path.isfile(initfile):
-                f = starsmashertools.helpers.file.open(initfile, 'r')
-
-                f.readline()
-                line = f.readline()
-                f.close()
+                with starsmashertools.helpers.file.open(initfile, 'r') as f:
+                    f.readline()
+                    line = f.readline()
 
                 iname = line.lower().replace('iname=','').replace("'",'').strip()
                 self._isPolytrope = iname == '1es'
@@ -157,19 +155,17 @@ class Relaxation(starsmashertools.lib.simulation.Simulation, object):
 
         def _initialize(self):
             obj = {}
-            f = starsmashertools.helpers.file.open(self.path, 'r')
+            with starsmashertools.helpers.file.open(self.path, 'r') as f:
+                f.readline() # numbers
+                obj = {key:val for key, val in zip(f.readline().strip().split(), f.readline().strip().split())}
+                f.readline() # newline
+                f.readline() # numbers
+                header = f.readline().strip().split()
+                for key in header: obj[key] = []
 
-            f.readline() # numbers
-            obj = {key:val for key, val in zip(f.readline().strip().split(), f.readline().strip().split())}
-            f.readline() # newline
-            f.readline() # numbers
-            header = f.readline().strip().split()
-            for key in header: obj[key] = []
-
-            for line in f:
-                for key, val in zip(header, line.strip().split()):
-                    obj[key] += [val]
-            f.close()
+                for line in f:
+                    for key, val in zip(header, line.strip().split()):
+                        obj[key] += [val]
 
             for key, val in obj.items():
                 if isinstance(val, str):

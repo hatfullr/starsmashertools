@@ -39,47 +39,45 @@ class Input(dict, object):
         # Read the init.f file to obtain default values
         listening = None
 
-        f = starsmashertools.helpers.file.open(init_file, 'r')
-        
-        for line in f:
-            # Skip empty lines
-            if not line.strip(): continue
+        with starsmashertools.helpers.file.open(init_file, 'r') as f:
 
-            # Always skip comments
-            if line[0] in starsmashertools.helpers.file.fortran_comment_characters:
-                continue
+            for line in f:
+                # Skip empty lines
+                if not line.strip(): continue
 
-            if listening is None and '      subroutine get_input' in line:
-                listening = 'namelist'
-                continue
-
-            # Get the namelist for the inputs
-            if listening == 'namelist':
-                if line.strip() == "":
-                    listening = 'values'
+                # Always skip comments
+                if line[0] in starsmashertools.helpers.file.fortran_comment_characters:
                     continue
 
-                if 'namelist/input/' in line or '$' in line:
-                    line = line.replace('namelist/input/','').replace('$','')
-                    for name in line.strip().split(','):
-                        if name:
-                            self[name] = None
-                else:
-                    listening = 'values'
+                if listening is None and '      subroutine get_input' in line:
+                    listening = 'namelist'
+                    continue
 
-            if listening == 'values':
-                if line == "      end" or line.strip() == "open(12,file='sph.input',err=100)": break
-                if '=' not in line: continue
+                # Get the namelist for the inputs
+                if listening == 'namelist':
+                    if line.strip() == "":
+                        listening = 'values'
+                        continue
 
-                ls = line.strip().split('=')
-                key = ls[0].lower()
+                    if 'namelist/input/' in line or '$' in line:
+                        line = line.replace('namelist/input/','').replace('$','')
+                        for name in line.strip().split(','):
+                            if name:
+                                self[name] = None
+                    else:
+                        listening = 'values'
 
-                val = '='.join(ls[1:])
-                val = string.fortran_to_python(val)
-                self[key] = eval(val.replace("!","#"), {}, self)
+                if listening == 'values':
+                    if line == "      end" or line.strip() == "open(12,file='sph.input',err=100)": break
+                    if '=' not in line: continue
 
-        f.close()
-                
+                    ls = line.strip().split('=')
+                    key = ls[0].lower()
+
+                    val = '='.join(ls[1:])
+                    val = string.fortran_to_python(val)
+                    self[key] = eval(val.replace("!","#"), {}, self)
+        
         # Save default values
         self.defaults = {}
         for key, val in self.items():
@@ -90,31 +88,30 @@ class Input(dict, object):
             self.overrides[key] = None
                     
         # Overwrite the default values with values from the sph.input file
-        f = starsmashertools.helpers.file.open(inputfile, 'r')
-        for line in f:
-            ls = line.strip()
+        with starsmashertools.helpers.file.open(inputfile, 'r') as f:
+            for line in f:
+                ls = line.strip()
 
-            if not ls: continue # Skip empty lines
+                if not ls: continue # Skip empty lines
 
-            # Always skip comments
-            if ls[0] == '!': continue
+                # Always skip comments
+                if ls[0] == '!': continue
 
-            # Only process this string if it evaluates some variable
-            if '=' not in ls: continue
+                # Only process this string if it evaluates some variable
+                if '=' not in ls: continue
 
-            ls = ls.split('=')
+                ls = ls.split('=')
 
-            key = ls[0].lower()
-            val = "=".join(ls[1:])
-            val = val.replace(",","")
-            val = string.fortran_to_python(val)
+                key = ls[0].lower()
+                val = "=".join(ls[1:])
+                val = val.replace(",","")
+                val = string.fortran_to_python(val)
 
-            # Fortran cannot evaluate expressions in an input file, so we don't need to worry
-            # about doing the same, but it does make it very easy to convert the string to
-            # an appropriate type
-            v = eval(val.replace("!","#"))
-            if key in self.defaults.keys(): self.overrides[key] = v
-            self[key] = v
-        f.close()
+                # Fortran cannot evaluate expressions in an input file, so we don't need to worry
+                # about doing the same, but it does make it very easy to convert the string to
+                # an appropriate type
+                v = eval(val.replace("!","#"))
+                if key in self.defaults.keys(): self.overrides[key] = v
+                self[key] = v
 
         self._initialized = True

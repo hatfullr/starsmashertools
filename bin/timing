@@ -1,0 +1,95 @@
+#!/usr/bin/env python3
+
+# This program is used to measure how much time a StarSmasher simulation took to
+# run. It uses os.getmtime to measure timings.
+
+import starsmashertools
+import starsmashertools.preferences
+import starsmashertools.mpl.plotdata
+import starsmashertools.helpers.path
+import starsmashertools.bintools.cli
+import starsmashertools.bintools
+import collections
+import os
+
+################################################################################
+################################## Back end ####################################
+################################################################################
+
+# Gets set in the front end
+simulation = None
+
+def total_time():
+    global simulation
+    
+    string = ""
+
+    # Find all the log files involved with this simulation
+    for logfile in simulation.get_logfiles():
+        print(logfile.contents)
+        print(logfile.get('duout', end='at t='))
+        #string += logfile.path + newline
+
+
+        
+    return string
+
+
+
+
+
+
+
+
+
+
+
+
+
+################################################################################
+################################# Front end ####################################
+################################################################################
+
+modes = collections.OrderedDict()
+modes['total time'] = total_time
+
+
+newline = starsmashertools.bintools.Style.get('characters', 'newline')
+starsmashertools.bintools.Style.set('formatting', 'footer', newline)
+
+cli = starsmashertools.bintools.cli.CLI(
+    'inspectpdc',
+    "A tool for viewing the contents of a checkpoint file created by starsmashertools, called 'pdc.json.gz' by default.",
+)
+
+cli.parser.add_argument(
+    '-d',
+    '--directory',
+    nargs='?',
+    required=False,
+    metavar='directory',
+    type=str,
+    default=os.getcwd(),
+    help='The StarSmasher simulation directory. Defaults to the current working directory if not specified.'
+)
+
+simulation = starsmashertools.get_simulation(cli.args['directory'])
+
+mainmenu = cli.add_list(
+    [int, str],
+    items=modes.keys(),
+    bullet='%5d)',
+    header=newline + starsmashertools.bintools.Style.bold("Main Menu") + newline + newline + 'Choose an option' + newline,
+)
+
+for i, (key, val) in enumerate(modes.items()):
+    page = cli.add_page(
+        [],
+        val,
+        back=mainmenu,
+    )
+    mainmenu.connect(page, [i, key])
+
+cli.set_mainmenu(mainmenu)
+
+cli.run()

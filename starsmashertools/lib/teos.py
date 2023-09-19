@@ -13,38 +13,36 @@ class TEOS:
         self.verbose = verbose
         if self.verbose: print("TEOS: Reading '"+filename+"'")
 
-        f = starsmashertools.helpers.file.open(filename, 'r')
+        with starsmashertools.helpers.file.open(filename, 'r') as f:
+
+            for i in range(5): f.readline()
+            line = f.readline().split()
+            Nrho = int(line[0])
+            rhomin = float(line[1])
+            rhomax = float(line[2])
+            drho = float(line[3])
+
+            line = f.readline().split()
+            Nu = int(line[0])
+            umin = float(line[1])
+            umax = float(line[2])
+            du = float(line[3])
+
+            f.readline()
+            headers = f.readline().strip().split("  ")
+            headers = [h.strip() for h in headers]
+            headers = [h for h in headers if h not in ['','icode']]
+
+            self._tableheaders = headers[2:]
+            ncols = len(self._tableheaders)
+
+            coords = np.empty((Nrho*Nu,2) ,dtype=object)
+            values = np.empty((Nrho*Nu,ncols), dtype=object)
+            for count,line in enumerate(f):
+                ls = line.strip().split()
+                coords[count] = ls[:2]
+                values[count] = ls[2:ncols+2]
         
-        for i in range(5): f.readline()
-        line = f.readline().split()
-        Nrho = int(line[0])
-        rhomin = float(line[1])
-        rhomax = float(line[2])
-        drho = float(line[3])
-
-        line = f.readline().split()
-        Nu = int(line[0])
-        umin = float(line[1])
-        umax = float(line[2])
-        du = float(line[3])
-
-        f.readline()
-        headers = f.readline().strip().split("  ")
-        headers = [h.strip() for h in headers]
-        headers = [h for h in headers if h not in ['','icode']]
-
-        self._tableheaders = headers[2:]
-        ncols = len(self._tableheaders)
-
-        coords = np.empty((Nrho*Nu,2) ,dtype=object)
-        values = np.empty((Nrho*Nu,ncols), dtype=object)
-        for count,line in enumerate(f):
-            ls = line.strip().split()
-            coords[count] = ls[:2]
-            values[count] = ls[2:ncols+2]
-
-        f.close()
-                
         self._values = values.astype(float)
         self._coords = coords.astype(float)
 
