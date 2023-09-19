@@ -78,3 +78,11 @@ def mask(output, mask):
         # Unmask the data
         output.unmask()
     
+@contextlib.contextmanager
+def mode(output, mode):
+    previous_mode = copy.copy(output.mode)
+    output.mode = mode
+    try:
+        yield output
+    finally:
+        output.mode = previous_mode
