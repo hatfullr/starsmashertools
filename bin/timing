@@ -78,6 +78,8 @@ def get_time_table():
                 labels[-1] += ' (' + key + ')'
                 totalcolumn = [c / val for c in totalcolumn]
                 break
+
+    if '(' not in labels[-1]: labels[-1] += ' (s)'
     
     fraccolumn = ['%7.5f' % c for c in fraccolumn]
 
