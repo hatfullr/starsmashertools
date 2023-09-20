@@ -55,7 +55,7 @@ class Page(object):
         return False
 
     # Keywords go to the input manager
-    def show(self, **kwargs):
+    def show(self, kill=False, **kwargs):
         if callable(self.contents): content = self.contents()
         else: content = copy.copy(self.contents)
         
@@ -68,15 +68,22 @@ class Page(object):
         
         if header: content = header + content
         if footer: content += footer
-        
-        if self._back_asprompt and self._back is not None:
-            content += newline + "b) back"
-        if self._quit:
-            content += newline + "q) quit"
 
         content = newline.join([" "+c for c in content.split(newline)])
         
         self.cli.write(content, flush=True)
+        
+        if kill: quit()
+
+        content = []
+        if self._back_asprompt and self._back is not None:
+            content += ["b) back"]
+        if self._quit:
+            content += ["q) quit"]
+        
+        if content:
+            content = newline.join(content)
+            self.cli.write(content, flush=True)
         
         if self.inputmanager is not None and self.inputtypes:
             self._prompt_kwargs = kwargs
