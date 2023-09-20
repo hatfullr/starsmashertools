@@ -163,8 +163,10 @@ def plot_wall_time():
     try:
         print("Displaying Matplotlib plot. Please close the plot to continue execution.")
         plt.show()
-    except Exception as e:
-        raise
+    except UserWarning as e:
+        if 'Matplotlib is currently using agg, which is a non-GUI backend, so cannot show the figure.' != str(e):
+            raise
+        plt.savefig('walltime.png')
 
     return ""
     
