@@ -13,6 +13,7 @@ import starsmashertools.helpers.path
 import collections
 import os
 import numpy as np
+import warnings
 
 ################################################################################
 ################################## Back end ####################################
@@ -158,9 +159,12 @@ def plot_wall_time():
 
     plt.tight_layout()
     
-    
-    print("Displaying Matplotlib plot. Please close the plot to continue execution.")
-    plt.show()
+    warnings.filterwarnings('error')
+    try:
+        print("Displaying Matplotlib plot. Please close the plot to continue execution.")
+        plt.show()
+    except Exception as e:
+        raise
 
     return ""
     
