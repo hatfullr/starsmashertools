@@ -68,10 +68,10 @@ def get_time_table():
     unit = 1.
     if longest > -float('inf'):
         try_units = collections.OrderedDict()
-        try_units['day'] = 3600. * 24.
-        try_units['hr'] = 3600.
-        try_units['min'] = 60.
         try_units['s'] = 1.
+        try_units['min'] = 60.
+        try_units['hr'] = 3600.
+        try_units['day'] = 3600. * 24.
 
         for key, val in try_units.items():
             if longest / val <= 10:
