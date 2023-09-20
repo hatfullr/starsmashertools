@@ -78,7 +78,7 @@ class Simulation(object):
         if self._logfiles is None:
             self._logfiles = []
             for path in starsmashertools.lib.logfile.find(self.directory, **kwargs):
-                self._logfiles += [starsmashertools.lib.logfile.LogFile(path)]
+                self._logfiles += [starsmashertools.lib.logfile.LogFile(path, self)]
         return self._logfiles
 
     # Override this in children. Must return a list of Simulation objects

@@ -40,7 +40,7 @@ class Relaxation(starsmashertools.lib.simulation.Simulation, object):
             if isinstance(logfiles, list) and len(logfiles) > 0:
                 logfile = starsmashertools.lib.logfile.LogFile(sorted(logfiles)[0])
                 try:
-                    line = logfile.get('init: new run, iname=')
+                    line = logfile.get('init: new run, iname=', n=1)
                 except Exception as e:
                     if 'Failed to find' not in str(e): raise
                     line = None

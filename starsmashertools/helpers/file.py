@@ -1,12 +1,14 @@
 import starsmashertools.helpers.path
 import starsmashertools.helpers.ssh
 import starsmashertools.helpers.string
+import starsmashertools.helpers.argumentenforcer
 import tempfile
 import builtins
 import os
 import filecmp
 import numpy as np
 import contextlib
+import copy
 
 fortran_comment_characters = ['c','C','!','*']
 
@@ -158,3 +160,27 @@ def compare(file1, file2):
     if size1 == size2:
         return filecmp.cmp(file1, file2, shallow=False)
     return False
+
+
+# Return instances of the given phrase in the given file as a list of string
+# where each element is the contents of the file after the phrase appears, up to
+# the specified 'end', or the next instance of the phrase.
+@starsmashertools.helpers.argumentenforcer.enforcetypes
+def get_phrase(
+        path : str,
+        phrase : str,
+        end : str = '\n',
+):
+    
+    with open(path, 'r') as f:
+        contents = f.read()
+
+    if phrase not in contents: return None
+
+    ret = contents.split(phrase)[1:]
+    for i, string in enumerate(ret):
+        if end in string:
+            ret[i] = string[:string.index(end)]
+    
+    return ret
+    

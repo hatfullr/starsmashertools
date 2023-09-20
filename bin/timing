@@ -9,6 +9,7 @@ import starsmashertools.mpl.plotdata
 import starsmashertools.helpers.path
 import starsmashertools.bintools.cli
 import starsmashertools.bintools
+import starsmashertools.helpers.path
 import collections
 import os
 
@@ -19,20 +20,77 @@ import os
 # Gets set in the front end
 simulation = None
 
-def total_time():
+def get_time_table():
     global simulation
     
-    string = ""
+    logcolumn = []
+    outcolumn = []
+    totalcolumn = []
+    fraccolumn = []
 
-    # Find all the log files involved with this simulation
+    fmt = "%10s:   %s ... %s"
+    filenames = simulation.get_outputfiles()
+    longest = -float('inf')
+    summed = 0
     for logfile in simulation.get_logfiles():
-        print(logfile.contents)
-        print(logfile.get('duout', end='at t='))
-        #string += logfile.path + newline
-
-
+        logcolumn += [starsmashertools.helpers.path.basename(logfile.path)]
         
-    return string
+        has = logfile.hasOutputFiles(filenames)
+        first = None
+        for i, h in enumerate(has):
+            if h:
+                first = filenames[i]
+                break
+        last = None
+        for i, h in enumerate(has[::-1]):
+            if h:
+                last = filenames[len(filenames) - i - 1]
+                break
+
+        outcolumn += ["%s ... %s" % (
+            starsmashertools.helpers.path.basename(first),
+            starsmashertools.helpers.path.basename(last),
+        )]
+        t1 = os.path.getmtime(first)
+        t2 = os.path.getmtime(last)
+        totalcolumn += [t2-t1]
+        longest = max(longest, t2-t1)
+        summed += t2-t1
+        
+    fraccolumn = [c / summed for c in totalcolumn]
+
+    labels = [
+        'Log File',
+        'Output Files',
+        'Fraction',
+        'Total Time',
+    ]
+    unit = 1.
+    if longest > -float('inf'):
+        try_units = collections.OrderedDict()
+        try_units['day'] = 3600. * 24.
+        try_units['hr'] = 3600.
+        try_units['min'] = 60.
+        try_units['s'] = 1.
+
+        for key, val in try_units.items():
+            if longest / val <= 10:
+                labels[-1] += ' (' + key + ')'
+                totalcolumn = [c / val for c in totalcolumn]
+                break
+    
+    fraccolumn = ['%7.5f' % c for c in fraccolumn]
+
+    logcolumn += ['']
+    outcolumn += ['']
+    fraccolumn += ['']
+    totalcolumn += [sum([c for c in totalcolumn])]
+    
+    
+    labels = [starsmashertools.bintools.Style.bold(label) for label in labels]
+    totalcolumn = ['%13.10f' % c for c in totalcolumn]
+    
+    return [logcolumn, outcolumn, fraccolumn, totalcolumn], labels
 
 
 
@@ -50,8 +108,8 @@ def total_time():
 ################################# Front end ####################################
 ################################################################################
 
-modes = collections.OrderedDict()
-modes['total time'] = total_time
+#modes = collections.OrderedDict()
+#modes['total time'] = total_time
 
 
 newline = starsmashertools.bintools.Style.get('characters', 'newline')
@@ -77,18 +135,39 @@ simulation = starsmashertools.get_simulation(cli.args['directory'])
 
 mainmenu = cli.add_list(
     [int, str],
-    items=modes.keys(),
+    items=[
+        'total time',
+    ],
     bullet='%5d)',
     header=newline + starsmashertools.bintools.Style.bold("Main Menu") + newline + newline + 'Choose an option' + newline,
 )
 
+
+
+
+columns, labels = get_time_table()
+
+timetable = cli.add_table(
+    [],
+    columns = columns,
+    labels = labels,
+    back=mainmenu,
+    indent=4,
+    header=newline,
+)
+
+mainmenu.connect(timetable, [0, 'total time'])
+
+"""
 for i, (key, val) in enumerate(modes.items()):
     page = cli.add_page(
         [],
         val,
         back=mainmenu,
+        indent=4,
     )
     mainmenu.connect(page, [i, key])
+"""
 
 cli.set_mainmenu(mainmenu)
 

@@ -6,7 +6,6 @@ import argparse
 import starsmashertools.mpl.plotdata
 import starsmashertools.helpers.path
 import starsmashertools.helpers.string
-import re
 import sys
 import traceback
 import os
