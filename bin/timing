@@ -12,6 +12,7 @@ import starsmashertools.bintools
 import starsmashertools.helpers.path
 import collections
 import os
+import numpy as np
 
 ################################################################################
 ################################## Back end ####################################
@@ -19,6 +20,9 @@ import os
 
 # Gets set in the front end
 simulation = None
+
+def get_file_creation_time(filename):
+    return os.path.getmtime(filename)
 
 def get_time_table():
     global simulation
@@ -51,8 +55,8 @@ def get_time_table():
             starsmashertools.helpers.path.basename(first),
             starsmashertools.helpers.path.basename(last),
         )]
-        t1 = os.path.getmtime(first)
-        t2 = os.path.getmtime(last)
+        t1 = get_file_creation_time(first)
+        t2 = get_file_creation_time(last)
         totalcolumn += [t2-t1]
         longest = max(longest, t2-t1)
         summed += t2-t1
@@ -94,7 +98,72 @@ def get_time_table():
     
     return [logcolumn, outcolumn, fraccolumn, totalcolumn], labels
 
+def plot_wall_time():
+    import matplotlib.pyplot as plt
+    import matplotlib.dates
+    import datetime
 
+    filenames = simulation.get_outputfiles()
+    times = []
+    for filename in filenames:
+        times += [get_file_creation_time(filename)]
+
+    dates = [datetime.datetime.fromtimestamp(time) for time in times]
+    datenums = matplotlib.dates.date2num(dates)
+
+    ylim = [0, simulation['tf'] / simulation['dtout']]
+    x = datenums
+    y = np.arange(len(filenames))
+    
+    
+        
+    fig, ax = plt.subplots()
+    plt.grid(alpha=0.2)
+    ax.margins(0, 0)
+    ax.set_ylabel("# output files")
+    fig.autofmt_xdate() # Make pretty tick labels
+
+    xfmt = matplotlib.dates.DateFormatter('%Y-%m-%d')
+    ax.xaxis.set_major_formatter(xfmt)
+
+    ax.plot(x, y)
+
+    if ylim[1] > len(filenames):
+        # Try to fit a linear function of the most recent half of simulation
+        num = int(len(x) * 0.5)
+        labels = [
+            'linear fit',
+            'quadratic fit',
+            'cubic fit',
+        ]
+        xlim = ax.get_xlim()
+        xmax = -np.inf
+        for i, label in enumerate(labels):
+            coef = np.polyfit(y[-num:], x[-num:], i + 1)
+            poly1d_fn = np.poly1d(coef)
+            _y = np.arange(ylim[1])
+            _x = poly1d_fn(_y)
+            
+            idx = _x >= xlim[0]
+            if np.any(idx):
+                ax.plot(_x[idx], _y[idx], label=label, lw=0.5, zorder=-np.inf)
+                xmax = max(xmax, np.nanmax(_x[idx]))
+        print("The function fits shown were created using the last half of the data only.")
+        ax.legend()
+        if np.isfinite(xmax):
+            ax.set_xlim(None, xmax)
+
+    ax.set_ylim(ylim)
+    
+
+    plt.tight_layout()
+    
+    
+    print("Displaying Matplotlib plot. Please close the plot to continue execution.")
+    plt.show()
+
+    return ""
+    
 
 
 
@@ -109,10 +178,6 @@ def get_time_table():
 ################################################################################
 ################################# Front end ####################################
 ################################################################################
-
-#modes = collections.OrderedDict()
-#modes['total time'] = total_time
-
 
 newline = starsmashertools.bintools.Style.get('characters', 'newline')
 starsmashertools.bintools.Style.set('formatting', 'footer', newline)
@@ -139,6 +204,7 @@ mainmenu = cli.add_list(
     [int, str],
     items=[
         'total time',
+        'wall time plot',
     ],
     bullet='%5d)',
     header=newline + starsmashertools.bintools.Style.bold("Main Menu") + newline + newline + 'Choose an option' + newline,
@@ -157,19 +223,14 @@ timetable = cli.add_table(
     indent=4,
     header=newline,
 )
-
 mainmenu.connect(timetable, [0, 'total time'])
 
-"""
-for i, (key, val) in enumerate(modes.items()):
-    page = cli.add_page(
-        [],
-        val,
-        back=mainmenu,
-        indent=4,
-    )
-    mainmenu.connect(page, [i, key])
-"""
+wt = cli.add_page(
+    [],
+    plot_wall_time,
+    back=mainmenu,
+)
+mainmenu.connect(wt, [1, 'wall time plot'])
 
 cli.set_mainmenu(mainmenu)
 
