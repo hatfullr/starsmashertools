@@ -166,6 +166,8 @@ def plot_wall_time():
     except UserWarning as e:
         if 'Matplotlib is currently using agg, which is a non-GUI backend, so cannot show the figure.' != str(e):
             raise
+        print("Displaying plot failed: '%s'" % str(e))
+        print("Saving plot instead as 'walltime.png'.")
         plt.savefig('walltime.png')
 
     return ""
