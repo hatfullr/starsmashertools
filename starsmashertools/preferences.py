@@ -25,11 +25,20 @@ defaults = {
             'children.sstools',
         ],
         'output files' : 'out*.sph',
-        # Edit this object to add/overwrite the simulation units. You can
-        # define either a number or a string, where the string is code which
-        # can be run by eval, where the available variables are the attributes
-        # of the Units class (see starsmashertools/lib/simulation.py).
-        'units' : {
+    },
+    
+    # 
+    # Note that currently the setting of values 'gram', 'sec', 'cm', and
+    # 'kelvin' in src/starsmasher.h is not supported. We expect all these values
+    # to equal 1.d0 for now.
+    'Units' : {
+        # Edit this object to add/overwrite the simulation units. You can define
+        # either a number or a string, where the string is code which can be run
+        # by eval, where the available variables are the attributes of the Units
+        # class (see starsmashertools/lib/units.py). Some special strings are
+        # 'length' and 'mass' which correspond with 'runit' and 'munit' in the
+        # sph.input file or in the src/init.f file.
+        'extra' : {
             'xyz' : 'length',
             'r' : 'length',
             'r2' : 'length * length',

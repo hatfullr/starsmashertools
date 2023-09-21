@@ -2,6 +2,30 @@ import typing
 import types
 import inspect
 
+# Use these functions as wrappers like so:
+#
+# @starsmashertools.helpers.argumentenforcer.enforcetypes
+# def myfunc(stuff : str):
+#     return stuff
+#
+# If the argument 'stuff' is detected as not of type 'str' then an error is
+# raised. Arguments that are an instance of a subclass of the specified type
+# pass the check.
+# 
+# If you want to constrain input arguments to specific values then you can add
+# the following to the beginning of your function:
+#
+# @starsmashertools.helpers.argumentenforcer.enforcetypes
+# def myfunc(stuff : str):
+#     starsmashertools.helpers.argumentenforcer.enforcevalues({
+#         'stuff' : ['things', 'nelly'],
+#     })
+#     return stuff
+#
+# An error will be raised if 'stuff' has any value other than 'things' or
+# 'nelly'.
+
+
 def enforcetypes(f):
     def type_checker(*args, **kwargs):
         hints = typing.get_type_hints(f)
