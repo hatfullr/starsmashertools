@@ -154,7 +154,9 @@ def plot_wall_time():
         cli.write("The function fits shown were created using the most recent half of the data.", flush=True)
         ax.legend()
         if np.isfinite(xmax):
-            ax.set_xlim(None, xmax)
+            # Don't extend the x limits by more than 1 year
+            x_total_max = min(times) + 3600*24*365.25
+            ax.set_xlim(None, min(xmax, x_total_max))
 
     ax.set_ylim(ylim)
     
