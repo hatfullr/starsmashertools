@@ -156,6 +156,8 @@ def plot_wall_time():
         if np.isfinite(xmax):
             # Don't extend the x limits by more than 1 year
             x_total_max = min(times) + 3600*24*365.25
+            x_total_max = datetime.datetime.fromtimestamp(x_total_max)
+            x_total_max = matplotlib.dates.date2num(x_total_max)
             ax.set_xlim(None, min(xmax, x_total_max))
 
     ax.set_ylim(ylim)
