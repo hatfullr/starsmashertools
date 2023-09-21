@@ -21,6 +21,7 @@ import warnings
 
 # Gets set in the front end
 simulation = None
+cli = None
 
 def get_file_creation_time(filename):
     return os.path.getmtime(filename)
@@ -100,6 +101,7 @@ def get_time_table():
     return [logcolumn, outcolumn, fraccolumn, totalcolumn], labels
 
 def plot_wall_time():
+    global cli
     import matplotlib.pyplot as plt
     import matplotlib.dates
     import datetime
@@ -149,7 +151,7 @@ def plot_wall_time():
             if np.any(idx):
                 ax.plot(_x[idx], _y[idx], label=label, lw=0.5, zorder=-np.inf)
                 xmax = max(xmax, np.nanmax(_x[idx]))
-        print("The function fits shown were created using the most recent half of the data.")
+        cli.write("The function fits shown were created using the most recent half of the data.", flush=True)
         ax.legend()
         if np.isfinite(xmax):
             ax.set_xlim(None, xmax)
@@ -158,17 +160,22 @@ def plot_wall_time():
     
 
     plt.tight_layout()
+
+    if cli.args['batch']:
+        cli.write("Saving plot as '%s'." % cli.args['wall_image'], flush=True)
+        plt.savefig(cli.args['wall_image'])
+        return ""
     
     warnings.filterwarnings('error')
     try:
-        print("Displaying Matplotlib plot. Please close the plot to continue execution.")
+        cli.write("Displaying Matplotlib plot. Please close the plot to continue execution.", flush=True)
         plt.show()
     except UserWarning as e:
         if 'Matplotlib is currently using agg, which is a non-GUI backend, so cannot show the figure.' != str(e):
             raise
-        print("Displaying plot failed: '%s'" % str(e))
-        print("Saving plot instead as 'walltime.png'.")
-        plt.savefig('walltime.png')
+        cli.write("Displaying plot failed: '%s'" % str(e), flush=True)
+        cli.write("Saving plot as '%s'." % cli.args['wall_image'], flush=True)
+        plt.savefig(cli.args['wall_image'])
 
     return ""
     
@@ -211,6 +218,14 @@ cli.parser.add_argument(
 )
 
 cli.parser.add_argument(
+    '-b',
+    '--batch',
+    action='store_true',
+    required=False,
+    help="Batch mode. This should be used when executing this program in i.e. a bash script or shell.",
+)
+
+cli.parser.add_argument(
     '--total',
     action='store_true',
     required=False,
@@ -218,14 +233,26 @@ cli.parser.add_argument(
 )
 
 cli.parser.add_argument(
+    '-p',
     '--plot',
+    nargs='?',
     choices=valid_plots.keys(),
     type=str,
+    required=False,
     help="Creates a plot of the given type",
 )
 
-simulation = starsmashertools.get_simulation(cli.args['directory'])
+cli.parser.add_argument(
+    '--wall-image',
+    nargs='?',
+    type=str,
+    required=False,
+    default='walltime.png',
+    metavar='filename',
+    help="The name of the image that will be saved when plotting wall time data while in batch mode ('-b') or when option '--plot' is given."
+)
 
+simulation = starsmashertools.get_simulation(cli.args['directory'])
 
 
 mainmenu = cli.add_list(
@@ -269,7 +296,7 @@ if cli.args['total']:
 if cli.args['plot']:
     valid_plots[cli.args['plot']]()
 
-if cli.args['total'] or cli.args['plot']:
+if cli.args['batch'] or cli.args['plot'] or cli.args['total']:
     quit()
 
 cli.run()

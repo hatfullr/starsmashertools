@@ -8,12 +8,6 @@ import collections
 
 
 class CLI(object):
-    #valid_writemodes = [
-    #'terminal', # Writes only to the terminal
-    #'file', # Writes both to the terminal and a file
-    #]
-    #writemode = 'terminal'
-    #filename = 'cli_output.txt'
     instance = None
     
     def __init__(self, name, description):
