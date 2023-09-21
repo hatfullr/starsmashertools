@@ -137,7 +137,7 @@ def plot_wall_time():
         labels = [
             'linear fit',
             'quadratic fit',
-            'cubic fit',
+            #'cubic fit',
         ]
         xlim = ax.get_xlim()
         xmax = -np.inf
