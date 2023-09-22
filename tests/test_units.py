@@ -71,6 +71,11 @@ class TestUnits(unittest.TestCase):
         L = l0 * l1
         self.assertEqual(L.short, 'erg')
 
+
+        l0 = starsmashertools.lib.units.Unit.Label('cm/s')
+        l0.convert('cm', 'm')
+        self.assertEqual(l0.long, 'm/s')
+
     def test_unit(self):
         u0 = starsmashertools.lib.units.Unit(1.0, 'cm')
         u1 = starsmashertools.lib.units.Unit(1.0, 's')
@@ -93,7 +98,20 @@ class TestUnits(unittest.TestCase):
         u3 = (u2**2)**0.5
         self.assertEqual(u3.label, 'cm/s')
 
-    def test(self):
+        u = starsmashertools.lib.units.Unit(1.0, 'cm')
+        u = u.convert('cm', 'm')
+        self.assertEqual(float(u), 0.01)
+
+        u = u.convert('m', 'cm')
+        self.assertEqual(float(u), 1)
+
+        u = starsmashertools.lib.units.Unit(1.0, 'cm/s')
+        u = u.convert('cm', 'km')
+        u = u.convert('s', 'mins')
+        self.assertEqual(float(u), 1e-5 * 60)
+        
+
+    def test_units(self):
         simulation = starsmashertools.get_simulation("data")
         units = starsmashertools.lib.units.Units(simulation)
         

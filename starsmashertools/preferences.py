@@ -48,6 +48,29 @@ defaults = {
             'ekin' : 'specificenergy',
             'etot' : 'specificenergy',
         },
+        # Items in this dict decide how units are converted from the base unit
+        # ('cm', 'g', or 's') to new units. You should not specify the factor
+        # used to convert back to 'cm', 'g', or 's'. This is automatically
+        # calculated.
+        'unit conversions' : {
+            'cm' : {
+                'm'  : 1e2,
+                'km' : 1e5,
+            },
+            's' : {
+                'mins': 60,
+                'hrs' : 3600,
+                'days': 3600*24,
+                'yrs' : 3600*24*365.25,
+            },
+        },
+        # Add items to this list to create additional abbreviations for unit
+        # labels. The conversions are queried in-order from top to bottom. See
+        # the Unit.Label class in starsmashertools/lib/units.py for details.
+        'label conversions' : [
+            ['erg', 'cm*g*g/s*s'],
+            ['erg/g', 'cm*g/s*s'],
+        ],
     },
     'Dynamical' : {
         'original initial restartrad' : 'restartrad.sph.orig',
@@ -89,11 +112,6 @@ defaults = {
         'filename' : 'pdc.json.gz',
     }
 }
-
-#constants = {
-#    'gravitational' : 6.6739e-8 # Comes from starsmasher.h in all source files
-#}
-
 
 
 
