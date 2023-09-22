@@ -54,10 +54,7 @@ def enforcetypes(f):
 
 @enforcetypes
 def _enforcetypes(obj : dict):
-    #if depth < 1:
-    #    raise ValueError("Keyword argument 'depth' must be >= 1")
     variables = _get_variables_in_context_from_dict(obj.keys())
-    
 
     for var_name, var_val in obj.items():
         value = variables[var_name]
@@ -115,24 +112,18 @@ def enforcevalues(obj):
 # list
 def _get_variables_in_context_from_dict(name_list):
     frame = inspect.currentframe()
-
     while frame is not None:
-        _locals = frame.f_locals
-        keys = _locals.keys()
-        for name in name_list:
-            if name not in keys:
+        # Don't search any frames in this file
+        if frame.f_code.co_filename != __file__:
+            for name in name_list:
+                if name not in frame.f_locals.keys():
+                    break
+            else:
+                # Found the right frame that has all the given variables
                 break
-        else:
-            # Found the right frame that has all the given variables
-            break
         frame = frame.f_back
     else:
         raise Exception("Failed to find the context that contains all the given variable names")
-    
-    #for i in range(depth):
-    #    frame = frame.f_back
-    #    if frame is None:
-    #        raise Exception("Keyword argument 'depth' is too large.")
     
     _locals = frame.f_locals
     keys = _locals.keys()
