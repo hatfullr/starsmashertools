@@ -2,7 +2,372 @@ import numpy as np
 import starsmashertools.preferences
 import starsmashertools.helpers.readonlydict
 import starsmashertools.helpers.argumentenforcer
+import copy
 
+
+class Unit(float, object):
+    exception_message = "Operation '%s' is disallowed on 'Unit' type objects. Please convert to 'float' first using, e.g., 'float(unit)'."
+    
+    def __new__(self, value, *args, **kwargs):
+        return float.__new__(self, value)
+    
+    def __init__(self, value, label):
+        starsmashertools.helpers.argumentenforcer.enforcetypes({
+            'value' : [float],
+            'label' : [str, Unit.Label],
+        })
+        
+        if isinstance(label, str):
+            self.label = Unit.Label(label)
+        else: self.label = label
+        
+        float.__init__(value)
+
+    def __repr__(self): return 'Unit(%f, %s)' % (float(self), str(self.label))
+    def __str__(self): return '%f %s' % (float(self), str(self.label))
+
+    def __eq__(self, other):
+        starsmashertools.helpers.argumentenforcer.enforcetypes({
+            'other' : [Unit],
+        })
+        return super(Unit, self).__eq__(other) and self.label == other.label
+
+    def __reduce__(self):
+        # https://docs.python.org/3/library/pickle.html#object.__reduce__
+        return (Unit, (float(self), self.label))
+    def __reduce_ex__(self, *args, **kwargs):
+        return self.__reduce__()
+
+    # self * other = self.__mul__(other)
+    def __mul__(self, other):
+        starsmashertools.helpers.argumentenforcer.enforcetypes({
+            'other' : [float],
+        })
+        if isinstance(other, Unit):
+            return Unit(float(self) * float(other), self.label * other.label)
+        return super(Unit, self).__mul__(other)
+
+    # other * self = self.__rmul__(other) if other doesn't have __mul__
+    def __rmul__(self, other):
+        starsmashertools.helpers.argumentenforcer.enforcetypes({
+            'other' : [float],
+        })
+        return self.__mul__(other)
+
+    # self / other = self.__truediv__(other)
+    def __truediv__(self, other):
+        starsmashertools.helpers.argumentenforcer.enforcetypes({
+            'other' : [float],
+        })
+        if isinstance(other, Unit):
+            return Unit(float(self) / float(other), self.label / other.label)
+        return super(Unit, self).__truediv__(other)
+
+    # other / self = self.__rtruediv__(other) if other doesn't have __truediv__
+    def __rtruediv__(self, other):
+        starsmashertools.helpers.argumentenforcer.enforcetypes({
+            'other' : [float],
+        })
+        if isinstance(other, Unit):
+            return Unit(float(other) / float(self), other.label / self.label)
+        return Unit(other / float(self), 1 / self.label)
+    
+
+    
+
+    def __add__(self, other):
+        starsmashertools.helpers.argumentenforcer.enforcetypes({
+            'other' : [Unit],
+        })
+        if self.label != other.label:
+            raise Exception("Adding Units can only be done when they have the same Labels.")
+        return Unit(float(self) + float(other), self.label)
+    def __radd__(self, other):
+        starsmashertools.helpers.argumentenforcer.enforcetypes({
+            'other' : [Unit],
+        })
+        if self.label != other.label:
+            raise Exception("Adding Units can only be done when they have the same Labels.")
+        return Unit(float(other) + float(self), other.label)
+    def __sub__(self, other):
+        starsmashertools.helpers.argumentenforcer.enforcetypes({
+            'other' : [Unit],
+        })
+        if self.label != other.label:
+            raise Exception("Subtracting Units can only be done when they have the same Labels.")
+        return Unit(float(self) - float(other), self.label)
+    def __rsub__(self, other):
+        starsmashertools.helpers.argumentenforcer.enforcetypes({
+            'other' : [Unit],
+        })
+        if self.label != other.label:
+            raise Exception("Subtracting Units can only be done when they have the same Labels.")
+        return Unit(float(other) - float(self), other.label)
+
+    def __pow__(self, value):
+        starsmashertools.helpers.argumentenforcer.enforcetypes({
+            'value' : [float, int],
+        })
+        return Unit(float(self)**value, self.label**value)
+    
+    # Outright disallow the following magic methods
+    def __abs__(self, *args, **kwargs):
+        raise Exception(Unit.exception_message % 'abs')
+    def __bool__(self, *args, **kwargs):
+        raise Exception(Unit.exception_message % 'bool')
+    def __ceil__(self, *args, **kwargs):
+        raise Exception(Unit.exception_message % 'ceil')
+    def __divmod__(self, *args, **kwargs):
+        raise Exception(Unit.exception_message % 'divmod')
+    def __floor__(self, *args, **kwargs):
+        raise Exception(Unit.exception_message % 'floor')
+    def __floordiv__(self, *args, **kwargs):
+        raise Exception(Unit.exception_message % 'floordiv')
+    def __int__(self, *args, **kwargs):
+        raise Exception(Unit.exception_message % 'int')
+    def __mod__(self, *args, **kwargs):
+        raise Exception(Unit.exception_message % 'mod')
+    def __neg__(self, *args, **kwargs):
+        raise Exception(Unit.exception_message % 'neg')
+    def __pos__(self, *args, **kwargs):
+        raise Exception(Unit.exception_message % 'pos')
+    def __rdivmod__(self, *args, **kwargs):
+        raise Exception(Unit.exception_message % 'rdivmod')
+    def __pos__(self, *args, **kwargs):
+        raise Exception(Unit.exception_message % 'pos')
+    def __rfloordiv__(self, *args, **kwargs):
+        raise Exception(Unit.exception_message % 'rfloordiv')
+    def __rmod__(self, *args, **kwargs):
+        raise Exception(Unit.exception_message % 'rmod')
+    def __round__(self, *args, **kwargs):
+        raise Exception(Unit.exception_message % 'round')
+    def __rpow__(self, *args, **kwargs):
+        raise Exception(Unit.exception_message % 'rpow')
+    def __trunc__(self, *args, **kwargs):
+        raise Exception(Unit.exception_message % 'trunc')
+    def conjugate(self, *args, **kwargs):
+        raise Exception(Unit.exception_message % 'conjugate')
+    def fromhex(self, *args, **kwargs):
+        raise Exception(Unit.exception_message % 'fromhex')
+    def hex(self, *args, **kwargs):
+        raise Exception(Unit.exception_message % 'hex')
+    def imag(self, *args, **kwargs):
+        raise Exception(Unit.exception_message % 'imag')
+    def real(self, *args, **kwargs):
+        raise Exception(Unit.exception_message % 'real')
+
+
+    class Label(object):
+        # Principles:
+        #    1. A Label has both a 'long' form and a 'short' form. For example, a
+        #       Label with short form 'erg' has long form 'cm*g*g/s*s'.
+        #       Notice that there is only 1 '/' symbol. The '/' symbol cannot be
+        #       repeated in a Label and all symbols after it are considered division.
+        #    2. All labels must contain only units 'cm', 'g', 's', or '1' in the long
+        #       forms, and can have only operations '*' and '/'. Each of 'cm', 'g',
+        #       and 's' must be written in that order ('cgs') on other sides of the
+        #       '/' symbol if there is one. The value '1' can only be written on the
+        #       left side of the '/' if there are no other symbols there.
+        #    3. Only multiplication and division is allowed on Labels.
+        #    4. Whenever a long form is changed, it is then simplified. For example,
+        #       if Label a has long form 'cm/s' and Label b has 's' then multiplying
+        #       a with b gives 'cm*s/s'. Then we count the number of 'cm' on the
+        #       left of the '/' sign and compare it with the number of 'cm' on the
+        #       right side. If the two are equal then we remove the first instance of
+        #       each from either side. Then we proceed with 'g' and finally 's'.
+        #    5. A long form is converted to a short form starting from left-to-right.
+        #       For example, a Label with long form 'cm*cm*g*g/cm*s*s'
+        #       first simplifies the expression to 'cm*cm*g*g/s*s'. Then
+        #       it checks the abbreviations list in order to find conversions. For
+        #       example, the 'erg' abbreviation is defined as 'cm*g*g/s*s'.
+        #       Thus we look for the presence of 1 'cm' and 2 'g' on the left side of
+        #       the '/' and for 2 's' on the right side. If we find enough of such
+        #       symbols then we remove those symbols and insert 'erg' on the left-most
+        #       side, 'erg * cm'.
+
+        conversions = [
+            ['erg', 'cm*g*g/s*s'],
+            ['erg/g', 'cm*g/s*s'],
+        ]
+
+        def __init__(self, value):
+            super(Unit.Label, self).__init__()
+            self.left = []
+            self.right = []
+            self.set(value)
+
+        @staticmethod
+        def split(string):
+            lhs, rhs = string, []
+            if '/' in string: lhs, rhs = string.split('/')
+            if lhs == '1': lhs = []
+            if lhs: lhs = lhs.split('*')
+            if rhs: rhs = rhs.split('*')
+            return lhs, rhs
+
+        @staticmethod
+        def check(string):
+            empty = string.replace('cm', '').replace('g','').replace('s','').replace('*','').replace('/','').replace('1','')
+            if len(empty) > 0:
+                raise Exception("Argument 'string' contains characters other than 'cm', 'g', 's', '*', '/', and '1'")
+        
+        @property
+        def short(self):
+            for short, values in Unit.Label.conversions:
+                lhs, rhs = Unit.Label.split(values)
+                left = copy.copy(self.left)
+                right = copy.copy(self.right)
+                for l in lhs:
+                    if l in left: left.remove(l)
+                    else: break
+                else: # If the left side was successful
+                    for r in rhs:
+                        if r in right: right.remove(r)
+                        else: break
+                    else: # If the right side was successful
+                        self.left = [short] + left
+                        self.right = right
+            return self.long
+            
+        @property
+        def long(self):
+            if not self.left and self.right:
+                string = "1"
+            else:
+                string = "*".join(self.left)
+            if self.right: string += "/"+"*".join(self.right)            
+            return string
+        
+        def simplify(self):
+            for item in ['cm', 'g', 's']:
+                lc, rc = self.left.count(item), self.right.count(item)
+                while item in self.left and item in self.right:
+                    self.left.remove(item)
+                    self.right.remove(item)
+                    
+                    plc = copy.copy(lc)
+                    prc = copy.copy(rc)
+                    lc = self.left.count(item)
+                    rc = self.right.count(item)
+                    if lc == plc and rc == prc: break
+
+        def set(self, string):
+            Unit.Label.check(string)
+            self.left, self.right = Unit.Label.split(string)
+            self.organize()
+            self.simplify()
+                    
+        def organize(self):
+            newleft = []
+            newright = []
+            for item in ['cm', 'g', 's']:
+                if item in self.left:
+                    newleft += [item]*self.left.count(item)
+                if item in self.right:
+                    newright += [item]*self.right.count(item)
+            self.left = newleft
+            self.right = newright
+        
+        def __str__(self): return self.short
+        def __repr__(self): return self.long
+        
+        def __eq__(self, other):
+            starsmashertools.helpers.argumentenforcer.enforcetypes({
+                'other' : [Unit.Label, str],
+            })
+            if isinstance(other, Unit.Label):
+                return self.long == other.long
+            return self.long == other
+
+        def __mul__(self, other):
+            starsmashertools.helpers.argumentenforcer.enforcetypes({
+                'other' : [Unit.Label, int],
+            })
+            if isinstance(other, Unit.Label):
+                ret = Unit.Label("")
+                ret.left = self.left + other.left
+                ret.right = self.right + other.right
+            else:
+                ret = copy.copy(self)
+                for i in range(1, other): ret *= self
+            ret.organize()
+            ret.simplify()
+            return ret
+
+        def __rmul__(self, other):
+            starsmashertools.helpers.argumentenforcer.enforcetypes({
+                'other' : [int, Unit.Label],
+            })
+            return self.__mul__(other)
+        
+        def __truediv__(self, other):
+            starsmashertools.helpers.argumentenforcer.enforcetypes({
+                'other' : [Unit.Label],
+            })
+            ret = Unit.Label("")
+            ret.left = self.left + other.right
+            ret.right = self.right + other.left
+            ret.organize()
+            ret.simplify()
+            return ret
+            
+        def __rtruediv__(self, other):
+            starsmashertools.helpers.argumentenforcer.enforcetypes({
+                'other' : [Unit.Label, int],
+            })
+            if isinstance(other, int) and other != 1:
+                raise Exception("When dividing an 'int' by a 'Unit.Label', the int must be equal to '1', not '%d'" % other)
+            
+            ret = Unit.Label("")
+            if isinstance(other, Unit.Label):
+                ret.left = self.right + other.left
+                ret.right = self.left + other.right
+            else:
+                if self.left: ret.right = self.left
+                if self.right: ret.left = self.right
+            ret.organize()
+            ret.simplify()
+            return ret
+
+        def __pow__(self, value):
+            starsmashertools.helpers.argumentenforcer.enforcetypes({
+                'value' : [int, float],
+            })
+            ret = ""
+            if isinstance(value, float):
+                num, denom = value.as_integer_ratio()
+
+                if denom > 4:
+                    raise Exception("Cannot raise Unit.Label '%s' to the power of '%s'. The maximum whole number denominator is 4." % (str(self), str(value)))
+                
+                print(num, denom)
+                ret = 1
+                for i in range(num): ret *= self
+
+                for item in ['cm', 'g', 's']:
+                    if ((item in ret.left and denom > ret.left.count(item)) or
+                        (item in ret.right and denom > ret.right.count(item))):
+                        raise Exception("Cannot raise Unit.Label '%s' to the power of '%s'" % (str(self), str(value)))
+                    if item in ret.left:
+                        for i in range(denom):
+                            if ret.left.count(item) == 1: break
+                            ret.left.remove(item)
+                    if item in ret.right:
+                        for i in range(denom):
+                            if ret.right.count(item) == 1: break
+                            ret.right.remove(item)
+            else:
+                if value > 0:
+                    ret = 1
+                    for i in range(value): ret *= self
+                elif value < 0:
+                    ret = 1
+                    for i in range(abs(value)): ret /= self
+            return ret
+    
+    
+
+class Units(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
 # This class is used to convert the raw StarSmasher outputs to cgs units. It
 # should never be used for converting StarSmasher outputs to any units other
 # than cgs units. You're welcome to manipulate the units in your own code after
@@ -11,9 +376,6 @@ import starsmashertools.helpers.argumentenforcer
 # Note that currently the setting of values 'gram', 'sec', 'cm', and 'kelvin' in
 # src/starsmasher.h is not supported. We expect all these values to equal 1.d0
 # for now.
-
-
-class Units(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
     def __init__(self, simulation):
 
         # Make sure the given simulation argument is of the right type
@@ -98,10 +460,19 @@ class Units(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
         super(Units, self).__init__(obj)
 
     @property
-    def length(self): return self.simulation['runit']
+    def length(self):
+        return Unit(self.simulation['runit'], 'cm')
+        #return self.simulation['runit']
 
     @property
-    def mass(self): return self.simulation['munit']
+    def mass(self):
+        return Unit(self.simulation['munit'], 'g')
+        #return self.simulation['munit']
+
+
+    # This comes from src/starsmasher.h
+    @property
+    def gravconst(self): return Unit(6.67390e-08, 'cm*cm*cm/g*s*s') 
         
     @property
     def time(self): return np.sqrt(self.length**3 / (self.gravconst * self.mass))
@@ -109,8 +480,7 @@ class Units(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
     @property
     def frequency(self): return 1. / self.time
         
-    @property
-    def gravconst(self): return 6.67390e-08 # This comes from src/starsmasher.h
+    
 
     @property
     def area(self): return self.length * self.length
@@ -144,3 +514,13 @@ class Units(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
 
     @property
     def specificluminosity(self): return self.luminosity / self.mass
+
+
+
+    # Given a value and a list of 
+    def get_best_unit(self, value, units):
+        pass
+
+
+
+    

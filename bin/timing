@@ -114,11 +114,11 @@ def plot_wall_time():
     dates = [datetime.datetime.fromtimestamp(time) for time in times]
     datenums = matplotlib.dates.date2num(dates)
 
+    simulation.units['t']
+
     ylim = [0, simulation['tf'] / simulation['dtout']]
     x = datenums
     y = np.arange(len(filenames))
-    
-    
         
     fig, ax = plt.subplots()
     plt.grid(alpha=0.2)
@@ -130,7 +130,7 @@ def plot_wall_time():
     ax.xaxis.set_major_formatter(xfmt)
 
     ax.plot(x, y)
-
+    
     if ylim[1] > len(filenames):
         # Try to fit a linear function of the most recent half of simulation
         num = int(len(x) * 0.5)
