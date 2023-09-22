@@ -517,10 +517,17 @@ class Units(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
 
 
 
-    # Given a value and a list of 
-    def get_best_unit(self, value, units):
-        pass
-
-
+    @staticmethod
+    def get_best_time_unit(value):
+        f = float(value)
+        if f <= 100: return f, 's'
+        f /= 60.
+        if f <= 100: return f, 'min'
+        f /= 60.
+        if f <= 100: return f, 'hr'
+        f /= 24.
+        if f <= 100: return f, 'days'
+        f /= 365.25
+        return f, 'yrs'
 
     

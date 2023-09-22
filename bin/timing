@@ -114,16 +114,23 @@ def plot_wall_time():
     dates = [datetime.datetime.fromtimestamp(time) for time in times]
     datenums = matplotlib.dates.date2num(dates)
 
-    simulation.units['t']
-
-    ylim = [0, simulation['tf'] / simulation['dtout']]
+    
+    dtout = simulation['dtout']
+    
+    ylim = [0, simulation['tf'] / dtout]
     x = datenums
     y = np.arange(len(filenames))
+    
+    
         
     fig, ax = plt.subplots()
-    plt.grid(alpha=0.2)
+    twinax = ax.twinx()
+    twinax.yaxis.tick_right()
+    ax.xaxis.grid(True, alpha=0.2)
     ax.margins(0, 0)
+    twinax.margins(0, 0)
     ax.set_ylabel("# output files")
+    
     fig.autofmt_xdate() # Make pretty tick labels
 
     xfmt = matplotlib.dates.DateFormatter('%Y-%m-%d')
@@ -160,7 +167,15 @@ def plot_wall_time():
             x_total_max = matplotlib.dates.date2num(x_total_max)
             ax.set_xlim(None, min(xmax, x_total_max))
 
+    
+    y2_max = ylim[1] * dtout * simulation.units['t']
+    y2_max, name = starsmashertools.lib.units.Units.get_best_time_unit(y2_max)
+    
+    twinax.set_ylabel("simulation time (%s)" % name)
+
+    
     ax.set_ylim(ylim)
+    twinax.set_ylim(0, y2_max)
     
 
     plt.tight_layout()
