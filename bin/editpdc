@@ -63,8 +63,6 @@ def save():
 
 class InvalidInputError(Exception):
     __module__ = Exception.__module__
-    def __init__(self, *args, **kwargs):
-        super(InvalidInputError, self).__init__(*args, **kwargs)
 
 def print_numbered_list(header, items, indent=0):
     print("")
