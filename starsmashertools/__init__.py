@@ -1,4 +1,3 @@
-import starsmashertools.lib.units
 import starsmashertools.lib.relaxation
 import starsmashertools.lib.binary
 import starsmashertools.lib.dynamical
