@@ -15,6 +15,7 @@ def colorbar(
         width : float = 0.05,
         orientation : str = 'vertical',
         location : str = 'right',
+        **kwargs
 ):
     starsmashertools.helpers.argumentenforcer.enforcevalues({
         'orientation' : ['vertical', 'horizontal'],
@@ -44,7 +45,7 @@ def colorbar(
         cax.set_position([x0, y0, x1 - x0, y1 - y0])
 
     fig.canvas.mpl_connect('draw_event', set_cax_position)
-    return matplotlib.colorbar.Colorbar(cax)
+    return matplotlib.colorbar.Colorbar(cax, **kwargs)
 
     
 
