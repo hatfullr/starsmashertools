@@ -23,52 +23,110 @@ class Unit(float, object):
         
         float.__init__(value)
 
+    # Decide on units that give the cleanest value
+    def auto(self, threshold=100):
+        starsmashertools.helpers.argumentenforcer.enforcetypes({
+            'threshold' : [float, int],
+        })
+        if threshold <= 0: raise ValueError("Argument 'threshold' must be > 0, not '%s'" % str(threshold))
+        
+        # Get all the available conversions
+        conversions = starsmashertools.preferences.get_default('Units', 'unit conversions')
+        if conversions is None: return self
+
+        base = self.get_base()
+        if float(base) < threshold: return base
+
+        left, right = Unit.Label.split(self.label.long)
+        label = left + right
+
+        arr = []
+        for base_unit, conversion_dict in conversions.items():
+            if base_unit in label:
+                for new_unit, value in conversion_dict.items():
+                    arr += [[base_unit, new_unit, value]]
+        values = [a[2] for a in arr]
+        idx = np.argsort(values)
+        arr = [arr[i] for i in idx]
+
+        for a in arr:
+            old_unit, new_unit = a[0], a[1]
+            b = copy.deepcopy(base)
+            b = b.convert(old_unit, new_unit)
+            if float(b) < threshold: return b
+        return self
+        
     # Returns a factor to multiply with to do a unit conversion
-    @staticmethod
-    def get_conversion_factor(old_unit, new_unit=None):
+    # If new_unit is None, then we are simply converting old_unit back to a base
+    # unit ('cm', 'g', 's').
+    def get_conversion_factor(self, old_unit, new_unit=None):
         starsmashertools.helpers.argumentenforcer.enforcetypes({
             'old_unit' : [str],
-            'new_unit' : [str, None],
+            'new_unit' : [str, type(None)],
         })
         conversions = starsmashertools.preferences.get_default('Units', 'unit conversions', throw_error=True)
-        for key, val in conversions.items():
+
+        expected_values = self.label.left + self.label.right
+
+        if len(expected_values) == 0:
+            raise Exception("Cannot obtain a conversion factor for Unit with an empty Label")
+        
+        starsmashertools.helpers.argumentenforcer.enforcevalues({
+            'old_unit' : expected_values,
+        })
+        
+        ret_new_unit = None
+        for base_unit, conversion_dict in conversions.items():
             if new_unit is None:
                 # Here we simply convert back to a base unit
-                if old_unit in val.keys():
-                    return val[old_unit], key
+                if old_unit not in conversion_dict.keys(): continue
+                factor = conversion_dict[old_unit]
+                ret_new_unit = base_unit
+                break
             else:
-                if old_unit == key and new_unit in val.keys():
-                    return 1. / val[new_unit]
-                if old_unit in val.keys() and new_unit == key:
-                    return val[old_unit]
-        raise ValueError("Failed to find conversion ['%s', '%s'] in the 'unit conversions' dict in preferences.py" % old_unit, new_unit)
+                if old_unit == base_unit and new_unit in conversion_dict.keys():
+                    factor = 1. / conversion_dict[new_unit]
+                    break
+                if old_unit in conversion_dict.keys() and new_unit == base_unit:
+                    factor = conversion_dict[old_unit]
+                    break
+        else: # If we didn't find the units in the conversions dict
+            raise ValueError("Failed to find conversion ['%s', '%s'] in the 'unit conversions' dict in preferences.py" % old_unit, new_unit)
 
-    # Return a copy of this Unit converted into another Unit specified by 'string'
+
+        total_factor = 1.
+        if old_unit in self.label.left:
+            total_factor *= self.label.left.count(old_unit) * factor
+        if old_unit in self.label.right:
+            total_factor /= self.label.right.count(old_unit) * factor
+        
+        if ret_new_unit is not None:
+            return total_factor, ret_new_unit
+        return total_factor
+        
+
+    # Return a copy of this Unit converted into another Unit specified by
+    # 'string'
     def convert(self, old_unit, new_unit):
         starsmashertools.helpers.argumentenforcer.enforcetypes({
             'old_unit' : [str],
             'new_unit' : [str],
         })
-        factor = Unit.get_conversion_factor(old_unit, new_unit)
-        total_factor = 1.
-        for val in self.label.left:
-            if val == old_unit: total_factor *= factor
-        for val in self.label.right:
-            if val == old_unit: total_factor /= factor
-        return Unit(float(self) * total_factor, self.label.convert(old_unit, new_unit))
+        factor = self.get_conversion_factor(old_unit, new_unit)
+        return Unit(float(self) * factor,self.label.convert(old_unit, new_unit))
 
     # Returns a copy of this object in exclusively 'cm', 'g', and 's' units.
     def get_base(self):
-        ret = copy.copy(self)
+        ret = copy.deepcopy(self)
         for i, unit in enumerate(ret.label.left):
             if unit in ['cm', 'g', 's']: continue
-            factor, new_unit = Unit.get_conversion_factor(unit)
+            factor, new_unit = self.get_conversion_factor(unit)
             ret *= factor
             ret.label.left[i] = new_unit
         for i, unit in enumerate(ret.label.right):
             if unit in ['cm', 'g', 's']: continue
-            factor, new_unit = Unit.get_conversion_factor(unit)
-            ret /= factor
+            factor, new_unit = self.get_conversion_factor(unit)
+            ret *= factor
             ret.label.right[i] = new_unit
         return ret
 
@@ -87,26 +145,26 @@ class Unit(float, object):
 
     # self * other = self.__mul__(other)
     def __mul__(self, other):
-        starsmashertools.helpers.argumentenforcer.enforcetypes({'other' : [float, Unit]})
+        starsmashertools.helpers.argumentenforcer.enforcetypes({'other' : [float, int, Unit]})
         if isinstance(other, Unit):
             return Unit(float(self) * float(other), self.label * other.label)
-        return super(Unit, self).__mul__(other)
+        return Unit(float(self) * other, self.label)
 
     # other * self = self.__rmul__(other) if other doesn't have __mul__
     def __rmul__(self, other):
-        starsmashertools.helpers.argumentenforcer.enforcetypes({'other' : [float, Unit]})
+        starsmashertools.helpers.argumentenforcer.enforcetypes({'other' : [float, int, Unit]})
         return self.__mul__(other)
 
     # self / other = self.__truediv__(other)
     def __truediv__(self, other):
-        starsmashertools.helpers.argumentenforcer.enforcetypes({'other' : [float]})
+        starsmashertools.helpers.argumentenforcer.enforcetypes({'other' : [float, int, Unit]})
         if isinstance(other, Unit):
             return Unit(float(self) / float(other), self.label / other.label)
-        return super(Unit, self).__truediv__(other)
+        return Unit(float(self) / other, self.label)
 
     # other / self = self.__rtruediv__(other) if other doesn't have __truediv__
     def __rtruediv__(self, other):
-        starsmashertools.helpers.argumentenforcer.enforcetypes({'other' : [float]})
+        starsmashertools.helpers.argumentenforcer.enforcetypes({'other' : [float, int, Unit]})
         if isinstance(other, Unit):
             return Unit(float(other) / float(self), other.label / self.label)
         return Unit(other / float(self), 1 / self.label)
@@ -188,36 +246,34 @@ class Unit(float, object):
 
     class Label(object):
         # Principles:
-        #    1. A Label has both a 'long' form and a 'short' form. For example, a
-        #       Label with short form 'erg' has long form 'cm*g*g/s*s'.
+        #    1. A Label has both a 'long' form and a 'short' form. For example,
+        #       a Label with short form 'erg' has long form 'cm*g*g/s*s'.
         #       Notice that there is only 1 '/' symbol. The '/' symbol cannot be
-        #       repeated in a Label and all symbols after it are considered division.
-        #    2. All labels must contain only units 'cm', 'g', 's', or '1' in the long
-        #       forms, and can have only operations '*' and '/'. Each of 'cm', 'g',
-        #       and 's' must be written in that order ('cgs') on other sides of the
-        #       '/' symbol if there is one. The value '1' can only be written on the
+        #       repeated in a Label and all symbols after it are considered
+        #       division.
+        #    2. All labels must contain only units 'cm', 'g', 's', or '1' in the
+        #       long forms, and can have only operations '*' and '/'. Each of
+        #       'cm', 'g', and 's' must be written in that order ('cgs') on
+        #       other sides of the '/' symbol if there is one. The value '1' can
+        #       only be written on the
         #       left side of the '/' if there are no other symbols there.
         #    3. Only multiplication and division is allowed on Labels.
-        #    4. Whenever a long form is changed, it is then simplified. For example,
-        #       if Label a has long form 'cm/s' and Label b has 's' then multiplying
-        #       a with b gives 'cm*s/s'. Then we count the number of 'cm' on the
-        #       left of the '/' sign and compare it with the number of 'cm' on the
-        #       right side. If the two are equal then we remove the first instance of
-        #       each from either side. Then we proceed with 'g' and finally 's'.
-        #    5. A long form is converted to a short form starting from left-to-right.
-        #       For example, a Label with long form 'cm*cm*g*g/cm*s*s'
-        #       first simplifies the expression to 'cm*cm*g*g/s*s'. Then
-        #       it checks the abbreviations list in order to find conversions. For
-        #       example, the 'erg' abbreviation is defined as 'cm*g*g/s*s'.
-        #       Thus we look for the presence of 1 'cm' and 2 'g' on the left side of
-        #       the '/' and for 2 's' on the right side. If we find enough of such
-        #       symbols then we remove those symbols and insert 'erg' on the left-most
-        #       side, 'erg * cm'.
-
-        conversions = [
-            ['erg', 'cm*g*g/s*s'],
-            ['erg/g', 'cm*g/s*s'],
-        ]
+        #    4. Whenever a long form is changed, it is then simplified. For
+        #       example, if Label a has long form 'cm/s' and Label b has 's'
+        #       then multiplying a with b gives 'cm*s/s'. Then we count the
+        #       number of 'cm' on the left of the '/' sign and compare it with
+        #       the number of 'cm' on the right side. If the two are equal then
+        #       we remove the first instance of each from either side. Then we
+        #       proceed with 'g' and finally 's'.
+        #    5. A long form is converted to a short form starting from
+        #       left-to-right. For example, a Label with long form
+        #       'cm*cm*g*g/cm*s*s' first simplifies the expression to
+        #       'cm*cm*g*g/s*s'. Then it checks the abbreviations list in order
+        #       to find conversions. For example, the 'erg' abbreviation is
+        #       defined as 'cm*g*g/s*s'. Thus we look for the presence of 1 'cm'
+        #       and 2 'g' on the left side of the '/' and for 2 's' on the right
+        #       side. If we find enough of such symbols then we remove those
+        #       symbols and insert 'erg' on the left-most side, 'erg * cm'.
 
         def __init__(self, value):
             super(Unit.Label, self).__init__()
@@ -234,39 +290,61 @@ class Unit(float, object):
             if rhs: rhs = rhs.split('*')
             return lhs, rhs
 
-        @staticmethod
-        def check(string):
-            empty = string.replace('cm', '').replace('g','').replace('s','').replace('*','').replace('/','').replace('1','')
+        def check(self):
+            empty = self.long.replace('cm', '').replace('g','').replace('s','').replace('*','').replace('/','').replace('1','')
             if len(empty) > 0:
-                raise Exception("Argument 'string' contains characters other than 'cm', 'g', 's', '*', '/', and '1'")
+                raise Exception("Unit.Label has a long form which contains characters other than 'cm', 'g', 's', '*', '/', and '1': '%s'" % self.long)
         
         @property
         def short(self):
+            new_left = copy.deepcopy(self.left)
+            new_right = copy.deepcopy(self.right)
+            
+            # Search for unit conversions and then apply those conversions
             conversions = starsmashertools.preferences.get_default('Units', 'label conversions')
             if conversions is not None:
-                for short, values in Unit.Label.conversions:
+                for short, values in conversions:
+                    short_lhs, short_rhs = Unit.Label.split(short)
                     lhs, rhs = Unit.Label.split(values)
-                    left = copy.copy(self.left)
-                    right = copy.copy(self.right)
+
+                    had_left = False
+                    left = copy.deepcopy(new_left)
                     for l in lhs:
                         if l in left: left.remove(l)
                         else: break
-                    else: # If the left side was successful
-                        for r in rhs:
-                            if r in right: right.remove(r)
-                            else: break
-                        else: # If the right side was successful
-                            self.left = [short] + left
-                            self.right = right
-            return self.long
+                    else: # No break means success
+                        had_left = True
+                    if not had_left: continue
+                    
+                    had_right = False
+                    right = copy.deepcopy(new_right)
+                    for r in rhs:
+                        if r in right: right.remove(r)
+                        else: break
+                    else: # No break means success
+                        had_right = True
+                    if not had_right: continue
+
+                    new_left = short_lhs + left
+                    new_right = short_rhs + right
+            
+            return Unit.Label.get_string(new_left, new_right)
             
         @property
         def long(self):
-            if not self.left and self.right:
+            return Unit.Label.get_string(self.left, self.right)
+
+        @staticmethod
+        def get_string(left, right):
+            starsmashertools.helpers.argumentenforcer.enforcetypes({
+                'left' : [list, tuple],
+                'right' : [list, tuple],
+            })
+            if not left and right:
                 string = "1"
             else:
-                string = "*".join(self.left)
-            if self.right: string += "/"+"*".join(self.right)            
+                string = "*".join(left)
+            if right: string += "/"+"*".join(right)
             return string
 
         # Return a copy of this label with changes
@@ -275,7 +353,7 @@ class Unit(float, object):
                 'old_unit' : [str],
                 'new_unit' : [str],
             })
-            ret = copy.copy(self)
+            ret = copy.deepcopy(self)
             for i, val in enumerate(ret.left):
                 if val == old_unit: ret.left[i] = new_unit
             for i, val in enumerate(ret.right):
@@ -289,17 +367,37 @@ class Unit(float, object):
                     self.left.remove(item)
                     self.right.remove(item)
                     
-                    plc = copy.copy(lc)
-                    prc = copy.copy(rc)
+                    plc = copy.deepcopy(lc)
+                    prc = copy.deepcopy(rc)
                     lc = self.left.count(item)
                     rc = self.right.count(item)
                     if lc == plc and rc == prc: break
 
         def set(self, string):
-            Unit.Label.check(string)
             self.left, self.right = Unit.Label.split(string)
+
+            # Break down conversions as needed
+            conversions = starsmashertools.preferences.get_default('Units', 'label conversions')
+            if conversions is not None:
+                for short, value in conversions:
+                    lhs, rhs = Unit.Label.split(value)
+                    left = copy.deepcopy(self.left)
+                    right = copy.deepcopy(self.right)
+                    for val in self.left:
+                        if val == short:
+                            idx = left.index(val)
+                            left = left[:idx] + lhs + left[idx+1:]
+                            right += rhs
+                    for val in self.right:
+                        if val == short:
+                            idx = right.index(val)
+                            right = right[:idx] + rhs + right[idx+1:]
+                            left += lhs
+                    self.left = left
+                    self.right = right
             self.organize()
             self.simplify()
+            self.check()
                     
         def organize(self):
             newleft = []
@@ -328,10 +426,11 @@ class Unit(float, object):
                 ret.left = self.left + other.left
                 ret.right = self.right + other.right
             else:
-                ret = copy.copy(self)
+                ret = copy.deepcopy(self)
                 for i in range(1, other): ret *= self
             ret.organize()
             ret.simplify()
+            ret.check()
             return ret
 
         def __rmul__(self, other):
@@ -345,6 +444,7 @@ class Unit(float, object):
             ret.right = self.right + other.left
             ret.organize()
             ret.simplify()
+            ret.check()
             return ret
             
         def __rtruediv__(self, other):
@@ -361,6 +461,7 @@ class Unit(float, object):
                 if self.right: ret.left = self.right
             ret.organize()
             ret.simplify()
+            ret.check()
             return ret
 
         def __pow__(self, value):
@@ -372,7 +473,6 @@ class Unit(float, object):
                 if denom > 4:
                     raise Exception("Cannot raise Unit.Label '%s' to the power of '%s'. The maximum whole number denominator is 4." % (str(self), str(value)))
                 
-                print(num, denom)
                 ret = 1
                 for i in range(num): ret *= self
 
@@ -395,6 +495,7 @@ class Unit(float, object):
                 elif value < 0:
                     ret = 1
                     for i in range(abs(value)): ret /= self
+            ret.check()
             return ret
     
     
@@ -502,12 +603,10 @@ class Units(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
     def gravconst(self): return Unit(6.67390e-08, 'cm*cm*cm/g*s*s') 
         
     @property
-    def time(self): return np.sqrt(self.length**3 / (self.gravconst * self.mass))
+    def time(self): return (self.length**3 / (self.gravconst * self.mass))**0.5
 
     @property
     def frequency(self): return 1. / self.time
-        
-    
 
     @property
     def area(self): return self.length * self.length
@@ -541,20 +640,5 @@ class Units(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
 
     @property
     def specificluminosity(self): return self.luminosity / self.mass
-
-
-
-    @staticmethod
-    def get_best_time_unit(value):
-        f = float(value)
-        if f <= 100: return f, 's'
-        f /= 60.
-        if f <= 100: return f, 'min'
-        f /= 60.
-        if f <= 100: return f, 'hr'
-        f /= 24.
-        if f <= 100: return f, 'days'
-        f /= 365.25
-        return f, 'yrs'
 
     

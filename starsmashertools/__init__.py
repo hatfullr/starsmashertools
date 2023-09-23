@@ -4,6 +4,7 @@ import starsmashertools.lib.dynamical
 import starsmashertools.lib.simulation
 import starsmashertools.lib.output
 import starsmashertools.helpers.argumentenforcer
+import starsmashertools.lib.units
 import numpy as np
 import contextlib
 import copy
@@ -77,12 +78,3 @@ def mask(output, mask):
     finally:
         # Unmask the data
         output.unmask()
-    
-@contextlib.contextmanager
-def mode(output, mode):
-    previous_mode = copy.copy(output.mode)
-    output.mode = mode
-    try:
-        yield output
-    finally:
-        output.mode = previous_mode

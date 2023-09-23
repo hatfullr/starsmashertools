@@ -167,16 +167,12 @@ def plot_wall_time():
             x_total_max = matplotlib.dates.date2num(x_total_max)
             ax.set_xlim(None, min(xmax, x_total_max))
 
-    
     y2_max = ylim[1] * dtout * simulation.units['t']
-    y2_max, name = starsmashertools.lib.units.Units.get_best_time_unit(y2_max)
-    
-    twinax.set_ylabel("simulation time (%s)" % name)
-
+    y2_max = y2_max.auto()
+    twinax.set_ylabel("simulation time (%s)" % y2_max.label)
     
     ax.set_ylim(ylim)
-    twinax.set_ylim(0, y2_max)
-    
+    twinax.set_ylim(0, float(y2_max))
 
     plt.tight_layout()
 
