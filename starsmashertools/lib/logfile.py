@@ -45,7 +45,7 @@ class LogFile(object):
             raise LogFile.PhraseNotFoundError("Failed to find '%s' in '%s'" % (phrase, self.path))
         i0 = self.header.index(phrase)
         i0 += len(phrase)
-        i1 = i0 + self.header[i0:].index(end)
+        i1 = i0 + self.header[i0:].index('\n')
         return self.header[i0:i1]
 
     # Return a list of boolean values of the same length as 'outputfiles', where

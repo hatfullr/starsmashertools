@@ -1,8 +1,42 @@
 # Included here are useful common functions
 import numpy as np
+import starsmashertools.helpers.argumentenforcer
+import starsmashertools.helpers.numerics
+import starsmashertools.lib.units
+
+# Given the mass of a collection of particles and coordinates in args, return
+# the center of mass in each of those args
+def center_of_mass(m, *args):
+    total_mass = np.sum(m)
+    result = np.zeros(len(args))
+    for i, arg in enumerate(args):
+        result[i] = np.sum(arg * m) / total_mass
+    return result
+
+def center_of_particles(*args):
+    total_particles = len(args[0])
+    result = np.zeros(len(args))
+    for i, arg in enumerate(args):
+        result[i] = np.sum(arg) / total_particles
+    return result
+
+
+def period(
+        m1 : starsmashertools.helpers.numerics.types['real'],
+        m2 : starsmashertools.helpers.numerics.types['real'],
+        separation : starsmashertools.helpers.numerics.types['real'],
+):
+    G = starsmashertools.lib.units.gravconst
+    return np.sqrt(4 * np.pi**2 / (G * (m1 + m2)) * separation**3)
+
 
 # The Roche lobe radius
-def rocheradius(m1, m2, separation):
+@starsmashertools.helpers.argumentenforcer.enforcetypes
+def rocheradius(
+        m1 : starsmashertools.helpers.numerics.types['real'],
+        m2 : starsmashertools.helpers.numerics.types['real'],
+        separation : starsmashertools.helpers.numerics.types['real'],
+):
     q = m1 / m2
     qonethird = q**(1./3.)
     qtwothirds = qonethird * qonethird

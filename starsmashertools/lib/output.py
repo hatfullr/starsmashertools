@@ -3,12 +3,10 @@ import starsmashertools.helpers.path
 import starsmashertools.helpers.file
 import numpy as np
 import time
-import multiprocessing
 import starsmashertools.lib.simulation
-import starsmashertools.helpers.multiprocessing
+import starsmashertools.helpers.asynchronous
 import collections
 import mmap
-import starsmashertools.helpers.stacktrace
 import copy as _copy
 
 class Output(dict, object):
@@ -36,7 +34,9 @@ class Output(dict, object):
 
         self._mask = None
     
-    def __str__(self): return "Output('%s')" % starsmashertools.helpers.path.basename(self.path)
+    def __str__(self):
+        string = self.__class__.__name__ + "(%s)"
+        return string % ("'%s'" % starsmashertools.helpers.path.basename(self.path))
 
     def __repr__(self): return str(self)
 
@@ -153,6 +153,21 @@ class Output(dict, object):
         
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
 # Asynchronous output file reading
 class OutputIterator(object):
     def __init__(self, filenames, simulation, onFlush=[], max_buffer_size=None, verbose=False, asynchronous=True):
@@ -177,11 +192,12 @@ class OutputIterator(object):
         self._buffer_index = -1
 
     def __str__(self):
-        if len(self.filenames) == 0: return "OutputIterator()"
+        string = self.__class__.__name__ + "(%s)"
+        if len(self.filenames) == 0: return string % ""
         bname1 = starsmashertools.helpers.path.basename(self.filenames[0])
-        if len(self.filenames) == 1: return "OutputIterator('%s')" % bname1
+        if len(self.filenames) == 1: return string % ("'%s'" % bname1)
         bname2 = starsmashertools.helpers.path.basename(self.filenames[-1])
-        return "OutputIterator('%s' ... '%s')" % (bname1, bname2)
+        return string % ("'%s' ... '%s'" % (bname1, bname2))
 
     def __repr__(self): return str(self)
 
@@ -210,7 +226,7 @@ class OutputIterator(object):
             # Wait for the process to be finished before continuing
             if self.asynchronous:
                 if self._process is not None and self._process.is_alive(): self._process.join()
-                self._process = starsmashertools.helpers.multiprocessing.Process(
+                self._process = starsmashertools.helpers.asynchronous.Process(
                     target=self.call_flush_methods,
                     daemon=True,
                 )

@@ -121,18 +121,20 @@ class Binary(simulation.Simulation, object):
         secondary_IDs = self.get_secondary_IDs()
         
         with starsmashertools.mask(output, primary_IDs) as masked:
-            m = masked['am']
-            m1 = np.sum(m)
-            xcom1 = np.sum(masked['x'] * m) / m1
-            ycom1 = np.sum(masked['y'] * m) / m1
-            zcom1 = np.sum(masked['z'] * m) / m1
+            xcom1, ycom1, zcom1 = starsmashertools.math.center_of_mass(
+                masked['am'],
+                masked['x'],
+                masked['y'],
+                masked['z'],
+            )
 
         with starsmashertools.mask(output, secondary_IDs) as masked:
-            m = masked['am']
-            m2 = np.sum(m)
-            xcom2 = np.sum(masked['x'] * m) / m2
-            ycom2 = np.sum(masked['y'] * m) / m2
-            zcom2 = np.sum(masked['z'] * m) / m2
+            xcom2, ycom2, zcom2 = starsmashertools.math.center_of_mass(
+                masked['am'],
+                masked['x'],
+                masked['y'],
+                masked['z'],
+            )
 
         return np.array([xcom1, ycom1, zcom1]), np.array([xcom2, ycom2, zcom2])
 
@@ -167,12 +169,10 @@ class Binary(simulation.Simulation, object):
             m1 = np.sum(masked['am'])
         with starsmashertools.mask(output, secondary_IDs) as masked:
             m2 = np.sum(masked['am'])
-        G = self.units.gravconst
         m1 *= self.units.mass
         m2 *= self.units.mass
         separation *= self.units.length
-
-        return np.sqrt(4 * np.pi**2 / (G * (m1 + m2)) * separation**3)
+        return starsmashertools.math.period(m1, m2, separation)
         
 
     # Obtain the Roche lobe filling fraction fRLOF for the given output

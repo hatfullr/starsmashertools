@@ -7,6 +7,7 @@ import starsmashertools.lib.output
 import starsmashertools.lib.logfile
 import starsmashertools.lib.units
 import starsmashertools.helpers.stacktrace
+import starsmashertools.helpers.midpoint
 from starsmashertools.lib.teos import TEOS
 import numpy as np
 from glob import glob
@@ -250,6 +251,79 @@ class Simulation(object):
             raise FileNotFoundError("No file '%s' found in simulation '%s'" % (filename, self.directory))
         return filepath
         
+
+
+    # Return the Output file which corresponds with the beginning of an envelope
+    # disruption event for a star consisting of the given IDs. An envelope is
+    # considered 'disrupted' when some fraction of the particles are outside
+    # some radius (measured from either the center of mass of the IDs or the
+    # position of a core particle if there is one in the IDs).
+    #
+    # frac: The fraction of particles outside 'radius' compared to particles
+    #       inside 'radius' for which the envelope is considered disrupted
+    def get_envelope_disruption(
+            self,
+            IDs,
+            radius,
+            frac,
+            omit_large=True,
+            boundonly=True,
+            # Give times in simulation units here
+            search_window=(0, None),
+    ):
+        inv_nparticles = 1. / len(IDs)
+        radiusSqr = radius * radius
+        def get_frac(output):
+            idx = np.full(len(output['ID']), False)
+            idx[IDs] = True
+            if boundonly:  idx[output['unbound']] = False
+            if omit_large: idx[2*output['hp'] > radius] = False
+
+            with starsmashertools.mask(output, idx) as masked:
+                xyz = np.column_stack((masked['x'],masked['y'],masked['z']))
+                cores = masked['u'] == 0
+                ncores = sum(cores)
+                if ncores == 1:
+                    xc = masked['x'][cores][0]
+                    yc = masked['y'][cores][0]
+                    zc = masked['z'][cores][0]
+                else:
+                    xc, yc, zc = starsmashertools.math.center_of_mass(
+                        masked['am'],
+                        masked['x'],
+                        masked['y'],
+                        masked['z'],
+                    )
+                center = np.array([xc, yc, zc])
+                r2 = np.sum((xyz - center)**2, axis=-1)
+                frac = np.sum(masked['am'][r2 >= radiusSqr]) / np.sum(masked['am'])
+            return frac
+                
+        filenames = self.get_outputfiles()
+        outputs = [starsmashertools.lib.output.Output(filename, self) for filename in filenames]
+        m = starsmashertools.helpers.midpoint.Midpoint(outputs)
+        
+        if search_window[0] > 0:
+            m.set_criteria(
+                lambda output: output['t'] < search_window[0],
+                lambda output: output['t'] == search_window[0],
+                lambda output: output['t'] > search_window[0],
+            )
+            m.objects = m.objects[m.objects.index(m.get()):]
+        if search_window[1] is not None:
+            m.set_criteria(
+                lambda output: output['t'] < search_window[1],
+                lambda output: output['t'] == search_window[1],
+                lambda output: output['t'] > search_window[1],
+            )
+            m.objects = m.objects[:m.objects.index(m.get())]
+        
+        m.set_criteria(
+            lambda output: get_frac(output) < frac,
+            lambda output: get_frac(output) == frac,
+            lambda output: get_frac(output) > frac,
+        )
+        return m.get()
     
 
     class OutputNotInSimulationError(Exception):

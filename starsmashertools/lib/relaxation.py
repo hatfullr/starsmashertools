@@ -148,10 +148,12 @@ class Relaxation(starsmashertools.lib.simulation.Simulation, object):
             path = copy.copy(self.path)
             if len(path) > 20:
                 path = "..." + path[-17:]
-            return "MESA('%s')" % path
+            string = self.__class__.__name__ + "(%s)"
+            return string % ("'%s'" % path)
 
         def __str__(self):
-            return "MESA('%s')" % self.path
+            string = self.__class__.__name__ + "(%s)"
+            return string % ("'%s'" % self.path)
 
         def _initialize(self):
             obj = {}
@@ -189,7 +191,7 @@ class Relaxation(starsmashertools.lib.simulation.Simulation, object):
                 raise TypeError("Can only do an energy comparison on output files from a Relaxation. Received an output file from a '%s'." % (type(outputfile.simulation).__name__))
 
 
-            G = output.simulation.units.gravconst
+            G = starsmashertools.lib.units.gravconst
             rsun = output.simulation.units.length
             msun = output.simulation.units.mass
 

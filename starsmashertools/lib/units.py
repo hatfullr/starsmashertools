@@ -5,6 +5,8 @@ import starsmashertools.helpers.argumentenforcer
 import copy
 
 
+
+
 class Unit(float, object):
     exception_message = "Operation '%s' is disallowed on 'Unit' type objects. Please convert to 'float' first using, e.g., 'float(unit)'."
     
@@ -130,7 +132,9 @@ class Unit(float, object):
             ret.label.right[i] = new_unit
         return ret
 
-    def __repr__(self): return 'Unit(%g, %s)' % (float(self), str(self.label))
+    def __repr__(self):
+        string = self.__class__.__name__ % "(%g, %s)"
+        return string % (float(self), str(self.label))
     def __str__(self): return '%g %s' % (float(self), str(self.label))
 
     def __eq__(self, other):
@@ -498,7 +502,18 @@ class Unit(float, object):
             ret.check()
             return ret
     
-    
+
+
+
+
+# This comes from src/starsmasher.h
+gravconst = Unit(6.67390e-08, 'cm*cm*cm/g*s*s')
+
+
+
+
+
+        
 
 class Units(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
 # This class is used to convert the raw StarSmasher outputs to cgs units. It
@@ -597,13 +612,9 @@ class Units(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
 
     @property
     def mass(self): return Unit(self.simulation['munit'], 'g')
-
-    # This comes from src/starsmasher.h
-    @property
-    def gravconst(self): return Unit(6.67390e-08, 'cm*cm*cm/g*s*s') 
         
     @property
-    def time(self): return (self.length**3 / (self.gravconst * self.mass))**0.5
+    def time(self): return (self.length**3 / (gravconst * self.mass))**0.5
 
     @property
     def frequency(self): return 1. / self.time
@@ -615,7 +626,7 @@ class Units(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
     def volume(self): return self.area * self.length
     
     @property
-    def energy(self): return self.gravconst * self.mass * self.mass / self.length
+    def energy(self): return gravconst * self.mass * self.mass / self.length
 
     @property
     def velocity(self): return self.length / self.time
