@@ -2,18 +2,11 @@ Usage
 =====
 
 .. _installation:
-Installation
-------------
 
-To use starsmashertools, first clone the repository:
+.. include:: installation.rst
 
-.. code-block:: console
 
-   (.venv) $ git clone https://github.com/hatfullr/starsmashertools
+Getting started
+---------------
 
-Then run the install script:
-
-.. code-block:: console
-
-   (.venv) starsmashertools$ ./install
-
+Ensure your **StarSmasher** simulation directory is structured like so
