@@ -6,7 +6,7 @@ Usage
 Installation
 ------------
 
-First clone the repository:
+First clone the GitHub repository:
 
 .. code-block:: console
 

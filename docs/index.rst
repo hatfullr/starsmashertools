@@ -5,8 +5,6 @@ Welcome to the starsmashertools documentation!
 
 Check out the :doc:`usage` section for more information, including instructions for installing the code.
 
-.. include:: ../README.rst
-
 Contents
 --------
 
