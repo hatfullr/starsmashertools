@@ -8,6 +8,12 @@ import fnmatch
 import collections
 import warnings
 
+def islink(path):
+    return os.path.islink(path)
+
+def getsize(path):
+    return os.path.getsize(path)
+
 #@profile
 def realpath(path):
     if starsmashertools.helpers.ssh.isRemote(path):

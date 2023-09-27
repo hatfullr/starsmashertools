@@ -13,30 +13,33 @@ class Unit(float, object):
     def __new__(self, value, *args, **kwargs):
         return float.__new__(self, value)
     
-    def __init__(self, value, label):
+    def __init__(self, value, label, base=['cm', 'g', 's']):
         starsmashertools.helpers.argumentenforcer.enforcetypes({
             'value' : [float],
             'label' : [str, Unit.Label],
         })
+
+        self.base = base
         
         if isinstance(label, str):
-            self.label = Unit.Label(label)
+            self.label = Unit.Label(label, self.base)
         else: self.label = label
         
         float.__init__(value)
 
     # Decide on units that give the cleanest value
-    def auto(self, threshold=100):
+    def auto(self, threshold=100, conversions=None):
         starsmashertools.helpers.argumentenforcer.enforcetypes({
             'threshold' : [float, int],
         })
         if threshold <= 0: raise ValueError("Argument 'threshold' must be > 0, not '%s'" % str(threshold))
         
         # Get all the available conversions
-        conversions = starsmashertools.preferences.get_default('Units', 'unit conversions')
+        if conversions is None:
+            conversions = starsmashertools.preferences.get_default('Units', 'unit conversions')
         if conversions is None: return self
 
-        base = self.get_base()
+        base = self.get_base(conversions=conversions)
         if float(base) < threshold: return base
 
         left, right = Unit.Label.split(self.label.long)
@@ -44,6 +47,7 @@ class Unit(float, object):
 
         arr = []
         for base_unit, conversion_dict in conversions.items():
+            if base_unit not in self.base: continue
             if base_unit in label:
                 for new_unit, value in conversion_dict.items():
                     arr += [[base_unit, new_unit, value]]
@@ -54,19 +58,20 @@ class Unit(float, object):
         for a in arr:
             old_unit, new_unit = a[0], a[1]
             b = copy.deepcopy(base)
-            b = b.convert(old_unit, new_unit)
+            b = b.convert(old_unit, new_unit, conversions=conversions)
             if float(b) < threshold: return b
         return self
         
     # Returns a factor to multiply with to do a unit conversion
     # If new_unit is None, then we are simply converting old_unit back to a base
     # unit ('cm', 'g', 's').
-    def get_conversion_factor(self, old_unit, new_unit=None):
+    def get_conversion_factor(self, old_unit, new_unit=None, conversions=None):
         starsmashertools.helpers.argumentenforcer.enforcetypes({
             'old_unit' : [str],
             'new_unit' : [str, type(None)],
         })
-        conversions = starsmashertools.preferences.get_default('Units', 'unit conversions', throw_error=True)
+        if conversions is None:
+            conversions = starsmashertools.preferences.get_default('Units', 'unit conversions', throw_error=True)
 
         expected_values = self.label.left + self.label.right
 
@@ -76,10 +81,11 @@ class Unit(float, object):
         starsmashertools.helpers.argumentenforcer.enforcevalues({
             'old_unit' : expected_values,
         })
-        
+
         ret_new_unit = None
         for base_unit, conversion_dict in conversions.items():
             if new_unit is None:
+                #if base_unit not in self.base: continue
                 # Here we simply convert back to a base unit
                 if old_unit not in conversion_dict.keys(): continue
                 factor = conversion_dict[old_unit]
@@ -89,11 +95,11 @@ class Unit(float, object):
                 if old_unit == base_unit and new_unit in conversion_dict.keys():
                     factor = 1. / conversion_dict[new_unit]
                     break
-                if old_unit in conversion_dict.keys() and new_unit == base_unit:
+                elif old_unit in conversion_dict.keys() and new_unit == base_unit:
                     factor = conversion_dict[old_unit]
                     break
         else: # If we didn't find the units in the conversions dict
-            raise ValueError("Failed to find conversion ['%s', '%s'] in the 'unit conversions' dict in preferences.py" % old_unit, new_unit)
+            raise ValueError("Failed to find conversion '%s' to '%s'" % (old_unit, new_unit))
 
 
         total_factor = 1.
@@ -109,31 +115,29 @@ class Unit(float, object):
 
     # Return a copy of this Unit converted into another Unit specified by
     # 'string'
-    def convert(self, old_unit, new_unit):
+    def convert(self, old_unit, new_unit, conversions=None):
         starsmashertools.helpers.argumentenforcer.enforcetypes({
             'old_unit' : [str],
             'new_unit' : [str],
         })
-        factor = self.get_conversion_factor(old_unit, new_unit)
+        factor = self.get_conversion_factor(old_unit, new_unit, conversions=conversions)
         return Unit(float(self) * factor,self.label.convert(old_unit, new_unit))
 
     # Returns a copy of this object in exclusively 'cm', 'g', and 's' units.
-    def get_base(self):
+    def get_base(self, conversions=None):
         ret = copy.deepcopy(self)
         for i, unit in enumerate(ret.label.left):
-            if unit in ['cm', 'g', 's']: continue
-            factor, new_unit = self.get_conversion_factor(unit)
+            factor, new_unit = self.get_conversion_factor(unit, conversions=conversions)
             ret *= factor
             ret.label.left[i] = new_unit
         for i, unit in enumerate(ret.label.right):
-            if unit in ['cm', 'g', 's']: continue
-            factor, new_unit = self.get_conversion_factor(unit)
+            factor, new_unit = self.get_conversion_factor(unit, conversions=conversions)
             ret *= factor
             ret.label.right[i] = new_unit
         return ret
 
     def __repr__(self):
-        string = self.__class__.__name__ % "(%g, %s)"
+        string = self.__class__.__name__ + "(%g, %s)"
         return string % (float(self), str(self.label))
     def __str__(self): return '%g %s' % (float(self), str(self.label))
 
@@ -279,7 +283,8 @@ class Unit(float, object):
         #       side. If we find enough of such symbols then we remove those
         #       symbols and insert 'erg' on the left-most side, 'erg * cm'.
 
-        def __init__(self, value):
+        def __init__(self, value, base=['cm','g','s']):
+            self.base = base
             super(Unit.Label, self).__init__()
             self.left = []
             self.right = []
@@ -295,9 +300,18 @@ class Unit(float, object):
             return lhs, rhs
 
         def check(self):
-            empty = self.long.replace('cm', '').replace('g','').replace('s','').replace('*','').replace('/','').replace('1','')
+            empty = self.long
+            symbols = self.base + ['*','/','1']
+            for symbol in symbols:
+                empty = empty.replace(symbol, '')
             if len(empty) > 0:
-                raise Exception("Unit.Label has a long form which contains characters other than 'cm', 'g', 's', '*', '/', and '1': '%s'" % self.long)
+                s = ["'%s'" % k for k in symbols]
+                if len(symbols) == 1: string = "'%s'" % s[0]
+                else:
+                    string = ", ".join(s[:-1])
+                    if len(symbols) > 2: string += ", "
+                    string += " and " + s[-1]
+                raise Exception("Unit.Label has a long form which contains characters other than %s: '%s'" % (string, self.long))
         
         @property
         def short(self):
@@ -365,7 +379,7 @@ class Unit(float, object):
             return ret
         
         def simplify(self):
-            for item in ['cm', 'g', 's']:
+            for item in self.base:
                 lc, rc = self.left.count(item), self.right.count(item)
                 while item in self.left and item in self.right:
                     self.left.remove(item)
@@ -406,7 +420,7 @@ class Unit(float, object):
         def organize(self):
             newleft = []
             newright = []
-            for item in ['cm', 'g', 's']:
+            for item in self.base:
                 if item in self.left:
                     newleft += [item]*self.left.count(item)
                 if item in self.right:
@@ -426,7 +440,9 @@ class Unit(float, object):
         def __mul__(self, other):
             starsmashertools.helpers.argumentenforcer.enforcetypes({'other' : [Unit.Label, int]})
             if isinstance(other, Unit.Label):
-                ret = Unit.Label("")
+                if self.base != other.base:
+                    raise Exception("Cannot combine Unit.Labels of different bases: '%s' and '%s'" % (str(self.base), str(other.base)))
+                ret = Unit.Label("", self.base)
                 ret.left = self.left + other.left
                 ret.right = self.right + other.right
             else:
@@ -443,7 +459,9 @@ class Unit(float, object):
         
         def __truediv__(self, other):
             starsmashertools.helpers.argumentenforcer.enforcetypes({'other' : [Unit.Label]})
-            ret = Unit.Label("")
+            if self.base != other.base:
+                raise Exception("Cannot combine Unit.Labels of different bases: '%s' and '%s'" % (str(self.base), str(other.base)))
+            ret = Unit.Label("", self.base)
             ret.left = self.left + other.right
             ret.right = self.right + other.left
             ret.organize()
@@ -456,8 +474,10 @@ class Unit(float, object):
             if isinstance(other, int) and other != 1:
                 raise Exception("When dividing an 'int' by a 'Unit.Label', the int must be equal to '1', not '%d'" % other)
             
-            ret = Unit.Label("")
+            ret = Unit.Label("", self.base)
             if isinstance(other, Unit.Label):
+                if self.base != other.base:
+                    raise Exception("Cannot combine Unit.Labels of different bases: '%s' and '%s'" % (str(self.base), str(other.base)))
                 ret.left = self.right + other.left
                 ret.right = self.left + other.right
             else:
@@ -480,7 +500,7 @@ class Unit(float, object):
                 ret = 1
                 for i in range(num): ret *= self
 
-                for item in ['cm', 'g', 's']:
+                for item in self.base:
                     if ((item in ret.left and denom > ret.left.count(item)) or
                         (item in ret.right and denom > ret.right.count(item))):
                         raise Exception("Cannot raise Unit.Label '%s' to the power of '%s'" % (str(self), str(value)))

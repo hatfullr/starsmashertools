@@ -136,7 +136,7 @@ class TestUnits(unittest.TestCase):
         
         u = u.get_base()
         self.assertAlmostEqual(float(u), 1)
-        self.assertAlmostEqual(u.label, 'cm/s')
+        self.assertEqual(u.label, 'cm/s')
 
         u = starsmashertools.lib.units.Unit(1.0, '')
         self.assertRaises(
@@ -144,6 +144,7 @@ class TestUnits(unittest.TestCase):
             u.convert,
             ('cm', 'km'),
         )
+        
         
 
     def test_units(self):

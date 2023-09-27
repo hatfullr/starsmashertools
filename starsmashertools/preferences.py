@@ -110,7 +110,10 @@ defaults = {
     },
     'PDCFile' : {
         'filename' : 'pdc.json.gz',
-    }
+    },
+    'starsmasherdir' : {
+        'compression method' : 'gz',
+    },
 }
 
 
