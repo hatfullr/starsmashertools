@@ -132,10 +132,12 @@ class Unit(float, object):
     def get_base(self, conversions=None):
         ret = copy.deepcopy(self)
         for i, unit in enumerate(ret.label.left):
+            if unit in self.base: continue
             factor, new_unit = self.get_conversion_factor(unit, conversions=conversions)
             ret *= factor
             ret.label.left[i] = new_unit
         for i, unit in enumerate(ret.label.right):
+            if unit in self.base: continue
             factor, new_unit = self.get_conversion_factor(unit, conversions=conversions)
             ret *= factor
             ret.label.right[i] = new_unit
