@@ -83,14 +83,14 @@ class CLI(object):
             self.navigate(self._mainmenu.identifier)
         else: quit()
         
-    def add_page(self, inputtype, contents, **kwargs):
-        return self._add_page(starsmashertools.bintools.page.Page(self, inputtype, contents, **kwargs))
+    def add_page(self, inputtypes, contents, **kwargs):
+        return self._add_page(starsmashertools.bintools.page.Page(self, inputtypes, contents, **kwargs))
 
-    def add_list(self, inputtype, **kwargs):
-        return self._add_page(starsmashertools.bintools.page.List(self, inputtype, **kwargs))
+    def add_list(self, inputtypes, **kwargs):
+        return self._add_page(starsmashertools.bintools.page.List(self, inputtypes, **kwargs))
 
-    def add_table(self, inputtype, **kwargs):
-        return self._add_page(starsmashertools.bintools.page.Table(self, inputtype, **kwargs))
+    def add_table(self, inputtypes, columns, **kwargs):
+        return self._add_page(starsmashertools.bintools.page.Table(self, inputtypes, columns, **kwargs))
 
     # Go to the page specified by the identifier
     def navigate(self, identifier):

@@ -178,11 +178,41 @@ class List(Page, object):
 
 
 class Table(Page, object):
-    def __init__(self, cli, inputtypes, columns=[], labels=[], **kwargs):
+    """Display a table of data in the terminal. The content given as input must
+    be either a list of columns or a callable function that takes no inputs and
+    returns a list of columns. Columns themselves should be lists, such that the
+    content appears as, e.g. ``[[0,1],[0,1],[2,3]]``, which would give a table
+    like:
+        ``0 0 2``
+        ``1 1 3``
+    The labels should also be either a list of lists or a callable function. You
+    can alternatively specify your columns as, e.g.
+    ``[[[0,1],[0,1],[2,3]],['col1','col2','col3']]``, where 'col1', 'col2', and
+    'col3' are the column labels:
+        ``col1 col2 col3``
+        ``   0    0    2``
+        ``   1    1    3``
+    Likewise, your columns function can return a similar object. Columns and
+    labels are evaluated at runtime during the show() function.
+    """
+    def __init__(self, cli, inputtypes, columns, labels=None, **kwargs):
+        self.columns, self.labels = self.parse_columns_and_labels(
+            columns,
+            labels=labels,
+        )
+        
         super(Table, self).__init__(cli, inputtypes, "", **kwargs)
 
-        self.labels = labels
-        self.columns = columns
+    def parse_columns_and_labels(self, columns, labels=None):
+        if callable(columns): return columns, labels
+        if (len(columns) == 2 and
+            isinstance(columns[0], list) and
+            isinstance(columns[1], list) and
+            isinstance(columns[0][0], list)):
+            if labels is not None:
+                raise ValueError("Keyword argument 'labels' must be 'None' when labels are provided in argument 'columns', but received: '%s'" % str(labels))
+            return columns[0], columns[1]
+        return columns, labels
 
     def get_column_widths(self, columns):
         # Determine column widths
@@ -198,9 +228,17 @@ class Table(Page, object):
         return widths
 
     def show(self, *args, **kwargs):
-        if self.labels:
-            if len(self.labels) != len(self.columns):
-                raise Exception("The number of labels and columns are mismatched")
+        if callable(self.columns):
+            self.columns, self.labels = self.parse_columns_and_labels(
+                self.columns(),
+                labels=self.labels if not callable(self.labels) else self.labels(),
+            )
+        if callable(self.labels): self.labels = self.labels()
+
+        if self.labels is None: self.labels = [""]*len(self.columns)
+        
+        if len(self.labels) != len(self.columns):
+            raise Exception("The number of labels and columns are mismatched")
         
         # Determine the contents
         v = starsmashertools.bintools.Style.get('characters', 'table vertical')
@@ -216,7 +254,7 @@ class Table(Page, object):
         fs = starsmashertools.bintools.Style.get('characters', 'table full separator')
         
         column_widths = self.get_column_widths(self.columns)
-
+        
         
         if self.labels:
             label_widths = self.get_column_widths(self.labels)
@@ -239,7 +277,7 @@ class Table(Page, object):
         max_col_len = 0
         column_formatters = []
         column_contents = []
-        for column, width in zip(self.columns, widths):
+        for column, width in zip(self.contents, widths):
             formatters = []
             to_use = []
             for element in column:
