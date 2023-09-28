@@ -154,6 +154,8 @@ def plot_wall_time():
     data_ymin = np.nanmin(y)
     data_xmax = np.nanmax(x)
     data_ymax = np.nanmax(y)
+
+    xlim = list(ax.get_xlim())
     
     if ylim[1] > len(filenames):
         # Try to fit a linear function of the most recent half of simulation
@@ -163,14 +165,13 @@ def plot_wall_time():
             'quadratic fit',
             #'cubic fit',
         ]
-        xlim = list(ax.get_xlim())
+        
         xmax = -np.inf
         for i, label in enumerate(labels):
             coef = np.polyfit(y[-num:], x[-num:], i + 1)
             poly1d_fn = np.poly1d(coef)
             _y = np.arange(ylim[1])
             _x = poly1d_fn(_y)
-            
             idx = _x >= xlim[0]
             if np.any(idx):
                 ax.plot(_x[idx], _y[idx], label=label, lw=0.5, zorder=-np.inf)
