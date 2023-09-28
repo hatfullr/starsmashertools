@@ -1,5 +1,4 @@
 import os
-import types
 import numpy as np
 
 defaults = {
@@ -25,6 +24,23 @@ defaults = {
             'children.sstools',
         ],
         'output files' : 'out*.sph',
+
+        # A list of available methods on your system can be found using
+        # Simulation.get_compression_methods()
+        'compression method' : 'gz',
+        # Files which are defined in the StarSmasher code and present in the
+        # simulation directory will be compressed, such as 'sph.eos' when neos=2
+        # for example. Others need to be added manually here.
+        'compress include' : [
+            'out*.sph',
+            'log*.sph',
+            'energy*.sph',
+            'col*.sph',
+            'restartrad.sph*',
+        ],
+        # Files you want to exclude from compression
+        'compress exclude' : [
+        ],
     },
     
     # 
@@ -110,9 +126,6 @@ defaults = {
     },
     'PDCFile' : {
         'filename' : 'pdc.json.gz',
-    },
-    'starsmasherdir' : {
-        'compression method' : 'gz',
     },
 }
 

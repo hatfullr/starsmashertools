@@ -131,19 +131,6 @@ def read_MESA(path):
     return obj
 """
 
-def getsize(path):
-    if starsmashertools.helpers.ssh.isRemote(path):
-        address, remote_path = starsmashertools.helpers.ssh.split_address(path)
-        result = starsmashertools.helpers.ssh.run_python(
-            address,
-            """
-import os
-print(os.path.getsize('%s'))
-            """ % remote_path,
-        )
-        return result
-    return os.path.getsize(path)
-
 
 # Check if 2 files are identical
 #@profile
@@ -154,23 +141,38 @@ def compare(file1, file2):
     # If they have the same path, then they are the same file
     if file1 == file2: return True
     
-    size1 = getsize(file1)
-    size2 = getsize(file2)
+    size1 = starsmashertools.helpers.path.getsize(file1)
+    size2 = starsmashertools.helpers.path.getsize(file2)
 
     if size1 == size2:
         return filecmp.cmp(file1, file2, shallow=False)
     return False
 
 
-# Return instances of the given phrase in the given file as a list of string
-# where each element is the contents of the file after the phrase appears, up to
-# the specified 'end', or the next instance of the phrase.
+
 @starsmashertools.helpers.argumentenforcer.enforcetypes
 def get_phrase(
         path : str,
         phrase : str,
         end : str = '\n',
 ):
+    """Return instances of the given phrase in the given file as a list of strings where each element is the contents of the file after the phrase appears, up to the specified `end`, or the next instance of the phrase.
+    
+    Parameters
+    ----------
+    path : str
+        The path to the file to read.
+    phrase : str
+        The phrase to search for in the file specified by `path`. Whatever is
+        between `phrase` and `end` will be returned.
+    end : str, default = '\n'
+        The ending to search for after finding `phrase`.
+
+    Returns
+    -------
+    str
+
+    """
     
     with open(path, 'r') as f:
         contents = f.read()
@@ -184,3 +186,21 @@ def get_phrase(
     
     return ret
     
+@starsmashertools.helpers.argumentenforcer.enforcetypes
+def sort_by_mtimes(
+        files : list
+):
+    """Sort the given files by their modification times.
+
+    Parameters
+    ----------
+    files : list
+        The list or tuple of files to sort.
+
+    Returns
+    -------
+    list
+    """
+    ret = copy.deepcopy(files)
+    ret.sort(key=lambda f: starsmashertools.helpers.path.getmtime(f))
+    return ret[::-1]

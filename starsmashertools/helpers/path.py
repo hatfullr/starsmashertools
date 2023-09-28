@@ -1,6 +1,7 @@
 # Path helper methods
 import os
 import starsmashertools.preferences as preferences
+import starsmashertools.helpers.argumentenforcer
 import glob
 import starsmashertools.helpers.ssh
 import numpy as np
@@ -9,10 +10,40 @@ import collections
 import warnings
 
 def islink(path):
+    if starsmashertools.helpers.ssh.isRemote(path):
+        raise NotImplementedError
     return os.path.islink(path)
 
 def getsize(path):
+    if starsmashertools.helpers.ssh.isRemote(path):
+        address, remote_path = starsmashertools.helpers.ssh.split_address(path)
+        result = starsmashertools.helpers.ssh.run_python(
+            address,
+            """
+import os
+print(os.path.getsize('%s'))
+            """ % remote_path,
+        )
+        return result
     return os.path.getsize(path)
+
+@starsmashertools.helpers.argumentenforcer.enforcetypes
+def get_directory_size(path : str):
+    """Returns the total size of the directory given by `path` in bytes
+    
+    Parameters
+    ----------
+    path : str
+        The path of the directory. If the path is not a valid directory, raises
+        a FileNotFoundError.
+    
+    Returns
+    -------
+    int
+    """
+    if not isdir(path): raise FileNotFoundError(path)
+    return sum(entry.stat().st_size for entry in scandir(path))
+    
 
 #@profile
 def realpath(path):
@@ -41,6 +72,11 @@ print(os.path.realpath(expanded))
     expanded = os.path.expandvars(os.path.expanduser(g))
     return os.path.realpath(expanded)
 
+def relpath(path, start=os.curdir):
+    if starsmashertools.helpers.ssh.isRemote(path):
+        raise NotImplementedError
+    return os.path.relpath(path, start=start)
+
 def isfile(path, isRemote=None):
     if isRemote is not None and not isRemote:
         return os.path.isfile(path)
@@ -56,9 +92,13 @@ def basename(path):
     return os.path.basename(path)
 
 def getmtime(path):
+    if starsmashertools.helpers.ssh.isRemote(path):
+        raise NotImplementedError
     return os.path.getmtime(path)
 
 def rename(path, newpath):
+    if starsmashertools.helpers.ssh.isRemote(path):
+        raise NotImplementedError
     return os.rename(path, newpath)
 
 def walk(directory):
@@ -74,8 +114,7 @@ def walk(directory):
 def remove(path):
     if starsmashertools.helpers.ssh.isRemote(path):
         raise NotImplementedError
-    else:
-        os.remove(path)
+    return os.remove(path)
 
 def join(*args):
     if len(args) == 1:
@@ -97,9 +136,13 @@ def dirname(path):
     return os.path.dirname(path)
 
 def isdir(path):
+    if starsmashertools.helpers.ssh.isRemote(path):
+        raise NotImplementedError
     return os.path.isdir(path)
 
 def scandir(path):
+    if starsmashertools.helpers.ssh.isRemote(path):
+        raise NotImplementedError
     return os.scandir(path)
 
 

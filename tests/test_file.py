@@ -2,7 +2,7 @@ import starsmashertools.helpers.file
 import unittest
 import os
 
-curdir = os.path.dirname(__file__)
+curdir = os.getcwd()
 
 class TestFile(unittest.TestCase):
     def test_get_phrase(self):

@@ -1,8 +1,22 @@
 # String helper methods
 import re
 import starsmashertools.helpers.file
+import starsmashertools.helpers.argumentenforcer
 
-def parse(string):
+@starsmashertools.helpers.argumentenforcer.enforcetypes
+def list_to_string(
+        _list : list | tuple,
+        join : str = 'and',
+        format : str = "'%s'",
+):
+    if len(_list) == 1: return format % str(_list[0])
+    string = ", ".join(_list[:-1])
+    if len(_list) > 2: string += ","
+    string += " " + join + " " + _list[-1]
+    return string
+
+@starsmashertools.helpers.argumentenforcer.enforcetypes
+def parse(string : str):
     _string = string.strip().lower()
     # Try to parse in order of ascending data complexity
     if _string in ['true', 'false']: return bool(_string)
@@ -27,7 +41,8 @@ def parse(string):
 # is a string which can be passed to, e.g. 'eval', to assign a
 # variable of the same name with the corresponding value from the
 # Fortran code.
-def fortran_to_python(string):
+@starsmashertools.helpers.argumentenforcer.enforcetypes
+def fortran_to_python(string : str):
     # https://regex101.com/r/wfkDtt/1
     float_match = re.compile(r"[0-9]+\.?[0-9]*[eEdD][\+|\-]?[0-9]{1,}")
     # https://regex101.com/r/0jubyV/1
@@ -47,7 +62,11 @@ def fortran_to_python(string):
 # types in the string, without the "*" modifier. For example, 'real'
 # instead of 'real*8'. The result of this function will still return
 # 'real*8' instead of 'real' if such a case is found.
-def get_fortran_variable_types(string, data_types):
+@starsmashertools.helpers.argumentenforcer.enforcetypes
+def get_fortran_variable_types(
+        string : str,
+        data_types : list | tuple,
+):
     current_type = None
     result = {}
     for line in string.split("\n"):

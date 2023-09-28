@@ -336,7 +336,7 @@ class Reader(object):
             
             # Check for corrupted files
             
-            filesize = starsmashertools.helpers.file.getsize(filename)
+            filesize = starsmashertools.helpers.path.getsize(filename)
             
             ntot_check = do(
                 buffer=buffer,
