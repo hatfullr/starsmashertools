@@ -82,6 +82,11 @@ class Unit(float, object):
             'old_unit' : expected_values,
         })
 
+        # Converting base to base unit, but the old unit is already a base unit.
+        # Then we don't need to do any conversion!
+        if new_unit is None and old_unit in self.base:
+            raise ValueError("Cannot get the conversion factor for '%s' to base units %s because it is already a base unit" % (old_unit, starsmashertools.helpers.string.list_to_string(self.base)))
+
         ret_new_unit = None
         for base_unit, conversion_dict in conversions.items():
             if new_unit is None:
