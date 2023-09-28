@@ -13,3 +13,4 @@ Contents
    Home <self>
    usage
    api
+   cliprograms
