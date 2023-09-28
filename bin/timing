@@ -14,10 +14,13 @@ import collections
 import os
 import numpy as np
 import warnings
+import copy
 
 ################################################################################
 ################################## Back end ####################################
 ################################################################################
+
+MIN_PLOT_APPARENT_SIZE = (0.25, 0.25)
 
 # Gets set in the front end
 simulation = None
@@ -111,6 +114,7 @@ def get_time_table():
 def plot_wall_time():
     global cli
     import matplotlib.pyplot as plt
+    import matplotlib.transforms
     import matplotlib.dates
     import datetime
 
@@ -128,8 +132,8 @@ def plot_wall_time():
     ylim = [0, simulation['tf'] / dtout]
     x = datenums
     y = np.arange(len(filenames))
-    
-    
+
+
         
     fig, ax = plt.subplots()
     twinax = ax.twinx()
@@ -143,8 +147,13 @@ def plot_wall_time():
 
     xfmt = matplotlib.dates.DateFormatter('%Y-%m-%d')
     ax.xaxis.set_major_formatter(xfmt)
-
+    
     ax.plot(x, y)
+
+    data_xmin = np.nanmin(x)
+    data_ymin = np.nanmin(y)
+    data_xmax = np.nanmax(x)
+    data_ymax = np.nanmax(y)
     
     if ylim[1] > len(filenames):
         # Try to fit a linear function of the most recent half of simulation
@@ -154,7 +163,7 @@ def plot_wall_time():
             'quadratic fit',
             #'cubic fit',
         ]
-        xlim = ax.get_xlim()
+        xlim = list(ax.get_xlim())
         xmax = -np.inf
         for i, label in enumerate(labels):
             coef = np.polyfit(y[-num:], x[-num:], i + 1)
@@ -168,12 +177,20 @@ def plot_wall_time():
                 xmax = max(xmax, np.nanmax(_x[idx]))
         cli.write("The function fits shown were created using the most recent half of the data.", flush=True)
         ax.legend()
-        if np.isfinite(xmax):
-            # Don't extend the x limits by more than 1 year
-            x_total_max = min(times) + 3600*24*365.25
-            x_total_max = datetime.datetime.fromtimestamp(x_total_max)
-            x_total_max = matplotlib.dates.date2num(x_total_max)
-            ax.set_xlim(None, min(xmax, x_total_max))
+
+    # Don't display such a large time range that the data cannot be seen
+    # clearly. Make sure the data spans at least some fraction of the axes
+    fig.canvas.draw()
+    bbox = matplotlib.transforms.Bbox(
+        [[data_xmin, data_ymin], [data_xmax, data_ymax]],
+    )
+    bbox = bbox.transformed(ax.transData).transformed(ax.transAxes.inverted())
+    if bbox.width < MIN_PLOT_APPARENT_SIZE[0]:
+        xlim[1] = data_xmin + (data_xmax - data_xmin) / MIN_PLOT_APPARENT_SIZE[0]
+    if bbox.height < MIN_PLOT_APPARENT_SIZE[1]:
+        ylim[1] = data_ymin + (data_ymax - data_ymin) / MIN_PLOT_APPARENT_SIZE[1]
+    ax.set_xlim(xlim)
+    ax.set_ylim(ylim)
 
     y2_max = ylim[1] * dtout * simulation.units['t']
     y2_max = y2_max.auto()
@@ -185,8 +202,8 @@ def plot_wall_time():
     plt.tight_layout()
 
     if cli.args['batch']:
-        cli.write("Saving plot as '%s'." % cli.args['wall_image'], flush=True)
-        plt.savefig(cli.args['wall_image'])
+        cli.write("Saving plot as '%s'." % cli.args['plot_name'], flush=True)
+        plt.savefig(cli.args['plot_name'])
         return ""
     
     warnings.filterwarnings('error')
@@ -197,8 +214,8 @@ def plot_wall_time():
         if 'Matplotlib is currently using agg, which is a non-GUI backend, so cannot show the figure.' != str(e):
             raise
         cli.write("Displaying plot failed: '%s'" % str(e), flush=True)
-        cli.write("Saving plot as '%s'." % cli.args['wall_image'], flush=True)
-        plt.savefig(cli.args['wall_image'])
+        cli.write("Saving plot as '%s'." % cli.args['plot_name'], flush=True)
+        plt.savefig(cli.args['plot_name'])
 
     return ""
     
@@ -221,7 +238,11 @@ newline = starsmashertools.bintools.Style.get('characters', 'newline')
 starsmashertools.bintools.Style.set('formatting', 'footer', newline)
 
 valid_plots = collections.OrderedDict()
-valid_plots['wall'] = plot_wall_time
+valid_plots['wall time plot'] = {
+    'function' : plot_wall_time,
+    'default savename' : 'walltime.png',
+    'cli name' : 'wall',
+}
 
 
 cli = starsmashertools.bintools.cli.CLI(
@@ -259,18 +280,17 @@ cli.parser.add_argument(
     '-p',
     '--plot',
     nargs='?',
-    choices=valid_plots.keys(),
+    choices=[val['cli name'] for val in valid_plots.values()],
     type=str,
     required=False,
     help="Creates a plot of the given type",
 )
 
 cli.parser.add_argument(
-    '--wall-image',
+    '--plot-name',
     nargs='?',
     type=str,
     required=False,
-    default='walltime.png',
     metavar='filename',
     help="The name of the image that will be saved when plotting wall time data while in batch mode ('-b') or when option '--plot' is given."
 )
@@ -316,7 +336,12 @@ cli.set_mainmenu(mainmenu)
 #    timetable.show(skip=True)
 
 if cli.args['plot']:
-    valid_plots[cli.args['plot']]()
+    for key, val in valid_plots.items():
+        if val['cli name'] == cli.args['plot']:
+            val['function']()
+            break
+    else:
+        raise Exception("Unrecognized plot name '%s'" % cli.args['plot'])
 
 if cli.args['batch'] or cli.args['plot']:# or cli.args['total']:
     quit()

@@ -7,11 +7,8 @@ import copy
 
 
 
-class Unit(float, object):
+class Unit(object):
     exception_message = "Operation '%s' is disallowed on 'Unit' type objects. Please convert to 'float' first using, e.g., 'float(unit)'."
-    
-    def __new__(self, value, *args, **kwargs):
-        return float.__new__(self, value)
     
     def __init__(self, value, label, base=['cm', 'g', 's']):
         starsmashertools.helpers.argumentenforcer.enforcetypes({
@@ -24,8 +21,8 @@ class Unit(float, object):
         if isinstance(label, str):
             self.label = Unit.Label(label, self.base)
         else: self.label = label
-        
-        float.__init__(value)
+        self.value = value
+        super(Unit, self).__init__()
 
     # Decide on units that give the cleanest value
     def auto(self, threshold=100, conversions=None):
@@ -145,12 +142,12 @@ class Unit(float, object):
 
     def __repr__(self):
         string = self.__class__.__name__ + "(%g, %s)"
-        return string % (float(self), str(self.label))
-    def __str__(self): return '%g %s' % (float(self), str(self.label))
+        return string % (self.value, str(self.label))
+    def __str__(self): return '%g %s' % (self.value, str(self.label))
 
     def __eq__(self, other):
         starsmashertools.helpers.argumentenforcer.enforcetypes({'other' : [Unit]})
-        return super(Unit, self).__eq__(other) and self.label == other.label
+        return self.value == other.value and self.label == other.label
 
     def __reduce__(self):
         # https://docs.python.org/3/library/pickle.html#object.__reduce__
@@ -158,31 +155,35 @@ class Unit(float, object):
     def __reduce_ex__(self, *args, **kwargs):
         return self.__reduce__()
 
+    def __float__(self, *args, **kwargs):
+        return self.value.__float__(*args, **kwargs)
+    def __int__(self, *args, **kwargs):
+        ret = self.value.__int__(*args, **kwargs)
+        if ret != self.value:
+            raise Exception("Cannot convert Unit with value %g to integer because its value would not be preserved" % self.value)
+        return ret
+
     # self * other = self.__mul__(other)
     def __mul__(self, other):
         starsmashertools.helpers.argumentenforcer.enforcetypes({'other' : [float, int, Unit]})
         if isinstance(other, Unit):
-            return Unit(float(self) * float(other), self.label * other.label)
-        return Unit(float(self) * other, self.label)
-
-    # other * self = self.__rmul__(other) if other doesn't have __mul__
-    def __rmul__(self, other):
-        starsmashertools.helpers.argumentenforcer.enforcetypes({'other' : [float, int, Unit]})
-        return self.__mul__(other)
+            return Unit(self.value * other.value, self.label * other.label)
+        return Unit(self.value * other, self.label)
+    __rmul__ = __mul__
 
     # self / other = self.__truediv__(other)
     def __truediv__(self, other):
         starsmashertools.helpers.argumentenforcer.enforcetypes({'other' : [float, int, Unit]})
         if isinstance(other, Unit):
-            return Unit(float(self) / float(other), self.label / other.label)
-        return Unit(float(self) / other, self.label)
+            return Unit(self.value / other.value, self.label / other.label)
+        return Unit(self.value / other, self.label)
 
     # other / self = self.__rtruediv__(other) if other doesn't have __truediv__
     def __rtruediv__(self, other):
         starsmashertools.helpers.argumentenforcer.enforcetypes({'other' : [float, int, Unit]})
         if isinstance(other, Unit):
-            return Unit(float(other) / float(self), other.label / self.label)
-        return Unit(other / float(self), 1 / self.label)
+            return Unit(other.value / self.value, other.label / self.label)
+        return Unit(other / self.value, 1 / self.label)
     
 
     
@@ -191,26 +192,26 @@ class Unit(float, object):
         starsmashertools.helpers.argumentenforcer.enforcetypes({'other' : [Unit]})
         if self.label != other.label:
             raise Exception("Adding Units can only be done when they have the same Labels.")
-        return Unit(float(self) + float(other), self.label)
+        return Unit(self.value + other.value, self.label)
     def __radd__(self, other):
         starsmashertools.helpers.argumentenforcer.enforcetypes({'other' : [Unit]})
         if self.label != other.label:
             raise Exception("Adding Units can only be done when they have the same Labels.")
-        return Unit(float(other) + float(self), other.label)
+        return Unit(other.value + self.value, self.label)
     def __sub__(self, other):
         starsmashertools.helpers.argumentenforcer.enforcetypes({'other' : [Unit]})
         if self.label != other.label:
             raise Exception("Subtracting Units can only be done when they have the same Labels.")
-        return Unit(float(self) - float(other), self.label)
+        return Unit(self.value - other.value, self.label)
     def __rsub__(self, other):
         starsmashertools.helpers.argumentenforcer.enforcetypes({'other' : [Unit]})
         if self.label != other.label:
             raise Exception("Subtracting Units can only be done when they have the same Labels.")
-        return Unit(float(other) - float(self), other.label)
+        return Unit(other.value - self.value, self.label)
 
     def __pow__(self, value):
         starsmashertools.helpers.argumentenforcer.enforcetypes({'value' : [float, int]})
-        return Unit(float(self)**value, self.label**value)
+        return Unit(self.value**value, self.label**value)
     
     # Outright disallow the following magic methods
     def __abs__(self, *args, **kwargs):
