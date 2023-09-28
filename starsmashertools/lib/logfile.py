@@ -69,7 +69,7 @@ class LogFile(object):
             size = f.tell()
             c = 1
             while last_file is None:
-                f.seek(size - 1048*c, 0)
+                f.seek(max(0, size - 1048*c))
                 c += 1
                 content = f.read(int(1048 * 1.5))
                 if ' duout: writing file ' in content:
@@ -136,7 +136,7 @@ class LogFile(object):
         with starsmashertools.helpers.file.open(self.path, 'r') as f:
             f.seek(0, 2)
             size = f.tell()
-            f.seek(size - 10480)
+            f.seek(max(0, size - 10480))
             content = f.read()
 
         i0 = content.rindex('time=') + len('time=')
