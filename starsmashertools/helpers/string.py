@@ -10,9 +10,9 @@ def list_to_string(
         format : str = "'%s'",
 ):
     if len(_list) == 1: return format % str(_list[0])
-    string = ", ".join(_list[:-1])
+    string = ", ".join(format % s for s in _list[:-1])
     if len(_list) > 2: string += ","
-    string += " " + join + " " + _list[-1]
+    string += " " + join + " " + (format % _list[-1])
     return string
 
 @starsmashertools.helpers.argumentenforcer.enforcetypes
