@@ -118,7 +118,6 @@ def plot_wall_time():
     import matplotlib.dates
     import datetime
 
-    simulation_outputs = []
     simulation_times = []
     # Try the log files first, for efficiency
     for logfile in simulation.get_logfiles():
@@ -127,62 +126,48 @@ def plot_wall_time():
             startfile = logfile.get_first_out_file()
             stopfile = logfile.get_last_out_file()
         except starsmashertools.lib.logfile.LogFile.PhraseNotFoundError:
+            # Skip log files that produced no output files
             continue
 
         startfile = starsmashertools.helpers.path.join(
             simulation.directory,
             startfile,
         )
+        if not starsmashertools.helpers.path.isfile(startfile):
+            raise FileNotFoundError(startfile)
         stopfile = starsmashertools.helpers.path.join(
             simulation.directory,
             stopfile,
         )
-
-        print(startfile, stopfile)
-        
-        if not starsmashertools.helpers.path.isfile(startfile):
-            raise FileNotFoundError(startfile)
         if not starsmashertools.helpers.path.isfile(stopfile):
             raise FileNotFoundError(stopfile)
-        
-        startoutput = starsmashertools.lib.output.Output(startfile, simulation)
-        stopoutput = starsmashertools.lib.output.Output(stopfile, simulation)
 
+
+        startoutput = starsmashertools.lib.output.Output(startfile, simulation)
         startoutput.read(return_headers=True, return_data=False)
         start = startoutput['t']
         
-        if startoutput == stopoutput and startoutput not in simulation_outputs:
-            simulation_outputs += [startoutput]
+        # Check for log files where only 1 output file was produced
+        if startfile == stopfile:
+            nfiles = 1
             simulation_times += [start]
-        else:
+        else:            
+            stopoutput = starsmashertools.lib.output.Output(stopfile, simulation)
             stopoutput.read(return_headers=True, return_data=False)
             stop = stopoutput['t']
+        
             nfiles = int((stop - start) / dtout)
-            if nfiles == 0: continue
-
+            if nfiles == 0:
+                raise Exception("This should never be possible")
+        
             simulation_times += np.linspace(start, stop, nfiles).tolist()
-    quit()
-    #filenames = simulation.get_outputfiles()
-    #times = []
-    #for filename in filenames:
-    #    times += [get_file_creation_time(filename)]
-
-    # We only need to read the output headers
-    #simulation_times = []
-    times = []
-    responsible = []
-    for output in simulation.get_output_iterator(return_headers=True, return_data=False):
-        responsible += [os.path.basename(output.path)]
-        times += [get_file_creation_time(output.path)]
-        #simulation_times += [output['t']]
     simulation_times = np.asarray(simulation_times, dtype=float)
-    #simulation_times *= simulation.units['t']
+    simulation_times *= simulation.units['t']
     
-    print(len(times))
-    print(len(simulation_times))
-    print(responsible)
-    print(sorted(simulation_times))
-    quit()
+    times = []
+    for output in simulation.get_output_iterator(return_headers=True, return_data=False):
+        times += [get_file_creation_time(output.path)]
+
     
     dates = [datetime.datetime.fromtimestamp(time) for time in times]
     datenums = matplotlib.dates.date2num(dates)
