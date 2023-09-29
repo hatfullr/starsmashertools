@@ -170,39 +170,13 @@ class LogFile(object):
 
     def get_last_out_file(self):
         string = ' duout: writing file '
-        read_size = 10480
-        with starsmashertools.helpers.file.open(self.path, 'r') as f:
-            f.seek(0, 2)
-            size = f.tell()
-            nchunks = int(size / read_size) + 1
-            pos = max(0, size - read_size)
-            diff = 0
-            content = ""
-            i = 0
-            while True:
-                # Move the head to the new position
-                f.seek(pos)
-                
-                # Add file contents to content
-                content = f.read(min(size, read_size + diff)) + content
-                
-                # Check for string in the content
-                if string in content:
-                    i0 = content.rindex(string) + len(string)
-                    i1 = i0 + content[i0:].index('at t=')
-                    return content[i0:i1]
-                
-                # If we reached the end of the file, break
-                if pos == 0: break
-                
-                # Move the head position up the file
-                diff = pos - read_size # Can be < 0 only near end of reading
-                pos = max(0, diff)
-                
-                # Discard old content that we don't need to check anymore
-                if i > 0: content = content[:-read_size]
-                i += 1
 
+        f = starsmashertools.helpers.file.ReversedTextFile(self.path)
+        for line in f:
+            if string in line:
+                i0 = line.rindex(string) + len(string)
+                i1 = i0 + line[i0:].index('at t=')
+                return line[i0:i1]
         raise LogFile.PhraseNotFoundError(string)
 
     class PhraseNotFoundError(Exception): pass

@@ -26,7 +26,24 @@ class TestFile(unittest.TestCase):
         self.assertEqual(result[2], '01')
         self.assertEqual(result[3], '6789')
 
-
+    def test_reversed_textfile(self):
+        expected = """0123456789
+test4test9
+01234M6789
+012345test
+01test6789
+"""
+        expected = expected.split("\n")
+        
+        f = starsmashertools.helpers.file.ReversedTextFile(
+                os.path.join('data', 'testfile'),
+        )
+        
+        for i, line in enumerate(f):
+            if line:
+                self.assertEqual(expected[len(expected) - i - 1], line)
+        
+        
 if __name__ == "__main__":
     unittest.main()
 

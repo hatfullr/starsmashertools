@@ -9,13 +9,14 @@ import filecmp
 import numpy as np
 import contextlib
 import copy
+import io
 
 fortran_comment_characters = ['c','C','!','*']
 
 downloaded_files = []
 
-@contextlib.contextmanager
-def open(path, mode, **kwargs):
+
+def get_file(path, mode):
     path = starsmashertools.helpers.path.realpath(path)
     if starsmashertools.helpers.ssh.isRemote(path):
         # Shucks. We'll have to copy the contents to the local machine
@@ -34,15 +35,16 @@ def open(path, mode, **kwargs):
 
         print("Downloaded '%s' as '%s'" % (path, tfile.name))
         downloaded_files += [tfile.name]
+        return tfile.name
+    return path
 
-        f = builtins.open(tfile.name, mode, **kwargs)
-    else:
-        f = builtins.open(path, mode, **kwargs)
-    
-    try:
-        yield f
-    finally:
-        f.close()
+
+@contextlib.contextmanager
+def open(path, mode, **kwargs):
+    path = get_file(path, mode)
+    f = builtins.open(path, mode, **kwargs)
+    try: yield f
+    finally: f.close()
 
 
 
@@ -204,3 +206,78 @@ def sort_by_mtimes(
     ret = copy.deepcopy(files)
     ret.sort(key=lambda f: starsmashertools.helpers.path.getmtime(f))
     return ret[::-1]
+
+
+
+
+
+
+
+
+class ReversedTextFile(object):
+    def __init__(self, filename):
+        self.filename = filename
+        self._file = None
+        self.file_size = None
+
+        self._position = None
+        self.status = 'idle'
+        
+    def __iter__(self):
+        self._start()
+        return self
+
+    def __next__(self):
+        # End of the iteration
+        if self.status == 'finished':
+            raise StopIteration
+        return self._get_line()
+
+    def _start(self):
+        # Start of the iteration
+        path = get_file(self.filename, 'r')
+        self._file = builtins.open(path, 'r')
+        self._file.seek(0, 2)
+        self.file_size = self._file.tell()
+        self.status = 'active'
+
+    def _stop(self):
+        self.status = 'finished'
+        self._file.close()
+
+    def _get_line(self):
+        # Get the current position in the file
+        pos = self._file.tell()
+        
+        # Stop the iteration and return None if we are at the beginning of
+        # the file
+        if pos == 0:
+            self._stop()
+            return
+        
+        line = ""
+        for i in range(self.file_size):
+            # Read one character backwards in the file
+            self._file.seek(pos - 1)
+            item = self._file.read(1)
+
+            # If we read a newline then we are at the end of the current line
+            if item == '\n':
+                # Set the position such that the next time we try to read we
+                # will start at the end of the next line
+                self._file.seek(max(0, pos - 1))
+                break
+
+            # Add the character we read to the line
+            line = item + line
+
+            # Move the read position back by one
+            pos -= 1
+            
+            # If we reached the "end" of the file, stop iteration
+            if pos <= 0:
+                self._stop()
+                break
+        
+        return line
+        
