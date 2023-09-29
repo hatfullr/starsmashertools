@@ -135,9 +135,9 @@ def plot_wall_time():
     datenums = matplotlib.dates.date2num(dates)
 
     
-    dtout = simulation['dtout']
+    #dtout = simulation['dtout']
+
     
-    ylim = [0, simulation['tf'] / dtout]
     x = datenums
     #y = np.arange(len(filenames))
     y = simulation_times
@@ -151,7 +151,11 @@ def plot_wall_time():
     )
     y *= factor
 
-
+    ylim = [
+        min(y),
+        max(max(y, simulation['tf'] * simulation.units['t'] * factor)),
+    ]
+    #ylim = [0, simulation['tf'] / dtout]
     
 
         
@@ -179,7 +183,7 @@ def plot_wall_time():
 
     xlim = list(ax.get_xlim())
     
-    if ylim[1] > len(filenames):
+    if ylim[1] > max(y):
         # Try to fit a linear function of the most recent half of simulation
         num = int(len(x) * 0.5)
         labels = [
