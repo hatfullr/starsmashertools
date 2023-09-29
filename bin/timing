@@ -160,7 +160,9 @@ def plot_wall_time():
             for a in arr.tolist():
                 if a not in simulation_times: simulation_times += [a]
     simulation_times = np.asarray(sorted(simulation_times), dtype=float)
-    
+
+    print(simulation_times, flush=True)
+    quit()
     
     times = []
     for output in simulation.get_output_iterator(return_headers=True, return_data=False):
