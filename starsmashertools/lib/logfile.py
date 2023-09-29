@@ -137,8 +137,11 @@ class LogFile(object):
             size = f.tell()
             f.seek(max(0, size - 10480))
             content = f.read()
-
-        i0 = content.rindex('time=') + len('time=')
+        try:
+            i0 = content.rindex('time=') + len('time=')
+        except ValueError as e:
+            if 'substring not found' not in str(e): raise
+            raise LogFile.PhraseNotFoundError('time=')
         i1 = i0 + content[i0:].index('\n')
         return float(content[i0:i1])
         
@@ -147,10 +150,13 @@ class LogFile(object):
             f.seek(len(self.header))
             for line in f:
                 if 'time=' in line:
-                    i0 = line.index('time=') + len('time=')
+                    try:
+                        i0 = line.index('time=') + len('time=')
+                    except ValueError as e:
+                        if 'substring not found' not in str(e): raise
+                        raise LogFile.PhraseNotFoundError('time=')
                     i1 = i0 + line[i0:].index('\n')
                     return float(line[i0:i1])
     
 
-    class PhraseNotFoundError(Exception):
-        pass
+    class PhraseNotFoundError(Exception): pass

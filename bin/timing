@@ -129,10 +129,12 @@ def plot_wall_time():
     for logfile in simulation.get_logfiles():
         try:
             dtout = float(logfile.get('dtout=').strip().split()[0])
+            start = logfile.get_start_time()
+            stop = logfile.get_stop_time()
         except starsmashertools.lib.logfile.LogFile.PhraseNotFoundError:
             continue
-        start = logfile.get_start_time()
-        stop = logfile.get_stop_time()
+
+            
 
         nfiles = int((stop - start) / dtout)
 
