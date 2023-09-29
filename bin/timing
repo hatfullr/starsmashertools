@@ -117,14 +117,8 @@ def plot_wall_time():
     import matplotlib.transforms
     import matplotlib.dates
     import datetime
-    import starsmashertools.lib.output
-    import starsmashertools.helpers.midpoint
 
     simulation_times = []
-    filenames = simulation.get_output_iterator().filenames
-    file_basenames = [starsmashertools.helpers.path.basename(f) for f in filenames]
-    outputs = [starsmashertools.lib.output.Output(filename, simulation) for filename in filenames]
-    m = starsmashertools.helpers.midpoint.Midpoint(outputs)
     # Try the log files first, for efficiency
     for logfile in simulation.get_logfiles():
         try:
@@ -133,37 +127,11 @@ def plot_wall_time():
             stop = logfile.get_stop_time()
         except starsmashertools.lib.logfile.LogFile.PhraseNotFoundError:
             continue
-
-            
-
-        nfiles = int((stop - start) / dtout)
-
-        print(start, stop, np.linspace(start, stop, nfiles))
-        #quit()
-
-        """
-        # Locate the files that correspond with the start and stop times
-        m.set_criteria(
-            lambda output: output['t'] < start,
-            lambda output: output['t'] == start,
-            lambda output: output['t'] > start,
-        )
-        startfile = m.get()
-
-        m.set_criteria(
-            lambda output: output['t'] < stop,
-            lambda output: output['t'] == stop,
-            lambda output: output['t'] > stop,
-        )
-        stopfile = m.get()
-        """
-
-        #start_index = outputs.index(startfile)
-        #stop_index = outputs.index(stopfile)
-
         
-        #simulation_times += [
-    quit()
+        nfiles = int((stop - start) / dtout)
+        if nfiles == 0: continue
+
+        simulation_times += np.linspace(start, stop, nfiles).tolist()
 
     #filenames = simulation.get_outputfiles()
     #times = []
@@ -171,15 +139,18 @@ def plot_wall_time():
     #    times += [get_file_creation_time(filename)]
 
     # We only need to read the output headers
-    simulation_times = []
+    #simulation_times = []
     times = []
     for output in simulation.get_output_iterator(return_headers=True, return_data=False):
         times += [get_file_creation_time(output.path)]
-        simulation_times += [output['t']]
+        #simulation_times += [output['t']]
     simulation_times = np.asarray(simulation_times, dtype=float)
     #simulation_times *= simulation.units['t']
     
-
+    print(len(times))
+    print(len(simulation_times))
+    quit()
+    
     dates = [datetime.datetime.fromtimestamp(time) for time in times]
     datenums = matplotlib.dates.date2num(dates)
 
