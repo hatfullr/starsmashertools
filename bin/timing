@@ -112,6 +112,7 @@ def get_time_table():
     return [logcolumn, outcolumn, fraccolumn, totalcolumn], labels
 
 def plot_wall_time():
+    # This function contains a whole lot of pain.
     global simulation, cli
     import matplotlib.pyplot as plt
     import matplotlib.transforms
