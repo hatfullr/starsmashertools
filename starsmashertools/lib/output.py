@@ -121,12 +121,12 @@ class Output(dict, object):
         
         header, data = None, None
         if return_headers and return_data:
-            header, data = obj
+            data, header = obj
         elif not return_headers and return_data:
             data = obj
         elif return_headers and not return_data:
             header = obj
-
+        
         if header is not None:
             for key, val in header.items():
                 self[key] = val
@@ -346,11 +346,15 @@ class Reader(object):
                 strides=8,
             )[0]
             if ntot != ntot_check:
-                f.close()
                 raise Reader.CorruptedFileError(filename)
 
+            if return_headers:
+                new_header = {}
+                for name in header[0].dtype.names:
+                    new_header[name] = np.array(header[name])[0]
+                header = new_header
+            
             if return_headers and not return_data:
-                f.close()
                 return header
 
             # There are 'ntot' particles to read
@@ -366,11 +370,10 @@ class Reader(object):
         new_data = {}
         for name in data[0].dtype.names:
             new_data[name] = np.array(data[name])
-        new_header = {}
-        for name in header[0].dtype.names:
-            new_header[name] = np.array(header[name])[0]
-        if return_headers: return new_data, new_header
-        else: return new_data
+        data = new_data
+        
+        if return_headers: return data, header
+        else: return data
             
         
     # This method returns instructions on how to read the data files
