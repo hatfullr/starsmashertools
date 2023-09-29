@@ -123,7 +123,7 @@ def plot_wall_time():
     simulation_times = []
     filenames = simulation.get_output_iterator().filenames
     file_basenames = [starsmashertools.helpers.path.basename(f) for f in filenames]
-    outputs = [starsmashertools.lib.output.Output(filename, self) for filename in filenames]
+    outputs = [starsmashertools.lib.output.Output(filename, simulation) for filename in filenames]
     m = starsmashertools.helpers.midpoint.Midpoint(outputs)
     # Try the log files first, for efficiency
     for logfile in simulation.get_logfiles():
