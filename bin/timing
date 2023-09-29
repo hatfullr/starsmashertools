@@ -134,7 +134,7 @@ def plot_wall_time():
         nfiles = int((stop - start) / dtout)
 
         print(np.linspace(start, stop, nfiles))
-        quit()
+        #quit()
 
         """
         # Locate the files that correspond with the start and stop times
@@ -158,7 +158,7 @@ def plot_wall_time():
 
         
         #simulation_times += [
-        
+    quit()
 
     #filenames = simulation.get_outputfiles()
     #times = []
