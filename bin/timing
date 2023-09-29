@@ -163,7 +163,7 @@ def plot_wall_time():
                 if a not in simulation_times:
                     simulation_times += [a]
     #print("printing simulation times", flush=True)
-    #print(simulation_times, flush=True)
+    print(simulation_times, flush=True)
     simulation_times = np.asarray(sorted(simulation_times), dtype=float)
 
     
@@ -179,7 +179,7 @@ def plot_wall_time():
     #y = np.arange(len(filenames))
     y = simulation_times
 
-    #print(y)
+    print(y)
     #quit()
     
     # Convert the y units
