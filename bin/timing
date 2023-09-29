@@ -117,6 +117,48 @@ def plot_wall_time():
     import matplotlib.transforms
     import matplotlib.dates
     import datetime
+    import starsmashertools.lib.output
+    import starsmashertools.helpers.midpoint
+
+    simulation_times = []
+    filenames = simulation.get_output_iterator().filenames
+    file_basenames = [starsmashertools.helpers.path.basename(f) for f in filenames]
+    outputs = [starsmashertools.lib.output.Output(filename, self) for filename in filenames]
+    m = starsmashertools.helpers.midpoint.Midpoint(outputs)
+    # Try the log files first, for efficiency
+    for logfile in simulation.get_logfiles():
+        dtout = float(logfile.get('dtout=').strip().split()[0])
+        start = logfile.get_start_time()
+        stop = logfile.get_stop_time()
+
+        nfiles = int((stop - start) / dtout)
+
+        print(np.linspace(start, stop, nfiles))
+        quit()
+
+        """
+        # Locate the files that correspond with the start and stop times
+        m.set_criteria(
+            lambda output: output['t'] < start,
+            lambda output: output['t'] == start,
+            lambda output: output['t'] > start,
+        )
+        startfile = m.get()
+
+        m.set_criteria(
+            lambda output: output['t'] < stop,
+            lambda output: output['t'] == stop,
+            lambda output: output['t'] > stop,
+        )
+        stopfile = m.get()
+        """
+
+        #start_index = outputs.index(startfile)
+        #stop_index = outputs.index(stopfile)
+
+        
+        #simulation_times += [
+        
 
     #filenames = simulation.get_outputfiles()
     #times = []

@@ -43,8 +43,7 @@ class LogFile(object):
     def get(self, phrase):
         if phrase not in self.header:
             raise LogFile.PhraseNotFoundError("Failed to find '%s' in '%s'" % (phrase, self.path))
-        i0 = self.header.index(phrase)
-        i0 += len(phrase)
+        i0 = self.header.index(phrase) + len(phrase)
         i1 = i0 + self.header[i0:].index('\n')
         return self.header[i0:i1]
 
