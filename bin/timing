@@ -123,6 +123,10 @@ def plot_wall_time():
     for filename in filenames:
         times += [get_file_creation_time(filename)]
 
+    for output in simulation.get_output_iterator():
+        print(output['t'])
+    quit()
+
     dates = [datetime.datetime.fromtimestamp(time) for time in times]
     datenums = matplotlib.dates.date2num(dates)
 
@@ -141,7 +145,7 @@ def plot_wall_time():
     ax.xaxis.grid(True, alpha=0.2)
     ax.margins(0, 0)
     twinax.margins(0, 0)
-    ax.set_ylabel("# output files")
+    ax.set_ylabel("output file indices")
     
     fig.autofmt_xdate() # Make pretty tick labels
 
