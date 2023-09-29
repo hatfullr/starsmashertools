@@ -173,6 +173,7 @@ class LogFile(object):
 
         f = starsmashertools.helpers.file.ReversedTextFile(self.path)
         for line in f:
+            print(line)
             if string in line:
                 i0 = line.rindex(string) + len(string)
                 i1 = i0 + line[i0:].index('at t=')
