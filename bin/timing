@@ -149,12 +149,14 @@ def plot_wall_time():
         stopoutput.read(return_headers=True, return_data=False)
         start = startoutput['t']
         stop = stopoutput['t']
+
+        print(start, stop)
         
         nfiles = int((stop - start) / dtout)
         if nfiles == 0: continue
 
         simulation_times += np.linspace(start, stop, nfiles).tolist()
-
+    quit()
     #filenames = simulation.get_outputfiles()
     #times = []
     #for filename in filenames:
