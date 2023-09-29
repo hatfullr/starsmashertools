@@ -141,7 +141,9 @@ def plot_wall_time():
     # We only need to read the output headers
     #simulation_times = []
     times = []
+    responsible = []
     for output in simulation.get_output_iterator(return_headers=True, return_data=False):
+        responsible += [os.path.basename(output.path)]
         times += [get_file_creation_time(output.path)]
         #simulation_times += [output['t']]
     simulation_times = np.asarray(simulation_times, dtype=float)
@@ -149,7 +151,7 @@ def plot_wall_time():
     
     print(len(times))
     print(len(simulation_times))
-    print(times)
+    print(responsible)
     print(simulation_times)
     quit()
     
