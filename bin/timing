@@ -122,7 +122,7 @@ def plot_wall_time():
     # Try the log files first, for efficiency
     for logfile in simulation.get_logfiles():
         try:
-            dtout = float(logfile.get('dtout=').strip().split()[0])
+            dtout = round(float(logfile.get('dtout=').strip().split()[0]), 4)
             startfile = logfile.get_first_out_file()
             stopfile = logfile.get_last_out_file()
         except starsmashertools.lib.logfile.LogFile.PhraseNotFoundError:
@@ -147,9 +147,11 @@ def plot_wall_time():
         startoutput.read(return_headers=True, return_data=False)
         start = startoutput['t']
         
+        start = round(start, 4)
+        
         # Check for log files where only 1 output file was produced
         if startfile == stopfile:
-            simulation_times += [start]
+            if start not in simulation_times: simulation_times += [start]
         else:            
             stopoutput = starsmashertools.lib.output.Output(stopfile, simulation)
             stopoutput.read(return_headers=True, return_data=False)
@@ -158,10 +160,8 @@ def plot_wall_time():
             #nfiles = int((round(stop, 4) - round(start, 4)) / round(dtout, 4))
             #if nfiles == 0:
             #    raise Exception("This should never be possible: start = '%f', stop = '%f', dtout = '%f', nfiles = '%f'" % (start, stop, dtout, (stop - start) / dtout))
-
-            start = round(start, 4)
+            
             stop = round(stop, 4)
-            dtout = round(dtout, 4)
             arr = np.arange(start, stop + dtout, dtout)
             #print(start, stop, dtout, arr)
             for a in arr.tolist():
