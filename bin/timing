@@ -148,14 +148,14 @@ def plot_wall_time():
         startoutput = starsmashertools.lib.output.Output(startfile, simulation)
         stopoutput = starsmashertools.lib.output.Output(stopfile, simulation)
 
+        startoutput.read(return_headers=True, return_data=False)
+        start = startoutput['t']
         
         if startoutput == stopoutput and startoutput not in simulation_outputs:
             simulation_outputs += [startoutput]
             simulation_times += [start]
         else:
-            startoutput.read(return_headers=True, return_data=False)
             stopoutput.read(return_headers=True, return_data=False)
-            start = startoutput['t']
             stop = stopoutput['t']
             nfiles = int((stop - start) / dtout)
             if nfiles == 0: continue
