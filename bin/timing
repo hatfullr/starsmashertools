@@ -162,7 +162,7 @@ def plot_wall_time():
         
             simulation_times += np.linspace(start, stop, nfiles).tolist()
     simulation_times = np.asarray(simulation_times, dtype=float)
-    simulation_times *= simulation.units['t']
+    simulation_times *= simulation.units['t'].value
     
     times = []
     for output in simulation.get_output_iterator(return_headers=True, return_data=False):
