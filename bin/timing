@@ -159,8 +159,10 @@ def plot_wall_time():
             #if nfiles == 0:
             #    raise Exception("This should never be possible: start = '%f', stop = '%f', dtout = '%f', nfiles = '%f'" % (start, stop, dtout, (stop - start) / dtout))
 
-            print(start, stop, dtout)
-            simulation_times += np.arange(start, stop, dtout).tolist()
+            
+            arr = np.arange(start, stop, dtout)
+            print(start, stop, dtout, arr)
+            simulation_times += arr.tolist()
     simulation_times = np.asarray(sorted(simulation_times), dtype=float)
     
     
