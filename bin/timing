@@ -149,6 +149,8 @@ def plot_wall_time():
     
     print(len(times))
     print(len(simulation_times))
+    print(times)
+    print(simulation_times)
     quit()
     
     dates = [datetime.datetime.fromtimestamp(time) for time in times]
