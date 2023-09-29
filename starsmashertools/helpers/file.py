@@ -221,6 +221,7 @@ def reverse_readline(path, buf_size=8192):
         
         # My own modifications start here
         if file_size < 1e6: # If the file is less than 1 MB
+            print("Doing short read")
             # Probably faster to just read everything and reverse it
             fh.seek(0)
             buffer = fh.read().decode(encoding='utf-8')
