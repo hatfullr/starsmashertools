@@ -161,7 +161,7 @@ class LogFile(object):
                 if string in line:
                     i0 = line.index(string) + len(string)
                     i1 = i0 + line[i0:].index('at t=')
-                    return line[i0:i1]
+                    return line[i0:i1].strip()
         raise LogFile.PhraseNotFoundError(string)
 
     def get_last_out_file(self):
@@ -171,7 +171,7 @@ class LogFile(object):
             if string in line:
                 i0 = line.rindex(string) + len(string)
                 i1 = i0 + line[i0:].index('at t=')
-                return line[i0:i1]
+                return line[i0:i1].strip()
         raise LogFile.PhraseNotFoundError(string)
 
     class PhraseNotFoundError(Exception): pass
