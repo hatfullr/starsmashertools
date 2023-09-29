@@ -166,7 +166,6 @@ def plot_wall_time():
     for output in simulation.get_output_iterator(return_headers=True, return_data=False):
         times += [get_file_creation_time(output.path)]
 
-    simulation_times *= simulation.units['t'].value
     
     dates = [datetime.datetime.fromtimestamp(time) for time in times]
     datenums = matplotlib.dates.date2num(dates)
