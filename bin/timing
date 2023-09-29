@@ -175,6 +175,8 @@ def plot_wall_time():
     y = simulation_times
 
     # Convert the y units
+    print(np.amax(y), simulation.units['t'])
+    quit()
     maxval = np.amax(y) * simulation.units['t']
     unit = maxval.auto()
     factor = simulation.units['t'].get_conversion_factor(
