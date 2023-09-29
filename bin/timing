@@ -118,10 +118,10 @@ def plot_wall_time():
     import matplotlib.dates
     import datetime
 
-    filenames = simulation.get_outputfiles()
-    times = []
-    for filename in filenames:
-        times += [get_file_creation_time(filename)]
+    #filenames = simulation.get_outputfiles()
+    #times = []
+    #for filename in filenames:
+    #    times += [get_file_creation_time(filename)]
 
     # We only need to read the output headers
     simulation_times = []
