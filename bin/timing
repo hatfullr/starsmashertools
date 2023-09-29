@@ -152,7 +152,7 @@ def plot_wall_time():
     y *= factor
 
 
-    ax.set_ylabel("simulation time [%s]" % unit.label)
+    
 
         
     fig, ax = plt.subplots()
@@ -162,6 +162,8 @@ def plot_wall_time():
     ax.margins(0, 0)
     #twinax.margins(0, 0)
     #ax.set_ylabel("output file indices")
+
+    ax.set_ylabel("simulation time [%s]" % unit.label)
     
     fig.autofmt_xdate() # Make pretty tick labels
 
