@@ -348,7 +348,6 @@ class Simulation(object):
             start : int = 0,
             stop : int = -1,
             step : int = 1,
-            headers_only : bool = False,
             **kwargs
     ):
         """Given string arguments, return data from each of this simulation's
@@ -376,15 +375,8 @@ class Simulation(object):
             Keywords that are passed to the `OutputIterator`
 
         """
-        filenames = self.get_outputfiles()
-
-        stop = filenames.index(filenames[stop])
+        filenames = self.get_outputfiles()[start:stop:step]
         
-        filenames = np.asarray(filenames, dtype=object)
-        
-        indices = np.arange(start, stop, step)
-        filenames = filenames[indices].tolist()
-
         # Now that we have all the file names, we can create an output iterator
         # from them
         return starsmashertools.lib.output.OutputIterator(filenames, self, **kwargs)

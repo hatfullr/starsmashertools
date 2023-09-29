@@ -126,6 +126,7 @@ def plot_wall_time():
     # We only need to read the output headers
     simulation_times = []
     for output in simulation.get_output_iterator(return_headers=True, return_data=False):
+        times += [get_file_creation_time(output.path)]
         simulation_times += [output['t']]
     simulation_times = np.asarray(simulation_times, dtype=float)
     #simulation_times *= simulation.units['t']
@@ -151,11 +152,12 @@ def plot_wall_time():
     )
     y *= factor
 
-    print(simulation['tf'] * simulation.units['t'].value * factor)
     ylim = [
         min(y),
         max(max(y), simulation['tf'] * simulation.units['t'].value * factor),
     ]
+
+
     #ylim = [0, simulation['tf'] / dtout]
     
 
