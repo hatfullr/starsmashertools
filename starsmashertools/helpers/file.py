@@ -266,7 +266,7 @@ class ReversedTextFile(object):
                 # Set the position such that the next time we try to read we
                 # will start at the end of the next line
                 self._file.seek(max(0, pos - 1))
-                break
+                return line
 
             # Add the character we read to the line
             line = item + line
@@ -277,7 +277,6 @@ class ReversedTextFile(object):
             # If we reached the "end" of the file, stop iteration
             if pos <= 0:
                 self._stop()
-                break
-        
-        return line
+                return line
+        raise Exception("This should never happen")
         
