@@ -345,23 +345,25 @@ class Simulation(object):
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     def get_output_iterator(
             self,
-            start : int = 0,
-            stop : int = -1,
-            step : int = 1,
+            start = None,
+            stop = None,
+            step = None,
             **kwargs
     ):
-        """Given string arguments, return data from each of this simulation's
-        output files.
+        """
+        Return an `OutputIterator` containing all the `Output` object present in
+        this simulation. The `start`, `stop`, and `step` arguments are used with
+        `slice(start, stop, step)`.
         
         Parameters
         ----------
-        start : int, default = 0
+        start : int, None, default = None
             The index in the list of all output files to begin the iterator at.
 
-        stop : int, default = -1
+        stop : int, None, default = None
             The index in the list of all output files to stop the iterator at.
 
-        step : int, default = 1
+        step : int, None, default = None
             How many output files to skip on each iterator step.
         
         Returns
@@ -375,7 +377,8 @@ class Simulation(object):
             Keywords that are passed to the `OutputIterator`
 
         """
-        filenames = self.get_outputfiles()[start:stop:step]
+        s = slice(start, stop, step)
+        filenames = self.get_outputfiles()[s]
         
         # Now that we have all the file names, we can create an output iterator
         # from them
