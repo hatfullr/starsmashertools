@@ -156,7 +156,7 @@ def plot_wall_time():
             stopoutput.read(return_headers=True, return_data=False)
             stop = stopoutput['t']
         
-            nfiles = int((stop - start) / dtout)
+            nfiles = int((round(stop, 4) - round(start, 4)) / round(dtout, 4))
             if nfiles == 0:
                 raise Exception("This should never be possible: start = '%f', stop = '%f', dtout = '%f', nfiles = '%f'" % (start, stop, dtout, (stop - start) / dtout))
         
