@@ -154,7 +154,7 @@ def plot_wall_time():
     print(simulation['tf'] * simulation.units['t'].value * factor)
     ylim = [
         min(y),
-        max(max(y, simulation['tf'] * simulation.units['t'].value * factor)),
+        max(max(y), simulation['tf'] * simulation.units['t'].value * factor),
     ]
     #ylim = [0, simulation['tf'] / dtout]
     
