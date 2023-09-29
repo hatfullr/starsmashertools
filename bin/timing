@@ -162,8 +162,8 @@ def plot_wall_time():
             for a in np.arange(start, stop + dtout, dtout):
                 if a not in simulation_times:
                     simulation_times += [a]
-    print("printing simulation times", flush=True)
-    print(simulation_times, flush=True)
+    #print("printing simulation times", flush=True)
+    #print(simulation_times, flush=True)
     simulation_times = np.asarray(sorted(simulation_times), dtype=float)
 
     
@@ -179,8 +179,8 @@ def plot_wall_time():
     #y = np.arange(len(filenames))
     y = simulation_times
 
-    print(y)
-    quit()
+    #print(y)
+    #quit()
     
     # Convert the y units
     print(np.amax(y), simulation.units['t'])
