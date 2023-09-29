@@ -125,6 +125,7 @@ def plot_wall_time():
 
     # We only need to read the output headers
     simulation_times = []
+    times = []
     for output in simulation.get_output_iterator(return_headers=True, return_data=False):
         times += [get_file_creation_time(output.path)]
         simulation_times += [output['t']]
