@@ -158,7 +158,7 @@ def plot_wall_time():
         
             nfiles = int((stop - start) / dtout)
             if nfiles == 0:
-                raise Exception("This should never be possible: start = '%g', stop = '%g', dtout = '%g', nfiles = '%g'" % (start, stop, dtout, (stop - start) / dtout))
+                raise Exception("This should never be possible: start = '%f', stop = '%f', dtout = '%f', nfiles = '%f'" % (start, stop, dtout, (stop - start) / dtout))
         
             simulation_times += np.linspace(start, stop, nfiles).tolist()
     simulation_times = np.asarray(simulation_times, dtype=float)
