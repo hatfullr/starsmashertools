@@ -12,7 +12,7 @@ class Unit(object):
     
     def __init__(self, value, label, base=['cm', 'g', 's']):
         starsmashertools.helpers.argumentenforcer.enforcetypes({
-            'value' : [float],
+            'value' : [float, int],
             'label' : [str, Unit.Label],
         })
 
@@ -117,12 +117,50 @@ class Unit(object):
 
     # Return a copy of this Unit converted into another Unit specified by
     # 'string'
-    def convert(self, old_unit, new_unit, conversions=None):
+    def convert(self, old_unit, new_unit, **kwargs):
+        """Return a copy of this Unit with each instance of a specific unit
+        converted into another unit.
+
+        Parameters
+        ----------
+        old_unit : str, Unit.Label
+            The label to change. If it is a `Unit.Label` then it is converted to
+            a `str`.
+        new_unit : str, Unit.Label
+            The label to change to. If it is a `Unit.Label` then it is converted
+            to a `str`.
+
+        Other Parameters
+        ----------------
+        **kwargs
+            Extra keywords to pass to Unit.get_conversion_factor
+
+        Returns
+        -------
+        Unit
+            The newly converted unit.
+
+        Examples
+        --------
+        This example converts 1 cm/s to 1 km/hr::
+        
+            >>> unit = Unit(1, 'cm/s')
+            >>> unit = unit.convert('cm', 'km')
+            >>> unit = unit.convert('s', 'hr')
+            Unit(0.036, km/hr)
+
+
+        See Also
+        --------
+        get_conversion_factor
+        """
         starsmashertools.helpers.argumentenforcer.enforcetypes({
-            'old_unit' : [str],
-            'new_unit' : [str],
+            'old_unit' : [str, Unit.Label],
+            'new_unit' : [str, Unit.Label],
         })
-        factor = self.get_conversion_factor(old_unit, new_unit, conversions=conversions)
+        if isinstance(old_unit, Unit.Label): old_unit = str(old_unit)
+        if isinstance(new_unit, Unit.Label): new_unit = str(new_unit)
+        factor = self.get_conversion_factor(old_unit, new_unit, **kwargs)
         return Unit(float(self) * factor,self.label.convert(old_unit, new_unit))
 
     # Returns a copy of this object in exclusively 'cm', 'g', and 's' units.

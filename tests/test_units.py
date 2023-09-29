@@ -131,7 +131,7 @@ class TestUnits(unittest.TestCase):
 
         u = starsmashertools.lib.units.Unit(1.0, 'cm/s')
         u = u.convert('cm', 'km')
-        u = u.convert('s', 'mins')
+        u = u.convert('s', 'min')
         self.assertAlmostEqual(float(u), 1e-5 * 60)
         
         u = u.get_base()

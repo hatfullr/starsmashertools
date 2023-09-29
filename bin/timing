@@ -193,12 +193,19 @@ def plot_wall_time():
     ax.set_xlim(xlim)
     ax.set_ylim(ylim)
 
+    first = simulation.get_output(0)
+    
+    y2_min = first['t'] * simulation.units['t']
     y2_max = ylim[1] * dtout * simulation.units['t']
     y2_max = y2_max.auto()
+    y2_min = y2_min.convert(y2_min.label, y2_max.label)
     twinax.set_ylabel("simulation time (%s)" % y2_max.label)
+
+    twinax.set_ylim(float(y2_min), float(y2_max))
     
     ax.set_ylim(ylim)
-    twinax.set_ylim(0, float(y2_max))
+
+    
 
     plt.tight_layout()
 

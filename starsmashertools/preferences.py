@@ -74,10 +74,10 @@ defaults = {
                 'km' : 1e5,
             },
             's' : {
-                'mins': 60,
-                'hrs' : 3600,
-                'days': 3600*24,
-                'yrs' : 3600*24*365.25,
+                'min' : 60,
+                'hr'  : 3600,
+                'day' : 3600*24,
+                'yr'  : 3600*24*365.25,
             },
         },
         # Add items to this list to create additional abbreviations for unit
