@@ -123,9 +123,13 @@ def plot_wall_time():
     for filename in filenames:
         times += [get_file_creation_time(filename)]
 
+    # We only need to read the output headers
+    simulation_times = []
     for output in simulation.get_output_iterator(return_headers=True, return_data=False):
-        print(output['t'])
-    quit()
+        simulation_times += [output['t']]
+    simulation_times = np.asarray(simulation_times, dtype=float)
+    #simulation_times *= simulation.units['t']
+    
 
     dates = [datetime.datetime.fromtimestamp(time) for time in times]
     datenums = matplotlib.dates.date2num(dates)
@@ -135,17 +139,29 @@ def plot_wall_time():
     
     ylim = [0, simulation['tf'] / dtout]
     x = datenums
-    y = np.arange(len(filenames))
+    #y = np.arange(len(filenames))
+    y = simulation_times
 
+    # Convert the y units
+    maxval = np.amax(y) * simulation.units['t']
+    unit = maxval.auto()
+    factor = simulation.units['t'].get_conversion_factor(
+        simulation.units['t'].label,
+        unit.label,
+    )
+    y *= factor
+
+
+    ax.set_ylabel("simulation time [%s]" % unit.label)
 
         
     fig, ax = plt.subplots()
-    twinax = ax.twinx()
-    twinax.yaxis.tick_right()
+    #twinax = ax.twinx()
+    #twinax.yaxis.tick_right()
     ax.xaxis.grid(True, alpha=0.2)
     ax.margins(0, 0)
-    twinax.margins(0, 0)
-    ax.set_ylabel("output file indices")
+    #twinax.margins(0, 0)
+    #ax.set_ylabel("output file indices")
     
     fig.autofmt_xdate() # Make pretty tick labels
 
@@ -197,22 +213,24 @@ def plot_wall_time():
     ax.set_xlim(xlim)
     ax.set_ylim(ylim)
 
-    first = simulation.get_output(0)
     
-    y2_min = first['t'] * simulation.units['t']
-    y2_max = ylim[1] * dtout * simulation.units['t']
-    y2_max = y2_max.auto()
-    print(first['t'], y2_min, y2_max)
-    y2_min = y2_min.convert(y2_min.label, y2_max.label)
-    print(y2_min, y2_max)
-    twinax.set_ylabel("simulation time (%s)" % y2_max.label)
 
-    if y2_min > y2_max:
-        print(y2_min, y2_max)
-        quit()
-    twinax.set_ylim(float(y2_min), float(y2_max))
+    #first = simulation.get_output(0)
+    #
+    #y2_min = first['t'] * simulation.units['t']
+    #y2_max = ylim[1] * dtout * simulation.units['t']
+    #y2_max = y2_max.auto()
+    #print(first['t'], y2_min, y2_max)
+    #y2_min = y2_min.convert(y2_min.label, y2_max.label)
+    #print(y2_min, y2_max)
+    #twinax.set_ylabel("simulation time (%s)" % y2_max.label)
+    #
+    #if y2_min > y2_max:
+    #    print(y2_min, y2_max)
+    #    quit()
+    #twinax.set_ylim(float(y2_min), float(y2_max))
     
-    ax.set_ylim(ylim)
+    #ax.set_ylim(ylim)
 
     
 

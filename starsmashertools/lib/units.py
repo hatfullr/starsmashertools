@@ -64,9 +64,11 @@ class Unit(object):
     # unit ('cm', 'g', 's').
     def get_conversion_factor(self, old_unit, new_unit=None, conversions=None):
         starsmashertools.helpers.argumentenforcer.enforcetypes({
-            'old_unit' : [str],
-            'new_unit' : [str, type(None)],
+            'old_unit' : [str, Unit.Label],
+            'new_unit' : [str, Unit.Label, type(None)],
         })
+        if isinstance(old_unit, Unit.Label): old_unit = str(old_unit)
+        if isinstance(new_unit, Unit.Label): new_unit = str(new_unit)
         if conversions is None:
             conversions = starsmashertools.preferences.get_default('Units', 'unit conversions', throw_error=True)
 
