@@ -137,6 +137,7 @@ class Output(dict, object):
 
         if return_headers: self._isRead['header'] = True
         if return_data: self._isRead['data'] = True
+        print(self._isRead)
 
     def from_cache(self, key):
         if key in self._cache.keys():
