@@ -127,13 +127,16 @@ def plot_wall_time():
     m = starsmashertools.helpers.midpoint.Midpoint(outputs)
     # Try the log files first, for efficiency
     for logfile in simulation.get_logfiles():
-        dtout = float(logfile.get('dtout=').strip().split()[0])
+        try:
+            dtout = float(logfile.get('dtout=').strip().split()[0])
+        except starsmashertools.lib.logfile.LogFile.PhraseNotFoundError:
+            continue
         start = logfile.get_start_time()
         stop = logfile.get_stop_time()
 
         nfiles = int((stop - start) / dtout)
 
-        print(np.linspace(start, stop, nfiles))
+        print(start, stop, np.linspace(start, stop, nfiles))
         #quit()
 
         """
