@@ -127,6 +127,7 @@ def plot_wall_time():
             stopfile = logfile.get_last_out_file()
         except starsmashertools.lib.logfile.LogFile.PhraseNotFoundError:
             # Skip log files that produced no output files
+            print("Skip 1")
             continue
 
         dtout = round(dtout, 4)
@@ -143,6 +144,7 @@ def plot_wall_time():
         )
         # This can happen when log files have been downloaded but not all output files
         if not starsmashertools.helpers.path.isfile(stopfile):
+            print("Skip 2")
             continue
 
         print(startfile)
