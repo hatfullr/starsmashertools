@@ -377,9 +377,10 @@ class Simulation(object):
 
         """
         filenames = self.get_outputfiles()
-        filenames = np.asarray(filenames, dtype=object)
 
         stop = filenames.index(filenames[stop])
+        
+        filenames = np.asarray(filenames, dtype=object)
         
         indices = np.arange(start, stop, step)
         filenames = filenames[indices].tolist()
