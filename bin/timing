@@ -177,6 +177,10 @@ def plot_wall_time():
     for output in simulation.get_output_iterator(return_headers=True, return_data=False):
         times += [get_file_creation_time(output.path)]
 
+
+    print(times)
+    print(simulation_times)
+    print(len(times), simulation_times.shape)
     
     dates = [datetime.datetime.fromtimestamp(time) for time in times]
     datenums = matplotlib.dates.date2num(dates)
@@ -187,7 +191,7 @@ def plot_wall_time():
 
     #print(y)
     #quit()
-    
+
     # Convert the y units
     #print(np.amax(y), simulation.units['t'])
     #quit()
@@ -199,9 +203,11 @@ def plot_wall_time():
     )
     y *= factor
 
+    
+
     ylim = [
         min(y),
-        max(max(y), simulation['tf'] * simulation.units['t'].value * factor),
+        max(np.amax(y), simulation['tf'] * simulation.units['t'].value * factor),
     ]
 
 
