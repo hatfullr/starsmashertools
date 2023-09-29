@@ -177,10 +177,9 @@ def plot_wall_time():
     for output in simulation.get_output_iterator(return_headers=True, return_data=False):
         times += [get_file_creation_time(output.path)]
 
+    if len(times) > len(simulation_times): times = times[:len(simulation_times)]
+    elif len(simulation_times) > len(times): simulation_times = simulation_times[:len(times)]
 
-    print(times)
-    print(simulation_times)
-    print(len(times), simulation_times.shape)
     
     dates = [datetime.datetime.fromtimestamp(time) for time in times]
     datenums = matplotlib.dates.date2num(dates)
