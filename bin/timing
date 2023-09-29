@@ -162,12 +162,16 @@ def plot_wall_time():
         
             simulation_times += np.linspace(start, stop, nfiles).tolist()
     simulation_times = np.asarray(simulation_times, dtype=float)
-    simulation_times *= simulation.units['t'].value
+    
     
     times = []
     for output in simulation.get_output_iterator(return_headers=True, return_data=False):
         times += [get_file_creation_time(output.path)]
 
+    print(simulation.get_outputfiles())
+    print(simulation_times)
+
+    simulation_times *= simulation.units['t'].value
     
     dates = [datetime.datetime.fromtimestamp(time) for time in times]
     datenums = matplotlib.dates.date2num(dates)
