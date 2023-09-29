@@ -199,6 +199,7 @@ def plot_wall_time():
     y2_max = ylim[1] * dtout * simulation.units['t']
     y2_max = y2_max.auto()
     y2_min = y2_min.convert(y2_min.label, y2_max.label)
+    print(y2_min, y2_max)
     twinax.set_ylabel("simulation time (%s)" % y2_max.label)
 
     if y2_min > y2_max:
