@@ -176,6 +176,7 @@ def plot_wall_time():
 
     print(simulation.get_outputfiles())
     print(simulation_times)
+    print(len(times), len(simulation_times))
 
     simulation_times *= simulation.units['t'].value
     
