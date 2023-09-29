@@ -133,18 +133,14 @@ class LogFile(object):
     # Find the time that this log file stopped at
     def get_stop_time(self):
         string = 'time='
-        with starsmashertools.helpers.file.open(self.path, 'r') as f:
-            f.seek(0, 2)
-            size = f.tell()
-            f.seek(max(0, size - 10480))
-            content = f.read()
+        f = starsmashertools.helpers.file.reverse_readline(self.path)
+        for line in f:
+            if string in line:
+                i0 = line.rindex(string) + len(string)
+                i1 = i0 + line[i0:].index('\n')
+                return float(line[i0:i1])
+        raise LogFile.PhraseNotFoundError(string)
 
-        if string not in content:
-            raise LogFile.PhraseNotFoundError(string)
-        
-        i0 = content.rindex(string) + len(string)
-        i1 = i0 + content[i0:].index('\n')
-        return float(content[i0:i1])
         
     def get_start_time(self):
         string = 'time='
@@ -170,7 +166,6 @@ class LogFile(object):
 
     def get_last_out_file(self):
         string = ' duout: writing file '
-        print("Reading '%s'" % self.path)
         f = starsmashertools.helpers.file.reverse_readline(self.path)
         for line in f:
             if string in line:

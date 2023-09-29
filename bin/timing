@@ -150,10 +150,12 @@ def plot_wall_time():
         start = startoutput['t']
         stop = stopoutput['t']
 
-        print(start, stop)
+        #print(start, stop)
         
         nfiles = int((stop - start) / dtout)
         if nfiles == 0: continue
+
+        print(nfiles)
 
         simulation_times += np.linspace(start, stop, nfiles).tolist()
     quit()

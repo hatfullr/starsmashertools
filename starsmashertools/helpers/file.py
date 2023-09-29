@@ -213,7 +213,6 @@ def sort_by_mtimes(
 def reverse_readline(path, buf_size=8192):
     """A generator that returns the lines of a file in reverse order
     https://stackoverflow.com/a/23646049/4954083"""
-    actual_size = starsmashertools.helpers.path.getsize(path)
     with open(path, 'rb') as fh:
         segment = None
         offset = 0
@@ -221,9 +220,10 @@ def reverse_readline(path, buf_size=8192):
         file_size = remaining_size = fh.tell()
         
         # My own modifications start here
-        print(float(actual_size) / 1e6, "MB")
-        if file_size < 150 * 1e6: # If the file is less than 5 MB
-            print("Doing short read")
+        # I'm not sure this actually makes it any faster
+        """
+        actual_size = starsmashertools.helpers.path.getsize(path)
+        if actual_size < 5 * 1e6: # If the file is less than 5 MB
             # Probably faster to just read everything and reverse it
             fh.seek(0)
             buffer = fh.read().decode(encoding='utf-8')
@@ -244,7 +244,7 @@ def reverse_readline(path, buf_size=8192):
             if segment is not None:
                 yield segment
             return
-            
+        """
         # My own modifications end here
         
         while remaining_size > 0:
