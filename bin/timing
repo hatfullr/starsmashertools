@@ -142,8 +142,8 @@ def plot_wall_time():
         if not starsmashertools.helpers.path.isfile(stopfile):
             raise FileNotFoundError(stopfile)
         
-        startoutput = starsmashertools.lib.output.Output(startfile)
-        stopoutput = starsmashertools.lib.output.Output(stopfile)
+        startoutput = starsmashertools.lib.output.Output(startfile, simulation)
+        stopoutput = starsmashertools.lib.output.Output(stopfile, simulation)
 
         startoutput.read(return_headers=True, return_data=False)
         stopoutput.read(return_headers=True, return_data=False)
