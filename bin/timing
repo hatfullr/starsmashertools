@@ -123,11 +123,14 @@ def plot_wall_time():
     for logfile in simulation.get_logfiles():
         try:
             dtout = float(logfile.get('dtout=').strip().split()[0])
+        except starsmashertools.lib.logfile.LogFile.PhraseNotFoundError:
+            dtout = simulation['dtout']
+            
+        try:
             startfile = logfile.get_first_out_file()
             stopfile = logfile.get_last_out_file()
         except starsmashertools.lib.logfile.LogFile.PhraseNotFoundError:
             # Skip log files that produced no output files
-            print("Skip 1")
             continue
 
         dtout = round(dtout, 4)
@@ -144,10 +147,10 @@ def plot_wall_time():
         )
         # This can happen when log files have been downloaded but not all output files
         if not starsmashertools.helpers.path.isfile(stopfile):
-            print("Skip 2")
+            #print("Skip 2")
             continue
 
-        print(startfile)
+        #print(startfile)
 
         startoutput = starsmashertools.lib.output.Output(startfile, simulation)
         startoutput.read(return_headers=True, return_data=False)
@@ -166,7 +169,7 @@ def plot_wall_time():
                 if a not in simulation_times:
                     simulation_times += [a]
     #print("printing simulation times", flush=True)
-    print(simulation_times, flush=True)
+    #print(simulation_times, flush=True)
     simulation_times = np.asarray(sorted(simulation_times), dtype=float)
 
     
@@ -182,7 +185,7 @@ def plot_wall_time():
     #y = np.arange(len(filenames))
     y = simulation_times
 
-    print(y)
+    #print(y)
     #quit()
     
     # Convert the y units
