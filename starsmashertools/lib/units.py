@@ -186,7 +186,48 @@ class Unit(object):
     def __eq__(self, other):
         starsmashertools.helpers.argumentenforcer.enforcetypes({'other' : [Unit]})
         return self.value == other.value and self.label == other.label
+    
+    def __gt__(self, other):
+        starsmashertools.helpers.argumentenforcer.enforcetypes({
+            'other' : [float, int, Unit]
+        })
+        if isinstance(other, Unit):
+            if self.label != other.label:
+                raise Exception("Cannot compare '%s' to '%s' because they have different labels" % (str(self.label), str(other.label)))
+            other = other.value
+        return self.value.__gt__(other)
+    
+    def __ge__(self, other):
+        starsmashertools.helpers.argumentenforcer.enforcetypes({
+            'other' : [float, int, Unit]
+        })
+        if isinstance(other, Unit):
+            if self.label != other.label:
+                raise Exception("Cannot compare '%s' to '%s' because they have different labels" % (str(self.label), str(other.label)))
+            other = other.value
+        return self.value.__ge__(other)
 
+    def __lt__(self, other):
+        starsmashertools.helpers.argumentenforcer.enforcetypes({
+            'other' : [float, int, Unit]
+        })
+        if isinstance(other, Unit):
+            if self.label != other.label:
+                raise Exception("Cannot compare '%s' to '%s' because they have different labels" % (str(self.label), str(other.label)))
+            other = other.value
+        return self.value.__lt__(other)
+    
+    def __le__(self, other):
+        starsmashertools.helpers.argumentenforcer.enforcetypes({
+            'other' : [float, int, Unit]
+        })
+        if isinstance(other, Unit):
+            if self.label != other.label:
+                raise Exception("Cannot compare '%s' to '%s' because they have different labels" % (str(self.label), str(other.label)))
+            other = other.value
+        return self.value.__le__(other)
+
+    
     def __reduce__(self):
         # https://docs.python.org/3/library/pickle.html#object.__reduce__
         return (Unit, (float(self), self.label))
@@ -250,6 +291,8 @@ class Unit(object):
     def __pow__(self, value):
         starsmashertools.helpers.argumentenforcer.enforcetypes({'value' : [float, int]})
         return Unit(self.value**value, self.label**value)
+
+
     
     # Outright disallow the following magic methods
     def __abs__(self, *args, **kwargs):
