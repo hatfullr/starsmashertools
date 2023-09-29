@@ -222,7 +222,7 @@ def reverse_readline(path, buf_size=8192):
         
         # My own modifications start here
         print(float(actual_size) / 1e6, "MB")
-        if file_size < 5e6: # If the file is less than 5 MB
+        if file_size < 150 * 1e6: # If the file is less than 5 MB
             print("Doing short read")
             # Probably faster to just read everything and reverse it
             fh.seek(0)
