@@ -218,6 +218,32 @@ def reverse_readline(path, buf_size=8192):
         offset = 0
         fh.seek(0, os.SEEK_END)
         file_size = remaining_size = fh.tell()
+        
+        # My own modifications start here
+        if file_size < 1e6: # If the file is less than 1 MB
+            # Probably faster to just read everything and reverse it
+            fh.seek(0)
+            buffer = fh.read().decode(encoding='utf-8')
+            lines = buffer.split('\n')
+            if segment is not None:
+                # If the previous chunk starts right from the beginning of line
+                # do not concat the segment to the last line of new chunk.
+                # Instead, yield the segment first 
+                if buffer[-1] != '\n':
+                    lines[-1] += segment
+                else:
+                    yield segment
+            segment = lines[0]
+            for index in range(len(lines) - 1, 0, -1):
+                if lines[index]:
+                    yield lines[index]
+            # Don't yield None if the file was empty
+            if segment is not None:
+                yield segment
+            return
+            
+        # My own modifications end here
+        
         while remaining_size > 0:
             offset = min(file_size, offset + buf_size)
             fh.seek(file_size - offset)
