@@ -155,38 +155,21 @@ def plot_wall_time():
         else:            
             stopoutput = starsmashertools.lib.output.Output(stopfile, simulation)
             stopoutput.read(return_headers=True, return_data=False)
-            stop = stopoutput['t']
-        
-            #nfiles = int((round(stop, 4) - round(start, 4)) / round(dtout, 4))
-            #if nfiles == 0:
-            #    raise Exception("This should never be possible: start = '%f', stop = '%f', dtout = '%f', nfiles = '%f'" % (start, stop, dtout, (stop - start) / dtout))
-            
-            stop = round(stop, 4)
+            stop = round(stopoutput['t'], 4)
             arr = np.arange(start, stop + dtout, dtout)
-            #print(start, stop, dtout, arr)
             for a in arr.tolist():
                 if a not in simulation_times: simulation_times += [a]
-            #simulation_times += arr.tolist()
     simulation_times = np.asarray(sorted(simulation_times), dtype=float)
     
     
     times = []
     for output in simulation.get_output_iterator(return_headers=True, return_data=False):
-        print(output.path)
         times += [get_file_creation_time(output.path)]
-
-    print(simulation.get_outputfiles())
-    print(simulation_times)
-    print(len(times), len(simulation_times))
 
     simulation_times *= simulation.units['t'].value
     
     dates = [datetime.datetime.fromtimestamp(time) for time in times]
     datenums = matplotlib.dates.date2num(dates)
-
-    
-    #dtout = simulation['dtout']
-
     
     x = datenums
     #y = np.arange(len(filenames))
