@@ -172,6 +172,7 @@ def plot_wall_time():
     
     times = []
     for output in simulation.get_output_iterator(return_headers=True, return_data=False):
+        print(output.path)
         times += [get_file_creation_time(output.path)]
 
     print(simulation.get_outputfiles())
