@@ -112,13 +112,11 @@ def get_time_table():
     return [logcolumn, outcolumn, fraccolumn, totalcolumn], labels
 
 def plot_wall_time():
-    global cli
+    global simulation, cli
     import matplotlib.pyplot as plt
     import matplotlib.transforms
     import matplotlib.dates
     import datetime
-
-    print("HELLO???", flush=True)
 
     simulation_times = []
     # Try the log files first, for efficiency
