@@ -42,6 +42,7 @@ class Output(dict, object):
 
     # Use this to make sure that the file has been fully read
     def _ensure_read(self):
+        print("Ensuring read", self._isRead)
         if False in self._isRead.values():
             self.read(return_headers=not self._isRead['header'], return_data=not self._isRead['data'])
 
