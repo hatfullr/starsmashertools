@@ -210,73 +210,38 @@ def sort_by_mtimes(
 
 
 
+def reverse_readline(path, buf_size=8192):
+    """A generator that returns the lines of a file in reverse order
+    https://stackoverflow.com/a/23646049/4954083"""
+    with open(path, 'rb') as fh:
+        segment = None
+        offset = 0
+        fh.seek(0, os.SEEK_END)
+        file_size = remaining_size = fh.tell()
+        while remaining_size > 0:
+            offset = min(file_size, offset + buf_size)
+            fh.seek(file_size - offset)
+            buffer = fh.read(min(remaining_size, buf_size)).decode(encoding='utf-8')
+            remaining_size -= buf_size
+            lines = buffer.split('\n')
+            # The first line of the buffer is probably not a complete line so
+            # we'll save it and append it to the last line of the next buffer
+            # we read
+            if segment is not None:
+                # If the previous chunk starts right from the beginning of line
+                # do not concat the segment to the last line of new chunk.
+                # Instead, yield the segment first 
+                if buffer[-1] != '\n':
+                    lines[-1] += segment
+                else:
+                    yield segment
+            segment = lines[0]
+            for index in range(len(lines) - 1, 0, -1):
+                if lines[index]:
+                    yield lines[index]
+        # Don't yield None if the file was empty
+        if segment is not None:
+            yield segment
 
 
 
-
-class ReversedTextFile(object):
-    def __init__(self, filename):
-        self.filename = filename
-        self._file = None
-        self.file_size = None
-
-        self._position = None
-        self.status = 'idle'
-        
-    def __iter__(self):
-        self._start()
-        return self
-
-    def __next__(self):
-        # End of the iteration
-        if self.status == 'finished':
-            raise StopIteration
-        return self._get_line()
-
-    def _start(self):
-        # Start of the iteration
-        path = get_file(self.filename, 'r')
-        self._file = builtins.open(path, 'r')
-        self._file.seek(0, 2)
-        self.file_size = self._file.tell()
-        self.status = 'active'
-
-    def _stop(self):
-        self.status = 'finished'
-        self._file.close()
-
-    def _get_line(self):
-        # Get the current position in the file
-        pos = self._file.tell()
-        
-        # Stop the iteration and return None if we are at the beginning of
-        # the file
-        if pos == 0:
-            self._stop()
-            return
-        
-        line = ""
-        for i in range(self.file_size):
-            # Read one character backwards in the file
-            self._file.seek(pos - 1)
-            item = self._file.read(1)
-
-            # If we read a newline then we are at the end of the current line
-            if item == '\n':
-                # Set the position such that the next time we try to read we
-                # will start at the end of the next line
-                self._file.seek(max(0, pos - 1))
-                return line
-
-            # Add the character we read to the line
-            line = item + line
-
-            # Move the read position back by one
-            pos -= 1
-            
-            # If we reached the "end" of the file, stop iteration
-            if pos <= 0:
-                self._stop()
-                return line
-        raise Exception("This should never happen")
-        

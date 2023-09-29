@@ -31,11 +31,10 @@ class TestFile(unittest.TestCase):
 test4test9
 01234M6789
 012345test
-01test6789
-"""
+01test6789"""
         expected = expected.split("\n")
         
-        f = starsmashertools.helpers.file.ReversedTextFile(
+        f = starsmashertools.helpers.file.reverse_readline(
                 os.path.join('data', 'testfile'),
         )
         

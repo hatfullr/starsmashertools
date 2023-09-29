@@ -171,9 +171,8 @@ class LogFile(object):
     def get_last_out_file(self):
         string = ' duout: writing file '
 
-        f = starsmashertools.helpers.file.ReversedTextFile(self.path)
+        f = starsmashertools.helpers.file.reverse_readline(self.path)
         for line in f:
-            print(line)
             if string in line:
                 i0 = line.rindex(string) + len(string)
                 i1 = i0 + line[i0:].index('at t=')
