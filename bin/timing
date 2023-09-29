@@ -163,8 +163,10 @@ def plot_wall_time():
             stop = round(stop, 4)
             dtout = round(dtout, 4)
             arr = np.arange(start, stop + dtout, dtout)
-            print(start, stop, dtout, arr)
-            simulation_times += arr.tolist()
+            #print(start, stop, dtout, arr)
+            for a in arr.tolist():
+                if a not in simulation_times: simulation_times += [a]
+            #simulation_times += arr.tolist()
     simulation_times = np.asarray(sorted(simulation_times), dtype=float)
     
     
