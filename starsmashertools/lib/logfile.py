@@ -170,7 +170,7 @@ class LogFile(object):
 
     def get_last_out_file(self):
         string = ' duout: writing file '
-
+        print("Reading '%s'" % self.path)
         f = starsmashertools.helpers.file.reverse_readline(self.path)
         for line in f:
             if string in line:
