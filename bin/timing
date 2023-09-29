@@ -149,18 +149,17 @@ def plot_wall_time():
         
         # Check for log files where only 1 output file was produced
         if startfile == stopfile:
-            nfiles = 1
             simulation_times += [start]
         else:            
             stopoutput = starsmashertools.lib.output.Output(stopfile, simulation)
             stopoutput.read(return_headers=True, return_data=False)
             stop = stopoutput['t']
         
-            nfiles = int((round(stop, 4) - round(start, 4)) / round(dtout, 4))
-            if nfiles == 0:
-                raise Exception("This should never be possible: start = '%f', stop = '%f', dtout = '%f', nfiles = '%f'" % (start, stop, dtout, (stop - start) / dtout))
+            #nfiles = int((round(stop, 4) - round(start, 4)) / round(dtout, 4))
+            #if nfiles == 0:
+            #    raise Exception("This should never be possible: start = '%f', stop = '%f', dtout = '%f', nfiles = '%f'" % (start, stop, dtout, (stop - start) / dtout))
         
-            simulation_times += np.linspace(start, stop, nfiles).tolist()
+            simulation_times += np.arange(start, stop, dtout).tolist()
     simulation_times = np.asarray(sorted(simulation_times), dtype=float)
     
     
