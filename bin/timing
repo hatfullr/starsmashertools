@@ -123,10 +123,30 @@ def plot_wall_time():
     for logfile in simulation.get_logfiles():
         try:
             dtout = float(logfile.get('dtout=').strip().split()[0])
-            start = logfile.get_start_time()
-            stop = logfile.get_stop_time()
+            startfile = logfile.get_first_out_file()
+            stopfile = logfile.get_last_out_file()
         except starsmashertools.lib.logfile.LogFile.PhraseNotFoundError:
             continue
+
+        startfile = starsmashertools.helpers.path.join(
+            simulation.directory,
+            startfile,
+        )
+        stopfile = starsmashertools.helpers.path.join(
+            simulation.directory,
+            stopfile,
+        )
+
+        if not starsmashertools.helpers.path.isfile(startfile):
+            raise FileNotFoundError(startfile)
+        if not starsmashertools.helpers.path.isfile(stopfile):
+            raise FileNotFoundError(stopfile)
+        
+        startoutput = starsmashertools.lib.output.Output(startfile)
+        stopoutput = starsmashertools.lib.output.Output(stopfile)
+
+        start = startoutput['t']
+        stop = stopoutput['t']
         
         nfiles = int((stop - start) / dtout)
         if nfiles == 0: continue

@@ -132,31 +132,55 @@ class LogFile(object):
     
     # Find the time that this log file stopped at
     def get_stop_time(self):
+        string = 'time='
         with starsmashertools.helpers.file.open(self.path, 'r') as f:
             f.seek(0, 2)
             size = f.tell()
             f.seek(max(0, size - 10480))
             content = f.read()
-        try:
-            i0 = content.rindex('time=') + len('time=')
-        except ValueError as e:
-            if 'substring not found' not in str(e): raise
-            raise LogFile.PhraseNotFoundError('time=')
+
+        if string not in content:
+            raise LogFile.PhraseNotFoundError(string)
+        
+        i0 = content.rindex(string) + len(string)
         i1 = i0 + content[i0:].index('\n')
         return float(content[i0:i1])
         
     def get_start_time(self):
+        string = 'time='
         with starsmashertools.helpers.file.open(self.path, 'r') as f:
             f.seek(len(self.header))
             for line in f:
-                if 'time=' in line:
-                    try:
-                        i0 = line.index('time=') + len('time=')
-                    except ValueError as e:
-                        if 'substring not found' not in str(e): raise
-                        raise LogFile.PhraseNotFoundError('time=')
+                if string in line:
+                    i0 = line.index(string) + len(string)
                     i1 = i0 + line[i0:].index('\n')
                     return float(line[i0:i1])
-    
+        raise LogFile.PhraseNotFoundError(string)
+
+    def get_first_out_file(self):
+        string = ' duout: writing file '
+        with starsmashertools.helpers.file.open(self.path, 'r') as f:
+            f.seek(len(self.header))
+            for line in f:
+                if string in line:
+                    i0 = line.index(string) + len(string)
+                    i1 = i0 + line[i0:].index('at t=')
+                    return line[i0:i1]
+        raise LogFile.PhraseNotFoundError(string)
+
+    def get_last_out_file(self):
+        string = ' duout: writing file '
+        with starsmashertools.helpers.file.open(self.path, 'r') as f:
+            f.seek(0, 2)
+            size = f.tell()
+            f.seek(max(0, size - 10480))
+            content = f.read()
+
+        if string not in content:
+            raise LogFile.PhraseNotFoundError(string)
+        
+        i0 = content.rindex(string) + len(string)
+        i1 = i0 + content[i0:].index('at t=')
+        return content[i0:i1]
 
     class PhraseNotFoundError(Exception): pass
