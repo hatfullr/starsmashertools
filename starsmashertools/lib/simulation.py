@@ -342,20 +342,44 @@ class Simulation(object):
     def get_initialfile(self, pattern = None):
         return self.get_outputfiles(pattern=pattern)[0]
 
-    # Given string arguments, return data from each of this simulation's
-    # output files
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     def get_output_iterator(
             self,
             start : int = 0,
-            stop = None,
+            stop : int = -1,
             step : int = 1,
+            headers_only : bool = False,
             **kwargs
     ):
+        """Given string arguments, return data from each of this simulation's
+        output files.
+        
+        Parameters
+        ----------
+        start : int, default = 0
+            The index in the list of all output files to begin the iterator at.
+
+        stop : int, default = -1
+            The index in the list of all output files to stop the iterator at.
+
+        step : int, default = 1
+            How many output files to skip on each iterator step.
+        
+        Returns
+        -------
+        `.OutputIterator`
+            The created `.OutputIterator` instance.
+        
+        Other Parameters
+        ----------------
+        **kwargs : `~starsmashertools.lib.output.OutputIterator` keywords.
+            Keywords that are passed to the `OutputIterator`
+
+        """
         filenames = self.get_outputfiles()
         filenames = np.asarray(filenames, dtype=object)
 
-        if stop is None: stop = len(filenames)
+        stop = filenames.index(filenames[stop])
         
         indices = np.arange(start, stop, step)
         filenames = filenames[indices].tolist()

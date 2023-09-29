@@ -1,6 +1,7 @@
 import starsmashertools.preferences as preferences
 import starsmashertools.helpers.path
 import starsmashertools.helpers.file
+import starsmashertools.helpers.string
 import numpy as np
 import time
 import starsmashertools.lib.simulation
@@ -10,14 +11,38 @@ import mmap
 import copy as _copy
 
 class Output(dict, object):
+    """
+    A container for StarSmasher binary output data, usually appearing as
+    "out*.sph" in simulation directories.
+
+    Parameters
+    ----------
+    path : str
+        The file path to a StarSmasher binary output data file.
+
+    simulation : `~starsmashertools.lib.simulation.Simulation`
+        The `Simulation` object that this output file belongs to.
+
+    Other Parameters
+    ----------------
+    mode : str, default = 'raw'
+        Affects the units of the data. Deprecated.
+    
+    """
+    
     modes = [
         'raw',
         'cgs',
     ]
     
-    def __init__(self, path, simulation, mode='raw'):
+    def __init__(
+            self,
+            path,
+            simulation,
+            mode='raw',
+    ):
         if mode not in Output.modes:
-            s = ", ".join(["'"+str(m)+"'" for m in Output.modes])
+            s = starsmashertools.helpers.string.list_to_string(Output.modes, join='or')
             raise ValueError("Keyword argument 'mode' must be one of %s, not '%s'" % (s, str(mode)))
         self.path = starsmashertools.helpers.path.realpath(path)
         self.simulation = simulation
@@ -42,7 +67,6 @@ class Output(dict, object):
 
     # Use this to make sure that the file has been fully read
     def _ensure_read(self):
-        print("Ensuring read", self._isRead)
         if False in self._isRead.values():
             self.read(return_headers=not self._isRead['header'], return_data=not self._isRead['data'])
 
@@ -120,7 +144,7 @@ class Output(dict, object):
             **kwargs
         )
         
-        header, data = None, None
+        data, header = None, None
         if return_headers and return_data:
             data, header = obj
         elif not return_headers and return_data:
@@ -138,7 +162,6 @@ class Output(dict, object):
 
         if return_headers: self._isRead['header'] = True
         if return_data: self._isRead['data'] = True
-        print(self._isRead)
 
     def from_cache(self, key):
         if key in self._cache.keys():
@@ -172,12 +195,40 @@ class Output(dict, object):
         
 # Asynchronous output file reading
 class OutputIterator(object):
-    def __init__(self, filenames, simulation, onFlush=[], max_buffer_size=None, verbose=False, asynchronous=True):
+    """
+    An iterator which can be used to iterate through Output objects efficiently.
+    
+    Parameters
+    ----------
+    filenames : list
+        The list of file names to iterate through.
+    
+    simulation : `~starsmashertools.lib.simulation.Simulation`
+        The simulation that the given file names belong to.
+
+    Other Parameters
+    ----------------
+    **kwargs
+        Other optional keyword arguments that are passed to the `.Output.read`
+        function.
+
+    """
+    def __init__(
+            self,
+            filenames,
+            simulation,
+            onFlush=[],
+            max_buffer_size=None,
+            asynchronous=True,
+            **kwargs,
+    ):
+        
         if max_buffer_size is None: max_buffer_size = preferences.get_default('OutputIterator', 'max buffer size')
         self.max_buffer_size = max_buffer_size
         self.onFlush = onFlush
         self.simulation = simulation
         self.asynchronous = asynchronous
+        self.kwargs = kwargs
 
         for m in self.onFlush:
             if not callable(m):
@@ -185,7 +236,6 @@ class OutputIterator(object):
 
         # Make sure that the filenames are the true paths
         self.filenames = filenames
-        self.verbose = verbose
         self._break = False
 
         self._process = None
@@ -262,7 +312,7 @@ class OutputIterator(object):
     
     def get(self, filename):
         o = Output(filename, self.simulation)
-        o.read(verbose=self.verbose)
+        o.read(**self.kwargs)
         return o
 
 
