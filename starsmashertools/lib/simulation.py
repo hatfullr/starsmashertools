@@ -692,11 +692,12 @@ class Simulation(object):
         kwargs : dict
             Extra keyword arguments passed to `.get_output_iterator`. Note that
             keyword `return_headers` is always `True` and `return_data` is
-            always `False`.
-
+            always `False`. Keyword `asynchronous` is set to `False` by default
+            because reading headers is often faster that way.
         """
         kwargs['return_headers'] = True
         kwargs['return_data'] = False
+        kwargs['asynchronous'] = kwargs.get('asynchronous', False)
         iterator = self.get_output_iterator(**kwargs)
         ret = {}
         for output in iterator:
