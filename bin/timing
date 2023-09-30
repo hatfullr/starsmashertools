@@ -118,7 +118,7 @@ def plot_wall_time():
 
     simulation_times = []
     times = []
-    for key, val in simulation.get_output_headers().items():
+    for key, val in simulation.get_output_headers(verbose=True).items():
         simulation_times += [val['t']]
         times += [key.get_file_creation_time()]
 
