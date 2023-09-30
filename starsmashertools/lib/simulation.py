@@ -669,6 +669,55 @@ class Simulation(object):
         int
         """
         return starsmashertools.helpers.path.get_directory_size(self.directory)
+
+
+    def get_output_headers(self, **kwargs):
+        """
+        Read all the headers of the output files in this simulation and return
+        them as a dictionary.
+
+        Parameters
+        ----------
+        keys : list
+            The keys to query the output file headers for.
+
+        Returns
+        -------
+        `dict`
+            Each key is a `starsmashertools.lib.output.Output` object and each
+            value is the entire header.
+
+        Other Parameters
+        ----------------
+        kwargs : dict
+            Extra keyword arguments passed to `.get_output_iterator`. Note that
+            keyword `return_headers` is always `True` and `return_data` is
+            always `False`.
+
+        """
+        kwargs['return_headers'] = True
+        kwargs['return_data'] = False
+        iterator = self.get_output_iterator(**kwargs)
+        ret = {}
+        for output in iterator:
+            ret[output] = output.header
+        return ret
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     
 
     class OutputNotInSimulationError(Exception):

@@ -2,6 +2,7 @@ import starsmashertools.preferences as preferences
 import starsmashertools.helpers.path
 import starsmashertools.helpers.file
 import starsmashertools.helpers.string
+import starsmashertools.helpers.readonlydict
 import numpy as np
 import time
 import starsmashertools.lib.simulation
@@ -58,21 +59,15 @@ class Output(dict, object):
         if self._cache is None: self._cache = {}
 
         self._mask = None
+        self.header = None
+        self.data = None
     
     def __str__(self):
         string = self.__class__.__name__ + "(%s)"
         return string % ("'%s'" % starsmashertools.helpers.path.basename(self.path))
 
     def __repr__(self): return str(self)
-
-    # Use this to make sure that the file has been fully read
-    def _ensure_read(self):
-        if False in self._isRead.values():
-            self.read(return_headers=not self._isRead['header'], return_data=not self._isRead['data'])
-
-    def __eq__(self, other):
-        return starsmashertools.helpers.file.compare(self.path, other.path)
-
+    
     def __getitem__(self, item):
         if item in self._cache.keys(): return self.from_cache(item)
         if item not in self.keys(ensure_read=False):
@@ -96,6 +91,17 @@ class Output(dict, object):
             elif hasattr(self.simulation.units, item):
                 ret = _copy.copy(ret) * getattr(self.simulation.units, item)
         return ret
+    
+    def __eq__(self, other):
+        return starsmashertools.helpers.file.compare(self.path, other.path)
+
+    def __hash__(self, *args, **kwargs):
+        return self.path.__hash__(*args, **kwargs)
+
+    # Use this to make sure that the file has been fully read
+    def _ensure_read(self):
+        if False in self._isRead.values():
+            self.read(return_headers=not self._isRead['header'], return_data=not self._isRead['data'])
 
     def keys(self, *args, **kwargs):
         if 'ensure_read' in kwargs.keys():
@@ -144,20 +150,20 @@ class Output(dict, object):
             **kwargs
         )
         
-        data, header = None, None
+        self.data, self.header = None, None
         if return_headers and return_data:
-            data, header = obj
+            self.data, self.header = obj
         elif not return_headers and return_data:
-            data = obj
+            self.data = obj
         elif return_headers and not return_data:
-            header = obj
+            self.header = obj
         
-        if header is not None:
-            for key, val in header.items():
+        if self.header is not None:
+            for key, val in self.header.items():
                 self[key] = val
         
-        if data is not None:
-            for key, val in data.items():
+        if self.data is not None:
+            for key, val in self.data.items():
                 self[key] = val
 
         if return_headers: self._isRead['header'] = True
@@ -174,16 +180,44 @@ class Output(dict, object):
 
     def unmask(self):
         self._mask = None
+    
+    def get_file_creation_time(self):
+        return starsmashertools.helpers.path.getmtime(self.path)
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         
-
-
-
-
-
-
-
-
 
 
 
@@ -404,7 +438,7 @@ class Reader(object):
                 new_header = {}
                 for name in header[0].dtype.names:
                     new_header[name] = np.array(header[name])[0]
-                header = new_header
+                header = starsmashertools.helpers.readonlydict.ReadOnlyDict(new_header)
             
             if return_headers and not return_data:
                 return header
@@ -422,7 +456,7 @@ class Reader(object):
         new_data = {}
         for name in data[0].dtype.names:
             new_data[name] = np.array(data[name])
-        data = new_data
+        data = starsmashertools.helpers.readonlydict.ReadOnlyDict(new_data)
         
         if return_headers: return data, header
         else: return data

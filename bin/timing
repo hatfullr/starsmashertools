@@ -26,9 +26,6 @@ MIN_PLOT_APPARENT_SIZE = (0.25, 0.25)
 simulation = None
 cli = None
 
-def get_file_creation_time(filename):
-    return os.path.getmtime(filename)
-
 def get_time_table():
     global simulation
     
@@ -68,8 +65,8 @@ def get_time_table():
             starsmashertools.helpers.path.basename(first),
             starsmashertools.helpers.path.basename(last),
         )]
-        t1 = get_file_creation_time(first)
-        t2 = get_file_creation_time(last)
+        t1 = first.get_file_creation_time()
+        t2 = last.get_file_creation_time()
         totalcolumn += [t2-t1]
         longest = max(longest, t2-t1)
         summed += t2-t1
@@ -119,6 +116,29 @@ def plot_wall_time():
     import matplotlib.dates
     import datetime
 
+    simulation_times = []
+    times = []
+    for key, val in simulation.get_output_headers().items():
+        simulation_times += [val['t']]
+        times += [key.get_file_creation_time()]
+
+    simulation_times = np.asarray(simulation_times, dtype=float)
+
+    # Convert simulation times units
+    u = simulation.units['t'] * np.amax(simulation_times)
+    u = u.auto()
+    factor = simulation.units['t'].get_conversion_factor(
+        simulation.units['t'].label,
+        u.label,
+    )
+    print(factor, 0.0184501)
+    print(simulation_times)
+    print(simulation_times * factor)
+    quit()
+    #simulation_times *= simulation.units['t'].value
+    
+    
+    """
     simulation_times = []
     # Try the log files first, for efficiency
     for logfile in simulation.get_logfiles():
@@ -176,11 +196,17 @@ def plot_wall_time():
     
     times = []
     for output in simulation.get_output_iterator(return_headers=True, return_data=False):
-        times += [get_file_creation_time(output.path)]
+        times += [output.get_file_creation_time()]
 
     if len(times) > len(simulation_times): times = times[:len(simulation_times)]
     elif len(simulation_times) > len(times): simulation_times = simulation_times[:len(times)]
+    """
 
+
+
+
+
+    # Plot the results as dates
     
     dates = [datetime.datetime.fromtimestamp(time) for time in times]
     datenums = matplotlib.dates.date2num(dates)

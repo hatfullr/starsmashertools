@@ -64,22 +64,25 @@ defaults = {
             'ekin' : 'specificenergy',
             'etot' : 'specificenergy',
         },
-        # Items in this dict decide how units are converted from the base unit
-        # ('cm', 'g', or 's') to new units. You should not specify the factor
-        # used to convert back to 'cm', 'g', or 's'. This is automatically
-        # calculated.
-        'unit conversions' : {
-            'cm' : {
-                'm'  : 1e2,
-                'km' : 1e5,
+        # Items in this dict decide how units are converted from one to another.
+        'unit conversions' : [
+            {
+                'base' : 'cm',
+                'conversions' : [
+                    ['m' , 1e2],
+                    ['km', 1e5],
+                ],
             },
-            's' : {
-                'min' : 60,
-                'hr'  : 3600,
-                'day' : 3600*24,
-                'yr'  : 3600*24*365.25,
+            {
+                'base' : 's',
+                'conversions' : [
+                    ['min', 60],
+                    ['hr' , 3600],
+                    ['day', 3600*24],
+                    ['yr' , 3600*24*365.25],
+                ],
             },
-        },
+        ],
         # Add items to this list to create additional abbreviations for unit
         # labels. The conversions are queried in-order from top to bottom. See
         # the Unit.Label class in starsmashertools/lib/units.py for details.

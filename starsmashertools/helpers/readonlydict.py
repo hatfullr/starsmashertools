@@ -1,6 +1,3 @@
-
-
-
 class ReadOnlyDict(dict, object):
     def raise_readonly(*args, **kwargs):
         raise Exception("Cannot edit a ReadOnlyDict")
