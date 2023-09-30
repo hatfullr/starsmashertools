@@ -125,85 +125,11 @@ def plot_wall_time():
     simulation_times = np.asarray(simulation_times, dtype=float)
 
     # Convert simulation times units
-    u = simulation.units['t'] * np.amax(simulation_times)
-    u = u.auto()
-    factor = simulation.units['t'].get_conversion_factor(
-        simulation.units['t'].label,
-        u.label,
-    )
-    print(factor, 0.0184501)
-    print(simulation_times)
-    print(simulation_times * factor)
-    quit()
-    #simulation_times *= simulation.units['t'].value
-    
-    
-    """
-    simulation_times = []
-    # Try the log files first, for efficiency
-    for logfile in simulation.get_logfiles():
-        try:
-            dtout = float(logfile.get('dtout=').strip().split()[0])
-        except starsmashertools.lib.logfile.LogFile.PhraseNotFoundError:
-            dtout = simulation['dtout']
-            
-        try:
-            startfile = logfile.get_first_out_file()
-            stopfile = logfile.get_last_out_file()
-        except starsmashertools.lib.logfile.LogFile.PhraseNotFoundError:
-            # Skip log files that produced no output files
-            continue
-
-        dtout = round(dtout, 4)
-        
-        startfile = starsmashertools.helpers.path.join(
-            simulation.directory,
-            startfile,
-        )
-        if not starsmashertools.helpers.path.isfile(startfile):
-            raise FileNotFoundError(startfile)
-        stopfile = starsmashertools.helpers.path.join(
-            simulation.directory,
-            stopfile,
-        )
-        # This can happen when log files have been downloaded but not all output files
-        if not starsmashertools.helpers.path.isfile(stopfile):
-            #print("Skip 2")
-            continue
-
-        #print(startfile)
-
-        startoutput = starsmashertools.lib.output.Output(startfile, simulation)
-        startoutput.read(return_headers=True, return_data=False)
-        start = startoutput['t']
-        
-        start = round(start, 4)
-        
-        # Check for log files where only 1 output file was produced
-        if startfile == stopfile:
-            if start not in simulation_times: simulation_times += [start]
-        else:            
-            stopoutput = starsmashertools.lib.output.Output(stopfile, simulation)
-            stopoutput.read(return_headers=True, return_data=False)
-            stop = round(stopoutput['t'], 4)
-            for a in np.arange(start, stop + dtout, dtout):
-                if a not in simulation_times:
-                    simulation_times += [a]
-    #print("printing simulation times", flush=True)
-    #print(simulation_times, flush=True)
-    simulation_times = np.asarray(sorted(simulation_times), dtype=float)
-
-    
-    times = []
-    for output in simulation.get_output_iterator(return_headers=True, return_data=False):
-        times += [output.get_file_creation_time()]
-
-    if len(times) > len(simulation_times): times = times[:len(simulation_times)]
-    elif len(simulation_times) > len(times): simulation_times = simulation_times[:len(times)]
-    """
-
-
-
+    unit = simulation.units['t'] * np.amax(simulation_times)
+    unit = unit.auto()
+    factor = simulation.units['t'].get_conversion_factor(unit.label)
+    factor *= simulation.units['t'].value
+    simulation_times *= factor
 
 
     # Plot the results as dates
@@ -212,42 +138,18 @@ def plot_wall_time():
     datenums = matplotlib.dates.date2num(dates)
     
     x = datenums
-    #y = np.arange(len(filenames))
     y = simulation_times
 
-    #print(y)
-    #quit()
-
-    # Convert the y units
-    #print(np.amax(y), simulation.units['t'])
-    #quit()
-    maxval = np.amax(y) * simulation.units['t']
-    unit = maxval.auto()
-    factor = simulation.units['t'].get_conversion_factor(
-        simulation.units['t'].label,
-        unit.label,
-    )
-    y *= factor
-
-    
+    maxval = np.amax(y)
 
     ylim = [
         min(y),
-        max(np.amax(y), simulation['tf'] * simulation.units['t'].value * factor),
+        max(maxval, simulation['tf'] * factor),
     ]
-
-
-    #ylim = [0, simulation['tf'] / dtout]
-    
-
         
     fig, ax = plt.subplots()
-    #twinax = ax.twinx()
-    #twinax.yaxis.tick_right()
     ax.xaxis.grid(True, alpha=0.2)
     ax.margins(0, 0)
-    #twinax.margins(0, 0)
-    #ax.set_ylabel("output file indices")
 
     ax.set_ylabel("simulation time [%s]" % unit.label)
     
@@ -258,6 +160,8 @@ def plot_wall_time():
     
     ax.plot(x, y)
 
+    plt.tight_layout()
+
     data_xmin = np.nanmin(x)
     data_ymin = np.nanmin(y)
     data_xmax = np.nanmax(x)
@@ -267,29 +171,43 @@ def plot_wall_time():
     
     if ylim[1] > max(y):
         # Try to fit a linear function of the most recent half of simulation
-        num = int(len(x) * 0.5)
+        num = max(5, int(len(x) * 0.1))
+
+        slope = np.mean(np.diff(y[-num:]) / np.diff(x[-num:]))
+        b = y[-num:][0] - slope * x[-num:][0]
+
+        _xmax = (ylim[1] - b) / slope
+        xlim[1] = _xmax
+        
+        _xmin = min(x[-num:])
+        _dx = max(x) - _xmin
+        _x = np.linspace(_xmin, _xmax, 2)
+        _y = slope * _x + b
+        
+        ax.plot(_x, _y, label='linear fit', lw=0.5, zorder=-np.inf)
+
+        """
         labels = [
-            'linear fit',
             'quadratic fit',
-            #'cubic fit',
+            'cubic fit',
         ]
         
-        xmax = -np.inf
         for i, label in enumerate(labels):
-            coef = np.polyfit(y[-num:], x[-num:], i + 1)
+            coef = np.polyfit(x[-num:], y[-num:], i + 1)
             poly1d_fn = np.poly1d(coef)
-            _y = np.arange(ylim[1])
-            _x = poly1d_fn(_y)
-            idx = _x >= xlim[0]
+            _y = poly1d_fn(_x)
+            idx = _x >= min(x)
             if np.any(idx):
                 ax.plot(_x[idx], _y[idx], label=label, lw=0.5, zorder=-np.inf)
-                xmax = max(xmax, np.nanmax(_x[idx]))
+        """
         cli.write("The function fits shown were created using the most recent half of the data.", flush=True)
         ax.legend()
 
     # Don't display such a large time range that the data cannot be seen
     # clearly. Make sure the data spans at least some fraction of the axes
     fig.canvas.draw()
+
+    
     bbox = matplotlib.transforms.Bbox(
         [[data_xmin, data_ymin], [data_xmax, data_ymax]],
     )
@@ -298,31 +216,11 @@ def plot_wall_time():
         xlim[1] = data_xmin + (data_xmax - data_xmin) / MIN_PLOT_APPARENT_SIZE[0]
     if bbox.height < MIN_PLOT_APPARENT_SIZE[1]:
         ylim[1] = data_ymin + (data_ymax - data_ymin) / MIN_PLOT_APPARENT_SIZE[1]
+    
     ax.set_xlim(xlim)
     ax.set_ylim(ylim)
 
     
-
-    #first = simulation.get_output(0)
-    #
-    #y2_min = first['t'] * simulation.units['t']
-    #y2_max = ylim[1] * dtout * simulation.units['t']
-    #y2_max = y2_max.auto()
-    #print(first['t'], y2_min, y2_max)
-    #y2_min = y2_min.convert(y2_min.label, y2_max.label)
-    #print(y2_min, y2_max)
-    #twinax.set_ylabel("simulation time (%s)" % y2_max.label)
-    #
-    #if y2_min > y2_max:
-    #    print(y2_min, y2_max)
-    #    quit()
-    #twinax.set_ylim(float(y2_min), float(y2_max))
-    
-    #ax.set_ylim(ylim)
-
-    
-
-    plt.tight_layout()
 
     if cli.args['batch']:
         cli.write("Saving plot as '%s'." % cli.args['plot_name'], flush=True)
