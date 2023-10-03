@@ -172,6 +172,7 @@ class Binary(simulation.Simulation, object):
         m1 *= self.units.mass
         m2 *= self.units.mass
         separation *= self.units.length
+        print(m1, m2, separation)
         return starsmashertools.math.period(m1, m2, separation)
         
 
