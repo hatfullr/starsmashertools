@@ -9,3 +9,14 @@ class ReadOnlyDict(dict, object):
     clear = raise_readonly
     update = raise_readonly
     setdefault = raise_readonly
+
+    def __copy__(self, *args, **kwargs):
+        self.__setitem__ = super(ReadOnlyDict, self).__setitem__
+        ret = super(ReadOnlyDict, self).__copy__(*args, **kwargs)
+        self.__setitem__ = raise_readonly
+        return ret
+    def __deepcopy__(self, *args, **kwargs):
+        self.__setitem__ = super(ReadOnlyDict, self).__setitem__
+        ret = super(ReadOnlyDict, self).__deepcopy__(*args, **kwargs)
+        self.__setitem__ = raise_readonly
+        return ret
