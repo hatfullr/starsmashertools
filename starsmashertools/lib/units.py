@@ -692,6 +692,7 @@ class Units(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
             'simulation' : starsmashertools.lib.simulation.Simulation,
         })
         
+        self.gravconst = gravconst
         self.simulation = simulation
         
         #self.length = simulation['runit']

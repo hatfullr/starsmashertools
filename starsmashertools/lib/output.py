@@ -54,9 +54,8 @@ class Output(dict, object):
         }
         super(Output, self).__init__()
 
-        self._cache = _copy.copy(preferences.get_default('Output', 'cache'))
-        # If no cache is defined in preferences
-        if self._cache is None: self._cache = {}
+        self._cache = None
+        self._clear_cache()
 
         self._mask = None
         self.header = None
@@ -102,6 +101,11 @@ class Output(dict, object):
     def _ensure_read(self):
         if False in self._isRead.values():
             self.read(return_headers=not self._isRead['header'], return_data=not self._isRead['data'])
+
+    def _clear_cache(self):
+        self._cache = _copy.copy(preferences.get_default('Output', 'cache'))
+        # If no cache is defined in preferences
+        if self._cache is None: self._cache = {}
 
     def keys(self, *args, **kwargs):
         if 'ensure_read' in kwargs.keys():
@@ -180,6 +184,10 @@ class Output(dict, object):
 
     def unmask(self):
         self._mask = None
+        # We should really store the cached values that we obtained while being
+        # masked so that we don't have to recalculate them, but doing so would
+        # be difficult. So we just make it simple and clear the cache.
+        self._clear_cache()
     
     def get_file_creation_time(self):
         return starsmashertools.helpers.path.getmtime(self.path)

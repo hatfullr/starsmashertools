@@ -130,6 +130,9 @@ defaults = {
     'PDCFile' : {
         'filename' : 'pdc.json.gz',
     },
+    'GPUJob' : {
+        'threadsperblock' : 512,
+    },
 }
 
 

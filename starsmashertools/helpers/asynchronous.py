@@ -18,8 +18,6 @@ class Process(multiprocessing.Process, object):
             self._cconn.send(None)
         except BaseException as e:
             tb = starsmashertools.helpers.stacktrace.format_exc(exception=e, for_raise = True)
-            #tb = traceback.format_exc()
-            #tb = tb.replace(type(e).__name__+": "+str(e), '').strip()
             self._cconn.send((e, tb))
 
     def is_alive(self, *args, **kwargs):
@@ -46,6 +44,5 @@ class Process(multiprocessing.Process, object):
             quit()
         
         print(traceback)
-        #sys.tracebacklimit = -1
         raise exception
         
