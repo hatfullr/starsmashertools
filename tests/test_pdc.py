@@ -277,4 +277,4 @@ class TestPDCData(unittest.TestCase):
         self.assertEqual(datacopy['m1'], 2)
         
 if __name__ == '__main__':
-    unittest.main()
+    unittest.main(failfast=True)

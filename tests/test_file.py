@@ -14,7 +14,8 @@ class TestFile(unittest.TestCase):
         self.assertEqual(result[0], '4')
         self.assertEqual(result[1], '9')
         self.assertEqual(result[2], '')
-        self.assertEqual(result[3], '6789')
+        self.assertEqual(result[3], '56789')
+
 
         result = starsmashertools.helpers.file.get_phrase(
             os.path.join('data', 'testfile1'),
@@ -31,7 +32,7 @@ class TestFile(unittest.TestCase):
 test4test9
 01234M6789
 012345test
-01test6789"""
+0test56789"""
         expected = expected.split("\n")
         
         f = starsmashertools.helpers.file.reverse_readline(
@@ -44,5 +45,5 @@ test4test9
         
         
 if __name__ == "__main__":
-    unittest.main()
+    unittest.main(failfast=True)
 

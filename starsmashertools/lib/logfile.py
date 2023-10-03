@@ -3,6 +3,7 @@ import starsmashertools.helpers.path
 import starsmashertools.helpers.file
 from glob import glob
 import numpy as np
+import mmap
 import copy
 
 def find(directory, pattern=None, throw_error=False):
@@ -28,17 +29,21 @@ class LogFile(object):
         self.simulation = simulation
         self._header = None
 
+        with starsmashertools.helpers.file.open(self.path, 'rb') as f:
+            self._buffer = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
+
     @property
     def header(self):
-        if self._header is None: self.read()
+        if self._header is None: self.read_header()
         return self._header
     
-    def read(self):
-        self._header = ""
-        with starsmashertools.helpers.file.open(self.path, 'r') as f:
-            for line in f:
-                if 'output: end of iteration' in line: break
-                self._header += line
+    def read_header(self):
+        self._header = b""
+        self._buffer.seek(0)
+        for line in iter(self._buffer.readline, b""):
+            if b'output: end of iteration' in line: break
+            self._header += line
+        self._header = self._header.decode('utf-8')
 
     def get(self, phrase):
         if phrase not in self.header:
@@ -49,38 +54,15 @@ class LogFile(object):
 
     # Return a list of boolean values of the same length as 'outputfiles', where
     # an element is 'True' if it is included in this LogFile.
-    def hasOutputFiles(self, filenames):
-        first_file = None
-        last_file = None
+    def has_output_files(self, filenames):
+        first_file = self.get_first_output_file(throw_error=False)
+        last_file = self.get_last_output_file(throw_error=False)
         
-        with starsmashertools.helpers.file.open(self.path, 'r') as f:
-            # Search for the first file
-            f.seek(len(self.header))
-            for line in f:
-                if ' duout: writing file ' in line:
-                    l = line.replace(' duout: writing file ','')
-                    idx = l.index('at t=')
-                    first_file = l[:idx]
-                    break
-
-            # Search for the last file
-            f.seek(0, 2)
-            size = f.tell()
-            c = 1
-            while last_file is None:
-                f.seek(max(0, size - 1048*c))
-                c += 1
-                content = f.read(int(1048 * 1.5))
-                if ' duout: writing file ' in content:
-                    i0 = content.rindex(' duout: writing file ') + len(' duout: writing file ')
-                    i1 = i0 + content[i0:].index('at t=')
-                    last_file = content[i0:i1]
-
         # This is only going to work with out*.sph files
         def get_filenum(filename):
             filename = starsmashertools.helpers.path.basename(filename)
             if 'out' not in filename:
-                raise Exception("hasOutputFiles only works with files of type out*.sph")
+                raise Exception("has_output_files only works with files of type out*.sph")
             return int(filename.replace('out','').replace('.sph',''))
         
         start_num = get_filenum(first_file)
@@ -88,90 +70,62 @@ class LogFile(object):
 
         nums = [get_filenum(filename) for filename in filenames]
         return [num >= start_num and num <= stop_num for num in nums]
-        """
-        # Figure out the time domain of this log file
-        start_time = self.get_start_time()
-        stop_time = self.get_stop_time()
-
-        outputfiles = [starsmashertools.lib.output.Output(filename, self.simulation) for filename in filenames]
-
-        times = [None]*len(outputfiles)
-        
-        # Use the midpoint rule to figure out which output file is closest to
-        # either side of the time domain
-        def locate_file(time, precision=1.e-4):
-            low = 0
-            high = len(outputfiles)
-            mid = int((high + low) * 0.5)
-
-            while True:
-                #if times[low] is None:
-                #    times[low] = outputfiles[low]['t']
-                #if times[high] is None:
-                #    times[high] = outputfiles[high]['t']
-                if times[mid] is None:
-                    times[mid] = outputfiles[mid]['t']
-
-                print("%15.7E %15.7E %5d %5d %5d" % (time, times[mid], low, mid, high))
-                    
-                if time < times[mid]:
-                    if mid == high: break
-                    high = copy.copy(mid)
-                    mid = int(0.5*(low + mid))
-                    #if mid == low: break
-                elif time > times[mid]:
-                    if mid == low: break
-                    low = copy.copy(mid)
-                    mid = int(0.5*(mid + high))
-                    #if mid == high: break
-            return outputfiles[mid]
-        print(locate_file(start_time))
-        print(locate_file(stop_time))
-        quit()
-        """
     
     # Find the time that this log file stopped at
     def get_stop_time(self):
         string = 'time='
-        f = starsmashertools.helpers.file.reverse_readline(self.path)
-        for line in f:
-            if string in line:
-                i0 = line.rindex(string) + len(string)
-                i1 = i0 + line[i0:].index('\n')
-                return float(line[i0:i1])
-        raise LogFile.PhraseNotFoundError(string)
-
+        bstring = string.encode('utf-8')
+        index = self._buffer.rfind(bstring, len(self.header), self._buffer.size())
+        if index == -1:
+            raise LogFile.PhraseNotFoundError(string)
+        index += len(bstring)
+        end_idx = self._buffer.find(b'\n', index, self._buffer.size())
+        self._buffer.seek(index)
+        return float(self._buffer.read(end_idx - index).decode('utf-8').strip())
         
     def get_start_time(self):
         string = 'time='
-        with starsmashertools.helpers.file.open(self.path, 'r') as f:
-            f.seek(len(self.header))
-            for line in f:
-                if string in line:
-                    i0 = line.index(string) + len(string)
-                    i1 = i0 + line[i0:].index('\n')
-                    return float(line[i0:i1])
-        raise LogFile.PhraseNotFoundError(string)
+        bstring = string.encode('utf-8')
+        index = self._buffer.find(bstring, len(self.header), self._buffer.size())
+        if index == -1:
+            raise LogFile.PhraseNotFoundError(string)
+        index += len(bstring)
+        end_idx = self._buffer.find(b'\n', index, self._buffer.size())
+        self._buffer.seek(index)
+        return float(self._buffer.read(end_idx - index).decode('utf-8').strip())
 
-    def get_first_out_file(self):
+    def get_first_output_file(self, throw_error=True):
         string = ' duout: writing file '
-        with starsmashertools.helpers.file.open(self.path, 'r') as f:
-            f.seek(len(self.header))
-            for line in f:
-                if string in line:
-                    i0 = line.index(string) + len(string)
-                    i1 = i0 + line[i0:].index('at t=')
-                    return line[i0:i1].strip()
-        raise LogFile.PhraseNotFoundError(string)
+        bstring = string.encode('utf-8')
+        string2 = 'at t='
+        bstring2 = string2.encode('utf-8')
+        
+        index = self._buffer.find(bstring, len(self.header), self._buffer.size())
+        if index != -1:
+            index += len(bstring)
+            self._buffer.seek(index)
+            end_idx = self._buffer.find(bstring2)
+            return self._buffer.read(end_idx - index).decode('utf-8').strip()
 
-    def get_last_out_file(self):
+        if throw_error:
+            raise LogFile.PhraseNotFoundError(string)
+        
+
+    def get_last_output_file(self, throw_error=True):
         string = ' duout: writing file '
-        f = starsmashertools.helpers.file.reverse_readline(self.path)
-        for line in f:
-            if string in line:
-                i0 = line.rindex(string) + len(string)
-                i1 = i0 + line[i0:].index('at t=')
-                return line[i0:i1].strip()
-        raise LogFile.PhraseNotFoundError(string)
+        bstring = string.encode('utf-8')
+        string2 = 'at t='
+        bstring2 = string2.encode('utf-8')
+        
+        index = self._buffer.rfind(bstring, len(self.header), self._buffer.size())
+        if index != -1:
+            index += len(bstring)
+            self._buffer.seek(index)
+            end_idx = self._buffer.find(bstring2, index, self._buffer.size())
+            return self._buffer.read(end_idx - index).decode('utf-8').strip()
+
+        if throw_error:
+            raise LogFile.PhraseNotFoundError(string)
+        
 
     class PhraseNotFoundError(Exception): pass

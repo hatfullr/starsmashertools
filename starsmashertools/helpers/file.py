@@ -10,6 +10,7 @@ import numpy as np
 import contextlib
 import copy
 import io
+import mmap
 
 fortran_comment_characters = ['c','C','!','*']
 
@@ -108,31 +109,6 @@ def isMESA(path):
     
     return True
 
-"""
-def read_MESA(path):
-    f = starsmashertools.helpers.file.open(path, 'r')
-    
-    f.readline() # numbers
-    header = f.readline().strip().split()
-    obj = {key:val for key, val in zip(header, f.readline().strip().split())}
-    f.readline() # newline
-    f.readline() # numbers
-    header = f.readline()
-    for key in header: obj[key] = []
-    for line in f:
-        for key, val in zip(header, line.strip().split()):
-            obj[key] += [val]
-    f.close()
-
-    for key, val in obj.items():
-        if isinstance(val, list):
-            obj[key] = np.asarray(val, dtype=object).astype(float)
-        else:
-            obj[key] = starsmashertools.helpers.string.parse(val)
-    
-    return obj
-"""
-
 
 # Check if 2 files are identical
 #@profile
@@ -176,16 +152,35 @@ def get_phrase(
 
     """
     
-    with open(path, 'r') as f:
-        contents = f.read()
+    with open(path, 'rb') as f:
+        buffer = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
 
-    if phrase not in contents: return None
+    bphrase = phrase.encode('utf-8')
+    index = buffer.find(bphrase)
+    if index == -1: return None
+    ret = []
+    startidx = index
+    bend = end.encode('utf-8')
+    while startidx != -1:
+        # Go to the position just after the previous instance of the phrase
+        startidx += len(bphrase)
+        
+        buffer.seek(startidx)
+        
+        # Search for the next end character
+        next_end = buffer.find(bend)
 
-    ret = contents.split(phrase)[1:]
-    for i, string in enumerate(ret):
-        if end in string:
-            ret[i] = string[:string.index(end)]
-    
+        # Read the contents between the previous instance of the phrase and the
+        # closest end character
+        content = buffer.read(next_end - startidx)
+
+        # Search for the phrase to see if it appears anywhere in the content
+        ret += content.split(bphrase)
+
+        # Search for the next instance of the phrase
+        startidx = buffer.find(bphrase)
+
+    ret = [r.decode('utf-8') for r in ret]
     return ret
     
 @starsmashertools.helpers.argumentenforcer.enforcetypes
@@ -210,43 +205,17 @@ def sort_by_mtimes(
 
 
 
-def reverse_readline(path, buf_size=8192):
+def reverse_readline(path, **kwargs):
     """A generator that returns the lines of a file in reverse order
     https://stackoverflow.com/a/23646049/4954083"""
     with open(path, 'rb') as fh:
+        buffer = mmap.mmap(fh.fileno(), 0, access=mmap.ACCESS_READ)
+    return reverse_readline_buffer(buffer, **kwargs)
+    """
         segment = None
         offset = 0
         fh.seek(0, os.SEEK_END)
         file_size = remaining_size = fh.tell()
-        
-        # My own modifications start here
-        # I'm not sure this actually makes it any faster
-        """
-        actual_size = starsmashertools.helpers.path.getsize(path)
-        if actual_size < 5 * 1e6: # If the file is less than 5 MB
-            # Probably faster to just read everything and reverse it
-            fh.seek(0)
-            buffer = fh.read().decode(encoding='utf-8')
-            lines = buffer.split('\n')
-            if segment is not None:
-                # If the previous chunk starts right from the beginning of line
-                # do not concat the segment to the last line of new chunk.
-                # Instead, yield the segment first 
-                if buffer[-1] != '\n':
-                    lines[-1] += segment
-                else:
-                    yield segment
-            segment = lines[0]
-            for index in range(len(lines) - 1, 0, -1):
-                if lines[index]:
-                    yield lines[index]
-            # Don't yield None if the file was empty
-            if segment is not None:
-                yield segment
-            return
-        """
-        # My own modifications end here
-        
         while remaining_size > 0:
             offset = min(file_size, offset + buf_size)
             fh.seek(file_size - offset)
@@ -271,6 +240,34 @@ def reverse_readline(path, buf_size=8192):
         # Don't yield None if the file was empty
         if segment is not None:
             yield segment
+    """
 
-
-
+def reverse_readline_buffer(_buffer, buf_size=8192):
+    _buffer.seek(0, os.SEEK_END)
+    segment = None
+    offset = 0
+    file_size = remaining_size = _buffer.tell()
+    while remaining_size > 0:
+        offset = min(file_size, offset + buf_size)
+        _buffer.seek(file_size - offset)
+        buffer = _buffer.read(min(remaining_size, buf_size)).decode(encoding='utf-8')
+        remaining_size -= buf_size
+        lines = buffer.split('\n')
+        # The first line of the buffer is probably not a complete line so
+        # we'll save it and append it to the last line of the next buffer
+        # we read
+        if segment is not None:
+            # If the previous chunk starts right from the beginning of line
+            # do not concat the segment to the last line of new chunk.
+            # Instead, yield the segment first 
+            if buffer[-1] != '\n':
+                lines[-1] += segment
+            else:
+                yield segment
+        segment = lines[0]
+        for index in range(len(lines) - 1, 0, -1):
+            if lines[index]:
+                yield lines[index]
+    # Don't yield None if the file was empty
+    if segment is not None:
+        yield segment
