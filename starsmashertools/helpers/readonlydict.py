@@ -13,14 +13,14 @@ class ReadOnlyDict(dict, object):
     setdefault = raise_readonly
 
     def __copy__(self):
-        previous_setitem = copy.deepcopy(self.__setitem__)
+        previous_setitem = self.__setitem__
         self.__setitem__ = super(ReadOnlyDict, self).__setitem__
         ret = self.__class__.__new__(self.__class__)
         ret.__dict__.update(self.__dict__)
         self.__setitem__ = previous_setitem
         return ret
     def __deepcopy__(self, memo):
-        previous_setitem = copy.deepcopy(self.__setitem__)
+        previous_setitem = self.__setitem__
         self.__setitem__ = super(ReadOnlyDict, self).__setitem__
         ret = self.__class__.__new__(self.__class__)
         memo[id(self)] = ret
