@@ -19,7 +19,7 @@ class ReadOnlyDict(dict, object):
     def __deepcopy__(self, *args, **kwargs):
         self.__setitem__ = super(ReadOnlyDict, self).__setitem__
         ret = self.__class__.__new__(self.__class__)
-        memo[id(self)] = result
+        memo[id(self)] = ret
         for k, v in self.__dict__.items():
             setattr(ret, k, deepcopy(v, memo))
         self.__setitem__ = raise_readonly
