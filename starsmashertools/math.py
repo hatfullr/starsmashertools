@@ -28,7 +28,6 @@ def period(
         separation : starsmashertools.helpers.numerics.types['real'],
 ):
     G = float(starsmashertools.lib.units.gravconst)
-    print(m1, m2, separation, G)
     return np.sqrt(4 * np.pi**2 / (G * (m1 + m2)) * separation**3)
 
 
