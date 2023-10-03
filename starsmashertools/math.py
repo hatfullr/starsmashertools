@@ -21,6 +21,7 @@ def center_of_particles(*args):
     return result
 
 
+@starsmashertools.helpers.argumentenforcer.enforcetypes
 def period(
         m1 : starsmashertools.helpers.numerics.types['real'],
         m2 : starsmashertools.helpers.numerics.types['real'],
