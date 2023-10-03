@@ -172,8 +172,7 @@ class Binary(simulation.Simulation, object):
         m1 *= self.units.mass
         m2 *= self.units.mass
         separation *= self.units.length
-        print(m1, m2, separation)
-        return starsmashertools.math.period(m1, m2, separation)
+        return starsmashertools.math.period(float(m1), float(m2), float(separation))
         
 
     # Obtain the Roche lobe filling fraction fRLOF for the given output
@@ -202,8 +201,8 @@ class Binary(simulation.Simulation, object):
             m2 = np.sum(masked['am'])
             V2 = np.sum(masked['am'] / masked['rho'])
 
-        r_RL1 = starsmashertools.math.rocheradius(m1, m2, separation)
-        r_RL2 = starsmashertools.math.rocheradius(m2, m1, separation)
+        r_RL1 = starsmashertools.math.rocheradius(float(m1), float(m2), float(separation))
+        r_RL2 = starsmashertools.math.rocheradius(float(m2), float(m1), float(separation))
         
         return (0.75 * V1 / np.pi)**(1./3.) / r_RL1, (0.75 * V2 / np.pi)**(1./3.) / r_RL2
         
