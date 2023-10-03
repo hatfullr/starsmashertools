@@ -12,11 +12,15 @@ class ReadOnlyDict(dict, object):
 
     def __copy__(self, *args, **kwargs):
         self.__setitem__ = super(ReadOnlyDict, self).__setitem__
-        ret = super(ReadOnlyDict, self).__copy__(*args, **kwargs)
+        ret = self.__class__.__new__(self.__class__)
+        ret.__dict__.update(self.__dict__)
         self.__setitem__ = raise_readonly
         return ret
     def __deepcopy__(self, *args, **kwargs):
         self.__setitem__ = super(ReadOnlyDict, self).__setitem__
-        ret = super(ReadOnlyDict, self).__deepcopy__(*args, **kwargs)
+        ret = self.__class__.__new__(self.__class__)
+        memo[id(self)] = result
+        for k, v in self.__dict__.items():
+            setattr(ret, k, deepcopy(v, memo))
         self.__setitem__ = raise_readonly
         return ret
