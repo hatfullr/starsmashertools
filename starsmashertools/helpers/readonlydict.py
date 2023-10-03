@@ -1,3 +1,5 @@
+import copy
+
 class ReadOnlyDict(dict, object):
     def raise_readonly(*args, **kwargs):
         raise Exception("Cannot edit a ReadOnlyDict")
@@ -21,6 +23,6 @@ class ReadOnlyDict(dict, object):
         ret = self.__class__.__new__(self.__class__)
         memo[id(self)] = ret
         for k, v in self.__dict__.items():
-            setattr(ret, k, deepcopy(v, memo))
+            setattr(ret, k, copy.deepcopy(v, memo))
         self.__setitem__ = raise_readonly
         return ret
