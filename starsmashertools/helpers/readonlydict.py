@@ -10,13 +10,13 @@ class ReadOnlyDict(dict, object):
     update = raise_readonly
     setdefault = raise_readonly
 
-    def __copy__(self, *args, **kwargs):
+    def __copy__(self):
         self.__setitem__ = super(ReadOnlyDict, self).__setitem__
         ret = self.__class__.__new__(self.__class__)
         ret.__dict__.update(self.__dict__)
         self.__setitem__ = raise_readonly
         return ret
-    def __deepcopy__(self, *args, **kwargs):
+    def __deepcopy__(self, memo):
         self.__setitem__ = super(ReadOnlyDict, self).__setitem__
         ret = self.__class__.__new__(self.__class__)
         memo[id(self)] = ret
