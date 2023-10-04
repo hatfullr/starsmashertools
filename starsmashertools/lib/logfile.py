@@ -215,6 +215,9 @@ class LogFile(object):
         
         self._buffer.seek(index)
         content = self._buffer.read(length)
+        # Round index to nearest multiple of the pagesize (required for Linux)
+        start = mmap.PAGESIZE * int((index / mmap.PAGESIZE))
+        self._buffer.madvise(mmap.MADV_DONTNEED, start, index + length - start)
         return LogFile.Iteration(content, self)
 
     def get_iterations(self, start : int = 0, stop=None, step : int = 1):
@@ -229,9 +232,7 @@ class LogFile(object):
         first_iteration = self.get_first_iteration()
         iterations = []
         
-        #advise_start = int(len(self._header) / mmap.PAGESIZE)
-        #print(advise_start)
-        #print(len(self._header), mmap.PAGESIZE)
+        # Take a guess that we will need everything after the first page size
         self._buffer.madvise(mmap.MADV_WILLNEED, mmap.PAGESIZE, self._buffer.size() - len(self._header))
         for number in toget:
             try:
