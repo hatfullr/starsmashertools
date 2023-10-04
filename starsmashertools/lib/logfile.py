@@ -34,7 +34,7 @@ class LogFile(object):
 
         with starsmashertools.helpers.file.open(self.path, 'rb') as f:
             self._buffer = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
-
+        print("Collected buffer")
         self._dts = None
         self._first_iteration = None
         self._last_iteration = None
