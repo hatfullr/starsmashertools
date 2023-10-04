@@ -262,9 +262,10 @@ def plot_timesteps():
     times = []
     dts = []
     for logfile in simulation.get_logfiles():
+        print(logfile.path)
         iterations = logfile.get_iterations(step=step)
         for iteration in iterations:
-            print(iteration['number'])
+            #print(iteration['number'])
             times += [iteration['time']]
             dts += [iteration['dts']]
     times = np.asarray(times, dtype=float)
