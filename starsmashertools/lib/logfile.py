@@ -54,7 +54,8 @@ class LogFile(object):
         self._header = self._header.decode('utf-8')
         # Do not expect access in the near future.
         # https://man7.org/linux/man-pages/man2/madvise.2.html
-        self._buffer.madvise(mmap.MADV_DONTNEED, 0, len(self._header))
+        size = int(len(self._header) / mmap.PAGESIZE)
+        self._buffer.madvise(mmap.MADV_DONTNEED, 0, size)
         
     def get(self, phrase):
         if phrase not in self.header:
@@ -228,7 +229,8 @@ class LogFile(object):
 
         first_iteration = self.get_first_iteration()
         iterations = []
-        self._buffer.madvise(mmap.MADV_WILLNEED, len(self.header), self._buffer.size() - len(self.header))
+        length = int((self._buffer.size() - len(self.header)) / mmap.PAGESIZE)
+        self._buffer.madvise(mmap.MADV_WILLNEED, len(self.header), length)
         for number in toget:
             try:
                 iteration = self.get_iteration(first_iteration['number'] + number)
