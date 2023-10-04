@@ -36,21 +36,14 @@ class LogFile(object):
         self._first_iteration = None
         self._last_iteration = None
         self._iteration_content_length = None
-        self._opened = False
-        
-    def _open(self):
-        if self._opened: return
+
         with starsmashertools.helpers.file.open(self.path, 'rb') as f:
             try:
                 self._buffer = mmap.mmap(f.fileno(), 0, flags=mmap.MAP_POPULATE, access=mmap.ACCESS_READ)
             except:
                 self._buffer = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
-        self._opened = True
 
-    def _close(self):
-        if not self._opened: return
-        self._buffer.close()
-        self._opened = False
+
 
         
     @property
@@ -59,14 +52,14 @@ class LogFile(object):
         return self._header
     
     def read_header(self):
-        self._open()
+        
         self._header = b""
         self._buffer.seek(0)
         for line in iter(self._buffer.readline, b""):
             if b'output: end of iteration' in line: break
             self._header += line
         self._header = self._header.decode('utf-8')
-        self._close()
+        
         
     def get(self, phrase):
         if phrase not in self.header:
@@ -96,7 +89,7 @@ class LogFile(object):
     
     # Find the time that this log file stopped at
     def get_stop_time(self):
-        self._open()
+        
         string = 'time='
         bstring = string.encode('utf-8')
         index = self._buffer.rfind(bstring, len(self.header), self._buffer.size())
@@ -106,11 +99,11 @@ class LogFile(object):
         end_idx = self._buffer.find(b'\n', index, self._buffer.size())
         self._buffer.seek(index)
         ret = float(self._buffer.read(end_idx - index).decode('utf-8').strip())
-        self._close()
+        
         return ret
         
     def get_start_time(self):
-        self._open()
+        
         string = 'time='
         bstring = string.encode('utf-8')
         index = self._buffer.find(bstring, len(self.header), self._buffer.size())
@@ -120,11 +113,11 @@ class LogFile(object):
         end_idx = self._buffer.find(b'\n', index, self._buffer.size())
         self._buffer.seek(index)
         ret = float(self._buffer.read(end_idx - index).decode('utf-8').strip())
-        self._close()
+        
         return ret
 
     def get_first_output_file(self, throw_error=True):
-        self._open()
+        
         string = ' duout: writing file '
         bstring = string.encode('utf-8')
         string2 = 'at t='
@@ -138,7 +131,7 @@ class LogFile(object):
             end_idx = self._buffer.find(bstring2)
             ret = self._buffer.read(end_idx - index).decode('utf-8').strip()
 
-        self._close()
+        
         
         if throw_error:
             raise LogFile.PhraseNotFoundError(string)
@@ -146,7 +139,7 @@ class LogFile(object):
         
 
     def get_last_output_file(self, throw_error=True):
-        self._open()
+        
         string = ' duout: writing file '
         bstring = string.encode('utf-8')
         string2 = 'at t='
@@ -159,7 +152,7 @@ class LogFile(object):
             self._buffer.seek(index)
             end_idx = self._buffer.find(bstring2, index, self._buffer.size())
             ret = self._buffer.read(end_idx - index).decode('utf-8').strip()
-        self._close()
+        
         if throw_error:
             raise LogFile.PhraseNotFoundError(string)
         return ret
@@ -173,7 +166,7 @@ class LogFile(object):
 
     def get_iteration_content_length(self):
         if self._iteration_content_length is not None: return self._iteration_content_length
-        self._open()
+        
         startline = LogFile.Iteration.startline.encode('utf-8')
         endline = LogFile.Iteration.endline.encode('utf-8')
 
@@ -187,13 +180,13 @@ class LogFile(object):
         
         index2 = self._buffer.find(endline, index, stop)
         index3 = self._buffer.find(b'\n', index2, stop)
-        self._close()
+        
         self._iteration_content_length = index3 - index
         return self._iteration_content_length
 
     def get_first_iteration(self):
         if self._first_iteration is not None: return self._first_iteration
-        self._open()
+        
         string = LogFile.Iteration.startline.encode('utf-8')
         string2 = LogFile.Iteration.endline.encode('utf-8')
         size = self._buffer.size()
@@ -203,13 +196,13 @@ class LogFile(object):
         length = self.get_iteration_content_length()
         self._buffer.seek(index)
         content = self._buffer.read(length)
-        self._close()
+        
         self._first_iteration = LogFile.Iteration(content, self)
         return self._first_iteration
 
     def get_last_iteration(self):
         if self._last_iteration is not None: return self._last_iteration
-        self._open()
+        
         string = LogFile.Iteration.startline.encode('utf-8')
         string2 = LogFile.Iteration.endline.encode('utf-8')
         size = self._buffer.size()
@@ -228,12 +221,12 @@ class LogFile(object):
             self._buffer.seek(index)
             content = self._buffer.read(length)
             self._last_iteration = LogFile.Iteration(content, self)
-        self._close()
+        
         return self._last_iteration
 
     @profile
     def get_iteration(self, number):
-        self._open()
+        
         startline = LogFile.Iteration.startline
         tomatch = (startline + '%8d') % number
         length = self.get_iteration_content_length()
@@ -248,7 +241,7 @@ class LogFile(object):
         
         self._buffer.seek(index)
         content = self._buffer.read(length)
-        self._close()
+        
         return LogFile.Iteration(content, self)
 
     def get_iterations(self, start : int = 0, stop=None, step : int = 1):
