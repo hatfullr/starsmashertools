@@ -33,7 +33,10 @@ class LogFile(object):
         self._header = None
 
         with starsmashertools.helpers.file.open(self.path, 'rb') as f:
-            self._buffer = mmap.mmap(f.fileno(), 0,access=mmap.ACCESS_READ)
+            try:
+                self._buffer = mmap.mmap(f.fileno(), 0, flags=mmap.MAP_POPULATE, access=mmap.ACCESS_READ)
+            except:
+                self._buffer = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
         
         self._dts = None
         self._first_iteration = None
@@ -52,9 +55,6 @@ class LogFile(object):
             if b'output: end of iteration' in line: break
             self._header += line
         self._header = self._header.decode('utf-8')
-        # Do not expect access in the near future.
-        # https://man7.org/linux/man-pages/man2/madvise.2.html
-        #self._buffer.madvise(mmap.MADV_DONTNEED, 0, len(self._header))
         
     def get(self, phrase):
         if phrase not in self.header:
@@ -215,9 +215,6 @@ class LogFile(object):
         
         self._buffer.seek(index)
         content = self._buffer.read(length)
-        # Round index to nearest multiple of the pagesize (required for Linux)
-        #start = mmap.PAGESIZE * int((index / mmap.PAGESIZE))
-        #self._buffer.madvise(mmap.MADV_DONTNEED, start, index + length - start)
         return LogFile.Iteration(content, self)
 
     def get_iterations(self, start : int = 0, stop=None, step : int = 1):
@@ -232,8 +229,6 @@ class LogFile(object):
         first_iteration = self.get_first_iteration()
         iterations = []
         
-        # Take a guess that we will need everything after the first page size
-        #self._buffer.madvise(mmap.MADV_WILLNEED, mmap.PAGESIZE, self._buffer.size() - len(self._header))
         for number in toget:
             try:
                 iteration = self.get_iteration(first_iteration['number'] + number)
