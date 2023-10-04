@@ -46,6 +46,7 @@ class LogFile(object):
 
     def _close(self):
         self._buffer.close()
+        self._buffer = None
                 
     @property
     def header(self):
