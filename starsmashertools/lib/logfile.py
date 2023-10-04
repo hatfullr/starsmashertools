@@ -38,6 +38,7 @@ class LogFile(object):
         self._iteration_content_length = None
 
     def _open(self):
+        print("opening")
         with starsmashertools.helpers.file.open(self.path, 'rb') as f:
             try:
                 self._buffer = mmap.mmap(f.fileno(), 0, flags=mmap.MAP_POPULATE, access=mmap.ACCESS_READ)
@@ -45,9 +46,10 @@ class LogFile(object):
                 self._buffer = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
 
     def _close(self):
+        print("closing")
         self._buffer.close()
-        self._buffer = None
-                
+
+        
     @property
     def header(self):
         if self._header is None: self.read_header()
