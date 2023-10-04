@@ -243,9 +243,59 @@ def plot_wall_time():
 
 
 
+def plot_timesteps():
+    global simulation, cli
+    import matplotlib.pyplot as plt
 
+    times = []
+    dts = []
+    for logfile in simulation.get_logfiles():
+        iterations = logfile.get_iterations(step=10000)
+        for iteration in iterations:
+            times += [iteration['time']]
+            dts += [iteration['dts']]
+    times = np.asarray(times, dtype=float)
+    dts = np.asarray(dts, dtype=float)
 
+    unit = (np.amax(times) * simulation.units['t']).auto()
+    unit = simulation.units['t'].convert(unit.label)
+    times *= float(unit)
 
+    dts = np.log10(dts)# * float(simulation.units['t']))
+    dts[dts >= 15] = np.nan
+
+    idx = np.argsort(times)
+    times = times[idx]
+    dts = dts[idx]
+
+    fig, ax = plt.subplots()
+
+    ax.set_xlabel("Simulation Time [%s]" % str(unit.label))
+    ax.set_ylabel("log10 (Time Steps / [s])")
+
+    for i in range(dts.shape[1]):
+        ax.plot(times, dts[:,i], label='dt'+str(i))
+    ax.legend()
+
+    plt.tight_layout()
+        
+    if cli.args['batch']:
+        cli.write("Saving plot as '%s'." % cli.args['plot_name'], flush=True)
+        plt.savefig(cli.args['plot_name'])
+        return ""
+
+    try:
+        cli.write("Displaying Matplotlib plot. Please close the plot to continue execution.", flush=True)
+        plt.show()
+    except UserWarning as e:
+        if 'Matplotlib is currently using agg, which is a non-GUI backend, so cannot show the figure.' != str(e):
+            raise
+        cli.write("Displaying plot failed: '%s'" % str(e), flush=True)
+        cli.write("Saving plot as '%s'." % cli.args['plot_name'], flush=True)
+        plt.savefig(cli.args['plot_name'])
+
+    return ""
+    
 
 
 
@@ -324,6 +374,7 @@ mainmenu = cli.add_list(
     items=[
         #'total time',
         'wall time plot',
+        'timesteps',
     ],
     bullet='%5d)',
     header=newline + starsmashertools.bintools.Style.bold("Main Menu") + newline + newline + 'Choose an option' + newline,
@@ -349,6 +400,13 @@ wt = cli.add_page(
     back=mainmenu,
 )
 mainmenu.connect(wt, [0, 'wall time plot'])
+
+ts = cli.add_page(
+    [],
+    plot_timesteps,
+    back=mainmenu,
+)
+mainmenu.connect(ts, [1, 'timesteps'])
 
 cli.set_mainmenu(mainmenu)
 

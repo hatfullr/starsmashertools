@@ -2,6 +2,7 @@ import starsmashertools
 import unittest
 import os
 import time
+import numpy as np
 
 curdir = os.getcwd()
 simdir = os.path.join(curdir, 'data')
@@ -21,6 +22,19 @@ class TestLogFile(unittest.TestCase):
 
     def testGetStartTime(self):
         self.assertEqual(0, logfile.get_start_time())
+
+    def testGetdts(self):
+        dts = logfile.get_dts()
+        arr1 = np.array([0.187, 0.562E-01, 0.100E+31, 0.100E+31, 0.100E+31, 0.100E+31, 0.458E-01])
+        arr2 = np.array([0.110, 1.76, 764., 0.100E+31, 0.100E+31, 0.100E+31, 0.105])
+        for a,b in zip(dts[0], arr1):
+            self.assertEqual(a, b)
+        for a,b in zip(dts[-1], arr2):
+            self.assertEqual(a, b)
+
+    def testGetIterations(self):
+        iterations = logfile.get_iterations()
+        #print(iterations)
 
 if __name__ == "__main__":
     unittest.main(failfast=True)

@@ -258,8 +258,9 @@ class Simulation(object):
     def get_logfiles(self, **kwargs):
         if self._logfiles is None:
             self._logfiles = []
-            for path in starsmashertools.lib.logfile.find(self.directory, **kwargs):
-                self._logfiles += [starsmashertools.lib.logfile.LogFile(path, self)]
+            for _path in starsmashertools.lib.logfile.find(self.directory, **kwargs):
+                if path.getsize(_path) > 0:
+                    self._logfiles += [starsmashertools.lib.logfile.LogFile(_path, self)]
         return self._logfiles
 
     
