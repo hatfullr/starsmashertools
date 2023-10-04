@@ -276,12 +276,18 @@ class LogFile(object):
                 raise Exception("Failed to find iteration %d" % (first_iteration['number'] + number))
             
             # Traverse to the next iteration
-            tonext = index - start
-            self._buffer.read(tonext)
+            #tonext = index - start
+            #self._buffer.read(tonext)
 
             # Get the content of the iteration
+            self._buffer.seek(index)
             content = self._buffer.read(length)
-            iteration = LogFile.Iteration(content, self)
+            
+            try:
+                iteration = LogFile.Iteration(content, self)
+            except LogFile.PhraseNotFoundError:
+                break
+            
             start += tonext + length
             
             #try:
