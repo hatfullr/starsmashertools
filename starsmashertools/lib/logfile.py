@@ -281,7 +281,7 @@ class LogFile(object):
 
             # Get the content of the iteration
             content = self._buffer.read(length)
-            iteration = LogFile.Iteration(content)
+            iteration = LogFile.Iteration(content, self)
             start += tonext + length
             
             #try:
