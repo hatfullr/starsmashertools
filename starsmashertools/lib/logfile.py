@@ -255,13 +255,37 @@ class LogFile(object):
 
         first_iteration = self.get_first_iteration()
         iterations = []
+
+        startline = LogFile.Iteration.startline
+        length = self.get_iteration_content_length()
+        first_iteration = self.get_first_iteration()
+        start = length*(number - first_iteration['number']) # + len(self.header)
+        self._buffer.seek(start)
+        end = self._buffer.size()
         
         for number in toget:
-            try:
-                iteration = self.get_iteration(first_iteration['number'] + number)
-            except LogFile.PhraseNotFoundError:
-                break
-            if iteration is None: raise Exception("Failed to find iteration %d" % (first_iteration['number'] + number))
+            tomatch = (startline + '%8d') % number
+            index = self._buffer.find(
+                tomatch.encode('utf-8'),
+                start,
+                end,
+            )
+            if index == -1: 
+                raise Exception("Failed to find iteration %d" % (first_iteration['number'] + number))
+            
+            # Traverse to the next iteration
+            self._buffer.read(index - start)
+
+            # Get the content of the iteration
+            content = self._buffer.read(length)
+            iteration = LogFile.Iteration(content)
+            start += index + length
+            
+            #try:
+            #    iteration = self.get_iteration(first_iteration['number'] + number)
+            #except LogFile.PhraseNotFoundError:
+            #    break
+            #if iteration is None: raise Exception("Failed to find iteration %d" % (first_iteration['number'] + number))
             print("Got iteration %d" % iteration['number'])
             iterations += [iteration]
 
