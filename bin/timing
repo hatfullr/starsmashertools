@@ -258,16 +258,12 @@ def plot_timesteps():
     step = 1
     if total_iterations > max_iterations:
         step = int(total_iterations / max_iterations)
-    #print(step)
         
     times = []
     dts = []
     for logfile in simulation.get_logfiles():
-        print(logfile.path)
         iterations = logfile.get_iterations(step=step)
-        #print(len(iterations))
         for iteration in iterations:
-            #print(iteration['number'])
             times += [iteration['time']]
             dts += [iteration['dts']]
     times = np.asarray(times, dtype=float)
@@ -277,7 +273,7 @@ def plot_timesteps():
     unit = simulation.units['t'].convert(unit.label)
     times *= float(unit)
 
-    dts = np.log10(dts)# * float(simulation.units['t']))
+    dts = np.log10(dts * float(simulation.units['t']))
     dts[dts >= 15] = np.nan
 
     idx = np.argsort(times)

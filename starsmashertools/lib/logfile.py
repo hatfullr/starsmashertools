@@ -226,7 +226,6 @@ class LogFile(object):
 
     @profile
     def get_iteration(self, number):
-        
         startline = LogFile.Iteration.startline
         tomatch = (startline + '%8d') % number
         length = self.get_iteration_content_length()
@@ -273,10 +272,6 @@ class LogFile(object):
             if index == -1:
                 raise Exception("Failed to find iteration %d" % (first_iteration['number'] + number))
             
-            # Traverse to the next iteration
-            #tonext = index - start
-            #self._buffer.read(tonext)
-
             # Get the content of the iteration
             self._buffer.seek(index)
             content = self._buffer.read(length)
@@ -287,13 +282,17 @@ class LogFile(object):
                 break
             
             start = self._buffer.tell()
-            
+
+            # This code scales worse than above because it has to read the log
+            # file at the front and back before seeking ahead. We do the front-
+            # back seeking above before the loop to save time.
             #try:
             #    iteration = self.get_iteration(number)
             #except LogFile.PhraseNotFoundError:
             #    break
             #if iteration is None: raise Exception("Failed to find iteration %d" % (first_iteration['number'] + number))
             #print("Got iteration %d" % iteration['number'])
+            
             iterations += [iteration]
 
         return iterations
