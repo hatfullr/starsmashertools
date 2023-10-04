@@ -33,7 +33,8 @@ class LogFile(object):
         self._header = None
 
         with starsmashertools.helpers.file.open(self.path, 'rb') as f:
-            self._buffer = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
+            self._buffer = mmap.mmap(f.fileno(), 0,access=mmap.ACCESS_READ)
+        self._buffer.madvise(mmap.MADV_SEQUENTIAL)
         
         self._dts = None
         self._first_iteration = None
