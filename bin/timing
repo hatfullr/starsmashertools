@@ -263,7 +263,7 @@ def plot_timesteps():
     times = []
     dts = []
     for logfile in simulation.get_logfiles():
-        #print(logfile.path)
+        print(logfile.path)
         iterations = logfile.get_iterations(step=step)
         #print(len(iterations))
         for iteration in iterations:
