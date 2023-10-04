@@ -11,6 +11,7 @@ import starsmashertools.helpers.midpoint
 import starsmashertools.helpers.string
 import starsmashertools.helpers.argumentenforcer
 import starsmashertools.helpers.file
+import starsmashertools.helpers.compressiontask
 from starsmashertools.lib.teos import TEOS
 import numpy as np
 import glob
@@ -146,69 +147,10 @@ class Simulation(object):
         children_object[self.directory] = to_save
         jsonfile.save(filename, children_object)
 
-
-    def _get_compression_method(self, filename):
-        methods = self.get_compression_methods()
-        for method in methods:
-            if filename.endswith(method): return method
-        return None
-
-    def _get_compression_filename(self, method):
-        dirname = starsmashertools.helpers.path.basename(self.directory)
+    def get_compression_filename(self, method):
+        dirname = path.basename(self.directory)
         filename = dirname + ".tar." + method
-        return starsmashertools.helpers.path.join(self.directory, filename)
-
-    def _get_compressed_name(self):
-        filenames = []
-        for method in self.get_compression_methods():
-            filename = self._get_compression_filename(method)
-            
-            if starsmashertools.helpers.path.isfile(filename):
-                with tarfile.open(filename, 'r:'+method) as tar:
-                    try:
-                        tar.getmember('compression.sstools')
-                    except KeyError: continue
-                filenames += [filename]
-
-        if not filenames: return None
-
-        # Sort the compress files by their modification times so that we get the
-        # most recent file
-        filenames = starsmashertools.helpers.file.sort_by_mtimes(filenames)
-        return filenames[0]
-
-    def _get_compression_method(self, filename):
-        for method in self.get_compression_methods():
-            if filename.endswith(method): return method
-
-    def _get_files_for_compression(
-            self,
-            include_patterns = None,
-            exclude_patterns = None,
-            recursive = True,
-    ):
-        """Obtain the file names to be compressed."""
-        if include_patterns is None:
-            include_patterns = preferences.get_default('Simulation', 'compress include')
-        if exclude_patterns is None:
-            exclude_patterns = preferences.get_default('Simulation', 'compress exclude')
-
-        exclude_files = []
-        for pattern in exclude_patterns:
-            files = self.get_file(pattern, recursive=recursive)
-            exclude_files += files
-        
-        filenames = []
-        for pattern in include_patterns:
-            files = self.get_file(pattern, recursive=recursive)
-            filenames += [f for f in files if f not in exclude_files]
-            
-        for key, val in self.items():
-            if not isinstance(val, str): continue
-            path = starsmashertools.helpers.path.join(self.directory, val)
-            if not starsmashertools.helpers.path.isfile(path): continue
-            filenames += [path]
-        return filenames
+        return path.join(self.directory, filename)
 
 
 
@@ -246,11 +188,6 @@ class Simulation(object):
         if self._teos is None and self['neos'] == 2:
             self._teos = TEOS(path.realpath(path.join(self.directory, self['eosfile'])))
         return self._teos
-
-    @property
-    def compressed(self):
-        return self._get_compressed_name() is not None
-
 
         
 
@@ -486,15 +423,6 @@ class Simulation(object):
         return m.get()
 
 
-
-
-
-    
-    def get_compression_methods(self):
-        methods = list(tarfile.TarFile.OPEN_METH.keys())
-        if 'tar' in methods: methods.remove('tar')
-        return methods
-
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     def compress(
             self,
@@ -502,17 +430,12 @@ class Simulation(object):
             method = None,
             include_patterns = None,
             exclude_patterns = None,
-            delete : bool = True,
-            delete_after : bool = True,
             recursive : bool = True,
-            verbose : bool = True,
+            **kwargs,
     ):
-        """Create a compressed version of the Simulation. File creation times
-        are preserved.
-
-        A special file named `compression.sstools` is added to the final 
-        compressed file for identification later when using
-        ``starsmashertools.lib.simulation.Simulation.decompress()``.
+        """
+        Create a compressed version of the Simulation. File creation times are
+        preserved.
 
         Parameters
         ----------
@@ -521,90 +444,77 @@ class Simulation(object):
             of the file will be the name of the simulation directory with
             `.tar.{method}` on the end, where `{method}` is replaced with the
             compression method shorthand, e.g. `gz`, `bz2`, etc.
+
         method : str, None, default = None
             Compression method to be used. If `None`, uses the default method
-            from ``starsmashertools.preferences``. You can check the available
-            compression methods on your system using
-            ``starsmashertools.lib.simulation.Simulation.get_compression_methods()``.
+            from `~.preferences`. You can check the available compression
+            methods on your system using
+            `~.helpers.compressiontask.CompressionTask.get_methods`.
+        
         include_patterns : list, None, default = None
             File name patterns to include in the compression. If `None`, uses 
-            the `compress include` value in ``starsmashertools.preferences``.
+            the `compress include` value in `~.preferences`.
+
         exclude_patterns : list, None, default = None
             File name patterns to exclude in the compression. If `None`, uses
-            the `compress exclude` value from ``starsmashertools.preferences``.
-        delete : bool, default = True
-            If `True`, the files which are compressed are deleted.
-        delete_after : bool, default = True
-            If `True`, compressed files are deleted after compression has
-            completed. If `False`, files are deleted after compression has 
-            completed. If `delete` is `False` this option is ignored.
+            the `compress exclude` value from `~.preferences`.
+
         recursive : bool, default = True
             If `True`, subdirectories are also searched for files matching the
             given patterns. If `False`, only searches the main simulation
             directory.
-        verbose : bool, default = True
-            If `True`, debug messages are printed to the console.
 
-        Returns
-        -------
-        None
+        Other Parameters
+        ----------------
+        **kwargs
+            Remaining keyword arguments are passed directly to 
+            `~helpers.compressiontask.CompressionTask.compress`.
 
         See Also
         --------
-        ``starsmashertools.lib.simulation.Simulation.decompress()``
-        ``starsmashertools.lib.simulation.Simulation.get_compression_methods()``
-        ``starsmashertools.preferences``
+        `~.decompress`
+        `~.helpers.compressiontask.CompressionTask.compress`
+        `~.helpers.compressiontask.CompressionTask.get_methods`
+        `~.preferences`
         """
 
-        methods = self.get_compression_methods()
         if method is None:
-            method = preferences.get_default('Simulation', 'compression method')
-            if method not in methods: method = methods[0]
+            method = preferences.get_default('Simulation', 'compression method', throw_error=True)
+        
+        # Obtain the file names to be compressed.
+        if include_patterns is None:
+            include_patterns = preferences.get_default('Simulation', 'compress include')
+        if exclude_patterns is None:
+            exclude_patterns = preferences.get_default('Simulation', 'compress exclude')
+
+        exclude_files = []
+        for pattern in exclude_patterns:
+            fs = self.get_file(pattern, recursive=recursive)
+            exclude_files += fs
+        
+        files = []
+        for pattern in include_patterns:
+            fs = self.get_file(pattern, recursive=recursive)
+            files += [f for f in fs if f not in exclude_files]
             
-        starsmashertools.helpers.argumentenforcer.enforcevalues({
-            'method' : methods,
-        })
-        
-        if self.compressed:
-            raise FileExistsError("Cannot compress simulation '%s' because it is already compressed. If you wish to change the contents of the compressed file, please decompress the simulation first and then re-compress it." % self.directory)
-        
-        filename = self._get_compression_filename(method)
-        files = self._get_files_for_compression(
-            include_patterns = include_patterns,
-            exclude_patterns = exclude_patterns,
-            recursive = recursive,
-        )
+        for key, val in self.items():
+            if not isinstance(val, str): continue
+            path = starsmashertools.helpers.path.join(self.directory, val)
+            if not starsmashertools.helpers.path.isfile(path): continue
+            files += [path]
 
-        fname = path.join(self.directory, 'compression.sstools')
-        with starsmashertools.helpers.file.open(fname, 'w') as f:
-            f.write("This file is used by starsmashertools to identify compressed archives it created. If you are reading this, then it probably means something went wrong during a compression. It is always safe to delete this file, but if it is removed from the tar ball it belongs to then starsmashertools might have trouble understanding which files to decompress. See the starsmashertools for more information: https://starsmashertools.readthedocs.io")
-        files += [fname]
-
-        
-        with tarfile.open(filename, 'w:'+method) as tar:
-            for f in files:
-                if verbose: print("Adding '%s' to '%s'" % (f, filename))
-                try:
-                    tar.add(f, arcname=path.relpath(f, self.directory))
-                except:
-                    tar.extractall()
-                    path.remove(filename)
-                    path.remove(fname)
-                    raise
-                if delete and not delete_after: path.remove(f)
-
-        # Remove the old files
-        if delete and delete_after:
-            for f in files: path.remove(f)
+        filename = self.get_compression_filename(method)
+        task = starsmashertools.helpers.compressiontask.CompressionTask()
+        task.compress(files, filename, method, **kwargs)
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     def decompress(
             self,
             filename = None,
-            delete : bool = True,
-            verbose : bool = False,
+            **kwargs
     ):
-        """Decompress the simulation from the given filename.
+        """
+        Decompress the simulation from the given filename.
 
         Parameters
         ----------
@@ -612,53 +522,43 @@ class Simulation(object):
             The filename to decompress. If `None`, the simulation directory is
             searched for a compressed file whose path ends with `.tar.{method}`
             where `{method}` is one of the available compression methods from
-            ``starsmashertools.lib.simulation.Simulation.get_compression_methods()``.
+            `~helpers.compressiontask.CompressionTask.get_methods`.
             The file chosen is one which has a `compression.sstools` file
             included in it, which is an empty file that is created when using
-            ``starsmashertools.lib.simulation.Simulation.compress()``.
-        delete : bool, default = True
-            If `True`, the compressed file is deleted after decompression.
-        verbose : bool, default = False
-            If `True`, debug messages are printed to the console.
-
-        Returns
-        -------
-        None
+            `~helpers.compressiontask.CompressionTask.compress`.
+        
+        Other Parameters
+        ----------------
+        **kwargs
+            Remaining keyword arguments are passed directly to
+            `~helpers.compressiontask.CompressionTask.decompress`.
 
         See Also
         --------
-        ``starsmashertools.lib.simulation.Simulation.compress()``
-        ``starsmashertools.lib.simulation.Simulation.get_compression_methods()``
+        `~.compress`
+        `~.helpers.compresisontask.CompressionTask.decompress`
+        `~.helpers.compressiontask.CompressionTask.get_methods`
         """
-        if not self.compressed:
-            raise FileNotFoundError("Cannot decompress simulation because it is not compressed: '%s'" % self.directory)
 
-        if filename is None:
-            filename = self._get_compressed_name()
-            
-        method = self._get_compression_method(filename)
-        if method is None:
-            raise NotImplementedError("Compression method not recognized for file '%s'" % filename)
+        task = starsmashertools.helpers.compressiontask.CompressionTask()
         
-        extracted = []
-        with tarfile.open(filename, 'r:'+method) as tar:
-            for member in tar.getmembers():
-                fname = path.join(self.directory, member.name)
-                if path.isfile(fname):
-                    for e in extracted: path.remove(e)
-                    raise FileExistsError(fname)
-                if verbose: print("Extracting '%s' to '%s'" % (fname, self.directory))
-                try:
-                    tar.extract(member, path=self.directory)
-                except:
-                    if path.isfile(fname): path.remove(fname)
-                    for e in extracted: path.remove(e)
-                    raise
-                if member.name == 'compression.sstools':
-                    path.remove(fname)
-                else:
-                    extracted += [fname]
-        if delete: path.remove(filename)
+        if filename is None:
+            filenames = []
+            methods = task.get_methods()
+            for method in methods:
+                filename = self.get_compression_filename(method)
+                if starsmashertools.helpers.path.isfile(filename):
+                    if task.isCompressedFile(filename):
+                        filenames += [filename]
+            if not filenames:
+                raise FileNotFoundError("Failed to find any valid compressed files in directory '%s'" % self.directory)
+            
+            # Sort the compress files by their modification times so that we
+            # get the most recent file
+            filenames = starsmashertools.helpers.file.sort_by_mtimes(filenames)
+            filename = filenames[0]
+
+        task.decompress(filename, **kwargs)
 
 
 

@@ -199,6 +199,9 @@ class Unit(object):
         """
         return ret
 
+    def sqrt(self, *args, **kwargs):
+        return Unit(self.value**0.5, self.label**0.5)
+
     def __repr__(self):
         string = self.__class__.__name__ + "(%g, %s)"
         return string % (self.value, str(self.label))

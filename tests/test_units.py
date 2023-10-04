@@ -3,6 +3,7 @@ import starsmashertools
 import starsmashertools.preferences
 import starsmashertools.helpers.argumentenforcer
 import unittest
+import numpy as np
 
 class TestUnits(unittest.TestCase):
     def test_labels(self):
@@ -200,7 +201,21 @@ class TestUnits(unittest.TestCase):
         u = u.auto()
         self.assertAlmostEqual(float(u), 24)
         self.assertEqual(u.label, 'hr')
+
+
+        gravconst = starsmashertools.lib.units.Unit(6.67390e-08, 'cm*cm*cm/g*s*s')
+        runit = starsmashertools.lib.units.Unit(6.9599e10, 'cm')
+        munit = starsmashertools.lib.units.Unit(1.9891e33, 'g')
+
+        simulation = starsmashertools.get_simulation('data')
+        expected = simulation['runit']**3 / (6.67390e-08 * simulation['munit'])
         
+        u = runit**3 / (gravconst * munit)
+        self.assertAlmostEqual(float(u), expected)
+        self.assertEqual(u.label, 's*s')
+        u = np.sqrt(u)
+        self.assertEqual(u.label, 's')
+        self.assertAlmostEqual(float(u), np.sqrt(expected))
         
 
     def test_units(self):
@@ -220,6 +235,12 @@ class TestUnits(unittest.TestCase):
             f,
             (0),
         )
+
+        #print(simulation['runit']**3 / (simulation.units.gravconst * simulation['munit']))
+        #expected = np.sqrt(simulation['runit']**3 / (simulation.units.gravconst * simulation['munit']))
+        #self.assertAlmostEqual(float(simulation.units['t']), expected)
+        #u = simulation.units['t'].convert('day')
+        #self.assertAlmostEqual(float(u), expected / (3600 * 24))
 
         
 
