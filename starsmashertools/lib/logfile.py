@@ -196,6 +196,7 @@ class LogFile(object):
             self._last_iteration = LogFile.Iteration(content, self)
         return self._last_iteration
 
+    @profile
     def get_iteration(self, number):
         startline = LogFile.Iteration.startline
         tomatch = (startline + '%8d') % number
@@ -213,7 +214,6 @@ class LogFile(object):
         content = self._buffer.read(length)
         return LogFile.Iteration(content, self)
 
-    @profile
     def get_iterations(self, start : int = 0, stop=None, step : int = 1):
         # This function is as well-optimized as I can get it to be
         # It's still a big bottleneck, but just read fewer iterations from
