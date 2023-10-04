@@ -271,7 +271,7 @@ class LogFile(object):
                 end,
             )
             if index == -1:
-                print(curpos, end)
+                print(tomatch, curpos, end)
                 raise Exception("Failed to find iteration %d" % (first_iteration['number'] + number))
             
             # Traverse to the next iteration
