@@ -34,7 +34,6 @@ class LogFile(object):
 
         with starsmashertools.helpers.file.open(self.path, 'rb') as f:
             self._buffer = mmap.mmap(f.fileno(), 0,access=mmap.ACCESS_READ)
-        self._buffer.madvise(mmap.MADV_SEQUENTIAL)
         
         self._dts = None
         self._first_iteration = None
@@ -53,7 +52,10 @@ class LogFile(object):
             if b'output: end of iteration' in line: break
             self._header += line
         self._header = self._header.decode('utf-8')
-
+        # Do not expect access in the near future.
+        # https://man7.org/linux/man-pages/man2/madvise.2.html
+        self._buffer.madvise(mmap.MADV_DONTNEED, 0, len(self._header))
+        
     def get(self, phrase):
         if phrase not in self.header:
             raise LogFile.PhraseNotFoundError("Failed to find '%s' in '%s'" % (phrase, self.path))
@@ -226,6 +228,7 @@ class LogFile(object):
 
         first_iteration = self.get_first_iteration()
         iterations = []
+        self._buffer.madvise(mmap.MADV_WILLNEED, len(self.header), self._buffer.size() - len(self.header))
         for number in toget:
             try:
                 iteration = self.get_iteration(first_iteration['number'] + number)
