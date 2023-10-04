@@ -366,7 +366,7 @@ cli.parser.add_argument(
     '-p',
     '--plot',
     nargs='?',
-    choices=[val['cli name'] for val in valid_plots.values()],
+    choices=["'%s'" % val['cli name'] for val in valid_plots.values()],
     type=str,
     required=False,
     help="Creates a plot of the given type",
