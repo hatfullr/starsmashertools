@@ -253,9 +253,6 @@ class LogFile(object):
         if stop is None: stop = num_iters
         toget = np.arange(start, stop, step)
 
-        first_iteration = self.get_first_iteration()
-        iterations = []
-
         startline = LogFile.Iteration.startline
         length = self.get_iteration_content_length()
         first_iteration = self.get_first_iteration()
@@ -263,12 +260,13 @@ class LogFile(object):
         start = len(self.header)
         self._buffer.seek(start)
         end = self._buffer.size()
-        
+
+        iterations = []
         for number in toget:
             tomatch = (startline + '%8d') % number
             index = self._buffer.find(
                 tomatch.encode('utf-8'),
-                start,
+                0,
                 end,
             )
             if index == -1: 
