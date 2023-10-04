@@ -213,7 +213,7 @@ class LogFile(object):
         content = self._buffer.read(length)
         return LogFile.Iteration(content, self)
 
-    
+    @profile
     def get_iterations(self, start : int = 0, stop=None, step : int = 1):
         # This function is as well-optimized as I can get it to be
         # It's still a big bottleneck, but just read fewer iterations from
