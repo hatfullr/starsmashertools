@@ -265,6 +265,7 @@ class LogFile(object):
 
         iterations = []
         for number in toget:
+            """
             tomatch = (startline + '%8d') % number
             index = self._buffer.find(
                 tomatch.encode('utf-8'),
@@ -289,12 +290,12 @@ class LogFile(object):
                 break
             
             start += tonext + length
-            
-            #try:
-            #    iteration = self.get_iteration(first_iteration['number'] + number)
-            #except LogFile.PhraseNotFoundError:
-            #    break
-            #if iteration is None: raise Exception("Failed to find iteration %d" % (first_iteration['number'] + number))
+            """
+            try:
+                iteration = self.get_iteration(first_iteration['number'] + number)
+            except LogFile.PhraseNotFoundError:
+                break
+            if iteration is None: raise Exception("Failed to find iteration %d" % (first_iteration['number'] + number))
             print("Got iteration %d" % iteration['number'])
             iterations += [iteration]
 
