@@ -34,7 +34,7 @@ class LogFile(object):
 
         with starsmashertools.helpers.file.open(self.path, 'rb') as f:
             self._buffer = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
-        print("Collected buffer")
+        
         self._dts = None
         self._first_iteration = None
         self._last_iteration = None
@@ -134,26 +134,7 @@ class LogFile(object):
 
         if throw_error:
             raise LogFile.PhraseNotFoundError(string)
-
-    def get_dts(self):
-        if self._dts is not None: return self._dts
-        self._dts = []
-        string = b"dts="
-        start = len(self.header)
-        stop = self._buffer.size()
-        index = self._buffer.find(string, start, stop)
-        if index == -1: return self._dts
-        lenstring = len(string)
-        while index != -1:
-            start = index + lenstring
-            self._buffer.seek(start)
-            self._dts += [self._buffer.readline().decode('utf-8').strip().split()]
-
-            # Find the next "dts" line
-            index = self._buffer.find(string, start, stop)
-        self._dts = np.asarray(self._dts, dtype=object).astype(float)
-        return self._dts
-
+    
     def get_number_of_iterations(self):
         first = self.get_first_iteration()
         last = self.get_last_iteration()
@@ -250,6 +231,7 @@ class LogFile(object):
             except LogFile.PhraseNotFoundError:
                 break
             if iteration is None: raise Exception("Failed to find iteration %d" % (first_iteration['number'] + number))
+            print("Got iteration %d" % iteration['number'])
             iterations += [iteration]
 
         return iterations
