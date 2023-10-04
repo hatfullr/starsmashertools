@@ -36,18 +36,21 @@ class LogFile(object):
         self._first_iteration = None
         self._last_iteration = None
         self._iteration_content_length = None
-
+        self._opened = False
+        
     def _open(self):
-        print("opening")
+        if self._opened: return
         with starsmashertools.helpers.file.open(self.path, 'rb') as f:
             try:
                 self._buffer = mmap.mmap(f.fileno(), 0, flags=mmap.MAP_POPULATE, access=mmap.ACCESS_READ)
             except:
                 self._buffer = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
+        self._opened = True
 
     def _close(self):
-        print("closing")
+        if not self._opened: return
         self._buffer.close()
+        self._opened = False
 
         
     @property
