@@ -108,7 +108,7 @@ def get_time_table():
     
     return [logcolumn, outcolumn, fraccolumn, totalcolumn], labels
 
-def plot_wall_time():
+def plot_wall_time(default_savename):
     # This function contains a whole lot of pain.
     global simulation, cli
     import matplotlib.pyplot as plt
@@ -223,8 +223,8 @@ def plot_wall_time():
     
 
     if cli.args['batch']:
-        cli.write("Saving plot as '%s'." % cli.args['plot_name'], flush=True)
-        plt.savefig(cli.args['plot_name'])
+        cli.write("Saving plot as '%s'." % default_savename, flush=True)
+        plt.savefig(default_savename)
         return ""
     
     warnings.filterwarnings('error')
@@ -235,8 +235,8 @@ def plot_wall_time():
         if 'Matplotlib is currently using agg, which is a non-GUI backend, so cannot show the figure.' != str(e):
             raise
         cli.write("Displaying plot failed: '%s'" % str(e), flush=True)
-        cli.write("Saving plot as '%s'." % cli.args['plot_name'], flush=True)
-        plt.savefig(cli.args['plot_name'])
+        cli.write("Saving plot as '%s'." % default_savename, flush=True)
+        plt.savefig(default_savename)
 
     return ""
     
@@ -290,8 +290,8 @@ def plot_timesteps():
     plt.tight_layout()
         
     if cli.args['batch']:
-        cli.write("Saving plot as '%s'." % cli.args['plot_name'], flush=True)
-        plt.savefig(cli.args['plot_name'])
+        cli.write("Saving plot as '%s'." % default_savename, flush=True)
+        plt.savefig(default_savename)
         return ""
 
     try:
@@ -301,8 +301,8 @@ def plot_timesteps():
         if 'Matplotlib is currently using agg, which is a non-GUI backend, so cannot show the figure.' != str(e):
             raise
         cli.write("Displaying plot failed: '%s'" % str(e), flush=True)
-        cli.write("Saving plot as '%s'." % cli.args['plot_name'], flush=True)
-        plt.savefig(cli.args['plot_name'])
+        cli.write("Saving plot as '%s'." % default_savename, flush=True)
+        plt.savefig(default_savename)
 
     return ""
     
@@ -323,6 +323,11 @@ valid_plots['wall time plot'] = {
     'function' : plot_wall_time,
     'default savename' : 'walltime.png',
     'cli name' : 'wall',
+}
+valid_plots['timesteps'] = {
+    'function' : plot_timesteps,
+    'default savename' : 'timesteps.png',
+    'cli name' : 'timesteps',
 }
 
 
@@ -381,11 +386,7 @@ simulation = starsmashertools.get_simulation(cli.args['directory'])
 
 mainmenu = cli.add_list(
     [int, str],
-    items=[
-        #'total time',
-        'wall time plot',
-        'timesteps',
-    ],
+    items = list(valid_plots.keys()),
     bullet='%5d)',
     header=newline + starsmashertools.bintools.Style.bold("Main Menu") + newline + newline + 'Choose an option' + newline,
 )
@@ -404,19 +405,16 @@ mainmenu = cli.add_list(
 #)
 #mainmenu.connect(timetable, [0, 'total time'])
 
-wt = cli.add_page(
-    [],
-    plot_wall_time,
-    back=mainmenu,
-)
-mainmenu.connect(wt, [0, 'wall time plot'])
-
-ts = cli.add_page(
-    [],
-    plot_timesteps,
-    back=mainmenu,
-)
-mainmenu.connect(ts, [1, 'timesteps'])
+for i, (key, obj) in enumerate(valid_plots.items()):
+    default_savename = cli.args['plot_name']
+    if default_savename is None:
+        default_savename = obj['default savename']
+    page = cli.add_page(
+        [],
+        lambda default_savename=default_savename: obj['function'](default_savename),
+        back=mainmenu,
+    )
+    mainmenu.connect(page, [i, key])
 
 cli.set_mainmenu(mainmenu)
 
