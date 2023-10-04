@@ -286,7 +286,7 @@ def plot_timesteps():
     ax.set_ylabel("log10 (Time Steps / [s])")
 
     for i in range(dts.shape[1]):
-        ax.plot(times, dts[:,i], label='dt'+str(i))
+        ax.plot(times, dts[:,i], label='dt'+str(i+1))
     ax.legend()
 
     plt.tight_layout()
