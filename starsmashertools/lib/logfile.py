@@ -264,9 +264,10 @@ class LogFile(object):
         iterations = []
         for number in toget:
             tomatch = (startline + '%8d') % number
+            curpos = self._buffer.tell()
             index = self._buffer.find(
                 tomatch.encode('utf-8'),
-                start,
+                curpos,
                 end,
             )
             if index == -1: 
@@ -274,12 +275,12 @@ class LogFile(object):
             
             # Traverse to the next iteration
             tonextiter = start - index
-            self._buffer.read(tonextiter)
+            self._buffer.read(index - curpos)
 
             # Get the content of the iteration
             content = self._buffer.read(length)
             iteration = LogFile.Iteration(content)
-            start += tonextiter + length
+            #start += tonextiter + length
             
             #try:
             #    iteration = self.get_iteration(first_iteration['number'] + number)
