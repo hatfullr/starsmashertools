@@ -266,19 +266,20 @@ class LogFile(object):
             tomatch = (startline + '%8d') % number
             index = self._buffer.find(
                 tomatch.encode('utf-8'),
-                0,
+                start,
                 end,
             )
             if index == -1: 
                 raise Exception("Failed to find iteration %d" % (first_iteration['number'] + number))
             
             # Traverse to the next iteration
-            self._buffer.read(index - start)
+            tonextiter = start - index
+            self._buffer.read(tonextiter)
 
             # Get the content of the iteration
             content = self._buffer.read(length)
             iteration = LogFile.Iteration(content)
-            start += index + length
+            start += tonextiter + length
             
             #try:
             #    iteration = self.get_iteration(first_iteration['number'] + number)
