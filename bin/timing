@@ -247,25 +247,25 @@ def plot_timesteps():
     global simulation, cli
     import matplotlib.pyplot as plt
 
-    max_iterations = 10000
+    max_iterations = 1000
 
     total_iterations = 0
     for logfile in simulation.get_logfiles():
         total_iterations += logfile.get_number_of_iterations()
 
-    print(total_iterations)
+    #print(total_iterations)
         
     step = 1
     if total_iterations > max_iterations:
         step = int(total_iterations / max_iterations)
-    print(step)
+    #print(step)
         
     times = []
     dts = []
     for logfile in simulation.get_logfiles():
-        print(logfile.path)
+        #print(logfile.path)
         iterations = logfile.get_iterations(step=step)
-        print(len(iterations))
+        #print(len(iterations))
         for iteration in iterations:
             #print(iteration['number'])
             times += [iteration['time']]

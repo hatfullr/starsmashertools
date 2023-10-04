@@ -231,7 +231,7 @@ class LogFile(object):
             except LogFile.PhraseNotFoundError:
                 break
             if iteration is None: raise Exception("Failed to find iteration %d" % (first_iteration['number'] + number))
-            print("Got iteration %d" % iteration['number'])
+            #print("Got iteration %d" % iteration['number'])
             iterations += [iteration]
 
         return iterations
