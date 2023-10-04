@@ -253,6 +253,8 @@ def plot_timesteps():
     for logfile in simulation.get_logfiles():
         total_iterations += logfile.get_number_of_iterations()
 
+    print(total_iterations)
+        
     step = 1
     if total_iterations > max_iterations:
         step = int(total_iterations / max_iterations)
