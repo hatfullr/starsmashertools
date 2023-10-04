@@ -257,9 +257,9 @@ class LogFile(object):
         length = self.get_iteration_content_length()
         first_iteration = self.get_first_iteration()
         #start = length*(number - first_iteration['number']) # + len(self.header)
-        start = len(self.header)
-        self._buffer.seek(start)
-        end = self._buffer.size()
+        #start = len(self.header)
+        #self._buffer.seek(start)
+        #end = self._buffer.size()
 
         toget += first_iteration['number']
 
@@ -292,7 +292,7 @@ class LogFile(object):
             start += tonext + length
             """
             try:
-                iteration = self.get_iteration(first_iteration['number'] + number)
+                iteration = self.get_iteration(number)
             except LogFile.PhraseNotFoundError:
                 break
             if iteration is None: raise Exception("Failed to find iteration %d" % (first_iteration['number'] + number))
