@@ -230,7 +230,7 @@ class LogFile(object):
         first_iteration = self.get_first_iteration()
         iterations = []
         length = int((self._buffer.size() - len(self.header)) / mmap.PAGESIZE)
-        self._buffer.madvise(mmap.MADV_WILLNEED, len(self.header), length)
+        self._buffer.madvise(mmap.MADV_WILLNEED)#, len(self.header), length)
         for number in toget:
             try:
                 iteration = self.get_iteration(first_iteration['number'] + number)
