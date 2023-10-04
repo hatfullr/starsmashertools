@@ -224,7 +224,6 @@ class LogFile(object):
         
         return self._last_iteration
 
-    @profile
     def get_iteration(self, number):
         startline = LogFile.Iteration.startline
         tomatch = (startline + '%8d') % number
