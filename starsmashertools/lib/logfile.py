@@ -276,7 +276,7 @@ class LogFile(object):
                 raise Exception("Failed to find iteration %d" % (first_iteration['number'] + number))
             
             # Traverse to the next iteration
-            #tonext = index - start
+            tonext = index - start
             #self._buffer.read(tonext)
 
             # Get the content of the iteration
