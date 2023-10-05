@@ -431,6 +431,8 @@ class Simulation(object):
             include_patterns = None,
             exclude_patterns = None,
             recursive : bool = True,
+            delete : bool = True,
+            delete_after : bool = True,
             **kwargs,
     ):
         """
@@ -463,6 +465,14 @@ class Simulation(object):
             If `True`, subdirectories are also searched for files matching the
             given patterns. If `False`, only searches the main simulation
             directory.
+
+        delete : bool, default = True
+            If `True`, the files which are compressed are deleted.
+
+        delete_after : bool, default = True
+            If `True`, compressed files are deleted only after all files have
+            been compressed. If `False`, each file is deleted after it has been
+            compressed. If `delete` is `False` this option is ignored.
 
         Other Parameters
         ----------------
@@ -505,12 +515,13 @@ class Simulation(object):
 
         filename = self.get_compression_filename(method)
         task = starsmashertools.helpers.compressiontask.CompressionTask()
-        task.compress(files, filename, method, **kwargs)
+        task.compress(files, filename, method, delete=delete, delete_after=delete_after, **kwargs)
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     def decompress(
             self,
-            filename = None,
+            filename : str | type(None) = None,
+            delete : bool = True,
             **kwargs
     ):
         """
@@ -526,6 +537,9 @@ class Simulation(object):
             The file chosen is one which has a `compression.sstools` file
             included in it, which is an empty file that is created when using
             `~helpers.compressiontask.CompressionTask.compress`.
+
+        delete : bool, default = True
+            If `True`, the compressed file is deleted after decompression.
         
         Other Parameters
         ----------------
@@ -558,7 +572,7 @@ class Simulation(object):
             filenames = starsmashertools.helpers.file.sort_by_mtimes(filenames)
             filename = filenames[0]
 
-        task.decompress(filename, **kwargs)
+        task.decompress(filename, delete=delete, **kwargs)
 
 
 

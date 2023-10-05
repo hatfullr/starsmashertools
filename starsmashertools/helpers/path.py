@@ -9,6 +9,11 @@ import fnmatch
 import collections
 import warnings
 
+def utime(path, *args, **kwargs):
+    if starsmashertools.helpers.ssh.isRemote(path):
+        raise NotImplementedError
+    return os.utime(path, *args, **kwargs)
+
 def islink(path):
     if starsmashertools.helpers.ssh.isRemote(path):
         raise NotImplementedError
