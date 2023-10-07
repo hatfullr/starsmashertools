@@ -6,6 +6,7 @@ import starsmashertools.bintools
 import starsmashertools.preferences
 import starsmashertools.helpers.path
 import starsmashertools.helpers.string
+import starsmashertools.helpers.compressiontask
 import os
 
 # Do some setting up
@@ -167,31 +168,14 @@ cli.parser.add_argument(
     default=os.path.basename(os.getcwd()),
     required=False,
     metavar='',
-    help='Compress the contents of the directory into a single file with this name. The files that are compressed are deleted  All contents will be stored in a file located in the simulation directory.',
+    help='Compress the contents of the directory into a single file with this name. The files that are compressed are deleted. All contents will be stored in a file located in the simulation directory.',
 )
-
-"""
-available_methods = starsmashertools.helpers.string.from_list(
-    starsmashertools.helpers.compress.compression_methods,
-    join='and'
-)
-cli.parser.add_argument(
-    '--compression-method',
-    nargs='?',
-    default='gz',
-    type=str,
-    required=False,
-    metavar='str',
-    help="The method to use while compressing files. Available options are %s. Default = '%s'." % (compression_methods_string, available_methods),
-)
-"""
-
 
 simulation = starsmashertools.get_simulation(cli.args['directory'])
 
-
 compressed = simulation.compressed
-compression_methods = simulation.get_compression_methods()
+compression_methods = starsmashertools.helpers.compressiontask.CompressionTask.get_methods()
+
 
 mainmenu = cli.add_list(
     [int, str],
@@ -222,6 +206,8 @@ compresspage = cli.add_list(
     back=mainmenu,
 )
 mainmenu.connect(compresspage, [1, 'compress'])
+
+
 for i, method in enumerate(compression_methods):
     page = cli.add_page(
         [],
@@ -238,7 +224,6 @@ decompresspage = cli.add_page(
     header=newline,
 )
 mainmenu.connect(decompresspage, [2, 'decompress'])
-
 
     
 cli.set_mainmenu(mainmenu)

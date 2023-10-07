@@ -24,10 +24,7 @@ defaults = {
             'children.sstools',
         ],
         'output files' : 'out*.sph',
-
-        # A list of available methods on your system can be found using
-        # Simulation.get_compression_methods()
-        'compression method' : 'gz',
+        
         # Files which are defined in the StarSmasher code and present in the
         # simulation directory will be compressed, such as 'sph.eos' when neos=2
         # for example. Others need to be added manually here.

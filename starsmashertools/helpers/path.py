@@ -116,6 +116,11 @@ def walk(directory):
         return eval(result) # eval converts the resultign string to a list
     return [stuff for stuff in os.walk(directory)]
 
+def listdir(directory):
+    if starsmashertools.helpers.ssh.isRemote(directory):
+        raise NotImplementedError
+    return os.listdir(directory)
+
 def remove(path):
     if starsmashertools.helpers.ssh.isRemote(path):
         raise NotImplementedError
