@@ -1,4 +1,5 @@
 import starsmashertools.preferences as preferences
+import starsmashertools.helpers.argumentenforcer
 import starsmashertools.helpers.path
 import starsmashertools.helpers.file
 import starsmashertools.helpers.string
@@ -239,31 +240,47 @@ class Output(dict, object):
 class OutputIterator(object):
     """
     An iterator which can be used to iterate through Output objects efficiently.
-    
-    Parameters
-    ----------
-    filenames : list
-        The list of file names to iterate through.
-    
-    simulation : `~starsmashertools.lib.simulation.Simulation`
-        The simulation that the given file names belong to.
-
-    Other Parameters
-    ----------------
-    **kwargs
-        Other optional keyword arguments that are passed to the `.Output.read`
-        function.
-
     """
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
     def __init__(
             self,
-            filenames,
-            simulation,
-            onFlush=[],
-            max_buffer_size=None,
-            asynchronous=True,
+            filenames : list | tuple | np.ndarray,
+            simulation : starsmashertools.lib.simulation.Simulation,
+            onFlush : list | tuple | np.ndarray = [],
+            max_buffer_size : int | type(None) = None,
+            asynchronous : bool = True,
             **kwargs,
     ):
+        """
+        OutputIterator constructor.
+        
+        Parameters
+        ----------
+        filenames : list, tuple, np.ndarray
+            The list of file names to iterate through.
+
+        simulation : `~starsmashertools.lib.simulation.Simulation`
+            The simulation that the given file names belong to.
+
+        onFlush : list, tuple, np.ndarray, default = []
+            A list of functions to be called in the `~.flush` method. If one of
+            the methods returns `'break'` then iteration is stopped and no other
+            `onFlush` functions are called.
+
+        max_buffer_size : int, NoneType, default = None
+            The maximum size of the buffer for reading Output ahead-of-time.
+        
+        asynchronous : bool, default = True
+            If `True`, Output objects are read asynchronously in a separate
+            process than the main thread. Otherwise, Output objects are read on
+            an "as needed" basis in serial.
+        
+        Other Parameters
+        ----------------
+        **kwargs
+            Other optional keyword arguments that are passed to the
+            `.Output.read` function.
+        """
         
         if max_buffer_size is None: max_buffer_size = preferences.get_default('OutputIterator', 'max buffer size')
         self.max_buffer_size = max_buffer_size
@@ -321,12 +338,12 @@ class OutputIterator(object):
             if self.asynchronous:
                 if self._process is not None and self._process.is_alive(): self._process.join()
                 self._process = starsmashertools.helpers.asynchronous.Process(
-                    target=self.call_flush_methods,
+                    target=self.flush,
                     daemon=True,
                 )
                 self._process.start()
             else:
-                self.call_flush_methods()
+                self.flush()
             self._buffer_index = -1
 
         if self._break: self.stop()
@@ -342,10 +359,10 @@ class OutputIterator(object):
 
     def stop(self):
         # Ensure that we do the flush methods whenever we stop iterating
-        self.call_flush_methods()
+        self.flush()
         raise StopIteration
 
-    def call_flush_methods(self):
+    def flush(self):
         for m in self.onFlush:
             r = m()
             if isinstance(r, str) and r == 'break':
@@ -402,11 +419,15 @@ class Reader(object):
                 ret = np.ndarray(*args, **kwargs)
                 if ret.dtype.names is not None:
                     for name in ret.dtype.names:
-                        if np.any(np.abs(ret[name]) > 1e100):
+                        finite = np.isfinite(ret[name])
+                        if not np.any(finite): continue
+                        if np.any(np.abs(ret[name][finite]) > 1e100):
                             raise Reader.UnexpectedFileFormatError
                 else:
-                    if np.abs(ret) < 1e-100 or np.abs(ret) > 1e100:
-                        raise Reader.UnexpectedFileFormatError
+                    finite = np.isfinite(ret)
+                    if np.any(finite):
+                        if np.abs(ret[finite]) < 1e-100 or np.abs(ret[finite]) > 1e100:
+                            raise Reader.UnexpectedFileFormatError
             except Exception as e:
                 f.close()
                 raise Exception("This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories.") from e

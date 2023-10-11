@@ -170,8 +170,6 @@ class ArgumentTypeError(TypeError, object):
 
 
 
-
-
         
 class ArgumentValueError(ValueError, object):
     __module__ = ValueError.__module__
@@ -194,3 +192,12 @@ class ArgumentValueError(ValueError, object):
                 value = str(given_value),
             ),)
         super(ArgumentValueError, self).__init__(*args, **kwargs)
+
+    def __getstate__(self, *args, **kwargs):
+        return self.__dict__
+    #def __setstate__(self, *args, **kwargs):
+    #    return super(ArgumentValueError, self).__setstate__(*args, **kwargs)
+    #def __getnewargs__(self, *args, **kwargs):
+    #    return super(ArgumentValueError, self).__getnewargs__(*args, **kwargs)
+    #def __reduce__(self, *args, **kwargs):
+    #    return super(ArgumentValueError, self).__reduce__(*args, **kwargs)

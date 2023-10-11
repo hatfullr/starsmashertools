@@ -110,15 +110,15 @@ remaining (estimated):
     
 
 
-def compress(method):
+def compress(**kwargs):
     previous = get_size_string(simulation.get_size())
     try:
-        simulation.compress(method=method)
+        simulation.compress(**kwargs)
     except:
         cli.write("")
         starsmashertools.bintools.print_error(halt=False)
         return ""
-
+    
     new = get_size_string(simulation.get_size())
     
     return "Directory size: %s -> %s" % (previous, new)
@@ -174,7 +174,6 @@ cli.parser.add_argument(
 simulation = starsmashertools.get_simulation(cli.args['directory'])
 
 compressed = simulation.compressed
-compression_methods = starsmashertools.helpers.compressiontask.CompressionTask.get_methods()
 
 
 mainmenu = cli.add_list(
@@ -200,22 +199,42 @@ mainmenu.connect(estimatepage, [0, 'estimate size'])
 
 compresspage = cli.add_list(
     [int, str],
-    items = compression_methods,
+    items = [
+        "Keep",
+        "Delete",
+        "Delete after",
+    ],
     bullet='%5d)',
-    header=newline + "Choose a compression method" + newline,
+    header=newline + "Do you want to delete the original files or keep them? File modification times will be preserved. If you choose 'Delete' then files will be deleted immediately after they are compressed. If you choose 'Delete after' then files will be deleted only after all files have been compressed." + newline + newline + "Choose an option" + newline,
     back=mainmenu,
 )
 mainmenu.connect(compresspage, [1, 'compress'])
 
 
-for i, method in enumerate(compression_methods):
-    page = cli.add_page(
-        [],
-        lambda method=method: compress(method),
-        _quit = False,
-        header=newline,
-    )
-    compresspage.connect(page, [i, method])
+keeppage = cli.add_page(
+    [],
+    lambda delete=False, delete_after=False: compress(delete=delete, delete_after=delete_after),
+    _quit = False,
+    header=newline,
+)
+compresspage.connect(keeppage, [0, 'Keep'])
+
+deletepage = cli.add_page(
+    [],
+    lambda delete=True, delete_after=False: compress(delete=delete, delete_after=delete_after),
+    _quit = False,
+    header=newline,
+)
+compresspage.connect(deletepage, [1, 'Delete'])
+
+deleteafterpage = cli.add_page(
+    [],
+    lambda delete=True, delete_after=True: compress(delete=delete, delete_after=delete_after),
+    _quit = False,
+    header=newline,
+)
+compresspage.connect(deleteafterpage, [2, 'Delete after'])
+
 
 decompresspage = cli.add_page(
     [],

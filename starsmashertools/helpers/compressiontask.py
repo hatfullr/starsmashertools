@@ -8,14 +8,41 @@ import time
 import shutil
 import numpy as np
 import zipfile
+import datetime
 
 
 class CompressionTask(object):
-    """
-    Compress files into a tar ball or extract files from a tar ball created by
-    this class. Can work in parallel.
-    """
+    _processes = []
+    _pool = None
 
+    @staticmethod
+    def _create_pool():
+        if CompressionTask._pool is not None or CompressionTask._processes:
+            raise Exception("Cannot create a pool because a pool was already created")
+        CompressionTask._pool = multiprocessing.Pool()
+        CompressionTask._processes = [None]*CompressionTask._pool._processes
+
+    @staticmethod
+    def _close_pool():
+        if CompressionTask._pool is None:
+            raise Exception("Cannot close the pool because a pool was never created")
+        CompressionTask._pool.close()
+        CompressionTask._pool.join()
+        CompressionTask._pool = None
+        CompressionTask._processes = []
+
+    @staticmethod
+    def _assign_process(index, *args, **kwargs):
+        CompressionTask._processes[index] = CompressionTask._pool.apply_async(*args, **kwargs)
+
+    @staticmethod
+    def _get_processes():
+        results = [None] * len(CompressionTask._processes)
+        for i, proc in enumerate(CompressionTask._processes):
+            if proc is not None:
+                results[i] = proc.get()
+        return results
+    
     @staticmethod
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     def isCompressedFile(filename : str):
@@ -35,46 +62,116 @@ class CompressionTask(object):
         if not starsmashertools.helpers.path.isfile(filename):
             raise FileNotFoundError(filename)
         if not zipfile.is_zipfile(filename): return False
-        zfile = zipfile.ZipFile(filename, mode='r')
-        try:
-            zfile.getinfo('sstools_compression.json')
-        except KeyError:
-            return False
+        with zipfile.ZipFile(filename, mode='r') as zfile:
+            fname = CompressionTask.get_compression_filename(zfile)
+            compression_filename = CompressionTask._get_arcname(
+                fname,
+                starsmashertools.helpers.path.dirname(fname),
+            )
+            try:
+                zfile.getinfo(compression_filename)
+            except KeyError:
+                return False
         return True
+    
 
     @staticmethod
-    def get_methods():
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    def _get_arcname(
+            filename : str,
+            directory : str,
+    ):
+        return starsmashertools.helpers.path.relpath(filename, directory)
+
+        
+    @staticmethod
+    def _pack_compression_file(
+            zfile : zipfile.ZipFile,
+            files : list | tuple,
+    ):
         """
-        Return a list of compression methods available for use with
-        `~.compress`.
+        Create the compression file identifier and add it to the given ZipFile.
+        Delete the original file afterwards.
         """
-        methods = list(tarfile.TarFile.OPEN_METH.keys())
-        if 'tar' in methods: methods.remove('tar')
-        return methods
+        dirname = starsmashertools.helpers.path.dirname(zfile.filename)
+        obj = {
+            'arcnames' : []
+        }
+        for _file in files:
+            arcname = CompressionTask._get_arcname(_file, dirname)
+            obj['arcnames'] += [arcname]
+        
+        ssfilename = CompressionTask.get_compression_filename(zfile)
+        
+        # Create the sstools_compression.json file
+        starsmashertools.helpers.jsonfile.save(ssfilename, obj)
+        
+        arcname = CompressionTask._get_arcname(ssfilename, dirname)
+        zfile.write(ssfilename, arcname=arcname)
+        starsmashertools.helpers.path.remove(ssfilename)
+
+    @staticmethod
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    def _unpack_compression_file(zfile : zipfile.ZipFile):
+        dirname = starsmashertools.helpers.path.dirname(zfile.filename)
+        ssfilename = CompressionTask.get_compression_filename(zfile)
+
+        todecompress = []
+        obj = starsmashertools.helpers.jsonfile.load(ssfilename)
+        for arcname in obj['arcnames']:
+            _path = starsmashertools.helpers.path.join(dirname, arcname)
+            #starsmashertools.helpers.path.utime(_path, times=(time.time(), obj['mtime']))
+            if CompressionTask.isCompressedFile(_path):
+                todecompress += [_path]
+        starsmashertools.helpers.path.remove(ssfilename)
+
+        for _file in todecompress:
+            CompressionTask.decompress(_file)
+
+    @staticmethod
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    def get_compression_filename(zfile : zipfile.ZipFile):
+        return zfile.filename + '.json'
     
     @staticmethod
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     def compress(
-            *args,
-            **kwargs):
+            files : list | tuple,
+            filename : str,
+            delete : bool = True,
+            delete_after : bool = True,
+            verbose : bool = True,
+            nprocs : int = 0,
+    ):
         """
-        Create a compressed tar ball of this CompressionTask's files, preserving
-        file creation times.
+        Create a compressed zip archive of this CompressionTask's files,
+        preserving file creation times.
         
-        A special file named `sstools_compression.json` is added to the final 
-        compressed file for identification later when using `~.decompress`.
-
+        A special file is added to the final compressed file for identification 
+        later when using `~.decompress`.
+        
         Parameters
         ----------
-        *args
-            Arguments are passed directly to either `~.compress_serial` or
-            `~.compress_parallel` depending on the system.
-        
-        **kwargs
-            Additional keyword arguments are passed directly to either
-            `~.compress_serial` or `~.compress_parallel` depending on the
-            system.
-        
+        files : list, tuple
+            Paths to files to compress.
+
+        filename : str
+            Name of the resulting compressed file.
+
+        delete : bool, default = True
+            If `True`, the files which are compressed are deleted.
+
+        delete_after : bool, default = True
+            If `True`, compressed files are deleted only after all files have
+            been compressed. If `False`, each file is deleted after it has been
+            compressed. If `delete` is `False` this option is ignored.
+
+        verbose : bool, default = True
+            If `True`, debug messages are printed to the console.
+
+        nprocs : int, default = 0
+            Use this many processes to perform the compression. A value of 0
+            means to use as many processes as possible.
 
         See Also
         --------
@@ -83,18 +180,30 @@ class CompressionTask(object):
         `~.decompress`
         """
         
-        parallel = kwargs.pop('parallel', None)
-        #if parallel is None:
-        #    nprocs = multiprocessing.cpu_count()
-        #    parallel = nprocs > 1
-        #if parallel:
-        #    CompressionTask.compress_parallel(files, *args, **kwargs)
-        #else:
-        #    CompressionTask.compress_serial(files, *args, **kwargs)
-        CompressionTask.compress_serial(*args, **kwargs)
+        if nprocs == 0:
+            nprocs = multiprocessing.cpu_count()
+        
+        if nprocs > 1:
+            CompressionTask.compress_parallel(
+                files,
+                filename,
+                delete=delete,
+                delete_after=delete_after,
+                verbose=verbose,
+            )
+        else:
+            CompressionTask.compress_serial(
+                files,
+                filename,
+                delete=delete,
+                delete_after=delete_after,
+                verbose=verbose,
+            )
+
+
+            
             
     @staticmethod
-    @starsmashertools.helpers.argumentenforcer.enforcetypes
     def compress_serial(
             files : list | tuple,
             filename : str,
@@ -112,10 +221,6 @@ class CompressionTask(object):
 
         filename : str
             Name of the resulting compressed file.
-
-        method : str
-            Compression method to be used. Must be one of the available methods
-            returned from `~.get_methods`.
 
         delete : bool, default = True
             If `True`, the files which are compressed are deleted.
@@ -137,57 +242,46 @@ class CompressionTask(object):
         if starsmashertools.helpers.path.isfile(filename):
             raise FileExistsError(filename)
 
-        obj = {}
-        
         dirname = starsmashertools.helpers.path.dirname(filename)
         with zipfile.ZipFile(filename, mode='w', compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zfile:
-            arcnames = []
-            for _file in files:
-                arcname = starsmashertools.helpers.path.relpath(_file, dirname)
-                obj[arcname] = {
-                    'mtime' : starsmashertools.helpers.path.getmtime(_file),
-                }
+            try:
+                for _file in files:
+                    arcname = CompressionTask._get_arcname(_file, dirname)
+                    zinfo = zipfile.ZipInfo.from_file(_file, arcname=arcname)
+                    zinfo.compress_type = zipfile.ZIP_DEFLATED
+                    zinfo.date_time = tuple(list(datetime.datetime.fromtimestamp(
+                        starsmashertools.helpers.path.getmtime(_file)
+                    ).timetuple())[:6])
+                    with starsmashertools.helpers.file.open(_file, 'rb') as f:
+                        zfile.writestr(zinfo, f.read())
+                    
+                    if delete and not delete_after:
+                        starsmashertools.helpers.path.remove(_file)
 
-                zfile.write(_file, arcname=arcname)
-                
-                if delete and not delete_after:
-                    starsmashertools.helpers.path.remove(_file)
-            
-            ssfilename = starsmashertools.helpers.path.join(
-                dirname,
-                'sstools_compression.json',
-            )
-            
-            # Create the sstools_compression.json file
-            starsmashertools.helpers.jsonfile.save(ssfilename, obj)
+                CompressionTask._pack_compression_file(zfile, files)
+            except:
+                zfile.extractall(path=dirname)
+                starsmashertools.helpers.path.remove(zfile.filename)
+                raise
 
-            arcname = starsmashertools.helpers.path.relpath(ssfilename, dirname)
-            zfile.write(ssfilename, arcname=arcname)
-        
         # Remove the old files
-        starsmashertools.helpers.path.remove(ssfilename)
         if delete and delete_after:
             for f in files:
                 starsmashertools.helpers.path.remove(f)
-
-        
 
     
                 
     
     @staticmethod
-    @starsmashertools.helpers.argumentenforcer.enforcetypes
     def compress_parallel(
             files : list | tuple,
             filename : str,
-            delete : bool = True,
-            delete_after : bool = True,
-            verbose : bool = True,
+            **kwargs
     ):
         """
-        Perform compression in parallel mode. Processes are spawned and each one
-        compresses a single file at a time using gzip. The compressed files are
-        then each added to 
+        Perform compression in parallel mode. The list of files is divvied up
+        among processes, who each do `~.compress_serial`. When all processes are
+        finished each zip file is added to the final main zip file.
 
         Parameters
         ----------
@@ -197,156 +291,63 @@ class CompressionTask(object):
         filename : str
             Name of the resulting compressed file.
 
-        delete : bool, default = True
-            If `True`, the files which are compressed are deleted.
-
-        delete_after : bool, default = True
-            If `True`, compressed files are deleted only after all files have
-            been compressed. If `False`, each file is deleted after it has been
-            compressed. If `delete` is `False` this option is ignored.
-        
-        verbose : bool, default = True
-            If `True`, debug messages are printed to the console.
+        Other Parameters
+        ----------------
+        kwargs : dict
+            Other keyword arguments are passed directly to `~.compress_serial`.
 
         See Also
         --------
         `~.compress_serial`
-        `~.decompress_parallel`
         """
-        """
-        if starsmashertools.helpers.path.isfile(filename):
-            raise FileExistsError("Cannot compress files because the tar ball already exists: '%s'" % filename)
 
-        directory = starsmashertools.helpers.path.dirname(filename)
-        fname = starsmashertools.helpers.path.join(directory, 'sstools_compression.json')
-        tocompress = copy.deepcopy(files)
-        toadd = []
-        if starsmashertools.helpers.path.isfile(fname):
-            with starsmashertools.helpers.file.open(fname, 'r') as f:
-                for line in f:
-                    line = line.strip()
-                    if len(line) > 0 and line[0] == '#': continue
-                    if starsmashertools.helpers.path.isfile(line):
-                        toadd += [line]
-                        tocompress.remove(line)
+        if starsmashertools.helpers.path.isfile(filename):
+            raise FileExistsError(filename)
+
+        CompressionTask._create_pool()
         
-        pool = multiprocessing.Pool()
-        nprocs = pool._processes
-        
-        chunks = np.array_split(tocompress, nprocs)
-        processes = [None]*nprocs
-        for i in range(nprocs):
-            processes[i] = pool.apply_async(
-                CompressionTask._gzip_compress,
-                args = (chunks[i], delete,),
+        chunks = np.array_split(files, len(CompressionTask._processes))
+        filenames = []
+        for i, chunk in enumerate(chunks):
+            if len(chunk) == 0: continue
+            fname = filename+"."+str(i)
+            filenames += [fname]
+            CompressionTask._assign_process(
+                i,
+                CompressionTask.compress_serial,
+                args=(
+                    chunk,
+                    fname,
+                ),
+                kwds=kwargs,
             )
         
-        results = [None]*nprocs
-        for i in range(nprocs):
-            results[i] = processes[i].get()
+        CompressionTask._get_processes()
+        CompressionTask._close_pool()
 
-        pool.close()
-        pool.join()
-
-        compressed_filenames = []
-        for result in results:
-            compressed_filenames += result
-            
-        dirname = starsmashertools.helpers.path.dirname(filename)
+        files_done = [starsmashertools.helpers.path.isfile(f) for f in filenames]
         
-        # Add all the compressed files to the tar ball
-        added_files = []
-        with tarfile.open(filename, 'w:'+method) as tar:
-            # Add files that were previously compressed but for some reason not
-            # added to the tar ball
-            for f in toadd:
-                try:
-                    tar.add(f, arcname=starsmashertools.helpers.path.relpath(f, dirname))
-                    added_files += [f]
-                except:
-                    tar.extractall()
-                    CompressionTask._gzip_decompress(added_files)
-                    raise
+        # After the individual processes finish, we compress the individual zip
+        # files into the final zip file
+        CompressionTask.compress_serial(
+            filenames,
+            filename,
+            delete = True,
+            delete_after = True,
+            verbose = False,
+        )
             
-            for f in compressed_filenames:
-                try:
-                    tar.add(f, arcname=starsmashertools.helpers.path.relpath(f, dirname))
-                    added_files += [f]
-                except:
-                    tar.extractall()
-                    # If the user chose to delete files as they are compressed
-                    # then we need to restore the original files from the
-                    # compressed ones
-                    CompressionTask._gzip_decompress(added_files)
-                    raise
-
-            # Finally create and add the sstools_compression.json file
-            if starsmashertools.helpers.path.isfile(fname):
-                with starsmashertools.helpers.file.open(fname, 'a') as f:
-                    for _file in compressed_filenames:
-                        f.write(_file+"\n")
-            else:
-                CompressionTask.create_sstools_identity_file(fname, added_files)
-                
-            try:
-                tar.add(fname, arcname=starsmashertools.helpers.path.relpath(fname, dirname))
-            except:
-                tar.extractall()
-                starsmashertools.helpers.path.remove(fname)
-                raise
-            starsmashertools.helpers.path.remove(fname)
         
-        for f in compressed_filenames:
-            if starsmashertools.helpers.path.isfile(f):
-                starsmashertools.helpers.path.remove(f)
-        """
 
     @staticmethod
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     def decompress(
-            *args,
-            **kwargs
-    ):
-        """
-        Decompress a tar ball that was created with `~.compress`.
-
-        Parameters
-        ----------
-        *args
-            Arguments are passed directly to either `~.decompress_serial` or
-            `~.decompress_parallel` depending on the system.
-        
-        **kwargs
-            Additional keyword arguments are passed directly to either 
-            `~.decompress_serial` or `~.decompress_parallel` depending on the
-            system.
-        
-        See Also
-        --------
-        `~.decompress_serial`
-        `~.decompress_parallel`
-        `~.compress`
-        """
-        parallel = kwargs.pop('parallel', None)
-        #if parallel is None:
-        #    nprocs = multiprocessing.cpu_count()
-        #    parallel = nprocs > 1
-        #
-        #if parallel:
-        #    CompressionTask.decompress_parallel(*args, **kwargs)
-        #else:
-        #    CompressionTask.decompress_serial(*args, **kwargs)
-        CompressionTask.decompress_serial(*args, **kwargs)
-        
-    @staticmethod
-    @starsmashertools.helpers.argumentenforcer.enforcetypes
-    def decompress_serial(
             filename : str,
             delete : bool = True,
             verbose : bool = False,
     ):
         """
-        Decompress a tar ball that was created with `~.compress` in serial.
+        Decompress a file created by `~.compress`.
 
         Parameters
         ----------
@@ -358,128 +359,30 @@ class CompressionTask(object):
         
         verbose : bool, default = False
             If `True`, debug messages are printed to the console.
-
+        
         See Also
         --------
-        `~.decompress_parallel`
-        `~.compress_serial`
+        `~.compress`
         """
-        
         
         # Check to make sure this is one we compressed
         if not CompressionTask.isCompressedFile(filename):
-            raise Exception("The given file is not a file created by CompressionTask because it is missing a 'sstools_compression.json' file. '%s'" % filename)
+            raise Exception("The given file is not a file created by CompressionTask because it is missing the compression identifier file: '%s'" % filename)
         
         dirname = starsmashertools.helpers.path.dirname(filename)
         
         with zipfile.ZipFile(filename) as zfile:
-            zfile.extractall(path=dirname)
-
-        ssfilename = starsmashertools.helpers.path.join(
-            dirname,
-            'sstools_compression.json',
-        )
+            for zinfo in zfile.infolist():
+                zfile.extract(zinfo, path=dirname)
+                fname = starsmashertools.helpers.path.join(dirname, zinfo.filename)
+                mtime = datetime.datetime(*zinfo.date_time).timestamp()
+                
+                starsmashertools.helpers.path.utime(fname, times=(time.time(), mtime))
+            CompressionTask._unpack_compression_file(zfile)
         
-        obj = starsmashertools.helpers.jsonfile.load(ssfilename)
-        for relpath, stuff in obj.items():
-            _path = starsmashertools.helpers.path.join(dirname, relpath)
-            starsmashertools.helpers.path.utime(_path, times=(time.time(), stuff['mtime']))
-        starsmashertools.helpers.path.remove(ssfilename)
-            
         # Remove the zip archive
         if delete:
             starsmashertools.helpers.path.remove(filename)
 
     
     
-    @staticmethod
-    @starsmashertools.helpers.argumentenforcer.enforcetypes
-    def decompress_parallel(
-            filename : str,
-            delete : bool = True,
-            verbose : bool = False,
-    ):
-        """
-        Decompress a tar ball that was created with `~.compress` in parallel.
-
-        Parameters
-        ----------
-        filename : str
-            The filename to decompress.
-        
-        delete : bool, default = True
-            If `True`, the compressed file is deleted after decompression.
-        
-        verbose : bool, default = False
-            If `True`, debug messages are printed to the console.
-
-        See Also
-        --------
-        `~.decompress_serial`
-        `~.compress_parallel`
-        """
-        """
-        method = CompressionTask.get_compression_method(filename)
-        if method is None:
-            raise NotImplementedError("Compression method not recognized for file '%s'. Expected the file name to end with one of %s" % (filename, starsmashertools.helpers.string.list_to_string(CompressionTask.get_methods(), join='or')))
-        
-        # Check to make sure this is one we compressed
-        if not CompressionTask.isCompressedFile(filename):
-            raise Exception("The given file is not a file created by CompressionTask because it is missing a 'sstools_compression.json' file. '%s'" % filename)
-        
-        dirname = starsmashertools.helpers.path.dirname(filename)
-
-        # Unpack the tar ball first
-        extracted = []
-        with tarfile.open(filename, 'r:'+method) as tar:
-            for member in tar.getmembers():
-                fname = starsmashertools.helpers.path.join(dirname, member.name)
-
-                if member.name == 'sstools_compression.json':
-                    tar.extract(member, path=dirname)
-                    starsmashertools.helpers.path.remove(fname)
-                    continue
-                
-                if not fname.endswith('.gz'):
-                    raise Exception("Found a file that was not compressed with gzip: '%s'" % fname)
-                
-                if starsmashertools.helpers.path.isfile(fname[:-len('.gz')]):
-                    for e in extracted: starsmashertools.helpers.path.remove(e)
-                    raise FileExistsError(fname[:-len('.gz')])
-
-                
-                if verbose: print("Extracting '%s' to '%s'" % (fname, dirname))
-                
-                try:
-                    tar.extract(member, path=dirname)
-                    extracted += [fname]
-                except:
-                    if starsmashertools.helpers.path.isfile(fname):
-                        starsmashertools.helpers.path.remove(fname)
-                    for e in extracted:
-                        starsmashertools.helpers.path.remove(e)
-                    raise
-        
-        # Delete the tar ball
-        if delete:
-            starsmashertools.helpers.path.remove(filename)
-
-        # Now split up processes to decompress each file
-        pool = multiprocessing.Pool()
-        nprocs = pool._processes
-        
-        chunks = np.array_split(extracted, nprocs)
-        processes = [None]*nprocs
-        for i in range(nprocs):
-            processes[i] = pool.apply_async(
-                CompressionTask._gzip_decompress,
-                args = (chunks[i],),
-            )
-        
-        results = [None]*nprocs
-        for i in range(nprocs):
-            results[i] = processes[i].get()
-
-        pool.close()
-        pool.join()
-        """

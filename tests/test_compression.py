@@ -1,9 +1,11 @@
 import unittest
 import os
 import starsmashertools
-import gzip
 import shutil
 import time
+import multiprocessing
+import starsmashertools.helpers.compressiontask
+import zipfile
 
 def copydir(directory, new_directory):
     shutil.copytree(directory, new_directory)
@@ -12,8 +14,23 @@ def copydir(directory, new_directory):
         orig = os.path.join(directory, filename)
         os.utime(path, times=(time.time(), os.path.getmtime(orig)))
 
+def get_size(start_path = '.'):
+    total_size = 0
+    for dirpath, dirnames, filenames in os.walk(start_path):
+        for f in filenames:
+            fp = os.path.join(dirpath, f)
+            # skip if it is symbolic link
+            if not os.path.islink(fp):
+                total_size += os.path.getsize(fp)
+
+    return total_size
+
 
 class TestCompression(unittest.TestCase):
+    def __init__(self, *args, **kwargs):
+        super(TestCompression, self).__init__(*args, **kwargs)
+        self.skip_tearDown = False
+    
     def setUp(self):
         curdir = os.getcwd()
         self.orig_directory = os.path.join(curdir, 'data')
@@ -37,67 +54,65 @@ class TestCompression(unittest.TestCase):
         
 
     def tearDown(self):
+        if self.skip_tearDown: return
+        
         for orig_file, new_file in zip(self.orig_files, self.new_files):
             orig_mtime = starsmashertools.helpers.path.getmtime(orig_file)
             if starsmashertools.helpers.path.isfile(new_file):
                 new_mtime = starsmashertools.helpers.path.getmtime(new_file)
                 self.assertEqual(orig_mtime, new_mtime)
         
-        self.assertFalse(os.path.isfile(
-            starsmashertools.helpers.path.join(self.simulation.directory, 'compression.sstools')
-        ))
-
+        compression_filename = self.simulation._get_compression_filename() + ".json"
+        self.assertFalse(os.path.isfile(compression_filename))
+        
         shutil.rmtree(self.simulation.directory)
     
-    def testCompressSerial(self):
-        self.simulation.compress(parallel=False, verbose=False)
+    def testSerial(self):
+        total_regular = get_size(start_path = self.simulation.directory)
+        self.simulation.compress(nprocs=1, verbose=False)
+        self.assertTrue(self.simulation.compressed)
+        
         for _file in self.new_files:
             self.assertFalse(os.path.isfile(_file))
         fname = self.simulation._get_compression_filename()
         self.assertTrue(os.path.isfile(fname))
-        
-                         
 
-    def testDecompressSerial(self):
-        self.simulation.compress(parallel=False, verbose=False)
-        self.simulation.decompress(parallel=False, verbose=False)
+        total_compressed = get_size(start_path = self.simulation.directory)
+        self.assertLess(total_compressed, total_regular)
+        print("serial=",total_compressed, total_regular)
+
+        self.simulation.decompress(verbose=False)
+        
+        self.assertFalse(self.simulation.compressed)
         fname = self.simulation._get_compression_filename()
         self.assertFalse(os.path.isfile(fname))
         
-    """
-    def testParallel(self):
-        self.simulation.compress(parallel=True, verbose=False)
-        self.assertFalse(os.path.isfile(os.path.join(directory, 'log0.sph')))
-        self.assertFalse(os.path.isfile(os.path.join(directory, 'out000.sph')))
-        self.assertFalse(os.path.isfile(os.path.join(directory, 'sph.eos')))
-        self.assertFalse(os.path.isfile(os.path.join(directory, 'log0.sph.gz')))
-        self.assertFalse(os.path.isfile(os.path.join(directory, 'out000.sph.gz')))
-        self.assertFalse(os.path.isfile(os.path.join(directory, 'sph.eos.gz')))
-        self.assertTrue(os.path.isfile(os.path.join(directory, 'data.tar.gz')))
-
-        self.simulation.decompress(parallel=True, verbose=False)
-        self.assertTrue(os.path.isfile(os.path.join(directory, 'log0.sph')))
-        self.assertTrue(os.path.isfile(os.path.join(directory, 'out000.sph')))
-        self.assertTrue(os.path.isfile(os.path.join(directory, 'sph.eos')))
-        self.assertFalse(os.path.isfile(os.path.join(directory, 'log0.sph.gz')))
-        self.assertFalse(os.path.isfile(os.path.join(directory, 'out000.sph.gz')))
-        self.assertFalse(os.path.isfile(os.path.join(directory, 'sph.eos.gz')))
-        self.assertFalse(os.path.isfile(os.path.join(directory, 'data.tar.gz')))
     
-    def testCompressInterruptedParallel(self):
-        dname1 = starsmashertools.helpers.path.join(curdir, 'test_half_compressed')
-        dname2 = starsmashertools.helpers.path.join(curdir, 'data_half_compressed')
-        if starsmashertools.helpers.path.isdir(dname1):
-            shutil.rmtree(dname1)
-        shutil.copytree(dname2, dname1)
-        _simulation = starsmashertools.get_simulation(dname1)
-
-        _simulation.compress(parallel=True, verbose=False)
-
+    def testParallel(self):
+        total_regular = get_size(start_path = self.simulation.directory)
+        self.simulation.compress(nprocs=0, verbose=False)
+        self.assertTrue(self.simulation.compressed)
         
-        
-        #shutil.rmtree(dname1)
-    """
+        for _file in self.new_files:
+            self.assertFalse(os.path.isfile(_file))
+        fname = self.simulation._get_compression_filename()
+        self.assertTrue(os.path.isfile(fname))
+
+        directory = self.simulation.directory
+        basename = starsmashertools.helpers.path.basename(directory)
+        for i in range(multiprocessing.cpu_count()):
+            fname = starsmashertools.helpers.path.join(directory, basename+"."+str(i))
+            self.assertFalse(os.path.isfile(fname))
+
+
+        total_compressed = get_size(start_path = self.simulation.directory)
+        self.assertLess(total_compressed, total_regular)
+        print("parallel=",total_compressed, total_regular)
+
+        self.simulation.decompress(verbose = False)
+        self.assertFalse(self.simulation.compressed)
+        fname = self.simulation._get_compression_filename()
+        self.assertFalse(os.path.isfile(fname))
             
 if __name__ == "__main__":
     unittest.main(failfast=True)

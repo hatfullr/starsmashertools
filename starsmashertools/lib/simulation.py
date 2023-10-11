@@ -46,6 +46,7 @@ class Simulation(object):
     @property
     def compressed(self):
         filename = self._get_compression_filename()
+        if not starsmashertools.helpers.path.isfile(filename): return False
         return starsmashertools.helpers.compressiontask.CompressionTask.isCompressedFile(filename)
             
 
@@ -286,43 +287,41 @@ class Simulation(object):
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     def get_output_iterator(
             self,
-            start = None,
-            stop = None,
-            step = None,
+            start : int | type(None) = None,
+            stop : int | type(None) = None,
+            step : int | type(None) = None,
             **kwargs
     ):
         """
-        Return an `OutputIterator` containing all the `Output` object present in
-        this simulation. The `start`, `stop`, and `step` arguments are used with
-        `slice(start, stop, step)`.
+        Return a `starsmashertools.lib.output.OutputIterator` containing all the
+        `starsmashertools.lib.output.Output` objects present in this simulation.
         
         Parameters
         ----------
         start : int, None, default = None
-            The index in the list of all output files to begin the iterator at.
+            Passed directly to `~.get_output`.
 
         stop : int, None, default = None
-            The index in the list of all output files to stop the iterator at.
+            Passed directly to `~.get_output`.
 
         step : int, None, default = None
-            How many output files to skip on each iterator step.
+            Passed directly to `~.get_output`.
+
+        Other Parameters
+        ----------------
+        **kwargs
+            Other keyword arguments are passed directly to 
+            `starsmashertools.lib.output.OutputIterator`
         
         Returns
         -------
-        `.OutputIterator`
-            The created `.OutputIterator` instance.
-        
-        Other Parameters
-        ----------------
-        **kwargs : `~starsmashertools.lib.output.OutputIterator` keywords.
-            Keywords that are passed to the `OutputIterator`
-
+        iterator
+            The created `starsmashertools.lib.output.OutputIterator` instance.
         """
-        s = slice(start, stop, step)
-        filenames = self.get_outputfiles()[s]
-        
         # Now that we have all the file names, we can create an output iterator
         # from them
+        outputs = self.get_output(start=start, stop=stop, step=step)
+        filenames = [output.path for output in outputs]
         return starsmashertools.lib.output.OutputIterator(filenames, self, **kwargs)
 
     # If indices is None, returns all the Output objects in this simulation as
@@ -331,9 +330,36 @@ class Simulation(object):
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     def get_output(
             self,
-            indices = None,
+            start : int | type(None) = None,
+            stop : int | type(None) = None,
+            step : int | type(None) = None,
+            #indices : int | list | tuple | np.ndarray | type(None) = None,
     ):
-        filenames = self.get_outputfiles()
+        """
+        Obtain a list of `starsmashertools.lib.output.Output` objects associated
+        with this Simulation, sliced by `[start:stop:step]`.
+        
+        Parameters
+        ----------
+        start : int, None, default = None
+            The starting index of the slice of the list of all output files.
+
+        stop : int, None, default = None
+            The ending index in the slice of the list of all output files.
+
+        step : int, None, default = None
+            How many output files to skip in the slice.
+        
+        Returns
+        -------
+        list
+            A list of `starsmashertools.lib.output.Output` objects.
+        """
+        s = slice(start, stop, step)
+        filenames = self.get_outputfiles()[s]
+
+        return [starsmashertools.lib.output.Output(filename) for filename in filenames]
+        """
         if indices is None:
             return self.get_output_iterator()
         else:
@@ -342,14 +368,14 @@ class Simulation(object):
                     return starsmashertools.lib.output.Output(filenames[indices], self)
                 except IndexError as e:
                     raise IndexError("Invalid index '%d' in simulation '%s'" % (indices, self.directory)) from e
-            elif not isinstance(indices, str) and hasattr(indices, '__iter__'):
+            else:
                 filenames = np.array(filenames, dtype=str)
                 try:
                     return starsmashertools.lib.output.OutputIterator(filenames[indices].tolist(), self)
                 except IndexError as e:
                     raise IndexError("Invalid indices '%s' in simulation '%s'" % (str(indices), self.directory)) from e
         raise ValueError("Invalid value for argument 'indices'. Must be 'None', of type 'int', or be an iterable object, not '%s'" % type(indices).__name__)
-
+        """
 
 
     # Return the Output file which corresponds with the beginning of an envelope
