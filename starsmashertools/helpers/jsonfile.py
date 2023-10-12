@@ -64,7 +64,7 @@ def save(filename, obj, encoder=Encoder):
         writemethod = lambda o: f.write(json.dumps(o, indent=4, cls=encoder).encode('utf-8'))
     elif filename.endswith('.zip'):
         f = zipfile.ZipFile(filename, mode='w', compression=zipfile.ZIP_DEFLATED, compresslevel=9)
-        writemethod = lambda o: f.writestr(filename.replace(".zip",""), json.dumps(o, indent=4, cls=encoder).encode('utf-8'))
+        writemethod = lambda o: f.writestr(starsmashertools.helpers.path.basename(filename).replace(".zip",""), json.dumps(o, indent=4, cls=encoder).encode('utf-8'))
     else:
         f = open(filename, 'w')
         writemethod = lambda o: f.write(json.dumps(o, indent=4, cls=encoder))
@@ -92,7 +92,7 @@ def load(filename, decoder=Decoder):
 
     elif filename.endswith('.zip'):
         f = zipfile.ZipFile(filename, 'r', compression=zipfile.ZIP_DEFLATED, compresslevel=9)
-        readmethod = lambda: json.loads(f.read(filename.replace(".zip","")).decode('utf-8'), cls=decoder)
+        readmethod = lambda: json.loads(f.read(starsmashertools.helpers.path.basename(filename).replace(".zip","")).decode('utf-8'), cls=decoder)
     else:
         f = open(filename, 'r')
         readmethod = lambda: json.load(f, cls=decoder)

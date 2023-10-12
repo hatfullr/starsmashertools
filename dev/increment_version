@@ -16,7 +16,7 @@ sys.path.append(starsmashertools.SOURCE_DIRECTORY)
 from setup import get_version, version_line_regex
 sys.path = sys.path[:-1]
 
-version_data_filename = 'version_data.json.zip'
+version_data_filename = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'version_data.json.zip')
 
 parser = argparse.ArgumentParser(
     prog = 'increment_version',
@@ -69,6 +69,14 @@ parser.add_argument(
     default=False,
     required=False,
     help="Automatically respond 'y' to a prompt to increment the version number.",
+)
+
+parser.add_argument(
+    '--from-git',
+    action='store_true',
+    default=False,
+    required=False,
+    help="Use this option if calling this program from a git hook",
 )
 
 empty_value = "-None"
@@ -371,8 +379,9 @@ if not os.path.isfile(version_data_filename):
 previous_data, previous_version = load_data()
 current_data = starsmashertools.helpers.apidecorator.information
 
-if not isDataChanged(previous_data, current_data):
-    raise Exception("The code has not changed since the version number was last incremented.")
+if not args.from_git:
+    if not isDataChanged(previous_data, current_data):
+        raise Exception("The code has not changed since the version number was last incremented.")
 
 major_changes = detect_major_changes(previous_data, current_data)
 minor_changes = detect_minor_changes(previous_data, current_data)
