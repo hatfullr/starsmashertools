@@ -27,7 +27,7 @@ class Simulation(object):
     def __init__(
             self,
             directory : str,
-            /,*,
+            /,
     ):
         directory = path.realpath(directory)
         
