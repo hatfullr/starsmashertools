@@ -343,9 +343,6 @@ class Simulation(object):
         filenames = [output.path for output in outputs]
         return starsmashertools.lib.output.OutputIterator(filenames, self, **kwargs)
 
-    # If indices is None, returns all the Output objects in this simulation as
-    # an OutputIterator. If indices is an integer, returns a single Output
-    # object. If indices is an iterable, returns an OutputIterator.
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def get_output(
@@ -378,7 +375,7 @@ class Simulation(object):
         s = slice(start, stop, step)
         filenames = self.get_outputfiles()[s]
 
-        return [starsmashertools.lib.output.Output(filename) for filename in filenames]
+        return [starsmashertools.lib.output.Output(filename, self) for filename in filenames]
 
 
     # Return the Output file which corresponds with the beginning of an envelope
