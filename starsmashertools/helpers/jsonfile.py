@@ -1,5 +1,6 @@
 import json
 import gzip
+import zipfile
 import numpy as np
 import starsmashertools.helpers.path
 
@@ -23,56 +24,7 @@ serialization_methods = {
 }
 
 
-def save(filename, obj):
-    if '.gz' in filename:
-        with gzip.open(filename, 'w') as f:
-            try:
-                f.write(json.dumps(obj, indent=4, cls=Encoder).encode('utf-8'))
-            except Exception as e:
-                if starsmashertools.helpers.path.isfile(filename):
-                    starsmashertools.helpers.path.remove(filename)
-                message = ("\nFailed to write file '%s'") % filename
-                if isinstance(e, json.decoder.JSONDecodeError):
-                    e.args = [e.args[0] + message]
-                elif isinstance(e, TypeError):
-                    if 'Object of type' in str(e) and 'is not JSON serializable' in str(e):
-                        message += "\nPlease add a serialization method to the serialization_method dict in jsonfile.py"
-                    e = TypeError(str(e) + message)
-                raise(e)
-    else:
-        with open(filename, 'w') as f:
-            try:
-                f.write(json.dumps(obj, indent=4, cls=Encoder))
-            except Exception as e:
-                if starsmashertools.helpers.path.isfile(filename):
-                    starsmashertools.helpers.path.remove(filename)
-                message = ("\nFailed to write file '%s'") % filename
-                if isinstance(e, json.decoder.JSONDecodeError):
-                    e.args = [e.args[0] + message]
-                elif isinstance(e, TypeError):
-                    if 'Object of type' in str(e) and 'is not JSON serializable' in str(e):
-                        message += "\nPlease add a serialization method to the serialization_method dict in jsonfile.py"
-                    e = TypeError(str(e) + message)
-                raise(e)
 
-def load(filename):
-    if '.gz' in filename:
-        with gzip.open(filename, 'r') as f:
-            try:
-                ret = json.loads(f.read().decode('utf-8'), cls=Decoder)
-            except json.decoder.JSONDecodeError as e:
-                message = ("\nFailed to load file '%s'") % filename
-                e.args = [e.args[0] + message]
-                raise(e)
-    else:
-        with open(filename, 'r') as f:
-            try:
-                ret = json.load(f, cls=Decoder)
-            except json.decoder.JSONDecodeError as e:
-                message = ("\nFailed to load file '%s'") % filename
-                e.args = [e.args[0] + message]
-                raise(e)
-    return ret
 
 
 
@@ -103,3 +55,54 @@ class Decoder(json.JSONDecoder):
                     if method is None: return obj
                     return method(obj['value'])
         return obj
+
+
+
+def save(filename, obj, encoder=Encoder):
+    if filename.endswith('.gz'):
+        f = gzip.open(filename, 'w')
+        writemethod = lambda o: f.write(json.dumps(o, indent=4, cls=encoder).encode('utf-8'))
+    elif filename.endswith('.zip'):
+        f = zipfile.ZipFile(filename, mode='w', compression=zipfile.ZIP_DEFLATED, compresslevel=9)
+        writemethod = lambda o: f.writestr(filename.replace(".zip",""), json.dumps(o, indent=4, cls=encoder).encode('utf-8'))
+    else:
+        f = open(filename, 'w')
+        writemethod = lambda o: f.write(json.dumps(o, indent=4, cls=encoder))
+            
+    try:
+        writemethod(obj)
+    except Exception as e:
+        f.close()
+        if starsmashertools.helpers.path.isfile(filename):
+            starsmashertools.helpers.path.remove(filename)
+        message = ("\nFailed to write file '%s'") % filename
+        if isinstance(e, json.decoder.JSONDecodeError):
+            e.args = [e.args[0] + message]
+        elif isinstance(e, TypeError):
+            if 'Object of type' in str(e) and 'is not JSON serializable' in str(e):
+                message += "\nPlease add a serialization method to the serialization_method dict in jsonfile.py"
+            e = TypeError(str(e) + message)
+        raise(e)
+    f.close()
+
+def load(filename, decoder=Decoder):
+    if filename.endswith('.gz'):
+        f = gzip.open(filename, 'r')
+        readmethod = lambda: json.loads(f.read().decode('utf-8'), cls=decoder)
+
+    elif filename.endswith('.zip'):
+        f = zipfile.ZipFile(filename, 'r', compression=zipfile.ZIP_DEFLATED, compresslevel=9)
+        readmethod = lambda: json.loads(f.read(filename.replace(".zip","")).decode('utf-8'), cls=decoder)
+    else:
+        f = open(filename, 'r')
+        readmethod = lambda: json.load(f, cls=decoder)
+    
+    try:
+        ret = readmethod()
+    except json.decoder.JSONDecodeError as e:
+        f.close()
+        message = ("\nFailed to load file '%s'") % filename
+        e.args = [e.args[0] + message]
+        raise(e)
+    f.close()
+    return ret

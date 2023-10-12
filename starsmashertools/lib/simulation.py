@@ -12,6 +12,7 @@ import starsmashertools.helpers.string
 import starsmashertools.helpers.argumentenforcer
 import starsmashertools.helpers.file
 import starsmashertools.helpers.compressiontask
+from starsmashertools.helpers.apidecorator import api
 from starsmashertools.lib.teos import TEOS
 import numpy as np
 import glob
@@ -22,9 +23,11 @@ class Simulation(object):
     # private attributes
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
     def __init__(
             self,
             directory : str,
+            /,
     ):
         directory = path.realpath(directory)
         
@@ -44,24 +47,27 @@ class Simulation(object):
         self.reader = starsmashertools.lib.output.Reader(self)
 
     @property
-    def compressed(self):
+    @api
+    def compressed(self, /):
         filename = self._get_compression_filename()
         if not starsmashertools.helpers.path.isfile(filename): return False
         return starsmashertools.helpers.compressiontask.CompressionTask.isCompressedFile(filename)
             
-
     def __hash__(self):
         return hash(self.directory)
-        
-    def __eq__(self, other):
+
+    @api
+    def __eq__(self, other, /):
         # Check if the basenames are the same, so that e.g. pdc.json
         # files can work on different file systems
         if not isinstance(other, Simulation): return False
         return path.basename(self.directory) == path.basename(other.directory)
 
-    def __getitem__(self, key): return self.input[key]
+    @api
+    def __getitem__(self, key, /): return self.input[key]
 
-    def __contains__(self, item):
+    @api
+    def __contains__(self, item, /):
         if isinstance(item, str):
             if path.isfile(item):
                 return item in self.get_output_iterator()
@@ -175,20 +181,26 @@ class Simulation(object):
 
     @staticmethod
     @starsmashertools.helpers.argumentenforcer.enforcetypes
-    def valid_directory(directory : str):
+    @api
+    def valid_directory(directory : str, /):
         return path.get_src(directory) is not None
 
-    def keys(self, *args, **kwargs): return self.input.keys(*args, **kwargs)
-    def values(self, *args, **kwargs): return self.input.values(*args, **kwargs)
-    def items(self, *args, **kwargs): return self.input.items(*args, **kwargs)
+    @api
+    def keys(self, /, *args, **kwargs): return self.input.keys(*args, **kwargs)
+    @api
+    def values(self, /, *args, **kwargs): return self.input.values(*args, **kwargs)
+    @api
+    def items(self, /, *args, **kwargs): return self.input.items(*args, **kwargs)
     
     @property
-    def units(self):
+    @api
+    def units(self,/):
         if self._units is None: self._units = starsmashertools.lib.units.Units(self)
         return self._units
 
     @property
-    def teos(self):
+    @api
+    def teos(self,/):
         if self._teos is None and self['neos'] == 2:
             self._teos = TEOS(path.realpath(path.join(self.directory, self['eosfile'])))
         return self._teos
@@ -196,7 +208,8 @@ class Simulation(object):
         
 
     # Keywords are passed to logfile.find() method
-    def get_logfiles(self, **kwargs):
+    @api
+    def get_logfiles(self,/,**kwargs):
         if self._logfiles is None:
             self._logfiles = []
             for _path in starsmashertools.lib.logfile.find(self.directory, **kwargs):
@@ -210,7 +223,8 @@ class Simulation(object):
     # For example, if this Simulation is a dynamical simulation (nrelax = 0),
     # then it has one child, which is the binary scan that it originated from.
     #@profile
-    def get_children(self, *args, **kwargs):
+    @api
+    def get_children(self, /, *args, **kwargs):
         verbose = kwargs.get('verbose', False)
         if self._children is None:
             # First see if the children are given to us in the data/ directory.
@@ -242,9 +256,11 @@ class Simulation(object):
         return self._children
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
     def get_file(
             self,
             filename_or_pattern : str,
+            /,*,
             recursive : bool = True,
     ):
         """Search the simulation directory for a file or files that match a
@@ -271,8 +287,8 @@ class Simulation(object):
         else: _path = path.join(self.directory, filename_or_pattern)
         return glob.glob(_path, recursive=recursive)
         
-    
-    def get_outputfiles(self, pattern = None):
+    @api
+    def get_outputfiles(self, /,*, pattern : str | type(None) = None):
         if pattern is None:
             pattern = preferences.get_default('Simulation', 'output files', throw_error=True)
         matches = self.get_file(pattern)
@@ -281,12 +297,15 @@ class Simulation(object):
         return matches
 
     # The initial file is always the one that was written first.
-    def get_initialfile(self, pattern = None):
+    @api
+    def get_initialfile(self, /,*, pattern : str | type(None) = None):
         return self.get_outputfiles(pattern=pattern)[0]
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
     def get_output_iterator(
             self,
+            /,*,
             start : int | type(None) = None,
             stop : int | type(None) = None,
             step : int | type(None) = None,
@@ -328,12 +347,13 @@ class Simulation(object):
     # an OutputIterator. If indices is an integer, returns a single Output
     # object. If indices is an iterable, returns an OutputIterator.
     @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
     def get_output(
             self,
+            /,*,
             start : int | type(None) = None,
             stop : int | type(None) = None,
             step : int | type(None) = None,
-            #indices : int | list | tuple | np.ndarray | type(None) = None,
     ):
         """
         Obtain a list of `starsmashertools.lib.output.Output` objects associated
@@ -359,23 +379,6 @@ class Simulation(object):
         filenames = self.get_outputfiles()[s]
 
         return [starsmashertools.lib.output.Output(filename) for filename in filenames]
-        """
-        if indices is None:
-            return self.get_output_iterator()
-        else:
-            if isinstance(indices, int):
-                try:
-                    return starsmashertools.lib.output.Output(filenames[indices], self)
-                except IndexError as e:
-                    raise IndexError("Invalid index '%d' in simulation '%s'" % (indices, self.directory)) from e
-            else:
-                filenames = np.array(filenames, dtype=str)
-                try:
-                    return starsmashertools.lib.output.OutputIterator(filenames[indices].tolist(), self)
-                except IndexError as e:
-                    raise IndexError("Invalid indices '%s' in simulation '%s'" % (str(indices), self.directory)) from e
-        raise ValueError("Invalid value for argument 'indices'. Must be 'None', of type 'int', or be an iterable object, not '%s'" % type(indices).__name__)
-        """
 
 
     # Return the Output file which corresponds with the beginning of an envelope
@@ -387,11 +390,13 @@ class Simulation(object):
     # frac: The fraction of particles outside 'radius' compared to particles
     #       inside 'radius' for which the envelope is considered disrupted
     @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
     def get_envelope_disruption(
             self,
             IDs : list | tuple | np.ndarray,
             radius : float,
             frac : float,
+            /,*,
             omit_large : bool = True,
             boundonly : bool = True,
             # Give times in simulation units here
@@ -453,11 +458,13 @@ class Simulation(object):
 
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
     def compress(
             self,
-            filename = None,
-            include_patterns = None,
-            exclude_patterns = None,
+            /,*,
+            filename : str | type(None) = None,
+            include_patterns : list | type(None) = None,
+            exclude_patterns : list | type(None) = None,
             recursive : bool = True,
             delete : bool = True,
             delete_after : bool = True,
@@ -537,8 +544,10 @@ class Simulation(object):
         task.compress(files, filename, delete=delete, delete_after=delete_after, **kwargs)
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
     def decompress(
             self,
+            /,*,
             filename : str | type(None) = None,
             delete : bool = True,
             **kwargs
@@ -585,7 +594,8 @@ class Simulation(object):
         raise FileNotFoundError("Failed to find any valid compressed files in directory '%s'" % self.directory)
 
 
-    def get_size(self):
+    @api
+    def get_size(self,/):
         """Returns the size of the simulation in bytes.
 
         Returns
@@ -595,7 +605,8 @@ class Simulation(object):
         return path.get_directory_size(self.directory)
 
 
-    def get_output_headers(self, **kwargs):
+    @api
+    def get_output_headers(self,/, **kwargs):
         """
         Read all the headers of the output files in this simulation and return
         them as a dictionary.

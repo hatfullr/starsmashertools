@@ -1,0 +1,385 @@
+#!/usr/bin/env python3
+import argparse
+import os
+import re
+import sys
+import starsmashertools.helpers.apidecorator
+import starsmashertools.helpers.string
+import starsmashertools.helpers.jsonfile
+from starsmashertools import *
+import numpy
+import inspect
+import importlib
+import types
+import starsmashertools
+sys.path.append(starsmashertools.SOURCE_DIRECTORY)
+from setup import get_version, version_line_regex
+sys.path = sys.path[:-1]
+
+version_data_filename = 'version_data.json.zip'
+
+parser = argparse.ArgumentParser(
+    prog = 'increment_version',
+    formatter_class = argparse.RawDescriptionHelpFormatter,
+    description = """Increment the package version number using Semantic Versioning. From https://semver.org/:
+
+   Given a version number MAJOR.MINOR.PATCH, increment the:
+     1. MAJOR version when you make incompatible API changes
+     2. MINOR version when you add functionality in a backward compatible manner
+     3. PATCH version when you make backward compatible bug fixes
+
+If the MAJOR version is incremented then the MINOR version is set to 0. If the
+MINOR version is changed then the PATCH version is set to 0.
+
+Whenever this program is run we collect data on functions that have the
+"@api" decorator and compare the data to that which we last archived. We
+increment the MAJOR version whenever any of the following are true:
+  
+  - A function name was changed or the function doesn't exist anymore in the new
+    data.
+  - Something about a function's positional arguments changed, including their
+    order, names, and types. Types must be indicated using type hinting. When
+    the types are different, only a removal of a type counts.
+  - The new version of a function is missing keyword arguments that the old
+    version contains, any of the keyword arguments have different types as given
+    by the type hinting.
+
+If the MAJOR version is to be incremented then we do not check if the MINOR or
+PATCH versions should be incremented.
+
+To detect added functionality that is backward compatible for the MINOR version
+increments, we check if any of the following are true:
+
+  - A function name in the new data isn't present in the old data (it was added
+    in the new version).
+  - A keyword argument was added to a function.
+  - A keyword argument for a function in the new version has a different default
+    value compared to the old version.
+  - A keyword argument for a function in the new version accepts a type that it
+    previously did not accept.
+  - A positional argument has gained a new type it didn't have before.
+
+If neither the MAJOR nor MINOR versions were incremented, then we increment the
+PATCH version."""
+)
+
+parser.add_argument(
+    '-y',
+    action='store_true',
+    default=False,
+    required=False,
+    help="Automatically respond 'y' to a prompt to increment the version number.",
+)
+
+empty_value = "-None"
+
+
+def get_parameter_details(parameter):
+    default = parameter.default
+    if default is inspect.Parameter.empty:
+        default = empty_value
+    annotation = parameter.annotation
+
+    if annotation is inspect.Parameter.empty:
+        annotation = empty_value
+    elif not isinstance(annotation, types.UnionType) and hasattr(annotation, "__name__"):
+        if str(annotation.__module__) == 'builtins':
+            annotation = annotation.__name__
+        else:
+            annotation = str(annotation.__module__) + "." + annotation.__name__
+    return parameter.name, parameter.kind, default, annotation
+
+def to_json(data, version):
+    obj = {}
+    for key, parameters in data.items():
+        obj[key] = []
+        for parameter in parameters:
+            name, kind, default, annotation = get_parameter_details(parameter)
+            obj[key] += [{
+                'name' : name,
+                'kind' : kind,
+                'default' : default,
+                'annotation' : str(annotation),
+                'annotation is UnionType' : isinstance(annotation, types.UnionType),
+            }]
+    obj['version'] = version
+    return obj
+
+def from_json(obj):
+    previous_version = None
+    data = {}
+    for key, param_objs in obj.items():
+        if key == 'version':
+            previous_version = param_objs
+            continue
+        data[key] = []
+        for param_obj in param_objs:
+            name = param_obj['name']
+            kind = param_obj['kind']
+            default = param_obj['default']
+            annotation = param_obj['annotation']
+
+            if default == empty_value:
+                default = inspect.Parameter.empty
+
+            if annotation == empty_value:
+                annotation = inspect.Parameter.empty
+            else:
+                annotation = eval(annotation)
+
+            if inspect.Parameter.empty not in [default, annotation]:
+                if not isinstance(annotation, types.UnionType):
+                    default = annotation(default)
+            
+            data[key] += [inspect.Parameter(name, kind, default=default, annotation=annotation)]
+    return data, previous_version
+    
+def save_data(version):
+    tosave = to_json(starsmashertools.helpers.apidecorator.information, version)
+    starsmashertools.helpers.jsonfile.save(version_data_filename, tosave)
+    
+def load_data():
+    return from_json(starsmashertools.helpers.jsonfile.load(version_data_filename))
+
+def isParameterEqual(parameter, other):
+    return get_param_difference_reason(parameter, other) is None
+
+def get_param_difference_reason(parameter, other):
+    details1 = get_parameter_details(parameter)
+    details2 = get_parameter_details(other)
+    for det1, det2, name in zip(details1, details2, ['name','kind','default','annotation']):
+        if det1 != det2: return name
+    return None
+
+def isDataChanged(data_before, data_after):
+    for key, params in data_before.items():
+        if key not in data_after.keys(): return True
+        if len(params) != len(data_after[key]): return True
+        for p, other in zip(params, data_after[key]):
+            if not isParameterEqual(p, other): return True
+    for key in data_after.keys():
+        if key not in data_before.keys(): return True
+    return False
+        
+def detect_major_changes(previous, current):
+    detected_changes = []
+
+    # A function name was changed or the function doesn't exist anymore in the
+    # new data.
+    for key, val in previous.items():
+        if key not in current.keys():
+            detected_changes += ["'%s' isn't a member of the API anymore" % key]
+
+    # Something about a function's positional arguments changed, including their
+    # order, names, and types. Types must be indicated using type hinting.
+    for key, val in previous.items():
+        if key not in current.keys(): continue # Already detected
+        
+        old_positional = [v for v in val if v.kind == inspect.Parameter.POSITIONAL_ONLY]
+        new_positional = [v for v in current[key] if v.kind == inspect.Parameter.POSITIONAL_ONLY]
+        if len(old_positional) != len(new_positional):
+            old_string = starsmashertools.helpers.string.list_to_string([p.name for p in old_positional])
+            new_string = starsmashertools.helpers.string.list_to_string([p.name for p in new_positional])
+            detected_changes += ["'%s' positional arguments changed from %s to %s" % (key, old_string, new_string)]
+            continue
+
+        for i, (old_param, new_param) in enumerate(zip(old_positional, new_positional)):
+            reason = get_param_difference_reason(old_param, new_param)
+
+            if reason == 'name':
+                detected_changes += ["'%s' positional argument %d changed names from '%s' to '%s" % (key, i, old_param.name, new_param.name)]
+            elif reason == 'annotation':
+                if isinstance(old_param.annotation, types.UnionType):
+                    if isinstance(new_param.annotation, types.UnionType):
+                        for old_arg in old_param.annotation.__args__:
+                            if old_arg not in new_param.annotation.__args__:
+                                detected_changes += ["'%s' positional argument '%s' no longer accepts type '%s'" % (key, old_param.name, old_arg.__name__)]
+                    else:
+                        lost_types = starsmashertools.helpers.string.list_to_string([a.__name__ for a in old_arg.annotation.__args__], join='or')
+                        detected_changes += ["'%s' positional argument '%s' no longer accepts type(s) %s" % (key, old_arg.name, lost_types)]
+                else:
+                    if isinstance(new_param.annotation, types.UnionType):
+                        if old_param.annotation not in new_param.annotation.__args__:
+                            detected_changes += ["'%s' positional argument '%s' no longer accepts type '%s'" % (key, old_param.name, old_param.annotation.__name__)]
+            
+            
+    
+    # The new version of a function is missing keyword arguments that the old
+    # version contains, any of the keyword arguments have different types as
+    # given by the type hinting.
+    for key, val in previous.items():
+        if key not in current.keys(): continue # Already detected
+        
+        old_keyword = [v for v in val if v.kind == inspect.Parameter.KEYWORD_ONLY]
+        new_keyword = [v for v in current[key] if v.kind == inspect.Parameter.KEYWORD_ONLY]
+        if len(old_keyword) > len(new_keyword):
+            old_string = starsmashertools.helpers.string.list_to_string([p.name for p in old_keyword])
+            new_string = starsmashertools.helpers.string.list_to_string([p.name for p in new_keyword])
+            detected_changes += ["'%s' keyword arguments changed from %s to %s" % (key, old_string, new_string)]
+        
+        for new_param in new_keyword:
+            for old_param in old_keyword:
+                if old_param.name == new_param.name:
+                    if inspect.Parameter.empty in [old_param.annotation, new_param.annotation]:
+                        raise Exception("This should never be possible: '%s' with '%s' and '%s'" % (key, str(new_param), str(new_param)))
+                    
+                    # If the new keyword annotation is a UnionType, then check
+                    # if the old keyword annotation has a type included in that
+                    # UnionType.
+                    if isinstance(new_param.annotation, types.UnionType):
+                        new_args = new_param.annotation.__args__
+                        # If the old keyword annotation is a UnionType, then all
+                        # of its types need to be included in the new UnionType.
+                        if isinstance(old_param.annotation, types.UnionType):
+                            for old_arg in old_param.annotation.__args__:
+                                if old_arg not in new_args:
+                                    detected_changes += ["'%s' keyword '%s' annotation changed from '%s' to '%s'" % (key, old_param.name, str(old_param.annotation), str(new_param.annotation))]
+                                    
+                        else:
+                            # If the old keyword annotation is not a UnionType,
+                            # then it needs to be included in the new UnionType.
+                            if old_param.annotation not in new_args:
+                                detected_changes += ["'%s' keyword '%s' with annotation '%s' which is no longer included in the new annotation %s" % (key, old_param.name, old_param.annotation.__name__, str(new_param.annotation))]
+                                
+                    else:
+                        # If the new keyword annotation is not a UnionType, then
+                        # the old keyword annotation is not allowed to be a
+                        # UnionType.
+                        if isinstance(old_param.annotation, types.UnionType):
+                            detected_changes += ["'%s' keyword '%s' with annotation '%s' does not have all its types included in the new annotation '%s'" % (key, old_param.name, str(old_param.annotation), new_param.annotation.__name__)]
+                        else:
+                            # If neither the old nor new keyword annotations are
+                            # UnionTypes, then we can do a direct comparison
+                            if old_param.annotation != new_param.annotation:
+                                detected_changes += ["'%s' keyword '%s' annotation changed from '%s' to '%s'" % (key, old_param.name, old_param.annotation.__name__, new_param.annotation.__name__)]
+    return detected_changes
+
+
+def detect_minor_changes(previous, current):
+    detected_changes = []
+
+    # A function name in the new data isn't present in the old data (it was
+    # added in the new version).
+    for key, val in current.items():
+        if key not in previous.keys():
+            detected_changes += ["'%s' was added to the API" % key]
+
+
+    for key, val in current.items():
+        old_positional = [v for v in previous[key] if v.kind == inspect.Parameter.POSITIONAL_ONLY]
+        new_positional = [v for v in val if v.kind == inspect.Parameter.POSITIONAL_ONLY]
+        for new_arg in new_positional:
+            for old_arg in old_positional:
+                if new_arg.name == old_arg.name:
+                    if isinstance(new_arg.annotation, types.UnionType):
+                        new_type_args = new_arg.annotation.__args__
+                        if isinstance(old_arg.annotation, types.UnionType):
+                            for ta in new_type_args:
+                                if ta not in old_arg.annotation.__args__:
+                                    detected_changes += ["'%s' positional argument '%s' added a new type '%s'" % (key, new_arg.name, ta.__name__)]
+                        else:
+                            new_args = [t for t in new_type_args if t is not old_arg.annotation]
+                            for ta in new_args:
+                                detected_changes += ["'%s' positional argument '%s' added a new type '%s'" % (key, new_arg.name, ta.__name__)]
+                                    
+
+    # A keyword argument was added to a function.
+    for key, val in current.items():
+        if key in previous.keys():
+            new_keyword = [v for v in val if v.kind == inspect.Parameter.KEYWORD_ONLY]
+            old_keyword = [v for v in previous[key] if v.kind == inspect.Parameter.KEYWORD_ONLY]
+            for new_kw in new_keyword:
+                for old_kw in old_keyword:
+                    if new_kw.name == old_kw.name:
+                        # A keyword argument for a function in the new version
+                        # has a different default value compared to the old
+                        # version.
+                        if new_kw.default != old_kw.default:
+                            detected_changes += ["'%s' keyword '%s' has a changed default value from '%s' to '%s'" % (key, new_kw.name, str(old_kw.default), str(new_kw.default))]
+
+                        # A keyword argument for a function in the new version
+                        # accepts a type that it previously did not accept.
+                        if isinstance(new_kw.annotation, types.UnionType):
+                            new_args = new_kw.annotation.__args__
+                            if isinstance(old_kw.annotation, types.UnionType):
+                                old_args = old_kw.annotation.__args__
+                                newly_accepted_args = [a for a in new_args if a not in old_args]
+                                if newly_accepted_args:
+                                    detected_changes += ["'%s' keyword '%s' now accepts more argument types, from '%s' to '%s'" % (key, new_kw.name, str(old_kw.annotation), str(new_kw.annotation))]
+                            else:
+                                detected_changes += ["'%s' keyword '%s' now accepts more argument types, from '%s' to '%s'" % (key, new_kw.name, old_kw.annotation.__name__, str(new_kw.annotation))]
+                        break
+                else:
+                    detected_changes += ["'%s' has a new keyword '%s'" % (key, new_kw.name)]
+    
+    return detected_changes
+
+
+
+def increment(which : str, previous_version : str):
+    """
+    Increment the version number
+
+    Parameters
+    ----------
+    which : str
+        One of 'major', 'minor', or 'patch'.
+    """
+    
+    if which not in ['major', 'minor', 'patch']:
+        raise ValueError("Argument 'which' must be one of 'major', 'minor', or 'patch', not '%s'" % str(which))
+    
+    major, minor, patch = previous_version.split('.')
+    major = int(major)
+    minor = int(minor)
+    patch = int(patch)
+    if which == 'major':
+        major += 1
+        minor = 0
+        patch = 0
+    elif which == 'minor':
+        minor += 1
+        patch = 0
+    else:
+        patch += 1
+
+    new_version = ".".join([str(i) for i in [major, minor, patch]])
+    
+    # Change the pyproject.toml file
+    curdir = os.path.dirname(__file__)
+    filename = os.path.join(starsmashertools.SOURCE_DIRECTORY, "pyproject.toml")
+    with open(filename, 'r') as f:
+        contents = f.read()
+
+    contents = re.sub(version_line_regex, "version = '%s'" % new_version,  contents, count=1)
+    if args.y or input("Increment version from '%s' to '%s'? (y/n; default = y): " % (previous_version, new_version)).lower() in ['', 'y']:
+        with open(filename, 'w') as f:
+            f.write(contents)
+
+        save_data(new_version)
+        print("Incremented version from '%s' to '%s'" % (previous_version, new_version))
+        
+
+
+
+args = parser.parse_args()
+
+if not os.path.isfile(version_data_filename):
+    save_data(starsmashertools.__version__)
+    raise FileNotFoundError("Cannot increment the version number because there was no version data present at '%s', but it has now been created and you can safely run this program again after the next changes are made to the code." % version_data_filename)
+
+previous_data, previous_version = load_data()
+current_data = starsmashertools.helpers.apidecorator.information
+
+if not isDataChanged(previous_data, current_data):
+    raise Exception("The code has not changed since the version number was last incremented.")
+
+major_changes = detect_major_changes(previous_data, current_data)
+minor_changes = detect_minor_changes(previous_data, current_data)
+
+print("Detected major changes:\n   " + "\n   ".join(major_changes)+"\n")
+print("Detected minor changes:\n   " + "\n   ".join(minor_changes)+"\n")
+
+if major_changes: increment('major', previous_version)
+elif minor_changes: increment('minor', previous_version)
+else: increment('patch', previous_version)

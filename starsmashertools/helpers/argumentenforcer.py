@@ -1,6 +1,7 @@
 import typing
 import types
 import inspect
+import functools
 
 # Use these functions as wrappers like so:
 #
@@ -32,7 +33,9 @@ def enforcetypes(f):
     if isinstance(f, dict):
         return _enforcetypes(f)
     
-    # Wrapper behavior
+    # Wrapper behavior. We need to use functools here or else we get into
+    # trouble with other wrappers.
+    @functools.wraps(f)
     def type_checker(*args, **kwargs):
         hints = typing.get_type_hints(f)
         all_args = kwargs.copy()
@@ -139,7 +142,10 @@ class ArgumentTypeError(TypeError, object):
     __module__ = TypeError.__module__
     def __init__(self, *args, given_name=None, given_type=None, expected_types=None, **kwargs):
         if not args and None not in [given_name, given_type, expected_types]:
-            if not hasattr(expected_types, '__iter__') or expected_types is str:
+            try:
+                _types = [ArgumentTypeError._get_type_string(a) for a in expected_types]
+            except TypeError as e:
+                if 'object is not iterable' not in str(e): raise(e)
                 expected_types = [expected_types]
             _types = [ArgumentTypeError._get_type_string(a) for a in expected_types]
             if len(_types) == 0:
