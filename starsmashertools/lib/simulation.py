@@ -28,6 +28,7 @@ class Simulation(object):
             self,
             directory : str,
             /,*,
+            test : bool = False,
     ):
         directory = path.realpath(directory)
         
