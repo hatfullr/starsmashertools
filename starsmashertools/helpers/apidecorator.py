@@ -7,10 +7,14 @@ information = {}
 def api(f):
     name = "%s.%s" % (f.__module__, f.__name__)
     information[name] = []
+
+    #if name == 'starsmashertools.lib.simulation.get_output':
+    #    for parameter in inspect.signature(f).parameters.values():
+    #        print(parameter.name, parameter.kind)
     
     for parameter in inspect.signature(f).parameters.values():
-        if parameter.kind in [inspect.Parameter.POSITIONAL_OR_KEYWORD]:
-            raise Exception("Argument '%s' of API function '%s' has ambiguous type '%s'. Please use the special arguments '/' and/or '*' to specify arguments as either '%s' or '%s'" % (parameter.name, name, str(inspect.Parameter.POSITIONAL_OR_KEYWORD), str(inspect.Parameter.POSITIONAL_ONLY), str(inspect.Parameter.KEYWORD_ONLY)))
+        #if parameter.kind in [inspect.Parameter.POSITIONAL_OR_KEYWORD]:
+        #    raise Exception("Argument '%s' of API function '%s' has ambiguous type '%s'. Please use the special arguments '/' and/or '*' to specify arguments as either '%s' or '%s'" % (parameter.name, name, str(inspect.Parameter.POSITIONAL_OR_KEYWORD), str(inspect.Parameter.POSITIONAL_ONLY), str(inspect.Parameter.KEYWORD_ONLY)))
         information[name] += [parameter]
 
     # Wrapper behavior. We need to use functools here or else we get into

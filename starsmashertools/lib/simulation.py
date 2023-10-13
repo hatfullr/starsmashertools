@@ -347,7 +347,6 @@ class Simulation(object):
     @api
     def get_output(
             self,
-            /,*,
             start : int | type(None) = None,
             stop : int | type(None) = None,
             step : int | type(None) = None,

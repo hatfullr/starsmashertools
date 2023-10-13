@@ -11,6 +11,7 @@ import numpy
 import inspect
 import importlib
 import types
+import copy
 import starsmashertools
 sys.path.append(starsmashertools.SOURCE_DIRECTORY)
 from setup import get_version, version_line_regex
@@ -168,160 +169,263 @@ def isDataChanged(data_before, data_after):
     for key in data_after.keys():
         if key not in data_before.keys(): return True
     return False
+
+# Insert the contents of dict1 into dict2, creating a list where necessary
+def combine_dict(dict1, dict2):
+    ret = copy.deepcopy(dict2)
+    for key, val in dict1.items():
+        if key not in ret.keys(): ret[key] = val
+        else:
+            if isinstance(ret[key], list):
+                if isinstance(val, list): ret[key] += val
+                else: ret[key] += [val]
+            else: ret[key] = val
+    return ret
+
+def get_types_from_annotation(annotation):
+    if isinstance(annotation, types.UnionType):
+        return annotation.__args__
+    return [annotation]
+
+
+class Change(object):
+    def __init__(self, function_name, message):
+        self.function_name = function_name
+        self.message = message
+    def __str__(self): return "'%s' %s" % (self.function_name, self.message)
+    def __repr__(self, *args, **kwargs): return self.__str__(*args, **kwargs)
+class MajorChange(Change, object): pass
+class MinorChange(Change, object): pass
+
+
+class AnnotationType(object):
+    def __init__(self, annotation):
+        if isinstance(annotation, types.UnionType):
+            self.types = annotation.__args__
+        elif isinstance(annotation, type):
+            self.types = [annotation]
+        else: raise TypeError(annotation)
+
+    def __str__(self):
+        return " | ".join([t.__name__ for t in self.types])
+    def __repr__(self,*args,**kwargs): return self.__str__(*args, **kwargs)
+    
+    def __eq__(self, other):
+        if not isinstance(other, AnnotationType): raise TypeError(other)
+        if len(self.types) != len(other.types): return False
+        for t in self.types:
+            if t not in other.types: return False
+        for t in other.types:
+            if t not in self.types: return False
+        return True
+
+    def __contains__(self, other):
+        if isinstance(other, AnnotationType):
+            for t in other.types:
+                if t not in self.types: return False
+            return True
+        elif isinstance(other, type):
+            return other in self.types
+        raise TypeError(other)
+            
         
-def detect_major_changes(previous, current):
-    detected_changes = []
+class Function(object):
+    def __init__(self, name, parameters):
+        self.name = name
+        self.parameters = parameters
+
+    def get_positionals(self):
+        _types = [
+            inspect.Parameter.POSITIONAL_ONLY,
+            inspect.Parameter.POSITIONAL_OR_KEYWORD,
+        ]
+        return [p for p in self.parameters if p.kind in _types]
+
+    def get_keywords(self):
+        return [p for p in self.parameters if p.kind == inspect.Parameter.KEYWORD_ONLY]
+
+    def get_args_index(self):
+        for i, p in enumerate(self.parameters):
+            if p.kind == inspect.Parameter.VAR_POSITIONAL: return i
+        return -1
+
+    def get_kwargs_index(self):
+        for i, p in enumerate(self.parameters):
+            if p.kind == inspect.Parameter.VAR_KEYWORD: return i
+        return -1
+
+    def compare_positionals(self, other):
+        """
+        Return a list of changes regarding the positional arguments compared to
+        the positional arguments in 'other'. self is considered the 'newer'
+        function.
+        
+        There are 2 types of positional arguments: POSITIONAL_ONLY and
+        POSITIONAL_OR_KEYWORD. We write the comparisons below as "previous vs
+        current".
+
+           POSITIONAL_ONLY vs. POSITIONAL_ONLY
+              Major:
+                 - One or more types in previous are no longer included in
+                   current
+              Minor:
+                 - Different names
+                 - One or more types in current are not included in previous
+
+           POSITIONAL_ONLY vs. POSITIONAL_OR_KEYWORD
+              Major:
+                 - One or more types in previous are no longer included in
+                   current
+              Minor:
+                 - Different names
+                 - One or more types in current are not included in previous
+
+           POSITIONAL_OR_KEYWORD vs. POSITIONAL_ONLY
+              Major:
+                 - Automatic
+
+           POSITIONAL_OR_KEYWORD vs. POSITIONAL_OR_KEYWORD
+              Major:
+                 - Different names
+                 - One or more types in previous are no longer included in
+                   current
+              Minor:
+                 - One or more types in current are not included in previous
+        """
+        if not isinstance(other, Function): raise TypeError(other)
+
+        changes = []
+        
+        new_positionals = self.get_positionals()
+        old_positionals = other.get_positionals()
+
+        new_positional_only = [p for p in new_positionals if p.kind == inspect.Parameter.POSITIONAL_ONLY]
+        old_positional_only = [p for p in old_positionals if p.kind == inspect.Parameter.POSITIONAL_ONLY]
+
+        if len(new_positional_only) != len(old_positional_only):
+            idx1 = self.get_args_index()
+            idx2 = other.get_args_index()
+            if idx1 == -1 and idx2 == -1: # No *args argument present in either
+                changes += [MajorChange(self.name, "used to accept %d POSITIONAL_ONLY arguments but now accepts %d positional arguments" % (len(old_positional_only), len(new_positional_only)))]
+        
+        new_pos_or_kw = [p for p in new_positionals if p.kind == inspect.Parameter.POSITIONAL_OR_KEYWORD]
+        old_pos_or_kw = [p for p in old_positionals if p.kind == inspect.Parameter.POSITIONAL_OR_KEYWORD]
+            
+        if len(new_pos_or_kw) > len(old_pos_or_kw):
+            changes += [MinorChange(self.name, "used to accept %d POSITIONAL_OR_KEYWORD arguments and now accepts %d POSITIONAL_OR_KEYWORD arguments" % (len(old_pos_or_kw), len(new_pos_or_kw)))]
+        
+        for new_p, old_p in zip(new_positionals, old_positionals):
+            new_type = AnnotationType(new_p.annotation)
+            old_type = AnnotationType(old_p.annotation)
+            if old_type not in new_type:
+                changes += [MajorChange(self.name, "positional argument '%s' of type '%s' changed to incompatible type '%s'" % (old_p.name, str(old_type), str(new_type)))]
+
+            if (new_p.kind == inspect.Parameter.POSITIONAL_ONLY and
+                old_p.kind == inspect.Parameter.POSITIONAL_ONLY):
+                if new_p.name != old_p.name:
+                    changes += [MinorChange(self.name, "POSITIONAL_ONLY argument changed names from '%s' to '%s'" % (old_p.name, new_p.name))]
+                if new_type not in old_type:
+                    changes += [MinorChange(self.name, "POSITIONAL_ONLY argument '%s' changed types from '%s' to '%s'" % (new_p.name, str(old_type), str(new_type)))]
+
+            if (new_p.kind == inspect.Parameter.POSITIONAL_OR_KEYWORD and
+                old_p.kind == inspect.Parameter.POSITIONAL_ONLY):
+                if new_p.name != old_p.name:
+                    changes += [MinorChange(self.name, "argument changed names from '%s' to '%s'" % (old_p.name, new_p.name))]
+                if new_type not in old_type:
+                    changes += [MinorChange(self.name, "argument '%s' changed types from '%s' to '%s'" % (new_p.name, str(old_type), str(new_type)))]
+
+            if (new_p.kind == inspect.Parameter.POSITIONAL_OR_KEYWORD and
+                old_p.kind == inspect.Parameter.POSITIONAL_OR_KEYWORD):
+                if new_p.name != old_p.name:
+                    changes += [MajorChange(self.name, "POSITIONAL_OR_KEYWORD argument with name '%s' changed to new name '%s'" % (old_p.name, new_p.name))]
+                else:
+                    if new_type not in old_type:
+                        changes += [MinorChange(self.name, "argument '%s' type changed from '%s' to '%s'" % (new_p.name, str(old_type), str(new_type)))]
+
+            if (new_p.kind == inspect.Parameter.POSITIONAL_ONLY and
+                old_p.kind == inspect.Parameter.POSITIONAL_OR_KEYWORD):
+                changes += [MajorChange(self.name, "POSITIONAL_OR_KEYWORD argument '%s' became a POSITIONAL_ONLY argument" % old_p.name)]
+
+        return changes
+
+    def compare_keywords(self, other):
+        """
+        The hard work is already handled for us in compare_positionals. Now we
+        only need to compare KEYWORD_ONLY and VAR_KEYWORD arguments.
+        """
+        if not isinstance(other, Function): raise TypeError(other)
+        changes = []
+
+        new_keywords = self.get_keywords()
+        old_keywords = other.get_keywords()
+
+        if len(new_keywords) < len(old_keywords):
+            idx1 = self.get_kwargs_index()
+            idx2 = other.get_kwargs_index()
+            if idx1 == -1 and idx2 == -1:
+                changes += [MajorChange(self.name, "used to accept %d keyword arguments but now accepts %d keyword arguments" % (len(old_keywords), len(new_keywords)))]
+        elif len(new_keywords) > len(old_keywords):
+            changes += [MinorChange(self.name, "used to accept %d keyword arguments and now accepts %d keyword arguments" % (len(old_keywords), len(new_keywords)))]
+
+        names1 = [k.name for k in new_keywords]
+        names2 = [k.name for k in old_keywords]
+        for old_k in old_keywords:
+            if old_k.name not in names1:
+                changes += [MinorChange(self.name, "gained keyword argument '%s'" % old_k.name)]
+            else:
+                new_type = AnnotationType(new_keywords[names1.index(old_k.name)].annotation)
+                old_type = AnnotationType(old_k.annotation)
+                if old_type not in new_type:
+                    changes += [MajorChange(self.name, "keyword argument '%s' of type '%s' changed to incompatible type '%s'" % (old_k.name, str(old_type), str(new_type)))]
+                elif new_type not in old_type:
+                    changes += [MinorChange(self.name, "keyword argument '%s' of type '%s' changed to compatible type '%s'" % (old_k.name, str(old_type), str(new_type)))]
+                
+        for new_k in new_keywords:
+            if new_k.name not in names2:
+                changes += [MajorChange(self.name, "lost keyword argument '%s' or its name changed" % new_k.name)]
+        return changes
+            
+
+    
+
+def detect_function_name_changes(previous, current):
+    changes = []
+    for func_name in previous.keys():
+        if func_name not in current.keys():
+            changes += [MajorChange(func_name, "isn't a member of the API anymore")]
+    for func_name in current.keys():
+        if func_name not in previous.keys():
+            changes += [MinorChange(func_name, "was added to the API")]
+    return changes
+
+
+
+def detect_changes(_previous, _current):
+    previous = copy.deepcopy(_previous)
+    current = copy.deepcopy(_current)
 
     # A function name was changed or the function doesn't exist anymore in the
     # new data.
-    for key, val in previous.items():
-        if key not in current.keys():
-            detected_changes += ["'%s' isn't a member of the API anymore" % key]
-
-    # Something about a function's positional arguments changed, including their
-    # order, names, and types. Types must be indicated using type hinting.
-    for key, val in previous.items():
-        if key not in current.keys(): continue # Already detected
-        
-        old_positional = [v for v in val if v.kind == inspect.Parameter.POSITIONAL_ONLY]
-        new_positional = [v for v in current[key] if v.kind == inspect.Parameter.POSITIONAL_ONLY]
-        if len(old_positional) != len(new_positional):
-            old_string = starsmashertools.helpers.string.list_to_string([p.name for p in old_positional])
-            new_string = starsmashertools.helpers.string.list_to_string([p.name for p in new_positional])
-            detected_changes += ["'%s' positional arguments changed from %s to %s" % (key, old_string, new_string)]
-            continue
-
-        for i, (old_param, new_param) in enumerate(zip(old_positional, new_positional)):
-            reason = get_param_difference_reason(old_param, new_param)
-
-            if reason == 'name':
-                detected_changes += ["'%s' positional argument %d changed names from '%s' to '%s" % (key, i, old_param.name, new_param.name)]
-            elif reason == 'annotation':
-                if isinstance(old_param.annotation, types.UnionType):
-                    if isinstance(new_param.annotation, types.UnionType):
-                        for old_arg in old_param.annotation.__args__:
-                            if old_arg not in new_param.annotation.__args__:
-                                detected_changes += ["'%s' positional argument '%s' no longer accepts type '%s'" % (key, old_param.name, old_arg.__name__)]
-                    else:
-                        lost_types = starsmashertools.helpers.string.list_to_string([a.__name__ for a in old_arg.annotation.__args__], join='or')
-                        detected_changes += ["'%s' positional argument '%s' no longer accepts type(s) %s" % (key, old_arg.name, lost_types)]
-                else:
-                    if isinstance(new_param.annotation, types.UnionType):
-                        if old_param.annotation not in new_param.annotation.__args__:
-                            detected_changes += ["'%s' positional argument '%s' no longer accepts type '%s'" % (key, old_param.name, old_param.annotation.__name__)]
-            
-            
+    changes = detect_function_name_changes(previous, current)
     
-    # The new version of a function is missing keyword arguments that the old
-    # version contains, any of the keyword arguments have different types as
-    # given by the type hinting.
-    for key, val in previous.items():
-        if key not in current.keys(): continue # Already detected
+    # Don't check these functions for other changes. The functions we found were
+    # ones which were either removed, added, or changed name. Thus we can't
+    # match them by their names in future methods.
+    for change in changes:
+        key = change.function_name
+        if key in previous.keys(): del previous[key]
+        if key in current.keys(): del current[key]
+
+    for func_name, new_parameters in current.items():
+        old_parameters = previous[func_name]
         
-        old_keyword = [v for v in val if v.kind == inspect.Parameter.KEYWORD_ONLY]
-        new_keyword = [v for v in current[key] if v.kind == inspect.Parameter.KEYWORD_ONLY]
-        if len(old_keyword) > len(new_keyword):
-            old_string = starsmashertools.helpers.string.list_to_string([p.name for p in old_keyword])
-            new_string = starsmashertools.helpers.string.list_to_string([p.name for p in new_keyword])
-            detected_changes += ["'%s' keyword arguments changed from %s to %s" % (key, old_string, new_string)]
-        
-        for new_param in new_keyword:
-            for old_param in old_keyword:
-                if old_param.name == new_param.name:
-                    if inspect.Parameter.empty in [old_param.annotation, new_param.annotation]:
-                        raise Exception("This should never be possible: '%s' with '%s' and '%s'" % (key, str(new_param), str(new_param)))
-                    
-                    # If the new keyword annotation is a UnionType, then check
-                    # if the old keyword annotation has a type included in that
-                    # UnionType.
-                    if isinstance(new_param.annotation, types.UnionType):
-                        new_args = new_param.annotation.__args__
-                        # If the old keyword annotation is a UnionType, then all
-                        # of its types need to be included in the new UnionType.
-                        if isinstance(old_param.annotation, types.UnionType):
-                            for old_arg in old_param.annotation.__args__:
-                                if old_arg not in new_args:
-                                    detected_changes += ["'%s' keyword '%s' annotation changed from '%s' to '%s'" % (key, old_param.name, str(old_param.annotation), str(new_param.annotation))]
-                                    
-                        else:
-                            # If the old keyword annotation is not a UnionType,
-                            # then it needs to be included in the new UnionType.
-                            if old_param.annotation not in new_args:
-                                detected_changes += ["'%s' keyword '%s' with annotation '%s' which is no longer included in the new annotation %s" % (key, old_param.name, old_param.annotation.__name__, str(new_param.annotation))]
-                                
-                    else:
-                        # If the new keyword annotation is not a UnionType, then
-                        # the old keyword annotation is not allowed to be a
-                        # UnionType.
-                        if isinstance(old_param.annotation, types.UnionType):
-                            detected_changes += ["'%s' keyword '%s' with annotation '%s' does not have all its types included in the new annotation '%s'" % (key, old_param.name, str(old_param.annotation), new_param.annotation.__name__)]
-                        else:
-                            # If neither the old nor new keyword annotations are
-                            # UnionTypes, then we can do a direct comparison
-                            if old_param.annotation != new_param.annotation:
-                                detected_changes += ["'%s' keyword '%s' annotation changed from '%s' to '%s'" % (key, old_param.name, old_param.annotation.__name__, new_param.annotation.__name__)]
-    return detected_changes
+        new_function = Function(func_name, new_parameters)
+        old_function = Function(func_name, old_parameters)
 
+        changes += new_function.compare_positionals(old_function)
+        changes += new_function.compare_keywords(old_function)
 
-def detect_minor_changes(previous, current):
-    detected_changes = []
-
-    # A function name in the new data isn't present in the old data (it was
-    # added in the new version).
-    for key, val in current.items():
-        if key not in previous.keys():
-            detected_changes += ["'%s' was added to the API" % key]
-
-
-    for key, val in current.items():
-        old_positional = [v for v in previous[key] if v.kind == inspect.Parameter.POSITIONAL_ONLY]
-        new_positional = [v for v in val if v.kind == inspect.Parameter.POSITIONAL_ONLY]
-        for new_arg in new_positional:
-            for old_arg in old_positional:
-                if new_arg.name == old_arg.name:
-                    if isinstance(new_arg.annotation, types.UnionType):
-                        new_type_args = new_arg.annotation.__args__
-                        if isinstance(old_arg.annotation, types.UnionType):
-                            for ta in new_type_args:
-                                if ta not in old_arg.annotation.__args__:
-                                    detected_changes += ["'%s' positional argument '%s' added a new type '%s'" % (key, new_arg.name, ta.__name__)]
-                        else:
-                            new_args = [t for t in new_type_args if t is not old_arg.annotation]
-                            for ta in new_args:
-                                detected_changes += ["'%s' positional argument '%s' added a new type '%s'" % (key, new_arg.name, ta.__name__)]
-                                    
-
-    # A keyword argument was added to a function.
-    for key, val in current.items():
-        if key in previous.keys():
-            new_keyword = [v for v in val if v.kind == inspect.Parameter.KEYWORD_ONLY]
-            old_keyword = [v for v in previous[key] if v.kind == inspect.Parameter.KEYWORD_ONLY]
-            for new_kw in new_keyword:
-                for old_kw in old_keyword:
-                    if new_kw.name == old_kw.name:
-                        # A keyword argument for a function in the new version
-                        # has a different default value compared to the old
-                        # version.
-                        if new_kw.default != old_kw.default:
-                            detected_changes += ["'%s' keyword '%s' has a changed default value from '%s' to '%s'" % (key, new_kw.name, str(old_kw.default), str(new_kw.default))]
-
-                        # A keyword argument for a function in the new version
-                        # accepts a type that it previously did not accept.
-                        if isinstance(new_kw.annotation, types.UnionType):
-                            new_args = new_kw.annotation.__args__
-                            if isinstance(old_kw.annotation, types.UnionType):
-                                old_args = old_kw.annotation.__args__
-                                newly_accepted_args = [a for a in new_args if a not in old_args]
-                                if newly_accepted_args:
-                                    detected_changes += ["'%s' keyword '%s' now accepts more argument types, from '%s' to '%s'" % (key, new_kw.name, str(old_kw.annotation), str(new_kw.annotation))]
-                            else:
-                                detected_changes += ["'%s' keyword '%s' now accepts more argument types, from '%s' to '%s'" % (key, new_kw.name, old_kw.annotation.__name__, str(new_kw.annotation))]
-                        break
-                else:
-                    detected_changes += ["'%s' has a new keyword '%s'" % (key, new_kw.name)]
-    
-    return detected_changes
-
+    return changes
 
 
 def increment(which : str, previous_version : str):
@@ -383,8 +487,12 @@ if not args.from_git:
     if not isDataChanged(previous_data, current_data):
         raise Exception("The code has not changed since the version number was last incremented.")
 
-major_changes = detect_major_changes(previous_data, current_data)
-minor_changes = detect_minor_changes(previous_data, current_data)
+changes = detect_changes(previous_data, current_data)
+major_changes = []
+minor_changes = []
+for change in changes:
+    if isinstance(change, MajorChange): major_changes += [str(change)]
+    else: minor_changes += [str(change)]
 
 print("Detected major changes:\n   " + "\n   ".join(major_changes)+"\n")
 print("Detected minor changes:\n   " + "\n   ".join(minor_changes)+"\n")
