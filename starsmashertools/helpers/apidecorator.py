@@ -5,7 +5,7 @@ import functools
 information = {}
 
 def api(f):
-    name = "%s.%s" % (f.__module__, f.__name__)
+    name = "%s.%s" % (f.__module__, f.__qualname__)
     information[name] = []
     
     for parameter in inspect.signature(f).parameters.values():
