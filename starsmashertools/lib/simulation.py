@@ -337,6 +337,7 @@ class Simulation(object):
         # Now that we have all the file names, we can create an output iterator
         # from them
         outputs = self.get_output(start=start, stop=stop, step=step)
+        if not isinstance(outputs, list): outputs = [outputs]
         filenames = [output.path for output in outputs]
         return starsmashertools.lib.output.OutputIterator(filenames, self, **kwargs)
 
@@ -370,8 +371,9 @@ class Simulation(object):
         """
         s = slice(start, stop, step)
         filenames = self.get_outputfiles()[s]
-
-        return [starsmashertools.lib.output.Output(filename, self) for filename in filenames]
+        ret = [starsmashertools.lib.output.Output(filename, self) for filename in filenames]
+        if len(ret) == 1: return ret[0]
+        return ret
 
 
     # Return the Output file which corresponds with the beginning of an envelope
