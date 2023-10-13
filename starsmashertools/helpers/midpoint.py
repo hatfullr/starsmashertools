@@ -73,6 +73,7 @@ class Midpoint(object):
             self,
             favor : str = 'low',
             max_iter : int = 10000,
+            return_index : bool = False,
     ):
         """
         Obtain the object at the midpoint. We work with 3 indices, `low`, `mid`,
@@ -111,8 +112,12 @@ class Midpoint(object):
         starsmashertools.helpers.argumentenforcer.enforcevalues({
             'favor' : ['low', 'mid', 'high'],
         })
+
+        def _return(index):
+            if return_index: return self.objects[index], index
+            return self.objects[index]
         
-        if len(self.objects) == 1: return self.objects[0]
+        if len(self.objects) == 1: return _return(0)
         
         low = 0
         high = len(self.objects) - 1
@@ -123,9 +128,9 @@ class Midpoint(object):
             mid = int(0.5*(low + high))
             
             if mid == low or mid == high:
-                if favor == 'low': return self.objects[low]
-                elif favor == 'mid': return self.objects[mid]
-                elif favor == 'high': return self.objects[high]
+                if favor == 'low': return _return(low)
+                elif favor == 'mid': return _return(mid)
+                elif favor == 'high': return _return(high)
                 raise RuntimeError("This should never be possible")
             
             if results[mid] is None:
@@ -135,7 +140,7 @@ class Midpoint(object):
                 # Search higher in the list
                 low = copy.copy(mid)
             elif results[mid] == Midpoint.Criteria.Result.Equal:
-                return self.objects[mid]
+                return _return(mid)
             elif results[mid] == Midpoint.Criteria.Result.GreaterThan:
                 # Search lower in the list
                 high = copy.copy(mid)
