@@ -2,12 +2,10 @@ import starsmashertools.lib.simulation as simulation
 import starsmashertools.lib.binary as binary
 import starsmashertools.helpers.path as path
 import starsmashertools.preferences as preferences
+from starsmashertools.helpers.apidecorator import api
 
 
 class Dynamical(simulation.Simulation, object):
-    def __init__(self, *args, **kwargs):
-        super(Dynamical, self).__init__(*args, **kwargs)
-
     def _get_children(self, *args, **kwargs):
         search_directory = kwargs.get('search_directory', preferences.get_default('Simulation', 'search directory'))
         search_directory = path.realpath(search_directory)
@@ -17,6 +15,7 @@ class Dynamical(simulation.Simulation, object):
 
         return [binary.Binary(path.dirname(duplicate))]
 
+    @api
     def get_initialfile(self):
         # We assume a dynamical run always begins from a restartrad.sph file,
         # and that the file was copied from a restartrad.sph.orig file.
@@ -24,6 +23,7 @@ class Dynamical(simulation.Simulation, object):
         if not path.isfile(filename):
             raise FileNotFoundError(filename)
         return filename
-        
+
+    @api
     def get_relaxations(self, *args, **kwargs):
         return self.get_children(*args, **kwargs)[0].get_children(*args, **kwargs)

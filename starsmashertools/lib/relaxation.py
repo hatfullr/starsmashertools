@@ -2,11 +2,12 @@ import starsmashertools.lib.simulation
 import starsmashertools.helpers.path
 import starsmashertools.helpers.file
 import starsmashertools.lib.logfile
+from starsmashertools.helpers.apidecorator import api
 import starsmashertools.math
 import numpy as np
 import copy
 
-class Relaxation(starsmashertools.lib.simulation.Simulation, object):    
+class Relaxation(starsmashertools.lib.simulation.Simulation, object):
     def __init__(self, *args, **kwargs):
         super(Relaxation, self).__init__(*args, **kwargs)
         self._isPolytrope = None
@@ -23,12 +24,14 @@ class Relaxation(starsmashertools.lib.simulation.Simulation, object):
     def _get_children(self, *args, **kwargs):
         return []
 
+    @api
     def get_profilefile(self):
         return starsmashertools.helpers.path.join(self.directory, self['profilefile'])
 
     @property
     def profile(self): return self._profile
 
+    @api
     @property
     def isPolytrope(self):
         if self._isPolytrope is None:
@@ -67,7 +70,7 @@ class Relaxation(starsmashertools.lib.simulation.Simulation, object):
             raise Exception("Internal failure. Could not determine if relaxation is a polytrope because it is missing log files and/or an sph.init file '%s'" % self.directory)
         
         return self._isPolytrope
-
+    
     def get_n(self):
         if self._n is None:
             # Check for log files
@@ -88,6 +91,7 @@ class Relaxation(starsmashertools.lib.simulation.Simulation, object):
 
 
     class Profile(dict, object):
+        @api
         def __init__(self, path, readonly=True):
             self.path = path
             self.readonly = readonly
@@ -138,6 +142,7 @@ class Relaxation(starsmashertools.lib.simulation.Simulation, object):
 
 
     class MESA(Profile, object):
+        @api
         def __init__(self, *args, **kwargs):
             super(Relaxation.MESA, self).__init__(*args, **kwargs)
         

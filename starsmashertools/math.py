@@ -3,9 +3,11 @@ import numpy as np
 import starsmashertools.helpers.argumentenforcer
 import starsmashertools.helpers.numerics
 import starsmashertools.lib.units
+from starsmashertools.helpers.apidecorator import api
 
 # Given the mass of a collection of particles and coordinates in args, return
 # the center of mass in each of those args
+@api
 def center_of_mass(m, *args):
     total_mass = np.sum(m)
     result = np.zeros(len(args))
@@ -13,6 +15,7 @@ def center_of_mass(m, *args):
         result[i] = np.sum(arg * m) / total_mass
     return result
 
+@api
 def center_of_particles(*args):
     total_particles = len(args[0])
     result = np.zeros(len(args))
@@ -22,6 +25,7 @@ def center_of_particles(*args):
 
 
 @starsmashertools.helpers.argumentenforcer.enforcetypes
+@api
 def period(
         m1 : starsmashertools.helpers.numerics.types['real'],
         m2 : starsmashertools.helpers.numerics.types['real'],
@@ -33,6 +37,7 @@ def period(
 
 # The Roche lobe radius
 @starsmashertools.helpers.argumentenforcer.enforcetypes
+@api
 def rocheradius(
         m1 : starsmashertools.helpers.numerics.types['real'],
         m2 : starsmashertools.helpers.numerics.types['real'],
@@ -46,6 +51,7 @@ def rocheradius(
 # Given data 'x' and 'y', linearly interpolate the position(s) 'x0'.
 # Extrapolates outside the 'x' and 'y' data if 'extrapolate' is True.
 # Otherwise, raises an error.
+@api
 def linear_interpolate(x, y, x0):
     x = np.asarray(x)
     y = np.asarray(y)

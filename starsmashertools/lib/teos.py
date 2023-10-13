@@ -2,6 +2,7 @@ import numpy as np
 from scipy.interpolate import LinearNDInterpolator
 import collections
 import starsmashertools.helpers.file
+from starsmashertools.helpers.apidecorator import api
 
 # which=0 gives temperature
 # which=1 gives mean molecular mass mu
@@ -9,6 +10,7 @@ import starsmashertools.helpers.file
 # which=3 gives entropy
 
 class TEOS:
+    @api
     def __init__(self, filename, verbose=False):
         self.verbose = verbose
         if self.verbose: print("TEOS: Reading '"+filename+"'")
@@ -48,6 +50,7 @@ class TEOS:
 
         self.interpolators = collections.OrderedDict()
 
+    @api
     def __call__(self, rho, u, which):
         if isinstance(which, int): which = self._tableheaders[which]
 
@@ -63,6 +66,7 @@ class TEOS:
         return result
 
     # In case I get confused about how to call
+    @api
     def get(self, *args, **kwargs):
         return self(*args, **kwargs)
 

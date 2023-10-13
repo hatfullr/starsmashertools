@@ -3,13 +3,13 @@ import starsmashertools.preferences
 import starsmashertools.helpers.readonlydict
 import starsmashertools.helpers.argumentenforcer
 import copy
-
+from starsmashertools.helpers.apidecorator import api
 
 
 
 class Unit(object):
     exception_message = "Operation '%s' is disallowed on 'Unit' type objects. Please convert to 'float' first using, e.g., 'float(unit)'."
-    
+    @api
     def __init__(self, value, label, base=['cm', 'g', 's']):
         starsmashertools.helpers.argumentenforcer.enforcetypes({
             'value' : [float, int],
@@ -24,6 +24,7 @@ class Unit(object):
         
 
     # Decide on units that give the cleanest value
+    @api
     def auto(self, threshold=100, conversions=None):
         starsmashertools.helpers.argumentenforcer.enforcetypes({
             'threshold' : [float, int],
@@ -61,7 +62,7 @@ class Unit(object):
         )
         return possible_results[0]
 
-
+    @api
     def get_conversion_factor(self, new_label, conversions=None):
         # Convert this Unit into a compatible new Unit
         starsmashertools.helpers.argumentenforcer.enforcetypes({
@@ -117,7 +118,7 @@ class Unit(object):
                             break
         return factor
     
-
+    @api
     def convert(self, new_label, **kwargs):
         """
         Return a copy of this Unit converted to a new unit.
@@ -162,6 +163,7 @@ class Unit(object):
         return Unit(self.value * factor, new_label)
 
     # Returns a copy of this object in its base units
+    @api
     def get_base(self, conversions=None):
         if conversions is None:
             conversions = starsmashertools.preferences.get_default('Units', 'unit conversions', throw_error=True)
@@ -213,10 +215,11 @@ class Unit(object):
     #def __deepcopy__(self, *args, **kwargs):
     #    return Unit(self.value, self.label, base=self.base)
 
+    @api
     def __eq__(self, other):
         starsmashertools.helpers.argumentenforcer.enforcetypes({'other' : [Unit]})
         return self.value == other.value and self.label == other.label
-    
+    @api
     def __gt__(self, other):
         starsmashertools.helpers.argumentenforcer.enforcetypes({
             'other' : [float, int, Unit]
@@ -226,7 +229,7 @@ class Unit(object):
                 raise Exception("Cannot compare '%s' to '%s' because they have different labels" % (str(self.label), str(other.label)))
             other = other.value
         return self.value.__gt__(other)
-    
+    @api
     def __ge__(self, other):
         starsmashertools.helpers.argumentenforcer.enforcetypes({
             'other' : [float, int, Unit]
@@ -236,7 +239,7 @@ class Unit(object):
                 raise Exception("Cannot compare '%s' to '%s' because they have different labels" % (str(self.label), str(other.label)))
             other = other.value
         return self.value.__ge__(other)
-
+    @api
     def __lt__(self, other):
         starsmashertools.helpers.argumentenforcer.enforcetypes({
             'other' : [float, int, Unit]
@@ -246,7 +249,7 @@ class Unit(object):
                 raise Exception("Cannot compare '%s' to '%s' because they have different labels" % (str(self.label), str(other.label)))
             other = other.value
         return self.value.__lt__(other)
-    
+    @api
     def __le__(self, other):
         starsmashertools.helpers.argumentenforcer.enforcetypes({
             'other' : [float, int, Unit]
@@ -264,8 +267,10 @@ class Unit(object):
     def __reduce_ex__(self, *args, **kwargs):
         return self.__reduce__()
 
+    @api
     def __float__(self, *args, **kwargs):
         return self.value.__float__(*args, **kwargs)
+    @api
     def __int__(self, *args, **kwargs):
         ret = self.value.__int__(*args, **kwargs)
         if ret != self.value:
@@ -273,6 +278,7 @@ class Unit(object):
         return ret
 
     # self * other = self.__mul__(other)
+    @api
     def __mul__(self, other):
         starsmashertools.helpers.argumentenforcer.enforcetypes({'other' : [float, int, Unit]})
         if isinstance(other, Unit):
@@ -281,6 +287,7 @@ class Unit(object):
     __rmul__ = __mul__
 
     # self / other = self.__truediv__(other)
+    @api
     def __truediv__(self, other):
         starsmashertools.helpers.argumentenforcer.enforcetypes({'other' : [float, int, Unit]})
         if isinstance(other, Unit):
@@ -288,6 +295,7 @@ class Unit(object):
         return Unit(self.value / other, self.label)
 
     # other / self = self.__rtruediv__(other) if other doesn't have __truediv__
+    @api
     def __rtruediv__(self, other):
         starsmashertools.helpers.argumentenforcer.enforcetypes({'other' : [float, int, Unit]})
         if isinstance(other, Unit):
@@ -296,28 +304,31 @@ class Unit(object):
     
 
     
-
+    @api
     def __add__(self, other):
         starsmashertools.helpers.argumentenforcer.enforcetypes({'other' : [Unit]})
         if self.label != other.label:
             raise Exception("Adding Units can only be done when they have the same Labels.")
         return Unit(self.value + other.value, self.label)
+    @api
     def __radd__(self, other):
         starsmashertools.helpers.argumentenforcer.enforcetypes({'other' : [Unit]})
         if self.label != other.label:
             raise Exception("Adding Units can only be done when they have the same Labels.")
         return Unit(other.value + self.value, self.label)
+    @api
     def __sub__(self, other):
         starsmashertools.helpers.argumentenforcer.enforcetypes({'other' : [Unit]})
         if self.label != other.label:
             raise Exception("Subtracting Units can only be done when they have the same Labels.")
         return Unit(self.value - other.value, self.label)
+    @api
     def __rsub__(self, other):
         starsmashertools.helpers.argumentenforcer.enforcetypes({'other' : [Unit]})
         if self.label != other.label:
             raise Exception("Subtracting Units can only be done when they have the same Labels.")
         return Unit(other.value - self.value, self.label)
-
+    @api
     def __pow__(self, value):
         starsmashertools.helpers.argumentenforcer.enforcetypes({'value' : [float, int]})
         return Unit(self.value**value, self.label**value)
@@ -401,20 +412,22 @@ class Unit(object):
         #       and 2 'g' on the left side of the '/' and for 2 's' on the right
         #       side. If we find enough of such symbols then we remove those
         #       symbols and insert 'erg' on the left-most side, 'erg * cm'.
-
+        @api
         def __init__(self, value, base=['cm','g','s']):
             self.base = base
             self.left = []
             self.right = []
             self.set(value)
 
+        @api
         @property
         def isCompound(self):
             # "Compound" means this Label contains more than a single value,
             # such as 'cm/s' for example, or '1/s'.
             return ((len(self.left) == 1 and not self.right) or
                     len(self.left) == 0 and len(self.right) == 1)
-            
+
+        @api
         @staticmethod
         def split(string):
             lhs, rhs = string, []
@@ -424,6 +437,7 @@ class Unit(object):
             if rhs: rhs = rhs.split('*')
             return lhs, rhs
         
+        @api
         @property
         def short(self):
             new_left = copy.deepcopy(self.left)
@@ -458,11 +472,13 @@ class Unit(object):
                     new_right = short_rhs + right
             
             return Unit.Label.get_string(new_left, new_right)
-            
+
+        @api
         @property
         def long(self):
             return Unit.Label.get_string(self.left, self.right)
 
+        @api
         @staticmethod
         def get_string(left, right):
             starsmashertools.helpers.argumentenforcer.enforcetypes({
@@ -476,6 +492,7 @@ class Unit(object):
             if right: string += "/"+"*".join(right)
             return string
 
+        @api
         def is_compatible(self, other):
             """
             Returns `True` if this Label can be safely converted to the other
@@ -506,6 +523,7 @@ class Unit(object):
             return cpy == othercpy
 
         # Return a copy of this label with changes
+        @api
         def convert(self, old_label, new_label):
             starsmashertools.helpers.argumentenforcer.enforcetypes({
                 'old_label' : [str],
@@ -517,7 +535,8 @@ class Unit(object):
             for i, val in enumerate(ret.right):
                 if val == old_label: ret.right[i] = new_label
             return ret
-        
+
+        @api
         def simplify(self):
             for item in self.base:
                 lc, rc = self.left.count(item), self.right.count(item)
@@ -531,6 +550,7 @@ class Unit(object):
                     rc = self.right.count(item)
                     if lc == plc and rc == prc: break
 
+        @api
         def set(self, string):
             self.left, self.right = Unit.Label.split(string)
 
@@ -556,7 +576,8 @@ class Unit(object):
             
             self.organize()
             self.simplify()
-                    
+
+        @api
         def organize(self):
             # Sort the left and right arrays starting with the base values first
             # and then any other values after.
@@ -575,13 +596,15 @@ class Unit(object):
         
         def __str__(self): return self.short
         def __repr__(self): return self.long
-        
+
+        @api
         def __eq__(self, other):
             starsmashertools.helpers.argumentenforcer.enforcetypes({'other' : [Unit.Label, str]})
             if isinstance(other, Unit.Label):
                 return self.long == other.long
             return self.long == other
 
+        @api
         def __mul__(self, other):
             starsmashertools.helpers.argumentenforcer.enforcetypes({'other' : [Unit.Label, int]})
             ret = copy.deepcopy(self)
@@ -597,9 +620,10 @@ class Unit(object):
             ret.simplify()
             return ret
 
+        @api
         def __rmul__(self, *args, **kwargs):
             return self.__mul__(*args, **kwargs)
-        
+        @api
         def __truediv__(self, other):
             starsmashertools.helpers.argumentenforcer.enforcetypes({'other' : [Unit.Label]})
             if self.base != other.base:
@@ -612,7 +636,7 @@ class Unit(object):
             ret.organize()
             ret.simplify()
             return ret
-            
+        @api
         def __rtruediv__(self, other):
             starsmashertools.helpers.argumentenforcer.enforcetypes({'other' : [Unit.Label, int]})
             if isinstance(other, int) and other != 1:
@@ -631,7 +655,7 @@ class Unit(object):
             ret.organize()
             ret.simplify()
             return ret
-
+        @api
         def __pow__(self, value):
             starsmashertools.helpers.argumentenforcer.enforcetypes({'value' : [int, float]})
             ret = ""
@@ -687,6 +711,7 @@ class Units(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
 # Note that currently the setting of values 'gram', 'sec', 'cm', and 'kelvin' in
 # src/starsmasher.h is not supported. We expect all these values to equal 1.d0
 # for now.
+    @api
     def __init__(self, simulation):
 
         # Make sure the given simulation argument is of the right type

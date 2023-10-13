@@ -2,6 +2,7 @@ import starsmashertools.lib.simulation as simulation
 import starsmashertools.helpers.path as path
 import starsmashertools.lib.relaxation as relaxation
 import starsmashertools.preferences as preferences
+from starsmashertools.helpers.apidecorator import api
 import starsmashertools.math
 import starsmashertools
 import numpy as np
@@ -14,13 +15,15 @@ class Binary(simulation.Simulation, object):
 
     # Returns the particles in the output file which correspond
     # to the primary star (usually the donor)
+    @api
     def get_primary(self, output):
         if not isinstance(output, starsmashertools.lib.output.Output):
             raise TypeError("Argument 'output' must be of type 'starsmashertools.lib.output.Output', not '%s'" % type(output).__name__)
         if output not in self:
             raise ValueError("Argument 'output' must be an output file from simulation '%s', not '%s'" % (self.directory, output.simulation.directory))
         return starsmashertools.get_particles(self.get_primary_IDs(), output)
-    
+
+    @api
     def get_secondary(self, output):
         if not isinstance(output, starsmashertools.lib.output.Output):
             raise TypeError("Argument 'output' must be of type 'starsmashertools.lib.output.Output', not '%s'" % type(output).__name__)
@@ -28,10 +31,12 @@ class Binary(simulation.Simulation, object):
             raise ValueError("Argument 'output' must be an output file from simulation '%s', not '%s'" % (self.directory, output.simulation.directory))
         return starsmashertools.get_particles(self.get_secondary_IDs(), output)
 
+    @api
     def get_n1(self):
         if self._n1 is None: self._get_n1_n2()
         return self._n1
 
+    @api
     def get_n2(self):
         if self._n2 is None: self._get_n1_n2()
         return self._n2
@@ -68,13 +73,16 @@ class Binary(simulation.Simulation, object):
                 self._n2 = 1
 
     # Returns True if the primary is a point mass
+    @api
     def isPrimaryPointMass(self): return self.get_n1() == 1
     
     # Returns True if the secondary is a point mass
+    @api
     def isSecondaryPointMass(self): return self.get_n2() == 1
 
-
+    @api
     def get_start1u(self): return path.join(self.directory, "sph.start1u")
+    @api
     def get_start2u(self): return path.join(self.directory, "sph.start2u")
 
     def _get_children(self, *args, **kwargs):
@@ -97,15 +105,17 @@ class Binary(simulation.Simulation, object):
         
         return children
 
-
+    @api
     def get_primary_IDs(self): return np.arange(self.get_n1())
-        
+
+    @api
     def get_secondary_IDs(self):
         n1, n2 = self.get_n1(), self.get_n2()
         # This needs checked
         return np.arange(n1, n1 + n2)
 
     # Get the centers of mass of both stars
+    @api
     def get_COMs(self, output):
         if output not in self:
             raise starsmashertools.lib.simulation.Simulation.OutputNotInSimulationError(self, output)
@@ -138,6 +148,7 @@ class Binary(simulation.Simulation, object):
 
         return np.array([xcom1, ycom1, zcom1]), np.array([xcom2, ycom2, zcom2])
 
+    @api
     def get_separation(self, output):
         if output not in self:
             raise starsmashertools.lib.simulation.Simulation.OutputNotInSimulationError(self, output)
@@ -151,6 +162,7 @@ class Binary(simulation.Simulation, object):
         com1, com2 = self.get_COMs(output)
         return np.sqrt(np.sum((com1 - com2)**2, axis=-1))
 
+    @api
     def get_period(self, output):
         if output not in self:
             raise starsmashertools.lib.simulation.Simulation.OutputNotInSimulationError(self, output)
@@ -177,6 +189,7 @@ class Binary(simulation.Simulation, object):
 
     # Obtain the Roche lobe filling fraction fRLOF for the given output
     # object. If None, then finds fRLOF for all the output files.
+    @api
     def get_fRLOF(self, output):
         if output not in self:
             raise starsmashertools.lib.simulation.Simulation.OutputNotInSimulationError(self, output)
@@ -207,6 +220,7 @@ class Binary(simulation.Simulation, object):
         return (0.75 * V1 / np.pi)**(1./3.) / r_RL1, (0.75 * V2 / np.pi)**(1./3.) / r_RL2
         
 
+    @api
     def get_primary_mass(self):
         logfiles = self.get_logfiles()
         if logfiles:
@@ -220,6 +234,7 @@ class Binary(simulation.Simulation, object):
         with starsmashertools.mask(output, self.get_primary_IDs()) as masked:
             return np.sum(masked['am'])
 
+    @api
     def get_secondary_mass(self):
         logfiles = self.get_logfiles()
         if logfiles:

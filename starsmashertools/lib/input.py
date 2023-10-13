@@ -2,21 +2,23 @@ import starsmashertools.helpers.string as string
 import starsmashertools.helpers.path as path
 import starsmashertools.preferences as preferences
 import starsmashertools.helpers.file
+from starsmashertools.helpers.apidecorator import api
 
 # This represents the inputs sent to StarSmasher, where the keys
 # are variable names and the values are the values of those variables
 class Input(dict, object):
+    @api
     def __init__(self, directory):
         self.directory = directory
         super(Input, self).__init__()
         self._initialized = False
 
-
+    @api
     def __getitem__(self, item, **kwargs):
         if item not in list(self.keys()) and not self._initialized: self.initialize()
         return super(Input, self).__getitem__(item, **kwargs)
     
-    
+    @api
     def initialize(self):
         if self._initialized: raise Exception("Cannot initialize an Input object that is already initialized")
         

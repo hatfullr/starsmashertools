@@ -4,6 +4,7 @@ import starsmashertools.helpers.path
 import starsmashertools.helpers.file
 import starsmashertools.helpers.string
 import starsmashertools.helpers.readonlydict
+from starsmashertools.helpers.apidecorator import api
 import numpy as np
 import time
 import starsmashertools.lib.simulation
@@ -36,7 +37,7 @@ class Output(dict, object):
         'raw',
         'cgs',
     ]
-    
+    @api
     def __init__(
             self,
             path,
@@ -67,7 +68,8 @@ class Output(dict, object):
         return string % ("'%s'" % starsmashertools.helpers.path.basename(self.path))
 
     def __repr__(self): return str(self)
-    
+
+    @api
     def __getitem__(self, item):
         if item in self._cache.keys(): return self.from_cache(item)
         if item not in self.keys(ensure_read=False):
@@ -91,12 +93,19 @@ class Output(dict, object):
             elif hasattr(self.simulation.units, item):
                 ret = _copy.copy(ret) * getattr(self.simulation.units, item)
         return ret
-    
+
     def __eq__(self, other):
         return starsmashertools.helpers.file.compare(self.path, other.path)
 
     def __hash__(self, *args, **kwargs):
         return self.path.__hash__(*args, **kwargs)
+
+    def __copy__(self,*args,**kwargs):
+        ret = Output(self.path, self.simulation, mode=self.mode)
+        ret.copy_from(self)
+        return ret
+    def __deepcopy__(self,*args,**kwargs):
+        return self.__copy__(*args, **kwargs)
 
     # Use this to make sure that the file has been fully read
     def _ensure_read(self):
@@ -107,7 +116,7 @@ class Output(dict, object):
         self._cache = _copy.copy(preferences.get_default('Output', 'cache'))
         # If no cache is defined in preferences
         if self._cache is None: self._cache = {}
-
+    @api
     def keys(self, *args, **kwargs):
         if 'ensure_read' in kwargs.keys():
             if kwargs.pop('ensure_read'): self._ensure_read()
@@ -116,7 +125,7 @@ class Output(dict, object):
         obj = {key:None for key in ret}
         for key in self._cache.keys(): obj[key] = None
         return obj.keys()
-
+    @api
     def values(self, *args, **kwargs):
         if 'ensure_read' in kwargs.keys():
             if kwargs.pop('ensure_read'): self._ensure_read()
@@ -126,7 +135,7 @@ class Output(dict, object):
             if key in keys:
                 self[key] = self.from_cache(key)
         return super(Output, self).values(*args, **kwargs)
-
+    @api
     def items(self, *args, **kwargs):
         if 'ensure_read' in kwargs.keys():
             if kwargs.pop('ensure_read'): self._ensure_read()
@@ -136,7 +145,7 @@ class Output(dict, object):
             if key not in keys:
                 self[key] = self.from_cache(key)
         return super(Output, self).items(*args, **kwargs)
-
+    @api
     def copy_from(self, obj):
         for key in self._isRead.keys():
             self._isRead[key] = True
@@ -173,23 +182,26 @@ class Output(dict, object):
 
         if return_headers: self._isRead['header'] = True
         if return_data: self._isRead['data'] = True
-
+    @api
     def from_cache(self, key):
         if key in self._cache.keys():
             if callable(self._cache[key]):
                 self._cache[key] = self._cache[key](self)
         return self._cache[key]
 
+    @api
     def mask(self, mask):
         self._mask = mask
 
+    @api
     def unmask(self):
         self._mask = None
         # We should really store the cached values that we obtained while being
         # masked so that we don't have to recalculate them, but doing so would
         # be difficult. So we just make it simple and clear the cache.
         self._clear_cache()
-    
+
+    @api
     def get_file_creation_time(self):
         return starsmashertools.helpers.path.getmtime(self.path)
     
@@ -242,6 +254,7 @@ class OutputIterator(object):
     An iterator which can be used to iterate through Output objects efficiently.
     """
     @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
     def __init__(
             self,
             filenames : list | tuple | np.ndarray,
@@ -327,7 +340,7 @@ class OutputIterator(object):
     def __len__(self): return len(self.filenames)
 
     def __iter__(self): return self
-
+    
     def __next__(self):
         if len(self.filenames) == 0: self.stop()
         
@@ -353,8 +366,7 @@ class OutputIterator(object):
             return self.get(self.filenames[self._index])
         else:
             self.stop()
-
-
+    
     def next(self, *args, **kwargs): return self.__next__(self, *args, **kwargs)
 
     def stop(self):

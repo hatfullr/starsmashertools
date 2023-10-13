@@ -2,12 +2,14 @@ import starsmashertools.preferences as preferences
 import starsmashertools.helpers.path
 import starsmashertools.helpers.file
 import starsmashertools.helpers.string
+from starsmashertools.helpers.apidecorator import api
 from glob import glob
 import numpy as np
 import mmap
 import copy
 import re
 
+@api
 def find(directory, pattern=None, throw_error=False):
     if pattern is None:
         pattern = preferences.get_default('LogFile', 'file pattern', throw_error=True)
@@ -27,6 +29,7 @@ def find(directory, pattern=None, throw_error=False):
 
     
 class LogFile(object):
+    @api
     def __init__(self, path, simulation):
         self.path = starsmashertools.helpers.path.realpath(path)
         self.simulation = simulation
@@ -52,7 +55,6 @@ class LogFile(object):
         return self._header
     
     def read_header(self):
-        
         self._header = b""
         self._buffer.seek(0)
         for line in iter(self._buffer.readline, b""):
@@ -60,7 +62,7 @@ class LogFile(object):
             self._header += line
         self._header = self._header.decode('utf-8')
         
-        
+    @api
     def get(self, phrase):
         if phrase not in self.header:
             raise LogFile.PhraseNotFoundError("Failed to find '%s' in '%s'" % (phrase, self.path))
@@ -70,6 +72,7 @@ class LogFile(object):
 
     # Return a list of boolean values of the same length as 'outputfiles', where
     # an element is 'True' if it is included in this LogFile.
+    @api
     def has_output_files(self, filenames):
         first_file = self.get_first_output_file(throw_error=False)
         last_file = self.get_last_output_file(throw_error=False)
@@ -88,8 +91,8 @@ class LogFile(object):
         return [num >= start_num and num <= stop_num for num in nums]
     
     # Find the time that this log file stopped at
+    @api
     def get_stop_time(self):
-        
         string = 'time='
         bstring = string.encode('utf-8')
         index = self._buffer.rfind(bstring, len(self.header), self._buffer.size())
@@ -101,9 +104,9 @@ class LogFile(object):
         ret = float(self._buffer.read(end_idx - index).decode('utf-8').strip())
         
         return ret
-        
+
+    @api
     def get_start_time(self):
-        
         string = 'time='
         bstring = string.encode('utf-8')
         index = self._buffer.find(bstring, len(self.header), self._buffer.size())
@@ -116,8 +119,8 @@ class LogFile(object):
         
         return ret
 
+    @api
     def get_first_output_file(self, throw_error=True):
-        
         string = ' duout: writing file '
         bstring = string.encode('utf-8')
         string2 = 'at t='
@@ -137,9 +140,8 @@ class LogFile(object):
             raise LogFile.PhraseNotFoundError(string)
         return ret
         
-
+    @api
     def get_last_output_file(self, throw_error=True):
-        
         string = ' duout: writing file '
         bstring = string.encode('utf-8')
         string2 = 'at t='
@@ -156,7 +158,8 @@ class LogFile(object):
         if throw_error:
             raise LogFile.PhraseNotFoundError(string)
         return ret
-    
+
+    @api
     def get_number_of_iterations(self):
         first = self.get_first_iteration()
         last = self.get_last_iteration()
@@ -164,6 +167,7 @@ class LogFile(object):
             return last['number'] - first['number']
         return 0
 
+    @api
     def get_iteration_content_length(self):
         if self._iteration_content_length is not None: return self._iteration_content_length
         
@@ -184,6 +188,7 @@ class LogFile(object):
         self._iteration_content_length = index3 - index
         return self._iteration_content_length
 
+    @api
     def get_first_iteration(self):
         if self._first_iteration is not None: return self._first_iteration
         
@@ -200,6 +205,7 @@ class LogFile(object):
         self._first_iteration = LogFile.Iteration(content, self)
         return self._first_iteration
 
+    @api
     def get_last_iteration(self):
         if self._last_iteration is not None: return self._last_iteration
         
@@ -224,6 +230,7 @@ class LogFile(object):
         
         return self._last_iteration
 
+    @api
     def get_iteration(self, number):
         startline = LogFile.Iteration.startline
         tomatch = (startline + '%8d') % number
@@ -242,6 +249,7 @@ class LogFile(object):
         
         return LogFile.Iteration(content, self)
 
+    @api
     def get_iterations(self, start : int = 0, stop=None, step : int = 1):
         # This function is as well-optimized as I can get it to be
         # It's still a big bottleneck, but just read fewer iterations from
