@@ -31,7 +31,6 @@ class Relaxation(starsmashertools.lib.simulation.Simulation, object):
     @property
     def profile(self): return self._profile
 
-    @api
     @property
     def isPolytrope(self):
         if self._isPolytrope is None:

@@ -419,7 +419,6 @@ class Unit(object):
             self.right = []
             self.set(value)
 
-        @api
         @property
         def isCompound(self):
             # "Compound" means this Label contains more than a single value,
@@ -437,7 +436,6 @@ class Unit(object):
             if rhs: rhs = rhs.split('*')
             return lhs, rhs
         
-        @api
         @property
         def short(self):
             new_left = copy.deepcopy(self.left)
@@ -473,7 +471,6 @@ class Unit(object):
             
             return Unit.Label.get_string(new_left, new_right)
 
-        @api
         @property
         def long(self):
             return Unit.Label.get_string(self.left, self.right)
