@@ -371,7 +371,8 @@ class Simulation(object):
         """
         if start is not None and stop is None and step is None:
             # User is intending to just get a single index
-            stop = start
+            if start != -1:
+                stop = start + 1
         s = slice(start, stop, step)
         filenames = self.get_outputfiles()[s]
         ret = [starsmashertools.lib.output.Output(filename, self) for filename in filenames]
