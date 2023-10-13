@@ -27,7 +27,6 @@ class Simulation(object):
     def __init__(
             self,
             directory : str,
-            /,
     ):
         directory = path.realpath(directory)
         
@@ -48,7 +47,7 @@ class Simulation(object):
 
     @property
     @api
-    def compressed(self, /):
+    def compressed(self):
         filename = self._get_compression_filename()
         if not starsmashertools.helpers.path.isfile(filename): return False
         return starsmashertools.helpers.compressiontask.CompressionTask.isCompressedFile(filename)
@@ -57,17 +56,17 @@ class Simulation(object):
         return hash(self.directory)
 
     @api
-    def __eq__(self, other, /):
+    def __eq__(self, other):
         # Check if the basenames are the same, so that e.g. pdc.json
         # files can work on different file systems
         if not isinstance(other, Simulation): return False
         return path.basename(self.directory) == path.basename(other.directory)
 
     @api
-    def __getitem__(self, key, /): return self.input[key]
+    def __getitem__(self, key): return self.input[key]
 
     @api
-    def __contains__(self, item, /):
+    def __contains__(self, item):
         if isinstance(item, str):
             if path.isfile(item):
                 return item in self.get_output_iterator()
@@ -182,25 +181,25 @@ class Simulation(object):
     @staticmethod
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
-    def valid_directory(directory : str, /):
+    def valid_directory(directory : str):
         return path.get_src(directory) is not None
 
     @api
-    def keys(self, /, *args, **kwargs): return self.input.keys(*args, **kwargs)
+    def keys(self, *args, **kwargs): return self.input.keys(*args, **kwargs)
     @api
-    def values(self, /, *args, **kwargs): return self.input.values(*args, **kwargs)
+    def values(self, *args, **kwargs): return self.input.values(*args, **kwargs)
     @api
-    def items(self, /, *args, **kwargs): return self.input.items(*args, **kwargs)
+    def items(self, *args, **kwargs): return self.input.items(*args, **kwargs)
     
     @property
     @api
-    def units(self,/):
+    def units(self):
         if self._units is None: self._units = starsmashertools.lib.units.Units(self)
         return self._units
 
     @property
     @api
-    def teos(self,/):
+    def teos(self):
         if self._teos is None and self['neos'] == 2:
             self._teos = TEOS(path.realpath(path.join(self.directory, self['eosfile'])))
         return self._teos
@@ -209,7 +208,7 @@ class Simulation(object):
 
     # Keywords are passed to logfile.find() method
     @api
-    def get_logfiles(self,/,**kwargs):
+    def get_logfiles(self,**kwargs):
         if self._logfiles is None:
             self._logfiles = []
             for _path in starsmashertools.lib.logfile.find(self.directory, **kwargs):
@@ -224,7 +223,7 @@ class Simulation(object):
     # then it has one child, which is the binary scan that it originated from.
     #@profile
     @api
-    def get_children(self, /, *args, **kwargs):
+    def get_children(self, *args, **kwargs):
         verbose = kwargs.get('verbose', False)
         if self._children is None:
             # First see if the children are given to us in the data/ directory.
@@ -260,7 +259,6 @@ class Simulation(object):
     def get_file(
             self,
             filename_or_pattern : str,
-            /,*,
             recursive : bool = True,
     ):
         """Search the simulation directory for a file or files that match a
@@ -288,7 +286,7 @@ class Simulation(object):
         return glob.glob(_path, recursive=recursive)
         
     @api
-    def get_outputfiles(self, /,*, pattern : str | type(None) = None):
+    def get_outputfiles(self, pattern : str | type(None) = None):
         if pattern is None:
             pattern = preferences.get_default('Simulation', 'output files', throw_error=True)
         matches = self.get_file(pattern)
@@ -298,14 +296,13 @@ class Simulation(object):
 
     # The initial file is always the one that was written first.
     @api
-    def get_initialfile(self, /,*, pattern : str | type(None) = None):
+    def get_initialfile(self, pattern : str | type(None) = None):
         return self.get_outputfiles(pattern=pattern)[0]
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def get_output_iterator(
             self,
-            /,*,
             start : int | type(None) = None,
             stop : int | type(None) = None,
             step : int | type(None) = None,
@@ -392,7 +389,6 @@ class Simulation(object):
             IDs : list | tuple | np.ndarray,
             radius : float,
             frac : float,
-            /,*,
             omit_large : bool = True,
             boundonly : bool = True,
             # Give times in simulation units here
@@ -457,7 +453,6 @@ class Simulation(object):
     @api
     def compress(
             self,
-            /,*,
             filename : str | type(None) = None,
             include_patterns : list | type(None) = None,
             exclude_patterns : list | type(None) = None,
@@ -543,7 +538,6 @@ class Simulation(object):
     @api
     def decompress(
             self,
-            /,*,
             filename : str | type(None) = None,
             delete : bool = True,
             **kwargs
@@ -591,7 +585,7 @@ class Simulation(object):
 
 
     @api
-    def get_size(self,/):
+    def get_size(self):
         """Returns the size of the simulation in bytes.
 
         Returns
@@ -602,7 +596,7 @@ class Simulation(object):
 
 
     @api
-    def get_output_headers(self,/, **kwargs):
+    def get_output_headers(self, **kwargs):
         """
         Read all the headers of the output files in this simulation and return
         them as a dictionary.

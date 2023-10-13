@@ -27,7 +27,7 @@ __version__ = get_version()
 # Return the type of simulation that a directory is
 @starsmashertools.helpers.argumentenforcer.enforcetypes
 @api
-def get_simulation(directory : str, /):
+def get_simulation(directory : str):
     import starsmashertools.lib.simulation
     
     simulation = starsmashertools.lib.simulation.Simulation(directory)
@@ -45,7 +45,7 @@ def get_simulation(directory : str, /):
 
 @starsmashertools.helpers.argumentenforcer.enforcetypes
 @api
-def get_type(directory : str, /):
+def get_type(directory : str):
     try:
         return type(get_simulation(directory))
     except NotImplementedError as e:
@@ -79,7 +79,6 @@ def iterator(*args, **kwargs):
 def get_particles(
         _mask : np.ndarray | list | tuple,
         output : starsmashertools.lib.output.Output,
-        /,
 ):
     if isinstance(output, starsmashertools.lib.output.Output):
         with mask(output, _mask) as masked_output:
@@ -105,7 +104,6 @@ import collections
 def mask(
         output: starsmashertools.lib.output.Output,
         mask : np.ndarray | list | tuple,
-        /,
 ):
     if output._mask is not None:
         raise Exception("Cannot mask output that is already masked: '%s'" % str(output.path))
