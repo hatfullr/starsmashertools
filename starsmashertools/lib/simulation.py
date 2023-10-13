@@ -369,7 +369,10 @@ class Simulation(object):
         list
             A list of `starsmashertools.lib.output.Output` objects.
         """
-        s = slice(start, stop, step)
+        if start is not None and stop is None and step is None:
+            # User is intending to just get a single index
+            s = start
+        else: s = slice(start, stop, step)
         filenames = self.get_outputfiles()[s]
         ret = [starsmashertools.lib.output.Output(filename, self) for filename in filenames]
         if len(ret) == 1: return ret[0]
