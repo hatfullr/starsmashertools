@@ -12,6 +12,7 @@ import inspect
 import importlib
 import types
 import copy
+import hashlib
 import starsmashertools
 sys.path.append(starsmashertools.SOURCE_DIRECTORY)
 from setup import get_version, version_line_regex
@@ -72,14 +73,6 @@ parser.add_argument(
     help="Automatically respond 'y' to a prompt to increment the version number.",
 )
 
-parser.add_argument(
-    '--from-git',
-    action='store_true',
-    default=False,
-    required=False,
-    help="Use this option if calling this program from a git hook",
-)
-
 empty_value = "-None"
 
 
@@ -98,6 +91,24 @@ def get_parameter_details(parameter):
             annotation = str(annotation.__module__) + "." + annotation.__name__
     return parameter.name, parameter.kind, default, annotation
 
+def get_files():
+    ret = []
+    for dirpath, dirnames, filenames in os.walk(os.path.join(starsmashertools.SOURCE_DIRECTORY, 'starsmashertools')):
+        for filename in filenames:
+            if filename.endswith('.py'):
+                ret += [os.path.join(dirpath, filename)]
+    return ret
+
+def get_file_hashes():
+    hashes = {}
+    files = get_files()
+    for _file in files:
+        with open(_file, 'rb') as f:
+            # We need to use usedforsecurity=True because we need the
+            # cryptographic hashing for checking differences in code
+            hashes[_file] = hashlib.sha256(f.read(), usedforsecurity=True).hexdigest()
+    return hashes
+
 def to_json(data, version):
     obj = {}
     for key, parameters in data.items():
@@ -112,14 +123,20 @@ def to_json(data, version):
                 'annotation is UnionType' : isinstance(annotation, types.UnionType),
             }]
     obj['version'] = version
+    obj['hashes'] = get_file_hashes()
+    
     return obj
 
 def from_json(obj):
+    previous_hashes = None
     previous_version = None
     data = {}
     for key, param_objs in obj.items():
         if key == 'version':
             previous_version = param_objs
+            continue
+        if key == 'hashes':
+            previous_hashes = param_objs
             continue
         data[key] = []
         for param_obj in param_objs:
@@ -141,7 +158,7 @@ def from_json(obj):
                     default = annotation(default)
             
             data[key] += [inspect.Parameter(name, kind, default=default, annotation=annotation)]
-    return data, previous_version
+    return data, previous_version, previous_hashes
     
 def save_data(version):
     tosave = to_json(starsmashertools.helpers.apidecorator.information, version)
@@ -168,6 +185,15 @@ def isDataChanged(data_before, data_after):
             if not isParameterEqual(p, other): return True
     for key in data_after.keys():
         if key not in data_before.keys(): return True
+    return False
+
+def isHashesChanged(previous_hashes, current_hashes):
+    for _file, _hash in current_hashes.items():
+        if _file not in previous_hashes.keys(): return True
+        if _hash != previous_hashes[_file]: return True
+
+    for _file in previous_hashes.keys():
+        if _file not in current_hashes.keys(): return True
     return False
 
 # Insert the contents of dict1 into dict2, creating a list where necessary
@@ -428,6 +454,8 @@ def detect_changes(_previous, _current):
     return changes
 
 
+
+
 def increment(which : str, previous_version : str):
     """
     Increment the version number
@@ -480,12 +508,15 @@ if not os.path.isfile(version_data_filename):
     save_data(starsmashertools.__version__)
     raise FileNotFoundError("Cannot increment the version number because there was no version data present at '%s', but it has now been created and you can safely run this program again after the next changes are made to the code." % version_data_filename)
 
-previous_data, previous_version = load_data()
+previous_data, previous_version, previous_hashes = load_data()
 current_data = starsmashertools.helpers.apidecorator.information
+current_hashes = get_file_hashes()
 
-if not args.from_git:
-    if not isDataChanged(previous_data, current_data):
-        raise Exception("The code has not changed since the version number was last incremented.")
+changed = (isDataChanged(previous_data, current_data) or
+           isHashesChanged(previous_hashes, current_hashes))
+
+if not changed:
+    raise Exception("The code has not changed since the version number was last incremented.")
 
 changes = detect_changes(previous_data, current_data)
 major_changes = []
