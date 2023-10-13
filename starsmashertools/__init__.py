@@ -78,12 +78,14 @@ def iterator(*args, **kwargs):
 @api
 def get_particles(
         _mask : np.ndarray | list | tuple,
-        output : starsmashertools.lib.output.Output,
+        output : starsmashertools.lib.output.Output | starsmashertools.lib.output.OutputIterator,
 ):
     if isinstance(output, starsmashertools.lib.output.Output):
         with mask(output, _mask) as masked_output:
             return copy.deepcopy(masked_output)
+    raise NotImplementedError
 
+    """
     if not hasattr(output, '__iter__'):
         output = [output]
 
@@ -94,6 +96,7 @@ def get_particles(
     
     if len(ret) == 1: return ret[0]
     return ret
+    """
 
 
 import collections

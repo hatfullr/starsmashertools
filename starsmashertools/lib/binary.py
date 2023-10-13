@@ -3,6 +3,7 @@ import starsmashertools.helpers.path as path
 import starsmashertools.lib.relaxation as relaxation
 import starsmashertools.preferences as preferences
 from starsmashertools.helpers.apidecorator import api
+import starsmashertools.helpers.argumentenforcer
 import starsmashertools.math
 import starsmashertools
 import numpy as np
@@ -15,18 +16,16 @@ class Binary(simulation.Simulation, object):
 
     # Returns the particles in the output file which correspond
     # to the primary star (usually the donor)
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
-    def get_primary(self, output):
-        if not isinstance(output, starsmashertools.lib.output.Output):
-            raise TypeError("Argument 'output' must be of type 'starsmashertools.lib.output.Output', not '%s'" % type(output).__name__)
+    def get_primary(self, output : starsmashertools.lib.output.Output):
         if output not in self:
             raise ValueError("Argument 'output' must be an output file from simulation '%s', not '%s'" % (self.directory, output.simulation.directory))
         return starsmashertools.get_particles(self.get_primary_IDs(), output)
 
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
-    def get_secondary(self, output):
-        if not isinstance(output, starsmashertools.lib.output.Output):
-            raise TypeError("Argument 'output' must be of type 'starsmashertools.lib.output.Output', not '%s'" % type(output).__name__)
+    def get_secondary(self, output : starsmashertools.lib.output.Output):
         if output not in self:
             raise ValueError("Argument 'output' must be an output file from simulation '%s', not '%s'" % (self.directory, output.simulation.directory))
         return starsmashertools.get_particles(self.get_secondary_IDs(), output)
@@ -115,8 +114,9 @@ class Binary(simulation.Simulation, object):
         return np.arange(n1, n1 + n2)
 
     # Get the centers of mass of both stars
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
-    def get_COMs(self, output):
+    def get_COMs(self, output : starsmashertools.lib.output.Output | starsmashertools.lib.output.OutputIterator):
         if output not in self:
             raise starsmashertools.lib.simulation.Simulation.OutputNotInSimulationError(self, output)
 
@@ -148,8 +148,9 @@ class Binary(simulation.Simulation, object):
 
         return np.array([xcom1, ycom1, zcom1]), np.array([xcom2, ycom2, zcom2])
 
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
-    def get_separation(self, output):
+    def get_separation(self, output : starsmashertools.lib.output.Output | starsmashertools.lib.output.OutputIterator):
         if output not in self:
             raise starsmashertools.lib.simulation.Simulation.OutputNotInSimulationError(self, output)
         
@@ -162,8 +163,9 @@ class Binary(simulation.Simulation, object):
         com1, com2 = self.get_COMs(output)
         return np.sqrt(np.sum((com1 - com2)**2, axis=-1))
 
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
-    def get_period(self, output):
+    def get_period(self, output : starsmashertools.lib.output.Output | starsmashertools.lib.output.OutputIterator):
         if output not in self:
             raise starsmashertools.lib.simulation.Simulation.OutputNotInSimulationError(self, output)
         
@@ -189,8 +191,9 @@ class Binary(simulation.Simulation, object):
 
     # Obtain the Roche lobe filling fraction fRLOF for the given output
     # object. If None, then finds fRLOF for all the output files.
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
-    def get_fRLOF(self, output):
+    def get_fRLOF(self, output : starsmashertools.lib.output.Output | starsmashertools.lib.output.OutputIterator):
         if output not in self:
             raise starsmashertools.lib.simulation.Simulation.OutputNotInSimulationError(self, output)
 
