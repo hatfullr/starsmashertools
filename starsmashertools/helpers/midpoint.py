@@ -98,11 +98,20 @@ class Midpoint(object):
 
             Must be one of `'low'`, `'mid'`, or `'high'`.
 
+        max_iter : int, default = 10000
+            The maximum number of iterations.
+
+        return_index : bool, default = False
+            If `True`, the second value returned is the midpoint object's index
+            in the array of objects.
+
         Returns
         -------
         object
             The member of the `objects` list given in the constructor that
             corresponds with the midpoint value as evaluated by the criteria.
+
+        object, index
 
         See Also
         --------

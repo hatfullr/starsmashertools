@@ -3,7 +3,6 @@ import starsmashertools.helpers.argumentenforcer
 from starsmashertools.helpers.apidecorator import api
 import numpy as np
 import contextlib
-import copy
 import os
 
 SOURCE_DIRECTORY = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
@@ -11,14 +10,9 @@ SOURCE_DIRECTORY = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 import sys
 sys.path.append(SOURCE_DIRECTORY)
 from setup import get_version
-sys.path = sys.path[:-1]
+del sys.path[-1]
 
 __version__ = get_version()
-
-
-
-
-
 
 
 
@@ -80,6 +74,7 @@ def get_particles(
         _mask : np.ndarray | list | tuple,
         output : starsmashertools.lib.output.Output | starsmashertools.lib.output.OutputIterator,
 ):
+    import copy
     if isinstance(output, starsmashertools.lib.output.Output):
         with mask(output, _mask) as masked_output:
             return copy.deepcopy(masked_output)
@@ -99,7 +94,6 @@ def get_particles(
     """
 
 
-import collections
     
 @contextlib.contextmanager
 @starsmashertools.helpers.argumentenforcer.enforcetypes
@@ -118,3 +112,253 @@ def mask(
     finally:
         # Unmask the data
         output.unmask()
+
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def _get_decorators():
+    import os
+    import ast
+    
+    tocheck = os.path.join(os.path.dirname(os.path.realpath(__file__)))
+    files = []
+    for dirpath, dirnames, filenames in os.walk(tocheck):
+        for filename in filenames:
+            if not filename.endswith(".py"): continue
+            path = os.path.join(dirpath, filename)
+            files += [path]
+            
+
+    def get_full_function_name(_file,  name, _class = None):
+        path = get_module_name(_file, name)
+        name = get_function_name(name, _class = _class)
+        return '%s.%s' % (path, name)
+
+    def get_module_name(_file, name):
+        path = os.path.relpath(_file, SOURCE_DIRECTORY)
+        return path.replace(".py",'').replace(os.sep, '.')
+
+    def get_function_name(name, _class = None):
+        path = get_module_name(_file, name)
+        if _class is None: return name
+        return '%s.%s' % (_class, name)
+
+    def get_modules(_file):
+        class ImportNodeVisitor(ast.NodeVisitor):
+            def __init__(self, *args, **kwargs):
+                super(ImportNodeVisitor, self).__init__(*args, **kwargs)
+                self.modules = {}
+                self.module_names = {}
+            
+            def visit_Import(self, node):
+                for name in node.names:
+                    asname = name.asname
+                    if not asname: asname = name.name
+                    self.modules[name.name] = asname
+                    self.module_names[name.name] = name.name
+                self.generic_visit(node)
+
+            def visit_ImportFrom(self, node):
+                for name in node.names:
+                    asname = name.asname
+                    if not asname: asname = name.name
+                    full_name = '%s.%s' % (node.module, name.name)
+                    self.modules[full_name] = asname
+                    self.module_names[full_name] = node.module
+                self.generic_visit(node)
+        with open(_file, 'r') as f:
+            tree = ast.parse(f.read(), _file)
+        nodeVisitor = ImportNodeVisitor()
+        nodeVisitor.visit(tree)
+        return nodeVisitor.modules, nodeVisitor.module_names
+
+    functions = {}
+    for _file in files:
+        basename = os.path.basename(_file)
+        if (basename.endswith("#") or basename.endswith("~") or
+            basename.startswith("#") or basename.startswith(".#")): continue
+        
+        
+        with open(_file, 'r') as f:
+            modules, module_names = get_modules(_file)
+            
+            listening_for_def = False
+            detected_decorators = []
+            _class = None
+            _class_indent = None
+            in_comment_block = False
+            for line in f:
+                # Remove comments
+                ls = line.strip()
+                if not ls: continue
+                if '"""' in ls:
+                    in_comment_block = not in_comment_block
+                    continue
+                if in_comment_block: continue
+                if '#' in ls:
+                    ls = ls[:ls.index('#')]
+                    if not ls: continue
+                
+                indent = line.index(ls[0])
+
+                if _class is not None and indent <= _class_indent:
+                    # If the indentation has moved out of the class then we need
+                    # to fall back down 1 class level
+                    if _class.count('.') == 0:
+                        # No more nested classes
+                        _class = None
+                        _class_indent = None
+                    else:
+                        # Still in a class statement, dropping out of one level
+                        # of nested classes
+                        _class = '.'.join(_class.split('.')[:-1])
+                        _class_indent = indent
+            
+                if ls.startswith('class'):
+                    l = ls.replace('class', '').strip()
+                    if '(' in l: l = l[:l.index("(")]
+                    if ':' in l: l = l[:l.index(':')]
+
+                    # When we find a class, we need to add the '.stuff' syntax
+                    # to _class only if the current indentation level is greater
+                    # than the previous.
+                    # If we already have a '.' syntax, then we need to remove
+                    # the final '.' member and replace it with the class we just
+                    # found.
+
+                    if _class is None:
+                        _class = l
+                        _class_indent = indent
+                    else:
+                        if '.' in _class:
+                            if indent > _class_indent:
+                                _class = '.'.join([_class,l])
+                            else:
+                                _class = '.'.join(_class.split('.')[:-1] + [l])
+                            _class_indent = indent
+                    continue
+                
+                if listening_for_def:
+                    if ls.startswith('def'):
+                        l = ls.replace('def', '').strip()
+                        name = l[:l.index("(")]
+                        full_name = get_full_function_name(_file, name, _class=_class)
+                        for detected_decorator in detected_decorators:
+
+                            module = get_module_name(_file, name)
+                            if modules:
+                                for key, val in modules.items():
+                                    if detected_decorator == val:
+                                        detected_decorator = key
+                                        module = module_names[key]
+                                        break
+                            
+                            if detected_decorator not in functions.keys():
+                                functions[detected_decorator] = []
+                            functions[detected_decorator] += [{
+                                'full name' : full_name,
+                                'short name' : name,
+                                'module' : module,
+                                'class' : _class,
+                            }]
+                        detected_decorators = []
+                        listening_for_def = False
+                    elif ls.startswith("@"):
+                        l = ls.replace("@", '').strip()
+                        if '(' in l: l = l[:l.index("(")]
+                        if modules:
+                            for key, val in modules.items():
+                                if l == val:
+                                    l = key
+                                    break
+                        detected_decorators += [l]
+                    else:
+                        raise NotImplementedError("Detected decorators that are floating above a function definition or don't belong to any function definition in '%s'" % _file)
+                else:
+                    if ls.startswith("@"):
+                        listening_for_def = True
+                        l = ls.replace("@",'').strip()
+                        if '(' in l: l = l[:l.index("(")]
+                        if modules:
+                            for key, val in modules.items():
+                                if l == val:
+                                    l = key
+                                    break
+                        detected_decorators += [l]
+    return functions
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Cleanup
+del api
+del np
+del contextlib
+del sys # The most terrifying syntax...
+del get_version
+del starsmashertools
+del os # The most terrifying syntax...

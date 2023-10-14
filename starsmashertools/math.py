@@ -1,7 +1,5 @@
 # Included here are useful common functions
 import numpy as np
-import starsmashertools.helpers.argumentenforcer
-import starsmashertools.helpers.numerics
 import starsmashertools.lib.units
 from starsmashertools.helpers.apidecorator import api
 
@@ -24,25 +22,15 @@ def center_of_particles(*args):
     return result
 
 
-@starsmashertools.helpers.argumentenforcer.enforcetypes
 @api
-def period(
-        m1 : starsmashertools.helpers.numerics.types['real'],
-        m2 : starsmashertools.helpers.numerics.types['real'],
-        separation : starsmashertools.helpers.numerics.types['real'],
-):
+def period(m1,m2,separation):
     G = float(starsmashertools.lib.units.gravconst)
     return np.sqrt(4 * np.pi**2 / (G * (m1 + m2)) * separation**3)
 
 
 # The Roche lobe radius
-@starsmashertools.helpers.argumentenforcer.enforcetypes
 @api
-def rocheradius(
-        m1 : starsmashertools.helpers.numerics.types['real'],
-        m2 : starsmashertools.helpers.numerics.types['real'],
-        separation : starsmashertools.helpers.numerics.types['real'],
-):
+def rocheradius(m1,m2,separation):
     q = m1 / m2
     qonethird = q**(1./3.)
     qtwothirds = qonethird * qonethird

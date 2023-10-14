@@ -3,10 +3,13 @@ import starsmashertools.helpers.path as path
 import starsmashertools.lib.relaxation as relaxation
 import starsmashertools.preferences as preferences
 from starsmashertools.helpers.apidecorator import api
+from starsmashertools.helpers.clidecorator import cli
 import starsmashertools.helpers.argumentenforcer
+import starsmashertools.helpers.midpoint
 import starsmashertools.math
 import starsmashertools
 import numpy as np
+import warnings
 
 class Binary(simulation.Simulation, object):
     def __init__(self, *args, **kwargs):
@@ -31,11 +34,13 @@ class Binary(simulation.Simulation, object):
         return starsmashertools.get_particles(self.get_secondary_IDs(), output)
 
     @api
+    @cli('starsmashertools')
     def get_n1(self):
         if self._n1 is None: self._get_n1_n2()
         return self._n1
 
     @api
+    @cli('starsmashertools')
     def get_n2(self):
         if self._n2 is None: self._get_n1_n2()
         return self._n2
@@ -73,10 +78,12 @@ class Binary(simulation.Simulation, object):
 
     # Returns True if the primary is a point mass
     @api
+    @cli('starsmashertools')
     def isPrimaryPointMass(self): return self.get_n1() == 1
     
     # Returns True if the secondary is a point mass
     @api
+    @cli('starsmashertools')
     def isSecondaryPointMass(self): return self.get_n2() == 1
 
     @api
@@ -211,19 +218,109 @@ class Binary(simulation.Simulation, object):
 
         with starsmashertools.mask(output, primary) as masked:
             m1 = np.sum(masked['am'])
-            V1 = np.sum(masked['am'] / masked['rho'])
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore')
+                V1 = np.sum(masked['am'] / masked['rho'])
 
         with starsmashertools.mask(output, secondary) as masked:
             m2 = np.sum(masked['am'])
-            V2 = np.sum(masked['am'] / masked['rho'])
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore')
+                V2 = np.sum(masked['am'] / masked['rho'])
 
         r_RL1 = starsmashertools.math.rocheradius(float(m1), float(m2), float(separation))
         r_RL2 = starsmashertools.math.rocheradius(float(m2), float(m1), float(separation))
         
         return (0.75 * V1 / np.pi)**(1./3.) / r_RL1, (0.75 * V2 / np.pi)**(1./3.) / r_RL2
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    @cli('starsmashertools', which='both')
+    def get_RLOF(
+            self,
+            which : str = 'primary',
+            threshold : float | int = 1.,
+    ):
+        """
+        Obtain the output file that corresponds with the time of Roche lobe
+        overflow (RLOF). RLOF is detected using `~.get_fRLOF` to obtain the
+        fraction of the Roche lobe that is filled fRLOF in the output files. The
+        output files are searched to locate the one whose fRLOF value is closest
+        to `threshold` and the file just before that one is returned.
+
+        Parameters
+        ----------
+        which : str, default = 'primary'
+            The star(s) for which to find the RLOF condition. Must be one of the
+            following: 'primary', 'secondary', or 'both'. If 'primary' or 
+            'secondary', a single `starsmashertools.lib.output.Output` object is
+            returned, and if 'both' then two are returned, which are the primary
+            and secondary stars' RLOF times repsectively.
+
+        threshold : float, int,  default = 1.
+            The threshold for detecting Roche lobe overflow. This value is
+            compared with fRLOF from `~.get_fRLOF`.
+
+        Returns
+        -------
+        `starsmashertools.lib.output.Output` or `None` if `which` is 'primary'
+        or 'secondary'
+            The output file corresponding to the time of Roche lobe overflow for
+            the star specified by `which`. If the star has only a single
+            particle, returns `None`.
+
+        `starsmashertools.lib.output.Output` or `None`,
+        `starsmashertools.lib.output.Output` or `None` if `which` is `both`
+            The output file corresponding to the time of Roche lobe overflow for
+            the primary star and secondary star respectively. The first returned
+            element is `None` if the primary is a single particle and the second
+            returned element is `None` if the secondary is a single particle.
+
+        See Also
+        --------
+        `~.get_fRLOF`
+        """
+
+        starsmashertools.helpers.argumentenforcer.enforcevalues({
+            'which' : ['primary', 'secondary', 'both'],
+        })
+        outputs = self.get_output()
+        midpoint = starsmashertools.helpers.midpoint.Midpoint(outputs)
+
+        output1 = None
+        output2 = None
+        
+        if which in ['primary', 'both'] and self.get_n1() > 1:
+            midpoint.set_criteria(
+                lambda output: self.get_fRLOF(output)[0] < threshold,
+                lambda output: self.get_fRLOF(output)[0] == threshold,
+                lambda output: self.get_fRLOF(output)[0] > threshold,
+            )
+            output1, index1 = midpoint.get(favor='low', return_index = True)
+            fRLOF1 = self.get_fRLOF(output1)[0]
+            if fRLOF1 > threshold: output1 = outputs[max(0, index1 - 1)]
+        if which in ['secondary', 'both'] and self.get_n2() > 1:
+            if self.get_n2() == 1: output2 = None
+            midpoint.set_criteria(
+                lambda output: self.get_fRLOF(output)[1] < threshold,
+                lambda output: self.get_fRLOF(output)[1] == threshold,
+                lambda output: self.get_fRLOF(output)[1] > threshold,
+            )
+            output2, index2 = midpoint.get(favor='low', return_index = True)
+            fRLOF2 = self.get_fRLOF(output2)[1]
+            if fRLOF2 > threshold: output2 = outputs[max(0, index2 - 1)]
+        
+        if which == 'primary': return output1
+        if which == 'secondary': return output2
+        return output1, output2
+        
+        
+        
+        
         
 
     @api
+    @cli('starsmashertools')
     def get_primary_mass(self):
         logfiles = self.get_logfiles()
         if logfiles:
@@ -238,6 +335,7 @@ class Binary(simulation.Simulation, object):
             return np.sum(masked['am'])
 
     @api
+    @cli('starsmashertools')
     def get_secondary_mass(self):
         logfiles = self.get_logfiles()
         if logfiles:

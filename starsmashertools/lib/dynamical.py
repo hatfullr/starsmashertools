@@ -3,6 +3,7 @@ import starsmashertools.lib.binary
 import starsmashertools.helpers.path as path
 import starsmashertools.preferences as preferences
 from starsmashertools.helpers.apidecorator import api
+from starsmashertools.helpers.clidecorator import cli
 
 
 class Dynamical(starsmashertools.lib.simulation.Simulation, object):
@@ -25,5 +26,6 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
         return filename
 
     @api
+    @cli('starsmashertools')
     def get_relaxations(self, *args, **kwargs):
         return self.get_children(*args, **kwargs)[0].get_children(*args, **kwargs)

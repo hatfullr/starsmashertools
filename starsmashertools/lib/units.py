@@ -412,7 +412,6 @@ class Unit(object):
         #       and 2 'g' on the left side of the '/' and for 2 's' on the right
         #       side. If we find enough of such symbols then we remove those
         #       symbols and insert 'erg' on the left-most side, 'erg * cm'.
-        @api
         def __init__(self, value, base=['cm','g','s']):
             self.base = base
             self.left = []
@@ -426,7 +425,6 @@ class Unit(object):
             return ((len(self.left) == 1 and not self.right) or
                     len(self.left) == 0 and len(self.right) == 1)
 
-        @api
         @staticmethod
         def split(string):
             lhs, rhs = string, []
@@ -475,7 +473,6 @@ class Unit(object):
         def long(self):
             return Unit.Label.get_string(self.left, self.right)
 
-        @api
         @staticmethod
         def get_string(left, right):
             starsmashertools.helpers.argumentenforcer.enforcetypes({
@@ -489,7 +486,6 @@ class Unit(object):
             if right: string += "/"+"*".join(right)
             return string
 
-        @api
         def is_compatible(self, other):
             """
             Returns `True` if this Label can be safely converted to the other
@@ -520,7 +516,6 @@ class Unit(object):
             return cpy == othercpy
 
         # Return a copy of this label with changes
-        @api
         def convert(self, old_label, new_label):
             starsmashertools.helpers.argumentenforcer.enforcetypes({
                 'old_label' : [str],
@@ -533,7 +528,6 @@ class Unit(object):
                 if val == old_label: ret.right[i] = new_label
             return ret
 
-        @api
         def simplify(self):
             for item in self.base:
                 lc, rc = self.left.count(item), self.right.count(item)
@@ -547,7 +541,6 @@ class Unit(object):
                     rc = self.right.count(item)
                     if lc == plc and rc == prc: break
 
-        @api
         def set(self, string):
             self.left, self.right = Unit.Label.split(string)
 
@@ -574,7 +567,6 @@ class Unit(object):
             self.organize()
             self.simplify()
 
-        @api
         def organize(self):
             # Sort the left and right arrays starting with the base values first
             # and then any other values after.
@@ -594,14 +586,12 @@ class Unit(object):
         def __str__(self): return self.short
         def __repr__(self): return self.long
 
-        @api
         def __eq__(self, other):
             starsmashertools.helpers.argumentenforcer.enforcetypes({'other' : [Unit.Label, str]})
             if isinstance(other, Unit.Label):
                 return self.long == other.long
             return self.long == other
 
-        @api
         def __mul__(self, other):
             starsmashertools.helpers.argumentenforcer.enforcetypes({'other' : [Unit.Label, int]})
             ret = copy.deepcopy(self)
@@ -617,10 +607,9 @@ class Unit(object):
             ret.simplify()
             return ret
 
-        @api
         def __rmul__(self, *args, **kwargs):
             return self.__mul__(*args, **kwargs)
-        @api
+
         def __truediv__(self, other):
             starsmashertools.helpers.argumentenforcer.enforcetypes({'other' : [Unit.Label]})
             if self.base != other.base:
@@ -633,7 +622,7 @@ class Unit(object):
             ret.organize()
             ret.simplify()
             return ret
-        @api
+
         def __rtruediv__(self, other):
             starsmashertools.helpers.argumentenforcer.enforcetypes({'other' : [Unit.Label, int]})
             if isinstance(other, int) and other != 1:
@@ -652,7 +641,7 @@ class Unit(object):
             ret.organize()
             ret.simplify()
             return ret
-        @api
+        
         def __pow__(self, value):
             starsmashertools.helpers.argumentenforcer.enforcetypes({'value' : [int, float]})
             ret = ""

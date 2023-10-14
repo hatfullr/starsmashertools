@@ -3,6 +3,7 @@ import starsmashertools.helpers.path
 import starsmashertools.helpers.file
 import starsmashertools.lib.logfile
 from starsmashertools.helpers.apidecorator import api
+from starsmashertools.helpers.clidecorator import cli
 import starsmashertools.math
 import numpy as np
 import copy
@@ -69,7 +70,8 @@ class Relaxation(starsmashertools.lib.simulation.Simulation, object):
             raise Exception("Internal failure. Could not determine if relaxation is a polytrope because it is missing log files and/or an sph.init file '%s'" % self.directory)
         
         return self._isPolytrope
-    
+
+    @cli('starsmashertools')
     def get_n(self):
         if self._n is None:
             # Check for log files

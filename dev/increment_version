@@ -6,7 +6,6 @@ import sys
 import starsmashertools.helpers.apidecorator
 import starsmashertools.helpers.string
 import starsmashertools.helpers.jsonfile
-from starsmashertools import *
 import numpy
 import inspect
 import importlib
@@ -160,8 +159,8 @@ def from_json(obj):
             data[key] += [inspect.Parameter(name, kind, default=default, annotation=annotation)]
     return data, previous_version, previous_hashes
     
-def save_data(version):
-    tosave = to_json(starsmashertools.helpers.apidecorator.information, version)
+def save_data(data, version):
+    tosave = to_json(data, version)
     starsmashertools.helpers.jsonfile.save(version_data_filename, tosave)
     
 def load_data():
@@ -426,10 +425,7 @@ def detect_function_name_changes(previous, current):
 
 
 
-def detect_changes(_previous, _current):
-    previous = copy.deepcopy(_previous)
-    current = copy.deepcopy(_current)
-
+def detect_changes(previous, current):
     # A function name was changed or the function doesn't exist anymore in the
     # new data.
     changes = detect_function_name_changes(previous, current)
@@ -456,7 +452,7 @@ def detect_changes(_previous, _current):
 
 
 
-def increment(which : str, previous_version : str):
+def increment(which : str, previous_version : str, current_data):
     """
     Increment the version number
 
@@ -496,20 +492,45 @@ def increment(which : str, previous_version : str):
         with open(filename, 'w') as f:
             f.write(contents)
 
-        save_data(new_version)
+        save_data(current_data, new_version)
         print("Incremented version from '%s' to '%s'" % (previous_version, new_version))
         
-
+def get_data():
+    import inspect
+    import importlib
+    
+    decorators = starsmashertools._get_decorators()
+    function = starsmashertools.helpers.apidecorator.api
+    func_name = '%s.%s' % (function.__module__, function.__qualname__)
+    data = {}
+    for obj in decorators.get(func_name, []):
+        module_name = obj['module']
+        full_name = obj['full name']
+        module = importlib.import_module(module_name)
+        if obj['class'] is not None:
+            f = None
+            for _class in obj['class'].split('.'):
+                if f is None: f = getattr(module, _class)
+                else: f = getattr(f, _class)
+            if f is None:
+                f = getattr(getattr(module, obj['class']), obj['short name'])
+            else: f = getattr(f, obj['short name'])
+        else:
+            f = getattr(module, obj['short name'])
+        data[full_name] = inspect.signature(f).parameters.values()
+        del module
+    return data
 
 
 args = parser.parse_args()
 
+current_data = get_data()
+
 if not os.path.isfile(version_data_filename):
-    save_data(starsmashertools.__version__)
+    save_data(current_data, starsmashertools.__version__)
     raise FileNotFoundError("Cannot increment the version number because there was no version data present at '%s', but it has now been created and you can safely run this program again after the next changes are made to the code." % version_data_filename)
 
 previous_data, previous_version, previous_hashes = load_data()
-current_data = starsmashertools.helpers.apidecorator.information
 current_hashes = get_file_hashes()
 
 changed = (isDataChanged(previous_data, current_data) or
@@ -528,6 +549,6 @@ for change in changes:
 print("Detected major changes:\n   " + "\n   ".join(major_changes)+"\n")
 print("Detected minor changes:\n   " + "\n   ".join(minor_changes)+"\n")
 
-if major_changes: increment('major', previous_version)
-elif minor_changes: increment('minor', previous_version)
-else: increment('patch', previous_version)
+if major_changes: increment('major', previous_version, current_data)
+elif minor_changes: increment('minor', previous_version, current_data)
+else: increment('patch', previous_version, current_data)

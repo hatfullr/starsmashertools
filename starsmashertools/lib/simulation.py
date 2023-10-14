@@ -13,6 +13,7 @@ import starsmashertools.helpers.argumentenforcer
 import starsmashertools.helpers.file
 import starsmashertools.helpers.compressiontask
 from starsmashertools.helpers.apidecorator import api
+from starsmashertools.helpers.clidecorator import cli
 from starsmashertools.lib.teos import TEOS
 import numpy as np
 import glob
@@ -46,7 +47,6 @@ class Simulation(object):
         self.reader = starsmashertools.lib.output.Reader(self)
 
     @property
-    @api
     def compressed(self):
         filename = self._get_compression_filename()
         if not starsmashertools.helpers.path.isfile(filename): return False
@@ -192,13 +192,11 @@ class Simulation(object):
     def items(self, *args, **kwargs): return self.input.items(*args, **kwargs)
     
     @property
-    @api
     def units(self):
         if self._units is None: self._units = starsmashertools.lib.units.Units(self)
         return self._units
 
     @property
-    @api
     def teos(self):
         if self._teos is None and self['neos'] == 2:
             self._teos = TEOS(path.realpath(path.join(self.directory, self['eosfile'])))
@@ -223,6 +221,7 @@ class Simulation(object):
     # then it has one child, which is the binary scan that it originated from.
     #@profile
     @api
+    @cli('starsmashertools')
     def get_children(self, *args, **kwargs):
         verbose = kwargs.get('verbose', False)
         if self._children is None:
@@ -261,7 +260,8 @@ class Simulation(object):
             filename_or_pattern : str,
             recursive : bool = True,
     ):
-        """Search the simulation directory for a file or files that match a
+        """
+        Search the simulation directory for a file or files that match a
         pattern.
 
         Parameters
