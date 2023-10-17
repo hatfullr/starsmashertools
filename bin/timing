@@ -118,6 +118,7 @@ def plot_wall_time(default_savename):
 
     simulation_times = []
     times = []
+    print(simulation.get_output_headers())
     for key, val in simulation.get_output_headers(verbose=True).items():
         simulation_times += [val['t']]
         times += [key.get_file_creation_time()]
@@ -411,9 +412,12 @@ for i, (key, obj) in enumerate(valid_plots.items()):
     default_savename = cli.args['plot_name']
     if default_savename is None:
         default_savename = obj['default savename']
+
+    func = lambda obj=obj, default_savename=default_savename: obj['function'](default_savename)
+    
     page = cli.add_page(
         [],
-        lambda default_savename=default_savename: obj['function'](default_savename),
+        func,
         back=mainmenu,
     )
     mainmenu.connect(page, [i, key])
