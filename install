@@ -1,4 +1,12 @@
 #!/bin/bash
 
 python3 -m build
+if [ $? -ne 0 ]; then
+    echo "Install failed"
+    exit 1
+fi
 python3 -m pip install -e .
+if [ $? -ne 0 ]; then
+    echo "Install failed"
+    exit 1
+fi
