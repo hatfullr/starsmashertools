@@ -23,6 +23,7 @@ if __name__ == "__main__":
         version=get_version(),
         packages=find_packages(),
         scripts=[
+            os.path.join('bin','starsmashertools'),
             os.path.join('bin','starsmasherdir'),
             os.path.join('bin','inspectpdc'),
             os.path.join('bin','outtotxt'),
