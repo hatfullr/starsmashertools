@@ -2,15 +2,20 @@ import starsmashertools.preferences as preferences
 import starsmashertools.helpers.path
 import starsmashertools.helpers.file
 import starsmashertools.helpers.string
+import starsmashertools.helpers.argumentenforcer
 from starsmashertools.helpers.apidecorator import api
 from glob import glob
 import numpy as np
 import mmap
-import copy
-import re
+import collections
 
+@starsmashertools.helpers.argumentenforcer.enforcetypes
 @api
-def find(directory, pattern=None, throw_error=False):
+def find(
+        directory : str,
+        pattern : str | type(None) = None,
+        throw_error : bool = False,
+):
     if pattern is None:
         pattern = preferences.get_default('LogFile', 'file pattern', throw_error=True)
     direc = starsmashertools.helpers.path.realpath(directory)
@@ -29,8 +34,13 @@ def find(directory, pattern=None, throw_error=False):
 
     
 class LogFile(object):
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
-    def __init__(self, path, simulation):
+    def __init__(
+            self,
+            path : str,
+            simulation : "starsmashertools.lib.simulation.Simulation",
+    ):
         self.path = starsmashertools.helpers.path.realpath(path)
         self.simulation = simulation
         self._header = None
@@ -61,9 +71,13 @@ class LogFile(object):
             if b'output: end of iteration' in line: break
             self._header += line
         self._header = self._header.decode('utf-8')
-        
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
-    def get(self, phrase):
+    def get(
+            self,
+            phrase : str,
+    ):
         if phrase not in self.header:
             raise LogFile.PhraseNotFoundError("Failed to find '%s' in '%s'" % (phrase, self.path))
         i0 = self.header.index(phrase) + len(phrase)
@@ -72,8 +86,12 @@ class LogFile(object):
 
     # Return a list of boolean values of the same length as 'outputfiles', where
     # an element is 'True' if it is included in this LogFile.
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
-    def has_output_files(self, filenames):
+    def has_output_files(
+            self,
+            filenames : list | tuple | np.ndarray,
+    ):
         first_file = self.get_first_output_file(throw_error=False)
         last_file = self.get_last_output_file(throw_error=False)
         
@@ -119,8 +137,12 @@ class LogFile(object):
         
         return ret
 
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
-    def get_first_output_file(self, throw_error=True):
+    def get_first_output_file(
+            self,
+            throw_error : bool = True,
+    ):
         string = ' duout: writing file '
         bstring = string.encode('utf-8')
         string2 = 'at t='
@@ -139,9 +161,13 @@ class LogFile(object):
         if throw_error:
             raise LogFile.PhraseNotFoundError(string)
         return ret
-        
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
-    def get_last_output_file(self, throw_error=True):
+    def get_last_output_file(
+            self,
+            throw_error : bool = True,
+    ):
         string = ' duout: writing file '
         bstring = string.encode('utf-8')
         string2 = 'at t='
@@ -164,7 +190,7 @@ class LogFile(object):
         first = self.get_first_iteration()
         last = self.get_last_iteration()
         if None not in [first, last]:
-            return last['number'] - first['number']
+            return last['iteration'] - first['iteration']
         return 0
 
     @api
@@ -230,13 +256,14 @@ class LogFile(object):
         
         return self._last_iteration
 
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
-    def get_iteration(self, number):
+    def get_iteration(self, number : int):
         startline = LogFile.Iteration.startline
         tomatch = (startline + '%8d') % number
         length = self.get_iteration_content_length()
         first_iteration = self.get_first_iteration()
-        start = length*(number - first_iteration['number']) # + len(self.header)
+        start = length*(number - first_iteration['iteration']) # + len(self.header)
         index = self._buffer.find(
             tomatch.encode('utf-8'),
             start,
@@ -249,8 +276,14 @@ class LogFile(object):
         
         return LogFile.Iteration(content, self)
 
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
-    def get_iterations(self, start : int = 0, stop=None, step : int = 1):
+    def get_iterations(
+            self,
+            start : int = 0,
+            stop : int | type(None) = None,
+            step : int = 1,
+    ):
         # This function is as well-optimized as I can get it to be
         # It's still a big bottleneck, but just read fewer iterations from
         # log files and you'll be fine...
@@ -266,7 +299,7 @@ class LogFile(object):
         self._buffer.seek(start)
         end = self._buffer.size()
 
-        toget += first_iteration['number']
+        toget += first_iteration['iteration']
 
         iterations = []
         for number in toget:
@@ -277,7 +310,7 @@ class LogFile(object):
                 end,
             )
             if index == -1:
-                raise Exception("Failed to find iteration %d" % (first_iteration['number'] + number))
+                raise Exception("Failed to find iteration %d" % (first_iteration['iteration'] + number))
             
             # Get the content of the iteration
             self._buffer.seek(index)
@@ -297,8 +330,8 @@ class LogFile(object):
             #    iteration = self.get_iteration(number)
             #except LogFile.PhraseNotFoundError:
             #    break
-            #if iteration is None: raise Exception("Failed to find iteration %d" % (first_iteration['number'] + number))
-            #print("Got iteration %d" % iteration['number'])
+            #if iteration is None: raise Exception("Failed to find iteration %d" % (first_iteration['iteration'] + number))
+            #print("Got iteration %d" % iteration['iteration'])
             
             iterations += [iteration]
 
@@ -308,96 +341,109 @@ class LogFile(object):
 
 
 
+
+
+
     class Iteration(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
+        # TODO: Replace the keys below with some form of smart searching through
+        # the StarSmasher source code for exactly how the log files are written.
         startline = ' output: end of iteration '
         endline = 'indx'
 
-        # If you want to scrape more information, try using
-        # https://www.getthedata.com/character-count
-        # or any other online character counter and copy+paste an iteration line
-        # starting at startline and ending at endline
-        # It also helps to check src/output.f
-        positions = {
-            'number' : [25, 41],
-            'time' : [46, 58],
-            'system box xmin' : [ 73,  84],
-            'system box xmax' : [ 89, 99],
-            'system box ymin' : [100, 125],
-            'system box ymax' : [130, 140],
-            'system box zmin' : [141, 166],
-            'system box zmax' : [171, 181],
-            'W' : [277, 288],
-            'T' : [290, 301],
-            'U' : [303, 313],
-            'Etot' : [324, 335],
-            'Stot' : [340, 351],
-            'vcm' : [355, 366],
-            'Jtot' : [371, 381],
-            'avr neighbors' : [400, 405],
-            'sig neighbors' : [409, 415],
-            'min neighbors' : [419, 423],
-            'max neighbors' : [428, 433],
-            'rhomin' : [465, 476],
-            'rhomax' : [539, 550],
-            'pmin' : [613, 624],
-            'pmax' : [687, 698],
-            'umin' : [761, 772],
-            'umax' : [835, 846],
-            'hmin' : [909, 920],
-            'hmax' : [983, 994],
-        }
+        # First value: the type of value we expect
+        # Second value: the string to search for in the content
+        # Third value: the length of the content to read to convert to the type
+        #              given in the first value.
+        # Fourth value: the offset from the first value to read
+        # Check src/output.f and src/tstep.f in StarSmasher for exact strings to
+        # search for. The keys need to be in the same order as they are written
+        # in the log files.
+        
+        keys = collections.OrderedDict()
+        keys['iteration'] = [int, ' output: end of iteration ', 8, 0]
+        keys['time'] = [float, '       time=', 12, 0]
+        keys['system box xmin'] = [float, '   system box= ', 10, 0]
+        keys['system box xmax'] = [float, keys['system box xmin'][1], 10, keys['system box xmin'][2] + keys['system box xmin'][3] + len('< x <')]
+        keys['system box ymin'] = [float, keys['system box xmin'][1], 10, keys['system box xmax'][2] + keys['system box xmax'][3] + 1 + len('               ')] # +1 for newline
+        keys['system box ymax'] = [float, keys['system box xmin'][1], 10, keys['system box ymin'][2] + keys['system box ymin'][3] + len('< y <')]
+        keys['system box zmin'] = [float, keys['system box xmin'][1], 10, keys['system box ymax'][2] + keys['system box ymax'][3] + 1 + len('               ')] # +1 for newline
+        keys['system box zmax'] = [float, keys['system box xmin'][1], 10, keys['system box zmin'][2] + keys['system box zmin'][3] + len('< z <')]
+        keys['W'] = [float, '   energies: W=', 10, 0]
+        keys['T'] = [float, ' T=', 10, 0]
+        keys['U'] = [float, ' U=', 10, 0]
+        keys['Etot'] = [float, '     Etot=', 10, 0]
+        keys['Stot'] = [float, ' Stot=', 10, 0]
+        keys['vcm'] = [float, ' vcm=', 10, 0]
+        keys['Jtot'] = [float, ' Jtot=', 10, 0]
+        keys['avr neighbors'] = [float, '   neighbors: avr=', 4, 0]
+        keys['sig neighbors'] = [float, keys['avr neighbors'][1], 4, keys['avr neighbors'][2] + keys['avr neighbors'][3] + len(' sig=')]
+        keys['min neighbors'] = [int, keys['sig neighbors'][1], 4, keys['sig neighbors'][2] + keys['sig neighbors'][3] + len('  min=')]
+        keys['max neighbors'] = [int, keys['min neighbors'][1], 5, keys['min neighbors'][2] + keys['min neighbors'][3] + len(' max=')]
+        keys['rhomin'] = [float, '   density: rhomin=', 10, 0]
+        keys['rhomax'] = [float, '            rhomax=', 10, 0]
+        keys['pmin'] = [float, '    pressure: pmin=', 10, 0]
+        keys['pmax'] = [float, '              pmax=', 10, 0]
+        keys['amin'] = [float, '  in entropy: amin=', 10, 0]
+        keys['amax'] = [float, '              amax=', 10, 0]
+        keys['umin'] = [float, '   in energy: umin=', 10, 0]
+        keys['umax'] = [float, '              umax=', 10, 0]
+        keys['hmin'] = [float, '   smoothing: hmin=', 10, 0]
+        keys['hmax'] = [float, '              hmax=', 10, 0]
 
-        def __init__(self, contents, logfile):
+        # Here we store position information for quick lookups
+        positions = {}
+        specials = {}
+
+
+        @starsmashertools.helpers.argumentenforcer.enforcetypes
+        def __init__(
+                self, 
+                contents : bytes,
+                logfile : "LogFile",
+        ):
             self.logfile = logfile
-            obj = {}
             contents = contents.decode('utf-8')
             lines = contents.split('\n')
-            
-            for key, (a, b) in LogFile.Iteration.positions.items():
-                obj[key] = float(contents[a:b])
 
-            for key in ['number', 'min neighbors', 'max neighbors']:
-                obj[key] = int(obj[key])
+            path = self.logfile.path
+            # Add this logfile to the dictionary of lookup positions
+            if path not in LogFile.Iteration.positions.keys():
+                LogFile.Iteration.positions[path] = {}
+                # Locate all the absolute positions of the current keys
+                for key, (_type, search_string, length, offset) in LogFile.Iteration.keys.items():
+                    if search_string in contents:
+                        start = contents.index(search_string) + len(search_string) + offset
+                        stop = start + length
+                        LogFile.Iteration.positions[path][key] = [_type, slice(start, stop, 1)]
 
+                LogFile.Iteration.specials[path] = {}
+                for _type, key, search_string in [[float,'dts','dts='], [int,'indx','indx']]:
+                    if search_string not in contents:
+                        raise LogFile.PhraseNotFoundError("'%s' in '%s'. Perhaps the log file has been cutoff?" % (search_string, path))
+                    
+                    start = contents.index(search_string) + len(search_string)
+                    stop = start + 10
+                    LogFile.Iteration.specials[path][key] = [_type, []]
+                    if key == 'dts': imax = 7
+                    else: imax = 6
+                    for i in range(imax):
+                        LogFile.Iteration.specials[path][key][1] += [slice(start, stop, 1)]
+                        start += 10
+                        stop += 10
 
-            
-            # The method below is a bit too slow. Replacing in favor of exact
-            # matching by positions
-            
-            """
-            l = lines[0].replace(LogFile.Iteration.startline,'').replace('time=','')
-            l = l.split()
-            obj['number'] = int(l[0])
-            obj['time'] = float(l[1])
+            obj = {}
+            for key, (_type, _slice) in LogFile.Iteration.positions[path].items():
+                try:
+                    obj[key] = _type(contents[_slice])
+                except Exception as e:
+                    message = "Failed to read key '%s' from log file '%s'.\nTried to read positions %d-%d and got '%s'.\nIteration contents:\n%s" % (key, path, _slice.start, _slice.stop, contents[_slice], contents)
+                    raise Exception(message) from e
 
-            l1 = lines[1].replace('system box=', '').split()
-            l2 = lines[2].split()
-            l3 = lines[3].split()
-            obj['system box'] = np.asarray([
-                [l1[0], l1[-1]],
-                [l2[0], l2[-1]],
-                [l3[0], l3[-1]],
-            ], dtype=object).astype(float)
-
-            # This is really helpful: https://regex101.com/
-            # Get all "something=" statements
-            matches = re.findall(r'[\s][\w]*[=][\s]*[+-]?[\d]*[.]?[\d]*[eE]?[+-]?[\d]*', "\n".join(lines[4:-2]))
-            for match in matches:
-                key, val = match.split('=')
-                obj[key.strip()] = float(val)
-            """
-            # The last 2 lines should always be "dts=..." and "indx..."
-            if 'dts=' not in lines[-2]:
-                raise LogFile.PhraseNotFoundError("The second-to-last line in the content was not 'dts=...' in '%s'. Perhaps the log file has been cutoff?" % (str(self.logfile.path)))
-            if 'indx' not in lines[-1]:
-                raise LogFile.PhraseNotFoundError("The last line in the content was not 'indx...' in '%s'. Perhaps the log file has been cutoff?" % (str(self.logfile.path)))
-            values = lines[-2].split('=')[1].split()
-            obj['dts'] = np.asarray(values, dtype=object).astype(float)
-            values = lines[-1].split()[1:]
-            obj['indx'] = np.asarray(values, dtype=object).astype(int)
-            #"""
+            for key, (_type, arr) in LogFile.Iteration.specials[path].items():
+                try:
+                    obj[key] = np.asarray([contents[a] for a in arr], dtype=object).astype(_type)
+                except Exception as e:
+                    message = "Failed to read key '%s' from log file '%s'.\nIteration contents:\n%s" % (key, path, contents)
+                    raise Exception(message) from e
             
             super(LogFile.Iteration, self).__init__(obj)
-            
-
-
