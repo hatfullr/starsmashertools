@@ -1,25 +1,27 @@
 # A Page is an object which displays information in the terminal and is able to
 # navigate to other Page objects.
-import sys
 import starsmashertools.bintools
 import starsmashertools.bintools.inputmanager
+import functools
 import copy
+import os
 
 newline = starsmashertools.bintools.Style.get('characters', 'newline')
 
 class Page(object):
     def __init__(
             self,
-            cli,
+            cli : "starsmashertools.bintools.cli.CLI",
             inputtypes,
-            contents,
-            header=None,
-            footer=None,
-            identifier=None,
-            inputmanager=None,
-            indent=1,
-            back=None,
-            _quit=True,
+            contents : str,
+            header : str | type(None) = None,
+            footer : str | type(None) = None,
+            identifier : str | type(None) = None,
+            inputmanager : starsmashertools.bintools.inputmanager.InputManager | type(None) = None,
+            indent : int = 1,
+            simulation_controls : bool = False,
+            back : "Page | type(None)" = None,
+            _quit : bool = True,
     ):
         super(Page, self).__init__()
         self.cli = cli
@@ -33,6 +35,9 @@ class Page(object):
         self.triggers = {}
         self._prompt_kwargs = {}
         self._quit = _quit
+        self.simulation_controls = simulation_controls
+
+        self.connections = {}
 
         self._back = None
         self._back_asprompt = False
@@ -48,14 +53,28 @@ class Page(object):
         if _input in self.triggers.keys():
             self.triggers[_input]()
             return True
+        if self.simulation_controls and _input in ['s', 'simulations']:
+            self.show_simulation_controls()
+            return True
         if self._back is not None and _input in ['b', 'back']:
-            self.cli.navigate(self._back.identifier)
+            self.back()
+            return True
         if self._quit and _input in ['q', 'quit']:
             quit()
         return False
 
     # Keywords go to the input manager
-    def show(self, skip=False, back=None, _quit=None, **kwargs):
+    # Override this method in children, but also call this method from children
+    # None in keywords means use the page's default
+    def show(
+            self,
+            skip : bool | type(None) = None,
+            back : bool | type(None) = None,
+            _quit : bool | type(None) = None,
+            simulation_controls : bool | type(None) = None,
+            **kwargs
+    ):
+        self.cli.page = self
         if callable(self.contents): content = self.contents()
         else: content = copy.copy(self.contents)
         
@@ -74,8 +93,14 @@ class Page(object):
         self.cli.write(content, flush=True)
         
         if skip: return
-
+        
         content = []
+        if simulation_controls is None:
+            if self.simulation_controls:
+                content += ['s) simulations']
+        elif self.simulation_controls:
+            content += ['s) simulations']
+        
         if back is None:
             if self._back_asprompt and self._back is not None:
                 content += ["b) back"]
@@ -94,12 +119,13 @@ class Page(object):
         
         if self.inputmanager is not None and self.inputtypes:
             self._prompt_kwargs = kwargs
-            if self.process_input(self.prompt()): return
+            if self.process_input(self.prompt()):
+                return
+        
 
         if not self._back_asprompt and self._back is not None:
-            self._back.show()
+            self.back()
             return
-            
         self._on_no_connection()
 
     def _on_no_connection(self):
@@ -109,7 +135,8 @@ class Page(object):
     # Connecting two pages informs the CLI how to navigate the pages. The
     # 'triggers' argument should be an iterable whose elements are possible user
     # inputs.
-    def connect(self, other, triggers):
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    def connect(self, other : "Page | str", triggers):
         if not hasattr(triggers, '__iter__') or isinstance(triggers, str):
             raise TypeError("Argument 'triggers' must be a non-str iterable")
         if not isinstance(other, Page): # It's an identifier
@@ -118,7 +145,33 @@ class Page(object):
             if trigger in self.triggers.keys():
                 raise KeyError("Trigger already exists: '%s'" % str(trigger))
             self.triggers[trigger] = lambda: self.cli.navigate(other.identifier)
-    
+        self.connections[other] = triggers
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    def disconnect(self, other : "Page | str"):
+        if not isinstance(other, Page): # It's an identifier
+            other = self.cli.pages[other]
+        if not self.connected(other):
+            raise ValueError("Page '%s' is not connected to page '%s'" % (str(other), str(self)))
+        for trigger in self.connections[other]:
+            self.triggers.pop(trigger)
+        self.connections.pop(other)
+
+    def connected(self, other : "Page | str"):
+        if not isinstance(other, Page): # It's an identifier
+            other = self.cli.pages[other]
+        return other in self.connections.keys()
+
+    def back(self):
+        if self._back is not None:
+            self.on_back()
+            self.cli.navigate(self._back.identifier)
+        else:
+            raise Exception("Tried to go back but no back page was set")
+
+    # Override this
+    def on_back(self, *args, **kwargs):
+        pass
 
     def add_back(self, page, asprompt=True):
         self._back = page
@@ -127,11 +180,20 @@ class Page(object):
             if str not in self.inputtypes:
                 self.inputtypes += [str]
 
-    def add_quit(self):
-        self._quit = True
-        if str not in self.inputtypes:
-            self.inputtypes += [str]
+    def show_simulation_controls(self):
+        page = SimulationControlsPage(self.cli)
+        self.cli.navigate(page)
 
+        
+
+
+
+
+
+
+
+
+    
 
 class List(Page, object):
     def __init__(self, cli, inputtypes, items=[], bullet="%d)", separator=' ', **kwargs):
@@ -145,8 +207,12 @@ class List(Page, object):
         self.contents = []
         for i, item in enumerate(self.items):
             if item.text:
-                if item.bullet is None: item.bullet = self.bullet % i
-                if item.separator is None: item.separator = self.separator
+                if item.bullet is None:
+                    if self.bullet is not None:
+                        item.bullet = self.bullet % i
+                if item.separator is None:
+                    if self.separator is not None:
+                        item.separator = self.separator
             self.contents += [item.to_string()]
         self.contents = newline.join(self.contents)
         super(List, self).show(*args, **kwargs)
@@ -175,6 +241,120 @@ class List(Page, object):
             return string + self.text
 
 
+class SimulationControlsPage(List, object):
+    def __init__(self, cli):
+        # This is effectively the main page
+
+        if 'SimulationControlsPage' in cli.pages.keys():
+            cli.remove_page('SimulationControlsPage')
+        
+        super(SimulationControlsPage, self).__init__(
+            cli,
+            [str],
+            bullet = None,
+            back = cli.page,
+            _quit = True,
+            simulation_controls = False,
+            identifier='SimulationControlsPage',
+        )
+        self.remove_page = None
+        
+        cli._add_page(self)
+        
+        add_page = self.cli._add_page(SimulationControlsPage.AddSimulationPage(
+            self.cli,
+            [str],
+            newline+"Enter a simulation directory to add"+newline+("Current working directory = '%s'" %  os.getcwd()),
+            identifier='SimulationControlsPage.AddSimulationPage',
+            back=self,
+            simulation_controls = False,
+        ))
+        self.connect(add_page, [0, 'a', 'add'])
+
+        if len(self.cli.simulations) >= 1:
+            self.create_remove_page()
+        
+
+    def create_remove_page(self):
+        if 'SimulationControlsPage.remove_page' in self.cli.pages.keys():
+            self.cli.remove_page('SimulationControlsPage.remove_page')
+        self.remove_page = self.cli.add_list(
+            [int, str],
+            items = [s.directory for s in self.cli.simulations],
+            bullet = '%5d)',
+            header= newline + "Choose a simulation:"+newline,
+            back = self,
+            _quit = True,
+            simulation_controls = False,
+            identifier = 'SimulationControlsPage.remove_page',
+        )
+        self.connect(self.remove_page, [1, 'r', 'remove'])
+
+        for i, simulation in enumerate(self.cli.simulations):
+            page = self.cli.add_page(
+                [],
+                lambda simulation=simulation: self.remove_simulation(simulation),
+                _quit=False,
+                simulation_controls = False,
+            )
+            page.add_back(self.remove_page if len(self.cli.simulations) > 1 else self, asprompt=False)
+            self.remove_page.connect(page, [i, simulation.directory])
+
+    def delete_remove_page(self):
+        if self.remove_page is not None:
+            self.cli.remove_page(self.remove_page)
+            self.remove_page = None
+        
+
+    def show(self, *args, **kwargs):
+        self.delete_remove_page()
+        
+        self.items = []
+        self.add('%5s) add' % 'a')
+        if self.cli.simulations:
+            self.add('%5s) remove' % 'r')
+
+            self.create_remove_page()
+            
+        self.header = newline + "Current simulations:" + newline + newline.join(["   %s" % s.directory for s in self.cli.simulations]) + newline + newline + 'Choose an option:' + newline
+        
+        super(SimulationControlsPage, self).show(*args, **kwargs)
+
+    def remove_simulation(self, simulation : starsmashertools.lib.simulation.Simulation):
+        self.cli.remove_simulation(simulation)
+
+        self.delete_remove_page()
+        self.create_remove_page()
+        
+        return "Removed %s" % simulation.directory
+        
+    def on_back(self, *args, **kwargs):
+        self.cli.remove_page(self)
+    
+    class AddSimulationPage(Page, object):
+        def process_input(self, _input):
+            if self._back is not None and _input in ['b', 'back']:
+                self.cli.navigate(self._back.identifier)
+            if self._quit and _input in ['q', 'quit']:
+                quit()
+                
+            try:
+                simulation = starsmashertools.get_simulation(_input)
+                self.cli.simulations += [simulation]
+                self.cli.write("Added simulation '%s'" % simulation.directory)
+                self.back()
+                return True
+            except (starsmashertools.lib.simulation.Simulation.InvalidDirectoryError, FileNotFoundError) as e:
+                starsmashertools.bintools.print_error(error=e)
+                return False
+
+        def _on_no_connection(self):
+            error = starsmashertools.bintools.inputmanager.InputManager.InvalidInputError("Invalid StarSmasher simulation directory")
+            starsmashertools.bintools.print_error(error=error)
+            result = self.process_input(self.prompt())
+            if result: return
+            else: self._on_no_connection()
+        
 
 
 class Table(Page, object):

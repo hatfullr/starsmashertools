@@ -32,7 +32,7 @@ class Simulation(object):
         directory = path.realpath(directory)
         
         if not Simulation.valid_directory(directory):
-            raise Exception("Invalid directory '%s'" % directory)
+            raise Simulation.InvalidDirectoryError(directory)
 
         super(Simulation, self).__init__()
 
@@ -649,7 +649,7 @@ class Simulation(object):
 
 
 
-
+    class InvalidDirectoryError(Exception): pass
     
 
     class OutputNotInSimulationError(Exception):

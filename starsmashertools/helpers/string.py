@@ -4,6 +4,32 @@ import starsmashertools.helpers.file
 import starsmashertools.helpers.argumentenforcer
 
 @starsmashertools.helpers.argumentenforcer.enforcetypes
+def shorten(
+        string : str,
+        length : int,
+        where : str = 'center',
+        join : str = '...'
+):
+    starsmashertools.helpers.argumentenforcer.enforcevalues({
+        'where' : ['center', 'left', 'right'],
+    })
+
+    if len(string) < length: return string
+    l = length - len(join)
+
+    if where == 'center':
+        center = int(0.5*len(string))
+        length_per_side = int(0.5*l)
+        left = length_per_side
+        right = -length_per_side
+        return string[:left+1] + join + string[right:]
+    if where == 'left':
+        return string[:l] + join
+    return join + string[-l:]
+    
+    
+
+@starsmashertools.helpers.argumentenforcer.enforcetypes
 def list_to_string(
         _list : list | tuple,
         join : str = 'and',

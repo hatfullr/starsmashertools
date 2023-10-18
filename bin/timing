@@ -26,8 +26,21 @@ MIN_PLOT_APPARENT_SIZE = (0.25, 0.25)
 simulation = None
 cli = None
 
+
+def linear_fit(x, y):
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')
+        slope = np.mean(np.diff(y) / np.diff(x))
+    b = y[0] - slope * x[0]
+    return lambda x: slope * x + b
+
 def get_time_table():
-    global simulation
+    global cli
+
+    if len(cli.simulations) != 1:
+        raise Exception("Exactly 1 simulation is required")
+
+    simulation = cli.simulations[0]
     
     logcolumn = []
     outcolumn = []
@@ -108,105 +121,117 @@ def get_time_table():
     
     return [logcolumn, outcolumn, fraccolumn, totalcolumn], labels
 
-def plot_wall_time(default_savename):
-    # This function contains a whole lot of pain.
-    global simulation, cli
+def plot_wall_time(default_savename, yaxis, absolute=False):
+    global cli
     import matplotlib.pyplot as plt
     import matplotlib.transforms
     import matplotlib.dates
     import datetime
 
-    simulation_times = []
-    times = []
-    for key, val in simulation.get_output_headers(verbose=True).items():
-        simulation_times += [val['t']]
-        times += [key.get_file_creation_time()]
-
-    simulation_times = np.asarray(simulation_times, dtype=float)
-
-    # Convert simulation times units
-    unit = simulation.units['t'] * np.amax(simulation_times)
-    unit = unit.auto()
-    factor = simulation.units['t'].get_conversion_factor(unit.label)
-    factor *= simulation.units['t'].value
-    simulation_times *= factor
-
-
-    # Plot the results as dates
-    
-    dates = [datetime.datetime.fromtimestamp(time) for time in times]
-    datenums = matplotlib.dates.date2num(dates)
-    
-    x = datenums
-    y = simulation_times
-
-    maxval = np.amax(y)
-
-    ylim = [
-        min(y),
-        max(maxval, simulation['tf'] * factor),
-    ]
-        
     fig, ax = plt.subplots()
     ax.xaxis.grid(True, alpha=0.2)
     ax.margins(0, 0)
-
-    ax.set_ylabel("simulation time [%s]" % unit.label)
+    if len(cli.simulations) == 1:
+        fig.autofmt_xdate() # Make pretty tick labels
+        xfmt = matplotlib.dates.DateFormatter('%Y-%m-%d')
+        ax.xaxis.set_major_formatter(xfmt)
     
-    fig.autofmt_xdate() # Make pretty tick labels
+    if yaxis == 'iterations': ylabel = 'log10(iterations)'
+    elif yaxis == 'simulation': ylabel = 'simulation time'
 
-    xfmt = matplotlib.dates.DateFormatter('%Y-%m-%d')
-    ax.xaxis.set_major_formatter(xfmt)
+    xs = []
+    ys = []
+    max_simulation_end_time = None
+    max_simulation_time = -np.inf
+    xmax = -np.inf
+    xmin = np.inf
+    units = None
+    for simulation in cli.simulations:
+        if units is None: units = simulation.units
+        elif units != simulation.units:
+            if yaxis == 'simulation': raise Exception("Units mismatch")
+            warnings.warn("Units mismatch")
+
+        if max_simulation_end_time is None:
+            max_simulation_end_time = simulation['tf']
+        else: max_simulation_end_time = max(max_simulation_end_time, simulation['tf'])
+            
+        simulation_times = []
+        wall_times = []
+        iterations = []
+        cli.write("Reading output file headers in '%s'" % simulation.directory)
+        for key, val in simulation.get_output_headers(verbose=False).items():
+            simulation_times += [val['t']]
+            wall_times += [key.get_file_creation_time()]
+            iterations += [val['nit']]
+
+        max_simulation_time = max(max_simulation_time, max(simulation_times))
+        xmax = max(xmax, max(wall_times))
+        xmin = min(xmin, min(wall_times))
+
+        if len(cli.simulations) == 1:
+            dates = [datetime.datetime.fromtimestamp(time) for time in wall_times]
+            wall_times = matplotlib.dates.date2num(dates)
+
+        xs += [wall_times]
+        if yaxis == 'iterations': ys += [iterations]
+        elif yaxis == 'simulation': ys += [simulation_times]
+        
+    u = units['t']
+    yfactor = float(u)
+    if yaxis == 'simulation':
+        u *= max_simulation_end_time
+        auto = u.auto()
+        yfactor *= u.get_conversion_factor(auto.label)
+        ylabel += ' [%s]' % auto.label
     
-    ax.plot(x, y)
+    if len(cli.simulations) > 1:
+        for i, x in enumerate(xs):
+            xs[i] = np.asarray(x) - xmin
+        xmax -= xmin
+        xunit = starsmashertools.lib.units.Unit(xmax, 's')
+        auto = xunit.auto()
+        xfactor = xunit.get_conversion_factor(auto.label)
+        ax.set_xlabel('wall time [%s]' % auto.label)
+    
+    data_xmin, data_xmax = np.inf, -np.inf
+    data_ymin, data_ymax = np.inf, -np.inf
+    for simulation, x, y in zip(cli.simulations, xs, ys):
+        y = np.asarray(y, dtype=float)
+        if yaxis == 'simulation': y *= yfactor
+        elif yaxis == 'iterations': y = np.log10(y)
+        
+        if len(cli.simulations) > 1: x *= xfactor
+        
+        data_xmin = min(data_xmin, min(x))
+        data_xmax = max(data_xmax, max(x))
+        data_ymin = min(data_ymin, min(y))
+        data_ymax = max(data_ymax, max(y))
+        p = ax.plot(x, y, label=starsmashertools.helpers.string.shorten(os.path.basename(simulation.directory), 30))[0]
 
+        if yaxis == 'simulation':
+            n = int(0.5*len(y))
+            f = linear_fit(y[-n:], x[-n:])
+            y1, y2 = y[-n], max_simulation_end_time * yfactor
+            x1, x2 = f(y1), f(y2)
+            ax.plot([x1,x2], [y1, y2], color=p.get_color(), linestyle='--', lw=0.5)
+    
+        
+    if yaxis == 'simulation':
+        ax.set_ylim(None, max_simulation_end_time * yfactor)
+        
+    ax.set_ylabel(ylabel)
+    ax.legend()
+    
     plt.tight_layout()
 
-    data_xmin = np.nanmin(x)
-    data_ymin = np.nanmin(y)
-    data_xmax = np.nanmax(x)
-    data_ymax = np.nanmax(y)
-
-    xlim = list(ax.get_xlim())
-    
-    if ylim[1] > max(y):
-        # Try to fit a linear function of the most recent half of simulation
-        num = max(5, int(len(x) * 0.1))
-
-        slope = np.mean(np.diff(y[-num:]) / np.diff(x[-num:]))
-        b = y[-num:][0] - slope * x[-num:][0]
-
-        _xmax = (ylim[1] - b) / slope
-        xlim[1] = _xmax
-        
-        _xmin = min(x[-num:])
-        _dx = max(x) - _xmin
-        _x = np.linspace(_xmin, _xmax, 2)
-        _y = slope * _x + b
-        
-        ax.plot(_x, _y, label='linear fit', lw=0.5, zorder=-np.inf)
-
-        """
-        labels = [
-            'quadratic fit',
-            'cubic fit',
-        ]
-        
-        for i, label in enumerate(labels):
-            coef = np.polyfit(x[-num:], y[-num:], i + 1)
-            poly1d_fn = np.poly1d(coef)
-            _y = poly1d_fn(_x)
-            idx = _x >= min(x)
-            if np.any(idx):
-                ax.plot(_x[idx], _y[idx], label=label, lw=0.5, zorder=-np.inf)
-        """
-        cli.write("The function fits shown were created using the most recent half of the data.", flush=True)
-        ax.legend()
 
     # Don't display such a large time range that the data cannot be seen
     # clearly. Make sure the data spans at least some fraction of the axes
     fig.canvas.draw()
 
+    xlim = list(ax.get_xlim())
+    ylim = list(ax.get_ylim())
     
     bbox = matplotlib.transforms.Bbox(
         [[data_xmin, data_ymin], [data_xmax, data_ymax]],
@@ -217,10 +242,11 @@ def plot_wall_time(default_savename):
     if bbox.height < MIN_PLOT_APPARENT_SIZE[1]:
         ylim[1] = data_ymin + (data_ymax - data_ymin) / MIN_PLOT_APPARENT_SIZE[1]
     
-    ax.set_xlim(xlim)
-    ax.set_ylim(ylim)
-
     
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')
+        ax.set_xlim(xlim)
+        ax.set_ylim(ylim)
 
     if cli.args['batch']:
         cli.write("Saving plot as '%s'." % default_savename, flush=True)
@@ -247,6 +273,9 @@ def plot_timesteps(default_savename):
     global simulation, cli
     import matplotlib.pyplot as plt
 
+    # TODO: update the function below to loop over all simulations
+    raise NotImplementedError
+    
     max_iterations = 1000
 
     total_iterations = 0
@@ -321,16 +350,23 @@ newline = starsmashertools.bintools.Style.get('characters', 'newline')
 starsmashertools.bintools.Style.set('formatting', 'footer', newline)
 
 valid_plots = collections.OrderedDict()
-valid_plots['wall time plot'] = {
-    'function' : plot_wall_time,
-    'default savename' : 'walltime.png',
-    'cli name' : 'wall',
+valid_plots['wall time plot (iterations)'] = {
+    'function' : lambda default_savename='walltime_iterations.png',yaxis='iterations': plot_wall_time(default_savename, yaxis),
+    'default savename' : 'walltime_iterations.png',
+    'cli name' : 'wall_iter',
 }
+valid_plots['wall time plot (simulation time)'] = {
+    'function' : lambda default_savename='walltime_simulation.png',yaxis='simulation': plot_wall_time(default_savename, yaxis),
+    'default savename' : 'walltime_iterations.png',
+    'cli name' : 'wall_sim',
+}
+"""
 valid_plots['timesteps'] = {
     'function' : plot_timesteps,
     'default savename' : 'timesteps.png',
     'cli name' : 'timesteps',
 }
+"""
 
 
 cli = starsmashertools.bintools.cli.CLI(
@@ -383,14 +419,13 @@ cli.parser.add_argument(
     help="The name of the image that will be saved when plotting wall time data while in batch mode ('-b') or when option '--plot' is given."
 )
 
-simulation = starsmashertools.get_simulation(cli.args['directory'])
-
 
 mainmenu = cli.add_list(
     [int, str],
     items = list(valid_plots.keys()),
     bullet='%5d)',
     header=newline + starsmashertools.bintools.Style.bold("Main Menu") + newline + newline + 'Choose an option' + newline,
+    simulation_controls=True,
 )
 
 
@@ -412,13 +447,14 @@ for i, (key, obj) in enumerate(valid_plots.items()):
     if default_savename is None:
         default_savename = obj['default savename']
 
-    func = lambda obj=obj, default_savename=default_savename: obj['function'](default_savename)
+    func = lambda obj=obj, default_savename=default_savename: obj['function'](default_savename=default_savename)
     
     page = cli.add_page(
         [],
         func,
-        back=mainmenu,
+        _quit=False,
     )
+    page.add_back(mainmenu, asprompt=False)
     mainmenu.connect(page, [i, key])
 
 cli.set_mainmenu(mainmenu)
