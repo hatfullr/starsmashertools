@@ -357,7 +357,7 @@ valid_plots['wall time plot (iterations)'] = {
 }
 valid_plots['wall time plot (simulation time)'] = {
     'function' : lambda default_savename='walltime_simulation.png',yaxis='simulation': plot_wall_time(default_savename, yaxis),
-    'default savename' : 'walltime_iterations.png',
+    'default savename' : 'walltime_simulation.png',
     'cli name' : 'wall_sim',
 }
 """
