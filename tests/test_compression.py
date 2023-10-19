@@ -4,8 +4,8 @@ import starsmashertools
 import shutil
 import time
 import multiprocessing
-import starsmashertools.helpers.compressiontask
 import zipfile
+import copy
 
 def copydir(directory, new_directory):
     shutil.copytree(directory, new_directory)
@@ -46,6 +46,8 @@ class TestCompression(unittest.TestCase):
 
         self.simulation = starsmashertools.get_simulation(new_directory)
 
+        self.simulation_initial_compression = copy.deepcopy(self.simulation.compressed)
+        
         self.new_files = []
         for _file in self.orig_files:
             basename = starsmashertools.helpers.path.basename(_file)
@@ -55,6 +57,9 @@ class TestCompression(unittest.TestCase):
 
     def tearDown(self):
         if self.skip_tearDown: return
+
+        if self.simulation.compressed != self.simulation_initial_compression:
+            self.assertAlmostEqual(self.simulation.compression_progress, 1)
         
         for orig_file, new_file in zip(self.orig_files, self.new_files):
             orig_mtime = starsmashertools.helpers.path.getmtime(orig_file)
@@ -86,13 +91,12 @@ class TestCompression(unittest.TestCase):
         self.assertFalse(self.simulation.compressed)
         fname = self.simulation._get_compression_filename()
         self.assertFalse(os.path.isfile(fname))
-        
     
     def testParallel(self):
         total_regular = get_size(start_path = self.simulation.directory)
         self.simulation.compress(nprocs=0, verbose=False)
         self.assertTrue(self.simulation.compressed)
-        
+
         for _file in self.new_files:
             self.assertFalse(os.path.isfile(_file))
         fname = self.simulation._get_compression_filename()
@@ -113,6 +117,6 @@ class TestCompression(unittest.TestCase):
         self.assertFalse(self.simulation.compressed)
         fname = self.simulation._get_compression_filename()
         self.assertFalse(os.path.isfile(fname))
-            
+    #"""
 if __name__ == "__main__":
     unittest.main(failfast=True)

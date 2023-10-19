@@ -19,7 +19,20 @@ def islink(path):
         raise NotImplementedError
     return os.path.islink(path)
 
-def getsize(path):
+def getsize(path : str):
+    """
+    Return the size, in bytes, of `path`.
+
+    Parameters
+    ----------
+    path : str
+        The path to a file or directory.
+
+    Returns
+    -------
+    int
+        The size, in bytes, of `path`.
+    """
     if starsmashertools.helpers.ssh.isRemote(path):
         address, remote_path = starsmashertools.helpers.ssh.split_address(path)
         result = starsmashertools.helpers.ssh.run_python(

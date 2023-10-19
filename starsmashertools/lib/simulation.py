@@ -43,6 +43,7 @@ class Simulation(object):
         self._units = None
         self._teos = None
         self._logfiles = None
+        self._compression_task = None
 
         self.reader = starsmashertools.lib.output.Reader(self)
 
@@ -537,8 +538,9 @@ class Simulation(object):
             files += [_path]
 
         filename = self._get_compression_filename()
-        task = starsmashertools.helpers.compressiontask.CompressionTask()
-        task.compress(files, filename, delete=delete, delete_after=delete_after, **kwargs)
+        self._compression_task = starsmashertools.helpers.compressiontask.CompressionTask()
+        self._compression_task.compress(files, filename, delete=delete, delete_after=delete_after, **kwargs)
+        self._compression_task = None
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
@@ -581,11 +583,12 @@ class Simulation(object):
         if not self.compressed:
             raise Exception("Cannot decompress a simulation that is not compressed")
         
-        task = starsmashertools.helpers.compressiontask.CompressionTask()
+        self._compression_task = starsmashertools.helpers.compressiontask.CompressionTask()
         
         if filename is None:
             filename = self._get_compression_filename()
-            task.decompress(filename, delete=delete, **kwargs)
+            self._compression_task.decompress(filename, delete=delete, **kwargs)
+            self._compression_task = None
             return
         raise FileNotFoundError("Failed to find any valid compressed files in directory '%s'" % self.directory)
 

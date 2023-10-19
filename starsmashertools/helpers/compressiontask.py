@@ -2,14 +2,11 @@ import starsmashertools.helpers.argumentenforcer
 import starsmashertools.helpers.path
 import starsmashertools.helpers.string
 import starsmashertools.helpers.jsonfile
-import copy
 import multiprocessing
 import time
-import shutil
 import numpy as np
 import zipfile
 import datetime
-
 
 class CompressionTask(object):
     _processes = []
@@ -64,7 +61,7 @@ class CompressionTask(object):
         if not zipfile.is_zipfile(filename): return False
         with zipfile.ZipFile(filename, mode='r') as zfile:
             fname = CompressionTask.get_compression_filename(zfile)
-            compression_filename = CompressionTask._get_arcname(
+            compression_filename = CompressionTask._filename_to_arcname(
                 fname,
                 starsmashertools.helpers.path.dirname(fname),
             )
@@ -77,12 +74,19 @@ class CompressionTask(object):
 
     @staticmethod
     @starsmashertools.helpers.argumentenforcer.enforcetypes
-    def _get_arcname(
+    def _filename_to_arcname(
             filename : str,
             directory : str,
     ):
         return starsmashertools.helpers.path.relpath(filename, directory)
 
+    @staticmethod
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    def _arcname_to_filename(
+            arcname : str,
+            directory : str,
+    ):
+        return starsmashertools.helpers.path.join(directory, arcname)
         
     @staticmethod
     def _pack_compression_file(
@@ -98,7 +102,7 @@ class CompressionTask(object):
             'arcnames' : []
         }
         for _file in files:
-            arcname = CompressionTask._get_arcname(_file, dirname)
+            arcname = CompressionTask._filename_to_arcname(_file, dirname)
             obj['arcnames'] += [arcname]
         
         ssfilename = CompressionTask.get_compression_filename(zfile)
@@ -106,7 +110,7 @@ class CompressionTask(object):
         # Create the sstools_compression.json file
         starsmashertools.helpers.jsonfile.save(ssfilename, obj)
         
-        arcname = CompressionTask._get_arcname(ssfilename, dirname)
+        arcname = CompressionTask._filename_to_arcname(ssfilename, dirname)
         zfile.write(ssfilename, arcname=arcname)
         starsmashertools.helpers.path.remove(ssfilename)
 
@@ -119,7 +123,7 @@ class CompressionTask(object):
         todecompress = []
         obj = starsmashertools.helpers.jsonfile.load(ssfilename)
         for arcname in obj['arcnames']:
-            _path = starsmashertools.helpers.path.join(dirname, arcname)
+            _path = CompressionTask._arcname_to_filename(arcname, dirname)
             #starsmashertools.helpers.path.utime(_path, times=(time.time(), obj['mtime']))
             if CompressionTask.isCompressedFile(_path):
                 todecompress += [_path]
@@ -182,7 +186,7 @@ class CompressionTask(object):
         
         if nprocs == 0:
             nprocs = multiprocessing.cpu_count()
-        
+            
         if nprocs > 1:
             CompressionTask.compress_parallel(
                 files,
@@ -199,6 +203,7 @@ class CompressionTask(object):
                 delete_after=delete_after,
                 verbose=verbose,
             )
+        
 
 
             
@@ -246,7 +251,7 @@ class CompressionTask(object):
         with zipfile.ZipFile(filename, mode='w', compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zfile:
             try:
                 for _file in files:
-                    arcname = CompressionTask._get_arcname(_file, dirname)
+                    arcname = CompressionTask._filename_to_arcname(_file, dirname)
                     zinfo = zipfile.ZipInfo.from_file(_file, arcname=arcname)
                     zinfo.compress_type = zipfile.ZIP_DEFLATED
                     zinfo.date_time = tuple(list(datetime.datetime.fromtimestamp(
@@ -254,7 +259,7 @@ class CompressionTask(object):
                     ).timetuple())[:6])
                     with starsmashertools.helpers.file.open(_file, 'rb') as f:
                         zfile.writestr(zinfo, f.read())
-                    
+
                     if delete and not delete_after:
                         starsmashertools.helpers.path.remove(_file)
 
@@ -268,6 +273,7 @@ class CompressionTask(object):
         if delete and delete_after:
             for f in files:
                 starsmashertools.helpers.path.remove(f)
+
 
     
                 
@@ -373,10 +379,11 @@ class CompressionTask(object):
         
         with zipfile.ZipFile(filename) as zfile:
             for zinfo in zfile.infolist():
+                # Note: extract does not remove the file from the zip archive.
                 zfile.extract(zinfo, path=dirname)
-                fname = starsmashertools.helpers.path.join(dirname, zinfo.filename)
+
+                fname = CompressionTask._arcname_to_filename(zinfo.filename, dirname)
                 mtime = datetime.datetime(*zinfo.date_time).timestamp()
-                
                 starsmashertools.helpers.path.utime(fname, times=(time.time(), mtime))
             CompressionTask._unpack_compression_file(zfile)
         
@@ -384,5 +391,6 @@ class CompressionTask(object):
         if delete:
             starsmashertools.helpers.path.remove(filename)
 
-    
-    
+
+
+        
