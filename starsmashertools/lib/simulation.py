@@ -81,6 +81,25 @@ class Simulation(object):
             return True
         return False
 
+    @api
+    def get_compressed_properties(self):
+        """
+        Get a dictionary of properties on the files contained in the compressed
+        archive.
+
+        Returns
+        -------
+        dict
+            A dictionary whose keys are the names of the files in the compressed
+            archive that they would have if the archive were decompressed. Each
+            value is a dictionary holding various values corresponding to each
+            file in the archive.
+        """
+        if not self.compressed: return {}
+        filename = self._get_compression_filename()
+        return starsmashertools.helpers.compressiontask.CompressionTask.get_compressed_properties(filename)
+
+    
 
     # Override this in children. Must return a list of Simulation objects
     def _get_children(self, *args, **kwargs):

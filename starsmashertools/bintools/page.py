@@ -5,6 +5,7 @@ import starsmashertools.bintools.inputmanager
 import functools
 import copy
 import os
+import inspect
 
 newline = starsmashertools.bintools.Style.get('characters', 'newline')
 
@@ -37,6 +38,8 @@ class Page(object):
         self._quit = _quit
         self.simulation_controls = simulation_controls
 
+        self.events = {}
+
         self.connections = {}
 
         self._back = None
@@ -63,10 +66,7 @@ class Page(object):
             quit()
         return False
 
-    # Keywords go to the input manager
-    # Override this method in children, but also call this method from children
-    # None in keywords means use the page's default
-    def show(
+    def get_content(
             self,
             skip : bool | type(None) = None,
             back : bool | type(None) = None,
@@ -74,7 +74,8 @@ class Page(object):
             simulation_controls : bool | type(None) = None,
             **kwargs
     ):
-        self.cli.page = self
+        self.fire_events('get_content')
+        
         if callable(self.contents): content = self.contents()
         else: content = copy.copy(self.contents)
         
@@ -112,17 +113,29 @@ class Page(object):
                 content += ["q) quit"]
         elif _quit:
             content += ["q) quit"]
+            
+        self.on_event_end('get_content')
         
+        return content
+
+    # Keywords go to the input manager
+    # Override this method in children, but also call this method from children
+    # None in keywords means use the page's default
+    def show(
+            self,
+            **kwargs
+    ):
+        content = self.get_content(**kwargs)
         if content:
             content = newline.join(content)
             self.cli.write(content, flush=True)
+            self.cli.page = self
         
         if self.inputmanager is not None and self.inputtypes:
             self._prompt_kwargs = kwargs
             if self.process_input(self.prompt()):
                 return
         
-
         if not self._back_asprompt and self._back is not None:
             self.back()
             return
@@ -184,13 +197,46 @@ class Page(object):
         page = SimulationControlsPage(self.cli)
         self.cli.navigate(page)
 
+    def add_listener(self, name : str, function, args=(), kwargs={}):
+        """
+        name = the name of a function belonging to this class
+        """
+        if name not in self.events.keys(): self.events[name] = []
+        self.events[name] += [PageEvent(function, args, kwargs)]
+    
+    def remove_listener(self, name : str, function):
+        new_list = []
+        for i, event in enumerate(self.events[name]):
+            if event.function is not function: new_list += [event]
+        self.events[name] = new_list
+
+    def fire_events(self, name):
+        if name in self.events.keys():
+            for event in self.events[name]: event()
+
+    def on_event_end(self, name):
+        if name in self.events.keys():
+            for event in self.events[name]: event.reset()
         
 
+class PageEvent(object):
+    """
+    This is for processing events triggered by pages
+    """
+    def __init__(self, function, args, kwargs):
+        self.function = function
+        self.args = args
+        self.kwargs = kwargs
+        self.called = False
 
+    def reset(self):
+        self.called = False
 
-
-
-
+    def __call__(self):
+        if not self.called:
+            ret = self.function(*self.args, **self.kwargs)
+            self.called = True
+            return ret
 
 
     
@@ -203,19 +249,27 @@ class List(Page, object):
         self.separator = separator
         for item in items: self.add(item)
 
-    def show(self, *args, **kwargs):
+    def get_content(self, *args, **kwargs):
+        self.fire_events('get_content')
         self.contents = []
-        for i, item in enumerate(self.items):
-            if item.text:
+        i = 0
+        for item in self.items:
+            text = item.get_text()
+            if text:
                 if item.bullet is None:
                     if self.bullet is not None:
                         item.bullet = self.bullet % i
                 if item.separator is None:
                     if self.separator is not None:
                         item.separator = self.separator
-            self.contents += [item.to_string()]
+                string = ''
+                if item.bullet: string += item.bullet
+                if item.separator: string += item.separator
+                string += text
+                self.contents += [string]
+                i += 1
         self.contents = newline.join(self.contents)
-        super(List, self).show(*args, **kwargs)
+        return super(List, self).get_content(*args, **kwargs)
         
     def add(self, string, **kwargs):
         self.items += [List.Item(string, **kwargs)]
@@ -234,12 +288,51 @@ class List(Page, object):
             self.bullet = bullet
             self.separator = separator
 
-        def to_string(self):
-            string = ''
-            if self.bullet: string += self.bullet
-            if self.separator: string += self.separator
-            return string + self.text
+        def get_text(self):
+            if callable(self.text): return self.text()
+            return self.text
 
+        
+class ConfirmationPage(List, object):
+    """
+    Ask the user for confirmation of something (yes/no question)
+    """
+    def __init__(
+            self, 
+            cli : "starsmashertools.bintools.cli.CLI",
+            yes : str = 'yes',
+            no : str = 'no',
+            header : str = "Are you sure?"+newline,
+            **kwargs
+    ):
+        self._yes = yes
+        self._no = no
+        super(ConfirmationPage, self).__init__(
+            cli,
+            [int, str],
+            items = [self._no, self._yes],
+            header=header,
+            **kwargs
+        )
+        
+    def connect_yes(self, page):
+        index = None
+        for i, item in enumerate(self.items):
+            if item.get_text() == self._yes:
+                index = i
+                break
+        self.connect(page, [index, self._yes])
+    def connect_no(self, page):
+        index = None
+        for i, item in enumerate(self.items):
+            if item.get_text() == self._no:
+                index = i
+                break
+        self.connect(page, [index, self._no])
+    def _on_no_connection(self):
+        self.back()
+
+        
 
 class SimulationControlsPage(List, object):
     def __init__(self, cli):

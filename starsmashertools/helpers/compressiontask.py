@@ -39,7 +39,64 @@ class CompressionTask(object):
             if proc is not None:
                 results[i] = proc.get()
         return results
-    
+
+    @staticmethod
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    def get_compressed_properties(filename : str):
+        """
+        Get a dictionary of properties on the files contained in the compressed
+        archive.
+
+        Parameters
+        ----------
+        filename : str
+            The path to the compressed archive.
+
+        Returns
+        -------
+        dict
+            A dictionary whose keys are the names of the files in the compressed
+            archive that they would have if the archive were decompressed. Each
+            value is a dictionary holding various values corresponding to each
+            file in the archive.
+        """
+        with zipfile.ZipFile(filename, 'r') as zfile:
+            directory = starsmashertools.helpers.path.dirname(zfile.filename)
+            identifier = CompressionTask.get_compression_identifier(zfile)
+            return CompressionTask.get_properties_from_identifier(identifier, directory)
+
+    @staticmethod
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    def get_compression_identifier(zfile : zipfile.ZipFile):
+        directory = starsmashertools.helpers.path.dirname(zfile.filename)
+        filename = CompressionTask.get_compression_filename(zfile)
+        arcname = CompressionTask._filename_to_arcname(filename, directory)
+        content = zfile.read(arcname)
+        return starsmashertools.helpers.jsonfile.load_bytes(content)
+
+    @staticmethod
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    def get_from_identifier(keys : list, identifier : dict):
+        def do(i, key, result=[]):
+            for _i, ident in enumerate(i['identifiers']):
+                if ident is None:
+                    result += [i[key][_i]]
+                else:
+                    do(ident, key, result=result)
+            return result
+        results = {key:do(identifier, key, result=[]) for key in keys}
+        return results
+
+    @staticmethod
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    def get_properties_from_identifier(identifier : dict, directory : str):
+        keys = list(identifier.keys())
+        keys.remove('identifiers')
+        properties = CompressionTask.get_from_identifier(keys, identifier)
+        if 'arcnames' in properties.keys():
+            properties['filenames'] = [CompressionTask._arcname_to_filename(arcname, directory) for arcname in properties['arcnames']]
+        return properties
+        
     @staticmethod
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     def isCompressedFile(filename : str):
@@ -99,11 +156,18 @@ class CompressionTask(object):
         """
         dirname = starsmashertools.helpers.path.dirname(zfile.filename)
         obj = {
-            'arcnames' : []
+            'arcnames' : [],
+            'identifiers' : [],
+            'mtimes' : [],
         }
         for _file in files:
             arcname = CompressionTask._filename_to_arcname(_file, dirname)
             obj['arcnames'] += [arcname]
+            obj['mtimes'] += [starsmashertools.helpers.path.getmtime(_file)]
+            if CompressionTask.isCompressedFile(_file):
+                with zipfile.ZipFile(_file, 'r') as _zfile:
+                    obj['identifiers'] += [CompressionTask.get_compression_identifier(_zfile)]
+            else: obj['identifiers'] += [None]
         
         ssfilename = CompressionTask.get_compression_filename(zfile)
         
@@ -119,12 +183,11 @@ class CompressionTask(object):
     def _unpack_compression_file(zfile : zipfile.ZipFile):
         dirname = starsmashertools.helpers.path.dirname(zfile.filename)
         ssfilename = CompressionTask.get_compression_filename(zfile)
-
+        
         todecompress = []
         obj = starsmashertools.helpers.jsonfile.load(ssfilename)
         for arcname in obj['arcnames']:
             _path = CompressionTask._arcname_to_filename(arcname, dirname)
-            #starsmashertools.helpers.path.utime(_path, times=(time.time(), obj['mtime']))
             if CompressionTask.isCompressedFile(_path):
                 todecompress += [_path]
         starsmashertools.helpers.path.remove(ssfilename)

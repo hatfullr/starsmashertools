@@ -88,11 +88,11 @@ def save(filename, obj, encoder=Encoder):
 def load(filename, decoder=Decoder):
     if filename.endswith('.gz'):
         f = gzip.open(filename, 'r')
-        readmethod = lambda: json.loads(f.read().decode('utf-8'), cls=decoder)
+        readmethod = lambda: load_bytes(f.read())
 
     elif filename.endswith('.zip'):
         f = zipfile.ZipFile(filename, 'r', compression=zipfile.ZIP_DEFLATED, compresslevel=9)
-        readmethod = lambda: json.loads(f.read(starsmashertools.helpers.path.basename(filename).replace(".zip","")).decode('utf-8'), cls=decoder)
+        readmethod = lambda: load_bytes(f.read(starsmashertools.helpers.path.basename(filename).replace(".zip","")))
     else:
         f = open(filename, 'r')
         readmethod = lambda: json.load(f, cls=decoder)
@@ -106,3 +106,6 @@ def load(filename, decoder=Decoder):
         raise(e)
     f.close()
     return ret
+
+def load_bytes(content, decoder=Decoder):
+    return json.loads(content.decode('utf-8'), cls=decoder)

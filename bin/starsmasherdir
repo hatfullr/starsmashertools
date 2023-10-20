@@ -131,113 +131,168 @@ def decompress():
     
     return "Directory size: %s -> %s" % (previous, new)
 
+def get_redundant():
+    ret = []
+    props = simulation.get_compressed_properties()
+    for filename, mtime in zip(props['filenames'], props['mtimes']):
+        if starsmashertools.helpers.path.isfile(filename):
+            if starsmashertools.helpers.path.getmtime(filename) == mtime:
+                ret += [filename]
+    return ret
+
+def detect_redundant():
+    return len(get_redundant()) > 0
+
+def delete_redundant():
+    """
+    Get rid of files that exist both inside and outside a zip file.
+    """
+    previous = get_size_string(simulation.get_size())
+    for filename in get_redundant():
+        starsmashertools.helpers.path.remove(filename)
+    new = get_size_string(simulation.get_size())
+    return "Directory size: %s -> %s" % (previous, new)
 
 
 ################################################################################
 ################################# Front end ####################################
 ################################################################################
-if __name__ == "__main__":
-    cli = starsmashertools.bintools.cli.CLI(
-        'starsmasherdir',
-        "Perform various operations on a StarSmasher simulation directory. You can change the default values for options in the preferences.py file.",
-    )
 
-    cli.parser.add_argument(
-        '-d',
-        '--directory',
-        nargs='?',
-        type=str,
-        default=os.getcwd(),
-        required=False,
-        metavar='directory',
-        help='The StarSmasher simulation directory. Defaults to the current working directory if not specified.',
-    )
+cli = starsmashertools.bintools.cli.CLI(
+    'starsmasherdir',
+    "Perform various operations on a StarSmasher simulation directory. You can change the default values for options in the preferences.py file.",
+)
 
+cli.parser.add_argument(
+    '-d',
+    '--directory',
+    nargs='?',
+    type=str,
+    default=os.getcwd(),
+    required=False,
+    metavar='directory',
+    help='The StarSmasher simulation directory. Defaults to the current working directory if not specified.',
+)
 
+cli.parser.add_argument(
+    '-c',
+    '--compress',
+    default=os.path.basename(os.getcwd()),
+    required=False,
+    metavar='',
+    help='Compress the contents of the directory into a single file with this name. The files that are compressed are deleted. All contents will be stored in a file located in the simulation directory.',
+)
 
-
-    cli.parser.add_argument(
-        '-c',
-        '--compress',
-        default=os.path.basename(os.getcwd()),
-        required=False,
-        metavar='',
-        help='Compress the contents of the directory into a single file with this name. The files that are compressed are deleted. All contents will be stored in a file located in the simulation directory.',
-    )
-
-    simulation = starsmashertools.get_simulation(cli.args['directory'])
-
-    compressed = simulation.compressed
+simulation = starsmashertools.get_simulation(cli.args['directory'])
 
 
-    mainmenu = cli.add_list(
-        [int, str],
-        items = [
-            'estimate size',
-            'compress',
-            'decompress',
-        ],
-        bullet='%5d)',
-        header=starsmashertools.bintools.Style.bold("Main Menu") + newline + newline + ("Directory = %s" % cli.args['directory']) + newline + newline + 'Choose an option' + newline,
-    )
+def on_mainmenu_get_content():
+    global mainmenu
+    mainmenu.items = []
+    mainmenu.add('estimate size')
+    if simulation.compressed:
+        if mainmenu.connected(compresspage):
+            mainmenu.disconnect(compresspage)
+        mainmenu.add('decompress')
+        if not mainmenu.connected(decompresspage):
+            mainmenu.connect(decompresspage, [1, 'decompress'])
+
+        if detect_redundant():
+            mainmenu.add('remove redundant files')
+            if not mainmenu.connected(removeconfirmationpage):
+                mainmenu.connect(removeconfirmationpage, [2, 'remove redundant files'])
+    else:
+        if mainmenu.connected(decompresspage):
+            mainmenu.disconnect(decompresspage)
+        if mainmenu.connected(removeconfirmationpage):
+            mainmenu.disconnect(removeconfirmationpage)
+        mainmenu.add('compress')
+        if not mainmenu.connected(compresspage):
+            mainmenu.connect(compresspage, [1, 'compress'])
+
+    
 
 
-    estimatepage = cli.add_page(
-        [],
-        estimate_size,
-        header = newline,
-        _quit=False,
-    )
-    mainmenu.connect(estimatepage, [0, 'estimate size'])
+mainmenu = cli.add_list(
+    [int, str],
+    items = [
+        'estimate size',
+        'compress',
+        'decompress',
+    ],
+    bullet='%5d)',
+    header=starsmashertools.bintools.Style.bold("Main Menu") + newline + newline + ("Directory = %s" % cli.args['directory']) + newline + newline + 'Choose an option' + newline,
+)
+
+mainmenu.add_listener('get_content', on_mainmenu_get_content)
+
+estimatepage = cli.add_page(
+    [],
+    estimate_size,
+    header = newline,
+    _quit=False,
+)
+mainmenu.connect(estimatepage, [0, 'estimate size'])
+
+compresspage = cli.add_list(
+    [int, str],
+    items = [
+        "Keep",
+        "Delete",
+        "Delete after",
+    ],
+    bullet='%5d)',
+    header=newline + "Do you want to delete the original files or keep them? File modification times will be preserved. If you choose 'Delete' then files will be deleted immediately after they are compressed. If you choose 'Delete after' then files will be deleted only after all files have been compressed." + newline + newline + "Choose an option" + newline,
+    back=mainmenu,
+)
 
 
-    compresspage = cli.add_list(
-        [int, str],
-        items = [
-            "Keep",
-            "Delete",
-            "Delete after",
-        ],
-        bullet='%5d)',
-        header=newline + "Do you want to delete the original files or keep them? File modification times will be preserved. If you choose 'Delete' then files will be deleted immediately after they are compressed. If you choose 'Delete after' then files will be deleted only after all files have been compressed." + newline + newline + "Choose an option" + newline,
-        back=mainmenu,
-    )
-    mainmenu.connect(compresspage, [1, 'compress'])
+
+keeppage = cli.add_page(
+    [],
+    lambda delete=False, delete_after=False: compress(delete=delete, delete_after=delete_after),
+    _quit = False,
+    header=newline,
+)
+compresspage.connect(keeppage, [0, 'Keep'])
+
+deletepage = cli.add_page(
+    [],
+    lambda delete=True, delete_after=False: compress(delete=delete, delete_after=delete_after),
+    _quit = False,
+    header=newline,
+)
+compresspage.connect(deletepage, [1, 'Delete'])
+
+deleteafterpage = cli.add_page(
+    [],
+    lambda delete=True, delete_after=True: compress(delete=delete, delete_after=delete_after),
+    _quit = False,
+    header=newline,
+)
+compresspage.connect(deleteafterpage, [2, 'Delete after'])
 
 
-    keeppage = cli.add_page(
-        [],
-        lambda delete=False, delete_after=False: compress(delete=delete, delete_after=delete_after),
-        _quit = False,
-        header=newline,
-    )
-    compresspage.connect(keeppage, [0, 'Keep'])
+decompresspage = cli.add_page(
+    [],
+    decompress,
+    _quit=False,
+    header=newline,
+)
 
-    deletepage = cli.add_page(
-        [],
-        lambda delete=True, delete_after=False: compress(delete=delete, delete_after=delete_after),
-        _quit = False,
-        header=newline,
-    )
-    compresspage.connect(deletepage, [1, 'Delete'])
-
-    deleteafterpage = cli.add_page(
-        [],
-        lambda delete=True, delete_after=True: compress(delete=delete, delete_after=delete_after),
-        _quit = False,
-        header=newline,
-    )
-    compresspage.connect(deleteafterpage, [2, 'Delete after'])
+removeredundantpage = cli.add_page(
+    [],
+    delete_redundant,
+    _quit=False,
+    header=newline,
+)
+removeconfirmationpage = cli.add_confirmation_page(
+    header = "Permanently delete files whose names and modification times match those in the compressed archive?" + newline,
+    back = mainmenu,
+)
+removeconfirmationpage.connect_yes(removeredundantpage)
 
 
-    decompresspage = cli.add_page(
-        [],
-        decompress,
-        _quit=False,
-        header=newline,
-    )
-    mainmenu.connect(decompresspage, [2, 'decompress'])
 
-
-    cli.set_mainmenu(mainmenu)
-    cli.run()
+cli.set_mainmenu(mainmenu)
+cli.run()
