@@ -24,6 +24,7 @@ if __name__ == "__main__":
         packages=find_packages(),
         scripts=[
             os.path.join('bin','starsmashertools'),
+            os.path.join('bin','starsmasherplot'),
             os.path.join('bin','starsmasherdir'),
             os.path.join('bin','inspectpdc'),
             os.path.join('bin','outtotxt'),

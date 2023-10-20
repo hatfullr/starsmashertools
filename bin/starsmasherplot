@@ -1,0 +1,151 @@
+#!/usr/bin/env python3
+
+import starsmashertools.bintools.cli
+import starsmashertools
+import matplotlib.pyplot as plt
+import os
+import sys
+import signal
+
+
+newline = starsmashertools.bintools.Style.get('characters', 'newline')
+
+################################################################################
+################################## Back end ####################################
+################################################################################
+
+
+def create_plot(
+        ax_commands = [],
+        fig_commands = []
+):
+    fig, ax = plt.subplots()
+    for command in ax_commands:
+        command(ax)
+    for command in fig_commands:
+        command(fig)
+    return fig, ax
+
+def show_plot():
+    plt.tight_layout()
+    plt.show()
+
+def position_scatter(x, y, s=1, color='k', marker='.', **kwargs):
+    fig, ax = create_plot()
+    ax.scatter(x, y, s=1, color='k', marker='.', **kwargs)
+    ax.set_aspect('equal')
+    return fig, ax
+
+def xyscatter():
+    fig, ax = position_scatter(output['x'], output['y'])
+    ax.set_xlabel('x [Rsun]')
+    ax.set_ylabel('y [Rsun]')
+    show_plot()
+    return ""
+def xzscatter():
+    fig, ax = position_scatter(output['x'], output['z'])
+    ax.set_xlabel('x [Rsun]')
+    ax.set_ylabel('z [Rsun]')
+    show_plot()
+    return ""
+def yzscatter():
+    fig, ax = position_scatter(output['y'], output['z'])
+    ax.set_xlabel('y [Rsun]')
+    ax.set_ylabel('z [Rsun]')
+    show_plot()
+    return ""
+
+
+
+
+
+
+################################################################################
+################################# Front end ####################################
+################################################################################
+if __name__ == "__main__":
+    def signal_interrupt(signal, frame):
+        print("")
+        sys.exit()
+    signal.signal(signal.SIGINT, signal_interrupt)
+    
+    cli = starsmashertools.bintools.cli.CLI(
+        'starsmasherplot',
+        "Create simple plots to visualize output from a StarSmasher simulation.",
+    )
+    
+
+
+    cli.parser.add_argument(
+        '-d',
+        '--directory',
+        nargs='?',
+        type=str,
+        default=os.getcwd(),
+        required=False,
+        metavar='directory',
+        help='The StarSmasher simulation directory to analyze. Defaults to the current working directory if not specified.',
+    )
+
+    simulation = starsmashertools.get_simulation(cli.args['directory'])
+
+    output = simulation.get_output(0)
+    def set_output(string):
+        global output
+        output = starsmashertools.output(string)
+    
+    mainmenu = cli.add_list(
+        [int, str],
+        items = [
+            'change output file',
+            'xy scatter',
+            'xz scatter',
+            'yz scatter',
+        ],
+        bullet = '%5d)',
+        footer=newline,
+    )
+
+    def on_mainmenu_get_content():
+        mainmenu.header = starsmashertools.bintools.Style.bold("Main Menu") + newline + newline + ("Output File = %s" % output.path) + newline + newline + 'Choose an option' + newline
+
+    
+    
+    mainmenu.add_listener('get_content', on_mainmenu_get_content)
+
+    setoutputfilepage = cli.add_page(
+        [str],
+        newline+"Enter a path to an output file",
+        footer=newline+newline,
+        back=mainmenu,
+        _quit=True,
+        callback=set_output,
+    )
+
+    mainmenu.connect(setoutputfilepage, [0, 'change output file'])
+    
+    xyscatterpage = cli.add_page(
+        [],
+        xyscatter,
+        _quit=False,
+    )
+    xyscatterpage.add_back(mainmenu, asprompt=False)
+    xzscatterpage = cli.add_page(
+        [],
+        xzscatter,
+        _quit=False,
+    )
+    xzscatterpage.add_back(mainmenu, asprompt=False)
+    yzscatterpage = cli.add_page(
+        [],
+        xyscatter,
+        _quit=False,
+    )
+    yzscatterpage.add_back(mainmenu, asprompt=False)
+
+    mainmenu.connect(xyscatterpage, [1, 'xy scatter'])
+    mainmenu.connect(xzscatterpage, [2, 'xz scatter'])
+    mainmenu.connect(yzscatterpage, [3, 'yz scatter'])
+    cli.set_mainmenu(mainmenu)
+    
+    cli.run()

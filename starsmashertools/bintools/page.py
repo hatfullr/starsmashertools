@@ -23,6 +23,7 @@ class Page(object):
             simulation_controls : bool = False,
             back : "Page | type(None)" = None,
             _quit : bool = True,
+            callback = None,
     ):
         super(Page, self).__init__()
         self.cli = cli
@@ -37,6 +38,7 @@ class Page(object):
         self._prompt_kwargs = {}
         self._quit = _quit
         self.simulation_controls = simulation_controls
+        self.callback = callback
 
         self.events = {}
 
@@ -133,8 +135,11 @@ class Page(object):
         
         if self.inputmanager is not None and self.inputtypes:
             self._prompt_kwargs = kwargs
-            if self.process_input(self.prompt()):
+            _input = self.prompt()
+            if self.process_input(_input):
+                if self.callback is not None: self.callback(_input)
                 return
+            if self.callback is not None: self.callback(_input)
         
         if not self._back_asprompt and self._back is not None:
             self.back()
