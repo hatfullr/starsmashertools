@@ -42,7 +42,6 @@ class CLI(object):
         
         super(CLI, self).__init__()
 
-        print("Updating CLI instance")
         CLI.instance = self
         
         self.inputmanager = starsmashertools.bintools.inputmanager.InputManager()
