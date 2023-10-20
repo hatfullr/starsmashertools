@@ -32,6 +32,7 @@ def show_plot():
     try:
         plt.show()
     except UserWarning as e:
+        print("I am here")
         if 'cannot show the figure' not in str(e): raise
         cli.write("Displaying plot failed: '%s'" % str(e), flush=True)
         cli.write("Saving plot as '%s'." % default_savename, flush=True)
