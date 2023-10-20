@@ -32,8 +32,7 @@ def show_plot():
     try:
         plt.show()
     except UserWarning as e:
-        if 'Matplotlib is currently using agg, which is a non-GUI backend, so cannot show the figure.' != str(e):
-            raise
+        if 'cannot show the figure' not in str(e): raise
         cli.write("Displaying plot failed: '%s'" % str(e), flush=True)
         cli.write("Saving plot as '%s'." % default_savename, flush=True)
         plt.savefig(default_savename)
