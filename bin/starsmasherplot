@@ -7,6 +7,7 @@ import os
 import sys
 import signal
 
+default_savename = os.path.basename(__file__).replace(".py","")
 
 newline = starsmashertools.bintools.Style.get('characters', 'newline')
 
@@ -28,7 +29,14 @@ def create_plot(
 
 def show_plot():
     plt.tight_layout()
-    plt.show()
+    try:
+        plt.show()
+    except UserWarning as e:
+        if 'Matplotlib is currently using agg, which is a non-GUI backend, so cannot show the figure.' != str(e):
+            raise
+        cli.write("Displaying plot failed: '%s'" % str(e), flush=True)
+        cli.write("Saving plot as '%s'." % default_savename, flush=True)
+        plt.savefig(default_savename)
 
 def position_scatter(x, y, s=1, color='k', marker='.', **kwargs):
     fig, ax = create_plot()
