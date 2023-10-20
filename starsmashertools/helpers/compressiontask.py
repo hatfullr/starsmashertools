@@ -7,6 +7,7 @@ import time
 import numpy as np
 import zipfile
 import datetime
+import typing
 
 class CompressionTask(object):
     _processes = []
@@ -207,7 +208,7 @@ class CompressionTask(object):
             filename : str,
             delete : bool = True,
             delete_after : bool = True,
-            verbose : bool = True,
+            verbose : typing.Callable | bool = True,
             nprocs : int = 0,
     ):
         """
@@ -233,8 +234,13 @@ class CompressionTask(object):
             been compressed. If `False`, each file is deleted after it has been
             compressed. If `delete` is `False` this option is ignored.
 
-        verbose : bool, default = True
-            If `True`, debug messages are printed to the console.
+        verbose : callable, bool, default = True
+            Determines if the compressed file names should be printed to the
+            console when they are about to be compressed.
+
+            If `True`, debug messages are printed to the console. If a callable
+            function is given, it is called with a string passed as the first
+            argument instead of printing to the console.
 
         nprocs : int, default = 0
             Use this many processes to perform the compression. A value of 0
@@ -277,7 +283,7 @@ class CompressionTask(object):
             filename : str,
             delete : bool = True,
             delete_after : bool = True,
-            verbose : bool = True,
+            verbose : typing.Callable | bool = True,
     ):
         """
         Perform compression in serial mode.
@@ -298,8 +304,13 @@ class CompressionTask(object):
             been compressed. If `False`, each file is deleted after it has been
             compressed. If `delete` is `False` this option is ignored.
 
-        verbose : bool, default = True
-            If `True`, debug messages are printed to the console.
+        verbose : callable, bool, default = True
+            Determines if the compressed file names should be printed to the
+            console when they are about to be compressed.
+            
+            If `True`, messages are printed to the console. If a callable
+            function is given, it is called with a string passed as the first
+            argument instead of printing to the console.
 
         See Also
         --------
@@ -310,10 +321,14 @@ class CompressionTask(object):
         if starsmashertools.helpers.path.isfile(filename):
             raise FileExistsError(filename)
 
+        if isinstance(verbose, bool) and verbose:
+            verbose = lambda message: print(message)
+
         dirname = starsmashertools.helpers.path.dirname(filename)
         with zipfile.ZipFile(filename, mode='w', compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zfile:
             try:
                 for _file in files:
+                    if verbose: verbose(_file)
                     arcname = CompressionTask._filename_to_arcname(_file, dirname)
                     zinfo = zipfile.ZipInfo.from_file(_file, arcname=arcname)
                     zinfo.compress_type = zipfile.ZIP_DEFLATED
@@ -413,7 +428,7 @@ class CompressionTask(object):
     def decompress(
             filename : str,
             delete : bool = True,
-            verbose : bool = False,
+            verbose : typing.Callable | bool = False,
     ):
         """
         Decompress a file created by `~.compress`.
@@ -426,8 +441,13 @@ class CompressionTask(object):
         delete : bool, default = True
             If `True`, the compressed file is deleted after decompression.
         
-        verbose : bool, default = False
-            If `True`, debug messages are printed to the console.
+        verbose : callable, bool, default = True
+            Determines if the decompressed file names should be printed to the
+            console when they are about to be decompressed.
+            
+            If `True`, debug messages are printed to the console. If a callable
+            function is given, it is called with a string passed as the first
+            argument instead of printing to the console.
         
         See Also
         --------
@@ -437,15 +457,20 @@ class CompressionTask(object):
         # Check to make sure this is one we compressed
         if not CompressionTask.isCompressedFile(filename):
             raise Exception("The given file is not a file created by CompressionTask because it is missing the compression identifier file: '%s'" % filename)
+
+        if isinstance(verbose, bool) and verbose:
+            verbose = lambda message: print(message)
         
         dirname = starsmashertools.helpers.path.dirname(filename)
         
         with zipfile.ZipFile(filename) as zfile:
             for zinfo in zfile.infolist():
+                fname = CompressionTask._arcname_to_filename(zinfo.filename, dirname)
+                if verbose: verbose(fname)
+                
                 # Note: extract does not remove the file from the zip archive.
                 zfile.extract(zinfo, path=dirname)
-
-                fname = CompressionTask._arcname_to_filename(zinfo.filename, dirname)
+                
                 mtime = datetime.datetime(*zinfo.date_time).timestamp()
                 starsmashertools.helpers.path.utime(fname, times=(time.time(), mtime))
             CompressionTask._unpack_compression_file(zfile)

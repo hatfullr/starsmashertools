@@ -106,6 +106,7 @@ remaining (estimated):
     )
 
 def compress(**kwargs):
+    kwargs['verbose'] = kwargs.get('verbose', cli.write)
     previous = get_size_string(simulation.get_size())
     try:
         simulation.compress(**kwargs)
@@ -118,10 +119,11 @@ def compress(**kwargs):
     return "Directory size: %s -> %s" % (previous, new)
 
 
-def decompress():
+def decompress(**kwargs):
+    kwargs['verbose'] = kwargs.get('verbose', cli.write)
     previous = get_size_string(simulation.get_size())
     try:
-        simulation.decompress()
+        simulation.decompress(**kwargs)
     except:
         cli.write("")
         starsmashertools.bintools.print_error(halt=False)
