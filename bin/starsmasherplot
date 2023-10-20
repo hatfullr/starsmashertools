@@ -8,7 +8,7 @@ import sys
 import signal
 import warnings
 
-default_savename = os.path.basename(__file__).replace(".py","")
+default_savename = os.path.basename(__file__).replace(".py",".png")
 
 newline = starsmashertools.bintools.Style.get('characters', 'newline')
 
