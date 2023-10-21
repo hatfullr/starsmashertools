@@ -290,6 +290,8 @@ class Binary(simulation.Simulation, object):
 
         output1 = None
         output2 = None
+        fRLOF1 = None
+        fRLOF2 = None
         
         if which in ['primary', 'both'] and self.get_n1() > 1:
             midpoint.set_criteria(
@@ -315,9 +317,12 @@ class Binary(simulation.Simulation, object):
         if which == 'secondary': return output2
         if cli:
             string = []
-            for i, o in enumerate([output1, output2]):
-                if o is not None: string += ["Star %d: %s" % (i+1,o.path)]
-                else: string += ["Star %d: None (point mass)" % (i+1)]
+            for i, (o, fRLOF) in enumerate([[output1, fRLOF1], [output2, fRLOF2]]):
+                if o is not None:
+                    string += ["Star %d: %s" % (i+1,o.path)]
+                    string += ["   fRLOF = " + str(fRLOF)]
+                else:
+                    string += ["Star %d: None (point mass)" % (i+1)]
             return "\n".join(string)
         return output1, output2
         
