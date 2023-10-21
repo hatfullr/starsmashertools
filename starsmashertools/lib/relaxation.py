@@ -72,7 +72,7 @@ class Relaxation(starsmashertools.lib.simulation.Simulation, object):
         return self._isPolytrope
 
     @cli('starsmashertools')
-    def get_n(self):
+    def get_n(self, cli : bool = False):
         if self._n is None:
             # Check for log files
             logfiles = self.get_logfiles()

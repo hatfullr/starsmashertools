@@ -35,13 +35,13 @@ class Binary(simulation.Simulation, object):
 
     @api
     @cli('starsmashertools')
-    def get_n1(self):
+    def get_n1(self, cli : bool = False):
         if self._n1 is None: self._get_n1_n2()
         return self._n1
 
     @api
     @cli('starsmashertools')
-    def get_n2(self):
+    def get_n2(self, cli : bool = False):
         if self._n2 is None: self._get_n1_n2()
         return self._n2
 
@@ -79,12 +79,12 @@ class Binary(simulation.Simulation, object):
     # Returns True if the primary is a point mass
     @api
     @cli('starsmashertools')
-    def isPrimaryPointMass(self): return self.get_n1() == 1
+    def isPrimaryPointMass(self, cli : bool = False): return self.get_n1() == 1
     
     # Returns True if the secondary is a point mass
     @api
     @cli('starsmashertools')
-    def isSecondaryPointMass(self): return self.get_n2() == 1
+    def isSecondaryPointMass(self, cli : bool = False): return self.get_n2() == 1
 
     @api
     def get_start1u(self): return path.join(self.directory, "sph.start1u")
@@ -240,6 +240,7 @@ class Binary(simulation.Simulation, object):
             self,
             which : str = 'primary',
             threshold : float | int = 1.,
+            cli : bool = False,
     ):
         """
         Obtain the output file that corresponds with the time of Roche lobe
@@ -312,6 +313,12 @@ class Binary(simulation.Simulation, object):
         
         if which == 'primary': return output1
         if which == 'secondary': return output2
+        if cli:
+            string = []
+            for i, o in enumerate([output1, output2]):
+                if o is not None: string += ["Star %d: %s" % (i+1,o.path)]
+                else: string += ["Star %d: None (point mass)" % (i+1)]
+            return "\n".join(string)
         return output1, output2
         
         
@@ -321,7 +328,7 @@ class Binary(simulation.Simulation, object):
 
     @api
     @cli('starsmashertools')
-    def get_primary_mass(self):
+    def get_primary_mass(self, cli : bool = False):
         logfiles = self.get_logfiles()
         if logfiles:
             try:
@@ -336,7 +343,7 @@ class Binary(simulation.Simulation, object):
 
     @api
     @cli('starsmashertools')
-    def get_secondary_mass(self):
+    def get_secondary_mass(self, cli : bool = False):
         logfiles = self.get_logfiles()
         if logfiles:
             try:

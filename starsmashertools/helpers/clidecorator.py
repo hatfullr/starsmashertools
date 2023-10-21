@@ -9,6 +9,10 @@ def cli(program, *args, **kwargs):
     # name of the program you wish to expose the function to, or a list of
     # programs.
 
+    # Indicate to the function that it is being called from the CLI rather than
+    # regular execution
+    kwargs['cli'] = True
+
     # This structure allows decorator arguments
     def decorator(f):
         # Wrapper behavior. We need to use functools here or else we get into

@@ -126,9 +126,10 @@ for i, (name, function) in enumerate(zip(names, available_functions)):
     page = cli.add_page(
         [],
         lambda function=function: call_function(function),
-        header=newline+"Result:"+newline,
+        header="Result:"+newline,
         footer=newline,
         back=mainmenu,
+        _quit=True,
     )
     mainmenu.connect(page, [i, name])
 

@@ -1,10 +1,15 @@
 import os
 import traceback
 import sys
+import textwrap
+import curses
 
 # If 'error' is None, uses the last-raised error.
 def print_error(error=None, halt=False):
     import starsmashertools.bintools.cli
+    win = starsmashertools.bintools.cli.CLI.stdscr
+    height, width = win.getmaxyx()
+                
     if error is not None:
         if halt: raise error
         else:
@@ -12,12 +17,22 @@ def print_error(error=None, halt=False):
                 raise error
             except Exception as e:
                 string = traceback.format_exc().split('\n')[-2]
-                starsmashertools.bintools.cli.CLI.write(string)
+                string = "\n".join(textwrap.wrap(string, width=width-1))
+                starsmashertools.bintools.cli.CLI.write(string, xy=(0, -(string.count('\n')+1)), end='', move=(0, None))
     else:
         if halt: raise
         string = traceback.format_exc().split('\n')[-2]
-        starsmashertools.bintools.cli.CLI.write(string)
+        string = "\n".join(textwrap.wrap(string, width=width-1))
+        starsmashertools.bintools.cli.CLI.write(string, xy=(0, -(string.count('\n')+1)), end='', move=(0, None))
 
+
+class ANSI:
+    NORMAL = '\033[0m'
+    BOLD = '\033[1m'
+    GREENFG = '\033[92m'
+    REDFG = '\033[91m'
+    WHITEBG = '\033[107m'
+    LIGHTGRAYBG = '\033[47m'
 
 class Style(object):
     # 'True' values are for terminal output
@@ -26,11 +41,11 @@ class Style(object):
     # Styles
     text = {
         'normal'    : {
-            True  : '\033[0m',
+            True  : ANSI.NORMAL,
             False : '',
         },
         'bold'      : {
-            True  : '\033[1m',
+            True  : ANSI.BOLD,
             False : '',
         },
     }
@@ -42,22 +57,22 @@ class Style(object):
 
     colors = {
         'green'     : {
-            True  : '\033[92m',
+            True  : ANSI.GREENFG,
             False : '',
         },
         'red'       : {
-            True  : '\033[91m',
+            True  : ANSI.REDFG,
             False : '',
         },
     }
 
     backgrounds = {
         'white'     : {
-            True  : '\033[107m',
+            True  : ANSI.WHITEBG,
             False : '',
         },
         'light gray' : {
-            True  : '\033[47m',
+            True  : ANSI.LIGHTGRAYBG,
             False : '',
         },
     }

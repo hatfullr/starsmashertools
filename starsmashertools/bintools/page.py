@@ -40,6 +40,8 @@ class Page(object):
         self.simulation_controls = simulation_controls
         self.callback = callback
 
+        self.input = None
+
         self.events = {}
 
         self.connections = {}
@@ -52,7 +54,8 @@ class Page(object):
         if not kwargs: kwargs = self._prompt_kwargs
         if self.inputmanager is None:
             raise Exception("No InputManager was given for this page")
-        return self.inputmanager.get(self.inputtypes, **kwargs)
+        self.input = self.inputmanager.get(self.inputtypes, **kwargs)
+        return self.input
 
     def process_input(self, _input):
         if _input in self.triggers.keys():
@@ -135,11 +138,11 @@ class Page(object):
         
         if self.inputmanager is not None and self.inputtypes:
             self._prompt_kwargs = kwargs
-            _input = self.prompt()
-            if self.process_input(_input):
-                if self.callback is not None: self.callback(_input)
+            self.prompt()
+            if self.process_input(self.input):
+                if self.callback is not None: self.callback(self.input)
                 return
-            if self.callback is not None: self.callback(_input)
+            if self.callback is not None: self.callback(self.input)
         
         if not self._back_asprompt and self._back is not None:
             self.back()
@@ -280,7 +283,8 @@ class List(Page, object):
         self.items += [List.Item(string, **kwargs)]
 
     def _on_no_connection(self):
-        error = starsmashertools.bintools.inputmanager.InputManager.InvalidInputError("Invalid list selection")
+        error = starsmashertools.bintools.inputmanager.InputManager.InvalidInputError("Invalid list selection '%s'" % str(self.input))
+        self.inputmanager.reset()
         starsmashertools.bintools.print_error(error=error)
         result = self.process_input(self.prompt())
         if result: return

@@ -242,7 +242,7 @@ class Simulation(object):
     #@profile
     @api
     @cli('starsmashertools')
-    def get_children(self, *args, **kwargs):
+    def get_children(self, *args, cli : bool = False, **kwargs):
         verbose = kwargs.get('verbose', False)
         if self._children is None:
             # First see if the children are given to us in the data/ directory.
@@ -270,7 +270,14 @@ class Simulation(object):
                 
                 # Now save the children to the data/ directory
                 self._save_children(verbose=verbose)
-        
+
+        if cli:
+            string = []
+            for i, child in enumerate(self._children):
+                if issubclass(child.__class__, Simulation):
+                    string += ["Star %d: %s" % (i+1,child.directory)]
+                else: string += ["Star %d: %s" % (i+1, str(child))]
+            return "\n".join(string)
         return self._children
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes

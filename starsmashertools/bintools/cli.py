@@ -10,7 +10,8 @@ import starsmashertools.helpers.argumentenforcer
 import starsmashertools.helpers.path
 import starsmashertools.helpers.file
 import collections
-
+import curses
+import copy
 
 class CLI(object):
     instance = None
@@ -87,8 +88,39 @@ class CLI(object):
         return page
 
     @staticmethod
-    def write(*args, **kwargs):
-        ret = print(*args, **kwargs)
+    def write(*args, xy=None, move=None, move_relative=False, end='\n', flush=True):
+        string = ' '.join(args) + end
+
+        # Current cursor position
+        y, x = CLI.stdscr.getyx()
+
+        if xy is not None:
+            newx, newy = xy
+            maxy, maxx = CLI.stdscr.getmaxyx()
+            while newy > maxy: newy -= maxy
+            while newx > maxx: newx -= maxx
+            while newy < 0: newy += maxy
+            while newx < 0: newx += maxx
+            CLI.stdscr.move(newy, newx)
+
+        ret = CLI.writestr(string)
+        
+        if move is None:
+            y += string.count('\n')
+            x = 0
+            if '\n' in string or end != '\n':
+                x = len(string.split('\n')[-1])
+        else:
+            if move[0] is not None:
+                if move_relative: x += move[0]
+                else: x = move[0]
+            if move[1] is not None:
+                if move_relative: y += move[1]
+                else: y = move[1]
+        
+        CLI.stdscr.move(y, x)
+        if flush: CLI.stdscr.refresh()
+        
         filename = CLI.instance.args['output']
         if filename is not None:
             mode = 'w'
@@ -98,6 +130,64 @@ class CLI(object):
             with starsmashertools.helpers.file.open(filename, mode) as f:
                 f.write(content)
         return ret
+
+    @staticmethod
+    def writestr(text, _codes=[]):
+        """
+        We parse out the styles for proper writing
+        """
+        ANSI = starsmashertools.bintools.ANSI
+        mapping = {
+            ANSI.BOLD : [curses.A_BOLD],
+            ANSI.GREENFG : [curses.color_pair(1)],
+            ANSI.REDFG : [curses.color_pair(2)],
+            ANSI.WHITEBG : [curses.color_pair(3)],
+            ANSI.LIGHTGRAYBG : [curses.color_pair(4)],
+        }
+
+        codes = []
+        for attr in dir(ANSI):
+            if attr.startswith("_"): continue
+            codes += [getattr(ANSI, attr)]
+
+        # print stuff that doesn't have any codes
+        lowest_idx = len(text)
+        lowest_code = None
+        for code in codes + [ANSI.NORMAL]:
+            if code not in text: continue
+            idx = text.index(code)
+            if idx < lowest_idx:
+                lowest_idx = idx
+                lowest_code = code
+
+        # If no codes
+        if lowest_code is None:
+            CLI.stdscr.addstr(text)
+            for code in _codes:
+                CLI.stdscr.attroff(code)
+            return
+
+        # Print the first stuff that has no codes
+        CLI.stdscr.addstr(text[:lowest_idx], *_codes)
+            
+        # Turn on the code
+        if lowest_code != ANSI.NORMAL:
+            for code in mapping[lowest_code]:
+                if code not in _codes:
+                    _codes += [code]
+                    CLI.stdscr.attron(code)
+        else:
+            # Turn off all codes
+            for code in _codes:
+                CLI.stdscr.attroff(code)
+            _codes = []
+
+        # Chop the text
+        text = copy.deepcopy(text)[lowest_idx + len(lowest_code):]
+
+        # Repeat the process
+        CLI.writestr(text, _codes=_codes)
+        
     
     def set_mainmenu(self, page):
         self._mainmenu = page
@@ -148,10 +238,28 @@ class CLI(object):
         
         if identifier not in self.pages.keys():
             raise Exception("No page with identifier '%s' exists" % str(identifier))
+        self.clear()
         self.pages[identifier].show()
+
+    def clear(self):
+        CLI.stdscr.clear()
+        CLI.stdscr.refresh()
         
     def run(self):
-        self.navigate(self.pages[0].identifier)
+        def main(stdscr):
+            # This puts us in shell mode, which the rest of our code expects
+            curses.use_default_colors()
+
+            curses.init_pair(1, curses.COLOR_GREEN, -1) # green
+            curses.init_pair(2, curses.COLOR_RED, -1) # red
+            curses.init_pair(3, -1, curses.COLOR_WHITE)
+            curses.init_pair(4, -1, curses.COLOR_YELLOW) # eh
+            
+            #stdscr.border() # Useful for debugging
+            stdscr.refresh()
+            CLI.stdscr = stdscr
+            self.navigate(self.pages[0].identifier)
+        curses.wrapper(main)
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     def add_simulation(
@@ -173,6 +281,6 @@ class CLI(object):
         elif isinstance(simulation, int):
             simulation = self.simulations[simulation]
         self.simulations.remove(simulation)
-            
 
-        
+
+    
