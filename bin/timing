@@ -452,9 +452,10 @@ for i, (key, obj) in enumerate(valid_plots.items()):
     page = cli.add_page(
         [],
         func,
-        _quit=False,
+        back=mainmenu,
+        _quit=True,
     )
-    page.add_back(mainmenu, asprompt=False)
+    #page.add_back(mainmenu, asprompt=False)
     mainmenu.connect(page, [i, key])
 
 cli.set_mainmenu(mainmenu)
