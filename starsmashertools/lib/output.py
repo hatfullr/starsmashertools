@@ -451,14 +451,17 @@ class ParticleIterator(OutputIterator, object):
                 f.seek(position)
                 pos = i * data_stride
                 _buffer[pos : pos + data_stride] = f.read(data_stride)
+        try:
+            d = self.simulation.reader._read(
+                buffer=_buffer,
+                shape=len(self.particle_IDs),
+                dtype=dtype,
+                offset=4,
+                strides=data_stride,
+            )[np.argsort(sort_indices)]
+        except Exception as e:
+            raise Exception("This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories.") from e
         
-        d = self.simulation.reader._read(
-            buffer=_buffer,
-            shape=len(self.particle_IDs),
-            dtype=dtype,
-            offset=4,
-            strides=data_stride,
-        )[np.argsort(sort_indices)]
         data = {name:d[name].flatten() for name in d.dtype.names}
         data['t'] = header['t'][0]
         data = starsmashertools.helpers.readonlydict.ReadOnlyDict(data)
