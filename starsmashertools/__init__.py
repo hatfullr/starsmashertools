@@ -162,8 +162,8 @@ def interpolate(
         outputs = starsmashertools.lib.output.OutputIterator(
             filenames,
             simulation,
-            read_headers = True,
-            read_data = True,
+            return_headers = True,
+            return_data = True,
             asynchronous = True,
         )
             
