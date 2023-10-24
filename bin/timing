@@ -245,8 +245,8 @@ def plot_wall_time(default_savename, yaxis, absolute=False):
     
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
-        ax.set_xlim(xlim)
-        ax.set_ylim(ylim)
+        #ax.set_xlim(xlim)
+        #ax.set_ylim(ylim)
 
     if cli.args['batch']:
         cli.write("Saving plot as '%s'." % default_savename, flush=True)
@@ -455,7 +455,6 @@ for i, (key, obj) in enumerate(valid_plots.items()):
         back=mainmenu,
         _quit=True,
     )
-    #page.add_back(mainmenu, asprompt=False)
     mainmenu.connect(page, [i, key])
 
 cli.set_mainmenu(mainmenu)
