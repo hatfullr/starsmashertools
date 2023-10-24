@@ -439,7 +439,7 @@ class ParticleIterator(OutputIterator, object):
         # Grab the headers so we can record the times
         try:
             header = self.simulation.reader._read(
-                buffer=buffer,#f.read(header_stride + 4),
+                buffer=buffer,
                 shape=1,
                 dtype=header_dtype,
                 offset=4,
@@ -451,9 +451,7 @@ class ParticleIterator(OutputIterator, object):
             
             
         for i, (ID, position) in enumerate(zip(IDs, positions)):
-            #buffer.seek(position)
             pos = i * data_stride
-            #_buffer[pos : pos + data_stride] = buffer.read(data_stride)
             _buffer[pos : pos + data_stride] = buffer[position : position + data_stride]
         try:
             d = self.simulation.reader._read(
@@ -532,57 +530,58 @@ class Reader(object):
         with starsmashertools.helpers.file.open(filename, 'rb') as f:
             # This speeds up reading significantly.
             buffer = mmap.mmap(f.fileno(),0,access=mmap.ACCESS_READ)
-            try:
-                header = self._read(
-                    buffer=buffer,
-                    shape=1,
-                    dtype=self._dtype['header'],
-                    offset=4,
-                    strides=self._stride['header'],
-                )
-            except Exception as e:
-                raise Exception("This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories.") from e
-            
-            ntot = header['ntot'][0]
-            
-            # Check for corrupted files
-            
-            filesize = starsmashertools.helpers.path.getsize(filename)
+        
+        try:
+            header = self._read(
+                buffer=buffer,
+                shape=1,
+                dtype=self._dtype['header'],
+                offset=4,
+                strides=self._stride['header'],
+            )
+        except Exception as e:
+            raise Exception("This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories.") from e
 
-            try:
-                ntot_check = self._read(
-                    buffer=buffer,
-                    shape=1,
-                    dtype='<i4',
-                    offset=filesize - 8,
-                    strides=8,
-                )[0]
-            except Exception as e:
-                raise Exception("This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories.") from e
-                
-            if ntot != ntot_check:
-                raise Reader.CorruptedFileError(filename)
+        ntot = header['ntot'][0]
 
-            if return_headers:
-                new_header = {}
-                for name in header[0].dtype.names:
-                    new_header[name] = np.array(header[name])[0]
-                header = starsmashertools.helpers.readonlydict.ReadOnlyDict(new_header)
-            
-            if return_headers and not return_data:
-                return header
+        # Check for corrupted files
 
-            # There are 'ntot' particles to read
-            try:
-                data = self._read(
-                    buffer=buffer,
-                    shape=ntot,
-                    dtype=self._dtype['data'],
-                    offset=self._stride['header'] + self._EOL_size + 4,
-                    strides=self._stride['data'] + self._EOL_size,
-                )
-            except Exception as e:
-                raise Exception("This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories.") from e
+        filesize = starsmashertools.helpers.path.getsize(filename)
+
+        try:
+            ntot_check = self._read(
+                buffer=buffer,
+                shape=1,
+                dtype='<i4',
+                offset=filesize - 8,
+                strides=8,
+            )[0]
+        except Exception as e:
+            raise Exception("This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories.") from e
+
+        if ntot != ntot_check:
+            raise Reader.CorruptedFileError(filename)
+
+        if return_headers:
+            new_header = {}
+            for name in header[0].dtype.names:
+                new_header[name] = np.array(header[name])[0]
+            header = starsmashertools.helpers.readonlydict.ReadOnlyDict(new_header)
+
+        if return_headers and not return_data:
+            return header
+
+        # There are 'ntot' particles to read
+        try:
+            data = self._read(
+                buffer=buffer,
+                shape=ntot,
+                dtype=self._dtype['data'],
+                offset=self._stride['header'] + self._EOL_size + 4,
+                strides=self._stride['data'] + self._EOL_size,
+            )
+        except Exception as e:
+            raise Exception("This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories.") from e
         
         # Now organize the data into Pythonic structures
         new_data = {}
