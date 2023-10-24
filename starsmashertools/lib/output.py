@@ -420,13 +420,13 @@ class ParticleIterator(OutputIterator, object):
         self.particle_IDs = particle_IDs
 
     def get(self, filename):
+        if len(self.particle_IDs) == 0: return {}
         # Calculate the file position for the quantity we want to read
         header_stride = self.simulation.reader._stride['header']
         header_dtype = self.simulation.reader._dtype['header']
         
         EOL_size = self.simulation.reader._EOL_size
         data_stride = self.simulation.reader._stride['data'] + EOL_size
-        start = header_stride
         dtype = self.simulation.reader._dtype['data']
 
         sort_indices = np.argsort(self.particle_IDs)
@@ -435,22 +435,26 @@ class ParticleIterator(OutputIterator, object):
         
         _buffer = bytearray(len(IDs) * data_stride)
         with starsmashertools.helpers.file.open(filename, 'rb') as f:
-            # Grab the headers so we can record the times
-            try:
-                header = self.simulation.reader._read(
-                    buffer=f.read(header_stride + 4),
-                    shape=1,
-                    dtype=header_dtype,
-                    offset=4,
-                    strides=header_stride,
-                )
-            except Exception as e:
-                raise Exception("This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories.") from e
+            buffer = mmap.mmap(f.fileno(),0,access=mmap.ACCESS_READ)
+        # Grab the headers so we can record the times
+        try:
+            header = self.simulation.reader._read(
+                buffer=buffer,#f.read(header_stride + 4),
+                shape=1,
+                dtype=header_dtype,
+                offset=4,
+                strides=header_stride,
+            )
+        except Exception as e:
+            raise Exception("This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories.") from e
+
             
-            for i, (ID, position) in enumerate(zip(IDs, positions)):
-                f.seek(position)
-                pos = i * data_stride
-                _buffer[pos : pos + data_stride] = f.read(data_stride)
+            
+        for i, (ID, position) in enumerate(zip(IDs, positions)):
+            #buffer.seek(position)
+            pos = i * data_stride
+            #_buffer[pos : pos + data_stride] = buffer.read(data_stride)
+            _buffer[pos : pos + data_stride] = buffer[position : position + data_stride]
         try:
             d = self.simulation.reader._read(
                 buffer=_buffer,
