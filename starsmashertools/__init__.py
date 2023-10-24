@@ -144,6 +144,8 @@ def interpolate(
         if the input time is out of bounds of the interpolation.
     """
     import starsmashertools.math
+    import numpy as np
+    
     if len(outputs) < 2:
         raise ValueError("You must provide 2 or more outputs for interpolation")
 
