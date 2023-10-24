@@ -186,9 +186,10 @@ def plot_wall_time(default_savename, yaxis, absolute=False):
         ylabel += ' [%s]' % auto.label
     
     if len(cli.simulations) > 1:
+        xmax = -np.inf
         for i, x in enumerate(xs):
-            xs[i] = np.asarray(x) - xmin
-        xmax -= xmin
+            xs[i] = np.asarray(x) - np.amin(x) #xmin
+            xmax = max(xmax, np.amax(xs[i]))
         xunit = starsmashertools.lib.units.Unit(xmax, 's')
         auto = xunit.auto()
         xfactor = xunit.get_conversion_factor(auto.label)
@@ -245,8 +246,8 @@ def plot_wall_time(default_savename, yaxis, absolute=False):
     
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
-        #ax.set_xlim(xlim)
-        #ax.set_ylim(ylim)
+        ax.set_xlim(xlim)
+        ax.set_ylim(ylim)
 
     if cli.args['batch']:
         cli.write("Saving plot as '%s'." % default_savename, flush=True)
