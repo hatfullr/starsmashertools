@@ -11,16 +11,15 @@ class TestOutput(unittest.TestCase):
     
     def setUp(self):
         path = os.path.join(curdir, 'data')
-        self.simulation = starsmashertools.get_simulation("/home/hatfull/data/cedar/dynamical/d091c_b034c_R37N1_r004u_100k_1k_MESA_0.16M_close_start_alpha0.1_beta0.2_nearest_particle_cooling_fluffy_heating_no_planck")
-        #self.simulation = starsmashertools.get_simulation(path)
+        self.simulation = starsmashertools.get_simulation(path)
 
     def tearDown(self):
         del self.simulation
         
     def testSingle(self):
         output = self.simulation.get_output(0)
-        #for key, val in output.header.items():
-        #    self.assertAlmostEqual(val, TestOutput.expected_header[key])
+        for key, val in output.header.items():
+            self.assertAlmostEqual(val, TestOutput.expected_header[key])
 
     def testTraceParticle(self):
         outputs = self.simulation.get_output_iterator()
