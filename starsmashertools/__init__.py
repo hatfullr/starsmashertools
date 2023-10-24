@@ -117,9 +117,97 @@ def mask(
         # Unmask the data
         output.unmask()
 
+@starsmashertools.helpers.argumentenforcer.enforcetypes
+@api
+def interpolate(
+        outputs : list | tuple | starsmashertools.lib.output.OutputIterator,
+        values : list,
+):
+    """
+    Returns a function that performs a 1D linear interpolation between the
+    provided output files on the time axis for a specific value.
 
-        
+    Parameters
+    ----------
+    outputs : list, tuple, `~.lib.output.OutputIterator`
+        The outputs to interpolate.
 
+    values : list, tuple
+        The Output keys to interpolate.
+
+    Returns
+    -------
+    function
+        A callable function that accepts a time as input and returns a
+        dictionary whose keys are that of the `values` arguments and values are
+        particle quantities interpolated at the given time. Raises a ValueError
+        if the input time is out of bounds of the interpolation.
+    """
+    import starsmashertools.math
+    if len(outputs) < 2:
+        raise ValueError("You must provide 2 or more outputs for interpolation")
+
+    if isinstance(outputs, starsmashertools.lib.output.OutputIterator):
+        simulation = outputs.simulation
+        outputs.kwargs['return_headers'] = True
+        outputs.kwargs['return_data'] = True
+        outputs.kwargs['asynchronous'] = True
+    else:
+        simulation = outputs[0].simulation
+        filenames = []
+        for o in outputs:
+            if o.simulation != simulation:
+                raise ValueError("All Output objects must be a member of the same Simulation. Found '%s' is a member of simulation '%s', but expected simulation '%s'" % (str(o), o.simulation.directory, simulation.directory))
+            filenames += [o.path]
+        outputs = starsmashertools.lib.output.OutputIterator(
+            filenames,
+            simulation,
+            read_headers = True,
+            read_data = True,
+            asynchronous = True,
+        )
+            
+    # We should be able to comfortably store all the output headers
+    times = []
+    vals = []
+    for output in outputs:
+        times += [output.header['t']]
+        vals += [{v:output[v] for v in values}]
+    times = np.asarray(times)
+    tmin = np.amin(times)
+    tmax = np.amax(times)
+
+    
+    def interp(time, *which):
+        if isinstance(time, starsmashertools.lib.units.Unit):
+            # Convert the unit to simulation units
+            time = time.convert(simulation.units.time.label)
+
+        if time > tmax or time < tmin:
+            raise ValueError("Time %s is out of range. Must be between %f and %f" % (str(time), tmin, tmax))
+
+        left = np.argmin(np.abs(times - time))
+        if left + 1 >= len(times): left -= 1
+        right = left + 1
+
+        left = vals[left]
+        right = vals[right]
+
+        if which: keys = which
+        else: keys = values
+
+        x = [times[left], times[right]]
+
+        results = {}
+        for key in keys:
+            y = [vals[left][key], vals[right][key]]
+            results[key] = starsmashertools.math.linear_interpolate(
+                x,
+                y,
+                time,
+            )
+        return results
+    return interp
 
 
 

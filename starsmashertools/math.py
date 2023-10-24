@@ -37,8 +37,6 @@ def rocheradius(m1,m2,separation):
     return 0.49*qtwothirds / (0.6*qtwothirds + np.log(1. + qonethird)) * separation
 
 # Given data 'x' and 'y', linearly interpolate the position(s) 'x0'.
-# Extrapolates outside the 'x' and 'y' data if 'extrapolate' is True.
-# Otherwise, raises an error.
 @api
 def linear_interpolate(x, y, x0):
     x = np.asarray(x)
