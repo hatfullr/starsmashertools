@@ -97,6 +97,54 @@ def get_particles(
     return ret
     """
 
+@contextlib.contextmanager
+@starsmashertools.helpers.argumentenforcer.enforcetypes
+@api
+def trace_particles(
+        particles : int | list | tuple | np.ndarray,
+        outputs_or_simulation : list | tuple | starsmashertools.lib.output.OutputIterator | starsmashertools.lib.simulation.Simulation,
+        **kwargs
+):
+    import starsmashertools.lib.output
+    
+    if isinstance(outputs_or_simulation, (list, tuple)):
+        simulation = outputs_or_simulation[0].simulation
+        outputs = starsmashertools.lib.output.ParticleIterator(
+            particles,
+            [o.path for o in outputs_or_simulation],
+            simulation,
+            **kwargs
+        )
+    elif isinstance(outputs_or_simulation, starsmashertools.lib.output.OutputIterator):
+        outputs = starsmashertools.lib.output.ParticleIterator(
+            particles,
+            outputs_or_simulation.filenames,
+            outputs_or_simulation.simulation,
+            onFlush = outputs_or_simulation.onFlush,
+            max_buffer_size = outputs_or_simulation.max_buffer_size,
+            asynchronous = outputs_or_simulation.asynchronous,
+            **outputs_or_simulation.kwargs
+        )
+        simulation = outputs_or_simulation.simulation
+    else:
+        simulation = outputs_or_simulation
+        outputs = simulation.get_output_iterator(**kwargs)
+        outputs = starsmashertools.lib.output.ParticleIterator(
+            particles,
+            outputs.filenames,
+            outputs.simulation,
+            onFlush=outputs.onFlush,
+            max_buffer_size=outputs.max_buffer_size,
+            asynchronous = outputs.asynchronous,
+            **outputs.kwargs
+        )
+
+    try:
+        yield outputs
+    finally:
+        pass
+
+    
 
     
 @contextlib.contextmanager

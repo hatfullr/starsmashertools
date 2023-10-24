@@ -60,7 +60,7 @@ class Output(dict, object):
         self._clear_cache()
 
         self._mask = None
-        self.header = None
+        self._header = None
         self.data = None
     
     def __str__(self):
@@ -116,6 +116,13 @@ class Output(dict, object):
         self._cache = _copy.copy(preferences.get_default('Output', 'cache'))
         # If no cache is defined in preferences
         if self._cache is None: self._cache = {}
+
+    @property
+    def header(self):
+        if not self._isRead['header']:
+            self.read(return_headers=True, return_data=False)
+        return self._header
+        
     @api
     def keys(self, *args, **kwargs):
         if 'ensure_read' in kwargs.keys():
@@ -164,16 +171,16 @@ class Output(dict, object):
             **kwargs
         )
         
-        self.data, self.header = None, None
+        self.data, self._header = None, None
         if return_headers and return_data:
-            self.data, self.header = obj
+            self.data, self._header = obj
         elif not return_headers and return_data:
             self.data = obj
         elif return_headers and not return_data:
-            self.header = obj
+            self._header = obj
         
-        if self.header is not None:
-            for key, val in self.header.items():
+        if self._header is not None:
+            for key, val in self._header.items():
                 self[key] = val
         
         if self.data is not None:
@@ -394,6 +401,76 @@ class OutputIterator(object):
 
 
 
+class ParticleIterator(OutputIterator, object):
+    """
+    Similar to an OutputIterator, but instead of iterating through all the
+    particles in each Output file, we iterate through a single one instead. This
+    involves a different kind of Reader.
+    """
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def __init__(
+            self,
+            particle_IDs : int | list | tuple | np.ndarray, # 0th index
+            *args,
+            **kwargs
+    ):
+        if isinstance(particle_IDs, int): particle_IDs = [particle_IDs]
+        super(ParticleIterator, self).__init__(*args, **kwargs)
+        self.particle_IDs = particle_IDs
+
+    def get(self, filename):
+        # Calculate the file position for the quantity we want to read
+        header_stride = self.simulation.reader._stride['header']
+        header_dtype = self.simulation.reader._dtype['header']
+        
+        EOL_size = self.simulation.reader._EOL_size
+        data_stride = self.simulation.reader._stride['data'] + EOL_size
+        start = header_stride
+        dtype = self.simulation.reader._dtype['data']
+
+        sort_indices = np.argsort(self.particle_IDs)
+        IDs = np.asarray(self.particle_IDs)[sort_indices]
+        positions = [header_stride + EOL_size + data_stride * ID for ID in IDs]
+        
+        _buffer = bytearray(len(IDs) * data_stride)
+        with starsmashertools.helpers.file.open(filename, 'rb') as f:
+            # Grab the headers so we can record the times
+            try:
+                header = self.simulation.reader._read(
+                    buffer=f.read(header_stride + 4),
+                    shape=1,
+                    dtype=header_dtype,
+                    offset=4,
+                    strides=header_stride,
+                )
+            except Exception as e:
+                raise Exception("This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories.") from e
+            
+            for i, (ID, position) in enumerate(zip(IDs, positions)):
+                f.seek(position)
+                pos = i * data_stride
+                _buffer[pos : pos + data_stride] = f.read(data_stride)
+        
+        d = self.simulation.reader._read(
+            buffer=_buffer,
+            shape=len(self.particle_IDs),
+            dtype=dtype,
+            offset=4,
+            strides=data_stride,
+        )[np.argsort(sort_indices)]
+        data = {name:d[name].flatten() for name in d.dtype.names}
+        data['t'] = header['t'][0]
+        data = starsmashertools.helpers.readonlydict.ReadOnlyDict(data)
+        return data
+                
+                
+
+    
+
+
+
+
 class Reader(object):
     formats = {
         'integer' : 'i4',
@@ -418,60 +495,64 @@ class Reader(object):
 
         self._EOL_size = sum([Reader.EOL.count(str(num))*num for num in [1, 2, 4, 6, 8]])
 
+    def _read(self, *args, **kwargs):
+        ret = np.ndarray(*args, **kwargs)
+        if ret.dtype.names is not None:
+            for name in ret.dtype.names:
+                finite = np.isfinite(ret[name])
+                if not np.any(finite): continue
+                if np.any(np.abs(ret[name][finite]) > 1e100):
+                    raise Reader.UnexpectedFileFormatError
+        else:
+            finite = np.isfinite(ret)
+            if np.any(finite):
+                if np.abs(ret[finite]) < 1e-100 or np.abs(ret[finite]) > 1e100:
+                    raise Reader.UnexpectedFileFormatError
+        return ret
 
-    def read(self, filename, return_headers=True, return_data=True, verbose=False):
+    def read(
+            self,
+            filename,
+            return_headers=True,
+            return_data=True,
+            verbose=False,
+    ):
         if verbose: print(filename)
 
         if True not in [return_headers, return_data]:
             raise ValueError("One of 'return_headers' or 'return_data' must be True")
-
-        def do(*args, **kwargs):
-            exc = None
-            try:
-                ret = np.ndarray(*args, **kwargs)
-                if ret.dtype.names is not None:
-                    for name in ret.dtype.names:
-                        finite = np.isfinite(ret[name])
-                        if not np.any(finite): continue
-                        if np.any(np.abs(ret[name][finite]) > 1e100):
-                            raise Reader.UnexpectedFileFormatError
-                else:
-                    finite = np.isfinite(ret)
-                    if np.any(finite):
-                        if np.abs(ret[finite]) < 1e-100 or np.abs(ret[finite]) > 1e100:
-                            raise Reader.UnexpectedFileFormatError
-            except Exception as e:
-                f.close()
-                raise Exception("This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories.") from e
-                
-            return ret
-
-
+        
         with starsmashertools.helpers.file.open(filename, 'rb') as f:
             # This speeds up reading significantly.
             buffer = mmap.mmap(f.fileno(),0,access=mmap.ACCESS_READ)
-            
-            header = do(
-                buffer=buffer,
-                shape=1,
-                dtype=self._dtype['header'],
-                offset=4,
-                strides=self._stride['header'],
-            )
+            try:
+                header = self._read(
+                    buffer=buffer,
+                    shape=1,
+                    dtype=self._dtype['header'],
+                    offset=4,
+                    strides=self._stride['header'],
+                )
+            except Exception as e:
+                raise Exception("This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories.") from e
             
             ntot = header['ntot'][0]
             
             # Check for corrupted files
             
             filesize = starsmashertools.helpers.path.getsize(filename)
-            
-            ntot_check = do(
-                buffer=buffer,
-                shape=1,
-                dtype='<i4',
-                offset=filesize - 8,
-                strides=8,
-            )[0]
+
+            try:
+                ntot_check = self._read(
+                    buffer=buffer,
+                    shape=1,
+                    dtype='<i4',
+                    offset=filesize - 8,
+                    strides=8,
+                )[0]
+            except Exception as e:
+                raise Exception("This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories.") from e
+                
             if ntot != ntot_check:
                 raise Reader.CorruptedFileError(filename)
 
@@ -485,13 +566,16 @@ class Reader(object):
                 return header
 
             # There are 'ntot' particles to read
-            data = do(
-                buffer=buffer,
-                shape=ntot,
-                dtype=self._dtype['data'],
-                offset=self._stride['header'] + self._EOL_size + 4,
-                strides=self._stride['data'] + self._EOL_size,
-            )
+            try:
+                data = self._read(
+                    buffer=buffer,
+                    shape=ntot,
+                    dtype=self._dtype['data'],
+                    offset=self._stride['header'] + self._EOL_size + 4,
+                    strides=self._stride['data'] + self._EOL_size,
+                )
+            except Exception as e:
+                raise Exception("This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories.") from e
         
         # Now organize the data into Pythonic structures
         new_data = {}
