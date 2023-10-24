@@ -7,8 +7,7 @@ import curses
 # If 'error' is None, uses the last-raised error.
 def print_error(error=None, halt=False):
     import starsmashertools.bintools.cli
-    win = starsmashertools.bintools.cli.CLI.stdscr
-    height, width = win.getmaxyx()
+    width = starsmashertools.bintools.cli.CLI.get_width()
                 
     if error is not None:
         if halt: raise error
@@ -17,12 +16,12 @@ def print_error(error=None, halt=False):
                 raise error
             except Exception as e:
                 string = traceback.format_exc().split('\n')[-2]
-                string = "\n".join(textwrap.wrap(string, width=width-1))
+                string = textwrap.fill(string, width=width-1)
                 starsmashertools.bintools.cli.CLI.write(string, xy=(0, -(string.count('\n')+1)), end='', move=(0, None))
     else:
         if halt: raise
         string = traceback.format_exc().split('\n')[-2]
-        string = "\n".join(textwrap.wrap(string, width=width-1))
+        string = textwrap.fill(string, width=width-1)
         starsmashertools.bintools.cli.CLI.write(string, xy=(0, -(string.count('\n')+1)), end='', move=(0, None))
 
 
@@ -33,6 +32,20 @@ class ANSI:
     REDFG = '\033[91m'
     WHITEBG = '\033[107m'
     LIGHTGRAYBG = '\033[47m'
+
+    @staticmethod
+    def get_all():
+        """
+        Return a list of all ANSI characters.
+        """
+        arr = []
+        for attr in dir(ANSI):
+            if attr.startswith("_"): continue
+            a = getattr(ANSI, attr)
+            if callable(a): continue
+            arr += [a]
+        return arr
+        
 
 class Style(object):
     # 'True' values are for terminal output

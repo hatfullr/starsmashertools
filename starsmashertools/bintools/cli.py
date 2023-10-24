@@ -9,12 +9,15 @@ import starsmashertools.lib.simulation
 import starsmashertools.helpers.argumentenforcer
 import starsmashertools.helpers.path
 import starsmashertools.helpers.file
+import starsmashertools.helpers.string
 import collections
 import curses
 import copy
+import textwrap
 
 class CLI(object):
     instance = None
+    stdscr = None
     
     def __init__(
             self,
@@ -88,6 +91,18 @@ class CLI(object):
         return page
 
     @staticmethod
+    def get_width():
+        return CLI.get_height_and_width()[1]
+
+    @staticmethod
+    def get_height():
+        return CLI.get_height_and_width()[0]
+
+    @staticmethod
+    def get_height_and_width():
+        return CLI.stdscr.getmaxyx()
+
+    @staticmethod
     def write(*args, xy=None, move=None, move_relative=False, end='\n', flush=True):
         string = ' '.join(args) + end
 
@@ -96,13 +111,14 @@ class CLI(object):
 
         if xy is not None:
             newx, newy = xy
-            maxy, maxx = CLI.stdscr.getmaxyx()
+            maxy, maxx = CLI.get_height_and_width()
             while newy > maxy: newy -= maxy
             while newx > maxx: newx -= maxx
             while newy < 0: newy += maxy
             while newx < 0: newx += maxx
             CLI.stdscr.move(newy, newx)
 
+        string = CLI.prepare_string(string)
         ret = CLI.writestr(string)
         
         if move is None:
@@ -132,10 +148,42 @@ class CLI(object):
         return ret
 
     @staticmethod
+    def prepare_string(string):
+        """
+        Before calling writestr, the string should be prepared first by wrapping
+        text for printing in the terminal.
+        """
+
+        width = CLI.get_width()
+        codes = starsmashertools.bintools.ANSI.get_all()
+        head = 0
+        i = 0
+        while i < len(string):
+            # Skip ANSI codes
+            for code in codes:
+                if string[i:i + len(code)] == code:
+                    i += len(code)
+                    break
+            else: # No codes found
+                # On a newline, reset the head
+                if string[i] == "\n":
+                    head = 0
+                else: # Not a newline
+                    head += 1 # Advance the head
+                    if head >= width: # It's time to wrap
+                        string = string[:i] + "\n" + string[i:]
+                        head = 0 # Reset the head
+                i += 1 # Advance the counter
+        return string
+        
+        
+
+    @staticmethod
     def writestr(text, _codes=[]):
         """
         We parse out the styles for proper writing
         """
+        import time
         ANSI = starsmashertools.bintools.ANSI
         mapping = {
             ANSI.BOLD : [curses.A_BOLD],
@@ -145,11 +193,8 @@ class CLI(object):
             ANSI.LIGHTGRAYBG : [curses.color_pair(4)],
         }
 
-        codes = []
-        for attr in dir(ANSI):
-            if attr.startswith("_"): continue
-            codes += [getattr(ANSI, attr)]
-
+        codes = ANSI.get_all()
+        
         # print stuff that doesn't have any codes
         lowest_idx = len(text)
         lowest_code = None

@@ -4,6 +4,45 @@ import starsmashertools.helpers.file
 import starsmashertools.helpers.argumentenforcer
 
 @starsmashertools.helpers.argumentenforcer.enforcetypes
+def find_all_indices(
+        string : str,
+        substring : str,
+):
+    """
+    Return a list of indices for all occurrances of a substring.
+
+    Parameters
+    ----------
+    string : str
+        The string to search.
+
+    substring : str
+        The substring to search for.
+
+    Returns
+    -------
+    list
+        A list of integer indices.
+    """
+
+    if substring not in string: return []
+
+    def find(s, result=[], offset=0):
+        if substring not in s: return result
+        # Get the index of the first occurrance of substring
+        idx = s.index(substring)
+        # The result is relative to the indices of the original string, so we
+        # need to add the current offset.
+        result += [idx + offset]
+        offset += idx + len(substring)
+        # Search the remaining part of the string
+        find(s[idx + len(substring):], result = result, offset = offset)
+        return result
+    return find(string)
+        
+        
+
+@starsmashertools.helpers.argumentenforcer.enforcetypes
 def shorten(
         string : str,
         length : int,

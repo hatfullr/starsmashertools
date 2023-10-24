@@ -42,25 +42,36 @@ class InputManager(object):
         raise InputManager.InvalidInputError("Input must be of type " + type_string)
 
     def reset(self):
-        win = starsmashertools.bintools.cli.CLI.stdscr
-        win.refresh()
-        height, width = win.getmaxyx()
+        starsmashertools.bintools.cli.CLI.stdscr.refresh()
+        width = starsmashertools.bintools.cli.CLI.get_width()
         
         # This carefully returns the Python cursor to where it started before
         # the call to input(). The curses cursor remains unmoved.
-        wrapped = textwrap.wrap(self.input, width=width)
-        nlines = len(wrapped)
+        wrapped = textwrap.wrap(
+            self.input,
+            width=width,
+            drop_whitespace=False,
+            replace_whitespace=False,
+        )
+
+        if self.input: 
+            nlines = len(wrapped)
+        else: # Empty input means Enter button was pressed only. Enter button
+              # creates a new line
+            nlines = 1
+        
         print("\033[F"*nlines, end='')
         print(" "*(width * (nlines+1)), end='') # Clear the text
         print("\033[F"*nlines, end='')
         sys.stdout.flush()
 
+        starsmashertools.bintools.cli.CLI.stdscr.clrtobot()
+
     
     def get(self, _type, prompt=None, halt=False, **kwargs):
         if prompt is None: prompt = self.prompt
         
-        win = starsmashertools.bintools.cli.CLI.stdscr
-        win.refresh()
+        starsmashertools.bintools.cli.CLI.stdscr.refresh()
         
         while True:
             curses.reset_shell_mode()
@@ -81,7 +92,7 @@ class InputManager(object):
         
             try:
                 if len(self.input) == 0:
-                    raise InputManager.InvalidInputError()
+                    raise InputManager.InvalidInputError(repr(self.input))
                 return self.parse(self.input, _type)
             except InputManager.InvalidInputError as error:
                 self.reset()

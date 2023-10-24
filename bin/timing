@@ -424,7 +424,7 @@ mainmenu = cli.add_list(
     [int, str],
     items = list(valid_plots.keys()),
     bullet='%5d)',
-    header=newline + starsmashertools.bintools.Style.bold("Main Menu") + newline + newline + 'Choose an option' + newline,
+    header=starsmashertools.bintools.Style.bold("Main Menu") + newline + newline + 'Choose an option' + newline,
     simulation_controls=True,
 )
 
