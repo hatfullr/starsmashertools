@@ -225,11 +225,22 @@ class MinorChange(Change, object): pass
 
 class AnnotationType(object):
     def __init__(self, annotation):
+        if isinstance(annotation, str):
+            annotation = AnnotationType.get_type_from_string(annotation)
         if isinstance(annotation, types.UnionType):
             self.types = annotation.__args__
         elif isinstance(annotation, type):
             self.types = [annotation]
         else: raise TypeError(annotation)
+
+    @staticmethod
+    def get_type_from_string(string):
+        s = string.split(".")
+        module_path = ".".join(s[:-1])
+        for _path, mod in sys.modules.items():
+            if _path == module_path:
+                return getattr(mod, s[-1])
+        raise Exception("Failed to find module for '%s'" % string)
 
     def __str__(self):
         return " | ".join([t.__name__ for t in self.types])
