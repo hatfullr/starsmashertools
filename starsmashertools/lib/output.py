@@ -447,9 +447,7 @@ class ParticleIterator(OutputIterator, object):
             )
         except Exception as e:
             raise Exception("This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories.") from e
-
-            
-            
+        
         for i, (ID, position) in enumerate(zip(IDs, positions)):
             pos = i * data_stride
             _buffer[pos : pos + data_stride] = buffer[position : position + data_stride]
@@ -466,6 +464,7 @@ class ParticleIterator(OutputIterator, object):
         
         data = {name:d[name].flatten() for name in d.dtype.names}
         data['t'] = header['t'][0]
+        data['ID'] = self.particle_IDs
         data = starsmashertools.helpers.readonlydict.ReadOnlyDict(data)
         return data
                 
