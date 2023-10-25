@@ -353,7 +353,7 @@ def plot_timesteps(default_savename):
             
     ax[0].legend()
 
-    plt.subplots_adjust(hspace=0)
+    #plt.subplots_adjust(hspace=0)
     plt.tight_layout()
         
     if cli.args['batch']:
