@@ -14,10 +14,13 @@ import collections
 import curses
 import copy
 import textwrap
+import signal
 
 class CLI(object):
     instance = None
     stdscr = None
+    pad = None
+    position = [None, None]
     
     def __init__(
             self,
@@ -107,7 +110,7 @@ class CLI(object):
         string = ' '.join(args) + end
 
         # Current cursor position
-        y, x = CLI.stdscr.getyx()
+        y, x = CLI.pad.getyx()
 
         if xy is not None:
             newx, newy = xy
@@ -116,7 +119,7 @@ class CLI(object):
             while newx > maxx: newx -= maxx
             while newy < 0: newy += maxy
             while newx < 0: newx += maxx
-            CLI.stdscr.move(newy, newx)
+            CLI.move(newy, newx)
 
         string = CLI.prepare_string(string)
         ret = CLI.writestr(string)
@@ -134,8 +137,9 @@ class CLI(object):
                 if move_relative: y += move[1]
                 else: y = move[1]
         
-        CLI.stdscr.move(y, x)
-        if flush: CLI.stdscr.refresh()
+        height, width = CLI.get_height_and_width()
+        CLI.move(y, x)
+        if flush: CLI.refresh()
         
         filename = CLI.instance.args['output']
         if filename is not None:
@@ -207,24 +211,24 @@ class CLI(object):
 
         # If no codes
         if lowest_code is None:
-            CLI.stdscr.addstr(text)
+            CLI.pad.addstr(text)
             for code in _codes:
-                CLI.stdscr.attroff(code)
+                CLI.pad.attroff(code)
             return
 
         # Print the first stuff that has no codes
-        CLI.stdscr.addstr(text[:lowest_idx], *_codes)
+        CLI.pad.addstr(text[:lowest_idx], *_codes)
             
         # Turn on the code
         if lowest_code != ANSI.NORMAL:
             for code in mapping[lowest_code]:
                 if code not in _codes:
                     _codes += [code]
-                    CLI.stdscr.attron(code)
+                    CLI.pad.attron(code)
         else:
             # Turn off all codes
             for code in _codes:
-                CLI.stdscr.attroff(code)
+                CLI.pad.attroff(code)
             _codes = []
 
         # Chop the text
@@ -287,8 +291,8 @@ class CLI(object):
         self.pages[identifier].show()
 
     def clear(self):
-        CLI.stdscr.clear()
-        CLI.stdscr.refresh()
+        CLI.pad.clear()
+        CLI.refresh()
         
     def run(self):
         def main(stdscr):
@@ -300,11 +304,65 @@ class CLI(object):
             curses.init_pair(3, -1, curses.COLOR_WHITE)
             curses.init_pair(4, -1, curses.COLOR_YELLOW) # eh
             
-            #stdscr.border() # Useful for debugging
             stdscr.refresh()
+
             CLI.stdscr = stdscr
+            
+            height, width = stdscr.getmaxyx()
+            CLI.pad = curses.newpad(1000, 1000)
+            CLI.position = [0, 0]
+            CLI.refresh()
+            
             self.navigate(self.pages[0].identifier)
+
+        def on_resize(*args, **kwargs):
+            CLI.stdscr.redrawwin()
+            y, x = CLI.pad.getyx()
+            columns, lines = os.get_terminal_size()
+            height, width = CLI.get_height_and_width()
+            CLI.stdscr.resize(lines, columns)
+            
+            if lines != height and (y >= lines - 1 or CLI.position[1] < 0):
+                CLI.scroll((0, lines - height))
+            
+        signal.signal(signal.SIGWINCH, on_resize)
         curses.wrapper(main)
+
+    @staticmethod
+    def scroll(offset, refresh=True):
+        """
+        Scroll the content by the offset amount. Positive goes up, negative goes
+        down.
+        """
+        CLI.position[1] += offset[1]
+        CLI.position[0] += offset[0]
+        
+        if refresh: CLI.refresh()
+
+    @staticmethod
+    def move(y, x, *args, **kwargs):
+        height, width = CLI.get_height_and_width()
+        if y > height:
+            
+            #CLI.scroll(y - height)
+            #CLI.stdscr.resize(100, width)
+            #CLI.refresh()
+            CLI.scroll((0, y - height), refresh=False)
+            
+            #y -= height
+        CLI.pad.move(y, x, *args, **kwargs)
+        
+    @staticmethod
+    def refresh():
+        if CLI.pad is None:
+            raise Exception("Cannot refresh the screen because the screen has not yet been created")
+        CLI.stdscr.redrawwin()
+        height, width = CLI.get_height_and_width()
+        CLI.pad.refresh(
+            CLI.position[1],
+            CLI.position[0],
+            0, 0, height - 1, width - 1,
+        )
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     def add_simulation(

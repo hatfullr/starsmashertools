@@ -271,54 +271,89 @@ def plot_wall_time(default_savename, yaxis, absolute=False):
 
 
 def plot_timesteps(default_savename):
-    global simulation, cli
+    global cli
     import matplotlib.pyplot as plt
 
     # TODO: update the function below to loop over all simulations
-    raise NotImplementedError
+    #raise NotImplementedError
+
+    def get_plot_data(simulation):
+        max_iterations = 1000
+
+        total_iterations = 0
+        for logfile in simulation.get_logfiles():
+            total_iterations += logfile.get_number_of_iterations()
+
+        #print(total_iterations)
+
+        step = 1
+        if total_iterations > max_iterations:
+            step = int(total_iterations / max_iterations)
+        
+        times = []
+        dts = []
+        logfiles = simulation.get_logfiles()
+        nlogfiles = len(logfiles)
+        for i, logfile in enumerate(logfiles):
+            cli.write("(%d/%d) Reading %s" % (i+1, nlogfiles, logfile.path))
+            iterations = logfile.get_iterations(step=step)
+            for iteration in iterations:
+                times += [iteration['time']]
+                dts += [iteration['dts']]
+        times = np.asarray(times, dtype=float)
+        dts = np.asarray(dts, dtype=float) * float(simulation.units['t'])
+        return times, dts
+
+    fig, ax = plt.subplots(nrows=len(cli.simulations), sharex=True, sharey=True)
+
+    if not isinstance(ax, np.ndarray):
+        ax = np.asarray([ax], dtype=object)
     
-    max_iterations = 1000
-
-    total_iterations = 0
-    for logfile in simulation.get_logfiles():
-        total_iterations += logfile.get_number_of_iterations()
-
-    #print(total_iterations)
-        
-    step = 1
-    if total_iterations > max_iterations:
-        step = int(total_iterations / max_iterations)
-        
     times = []
     dts = []
-    for logfile in simulation.get_logfiles():
-        iterations = logfile.get_iterations(step=step)
-        for iteration in iterations:
-            times += [iteration['time']]
-            dts += [iteration['dts']]
-    times = np.asarray(times, dtype=float)
-    dts = np.asarray(dts, dtype=float)
+    max_time = 0.
+    max_dt = 0.
+    unit = None
+    dtunit = None
+    for a, simulation in zip(ax, cli.simulations):
+        time, dt = get_plot_data(simulation)
+        times += [time]
+        dts += [dt]
+        maxt = np.amax(time)
+        if maxt > max_time:
+            max_time = maxt
+            unit = simulation.units['t']
+        for t in dt:
+            if np.any(t < 1.e30):
+                _max = np.amax(t[t < 1.e30])
+                if _max > max_dt:
+                    max_dt = _max
+                    dtunit = simulation.units['t']
+    if unit is None or dtunit is None:
+        raise Exception("This should never happen")
 
-    unit = (np.amax(times) * simulation.units['t']).auto()
-    unit = simulation.units['t'].convert(unit.label)
-    times *= float(unit)
+    for a in ax:
+        a.set_ylabel("log10 (Time Steps / [s])")
 
-    dts = np.log10(dts * float(simulation.units['t']))
-    dts[dts >= 15] = np.nan
+    max_time_unit = max_time * unit
+    auto = max_time_unit.auto()
+    xfactor = unit.get_conversion_factor(auto.label)
+    ax[-1].set_xlabel("Simulation Time [%s]" % auto.label)
+    
+    for k, (a, simulation) in enumerate(zip(ax, cli.simulations)):
+        for dt in dts:
+            for i in range(dt.shape[1]):
+                a.plot(times[k] * xfactor, np.log10(dt[:,i]), label='dt'+str(i+1))
+            
+        title = starsmashertools.helpers.string.shorten(
+            os.path.basename(simulation.directory),
+            30,
+        )
+        a.set_title(title)
+            
+    ax[0].legend()
 
-    idx = np.argsort(times)
-    times = times[idx]
-    dts = dts[idx]
-
-    fig, ax = plt.subplots()
-
-    ax.set_xlabel("Simulation Time [%s]" % str(unit.label))
-    ax.set_ylabel("log10 (Time Steps / [s])")
-
-    for i in range(dts.shape[1]):
-        ax.plot(times, dts[:,i], label='dt'+str(i+1))
-    ax.legend()
-
+    plt.subplots_adjust(hspace=0)
     plt.tight_layout()
         
     if cli.args['batch']:
@@ -361,13 +396,13 @@ valid_plots['wall time plot (simulation time)'] = {
     'default savename' : 'walltime_simulation.png',
     'cli name' : 'wall_sim',
 }
-"""
+#"""
 valid_plots['timesteps'] = {
     'function' : plot_timesteps,
     'default savename' : 'timesteps.png',
     'cli name' : 'timesteps',
 }
-"""
+#"""
 
 
 cli = starsmashertools.bintools.cli.CLI(

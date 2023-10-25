@@ -42,7 +42,7 @@ class InputManager(object):
         raise InputManager.InvalidInputError("Input must be of type " + type_string)
 
     def reset(self):
-        starsmashertools.bintools.cli.CLI.stdscr.refresh()
+        starsmashertools.bintools.cli.CLI.refresh()
         width = starsmashertools.bintools.cli.CLI.get_width()
         
         # This carefully returns the Python cursor to where it started before
@@ -71,7 +71,7 @@ class InputManager(object):
     def get(self, _type, prompt=None, halt=False, **kwargs):
         if prompt is None: prompt = self.prompt
         
-        starsmashertools.bintools.cli.CLI.stdscr.refresh()
+        starsmashertools.bintools.cli.CLI.refresh()
         
         while True:
             curses.reset_shell_mode()
