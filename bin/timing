@@ -361,6 +361,7 @@ def plot_timesteps(default_savename):
         plt.savefig(default_savename)
         return ""
 
+    warnings.filterwarnings('error')
     try:
         cli.write("Displaying Matplotlib plot. Please close the plot to continue execution.", flush=True)
         plt.show()
