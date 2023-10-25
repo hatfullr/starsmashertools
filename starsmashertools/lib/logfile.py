@@ -227,8 +227,11 @@ class LogFile(object):
         length = self.get_iteration_content_length()
         self._buffer.seek(index)
         content = self._buffer.read(length)
-        
-        self._first_iteration = LogFile.Iteration(content, self)
+
+        try:
+            self._first_iteration = LogFile.Iteration(content, self)
+        except:
+            self._first_iteration = None
         return self._first_iteration
 
     @api
