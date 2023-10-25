@@ -337,7 +337,7 @@ def plot_timesteps(default_savename):
 
     max_time_unit = max_time * unit
     auto = max_time_unit.auto()
-    xfactor = unit.get_conversion_factor(auto.label)
+    xfactor = float(unit.convert(auto.label))
     ax[-1].set_xlabel("Simulation Time [%s]" % auto.label)
     
     for k, (a, simulation) in enumerate(zip(ax, cli.simulations)):
