@@ -246,10 +246,10 @@ class LogFile(object):
         content = self._buffer.read(length)
         try:
             self._last_iteration = LogFile.Iteration(content, self)
-        except LogFile.PhraseNotFoundError:
+        except:
             # Try going up higher in the log file
             index = self._buffer.rfind(string, len(self.header), index)
-            print("Trying higher up")
+            #print("Trying higher up")
             if index == -1: return None
             self._buffer.seek(index)
             content = self._buffer.read(length)
