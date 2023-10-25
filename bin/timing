@@ -302,6 +302,9 @@ def plot_timesteps(default_savename):
                 dts += [iteration['dts']]
         times = np.asarray(times, dtype=float)
         dts = np.asarray(dts, dtype=float) * float(simulation.units['t'])
+        idx = np.argsort(times)
+        times = times[idx]
+        dts = dts[idx]
         return times, dts
 
     fig, ax = plt.subplots(nrows=len(cli.simulations), sharex=True, sharey=True)
