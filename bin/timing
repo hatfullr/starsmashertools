@@ -295,11 +295,13 @@ def plot_timesteps(default_savename):
         logfiles = simulation.get_logfiles()
         nlogfiles = len(logfiles)
         for i, logfile in enumerate(logfiles):
-            #cli.write("(%d/%d) Reading %s" % (i+1, nlogfiles, logfile.path))
-            iterations = logfile.get_iterations(step=step)
-            for iteration in iterations:
-                times += [iteration['time']]
-                dts += [iteration['dts']]
+            try:
+                #cli.write("(%d/%d) Reading %s" % (i+1, nlogfiles, logfile.path))
+                iterations = logfile.get_iterations(step=step)
+                for iteration in iterations:
+                    times += [iteration['time']]
+                    dts += [iteration['dts']]
+            except: pass
         times = np.asarray(times, dtype=float)
         dts = np.asarray(dts, dtype=float) * float(simulation.units['t'])
         idx = np.argsort(times)
