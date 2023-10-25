@@ -437,6 +437,11 @@ class LogFile(object):
 
             obj = {}
             for key, (_type, _slice) in LogFile.Iteration.positions[path].items():
+                # This means a fortran format error
+                if contents[_slice] == '*'*len(contents[_slice]):
+                    obj[key] = None
+                    continue
+                    
                 try:
                     obj[key] = _type(contents[_slice])
                 except Exception as e:
