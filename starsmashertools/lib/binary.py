@@ -1,6 +1,5 @@
-import starsmashertools.lib.simulation as simulation
+import starsmashertools.lib.simulation
 import starsmashertools.helpers.path as path
-import starsmashertools.lib.relaxation as relaxation
 import starsmashertools.preferences as preferences
 from starsmashertools.helpers.apidecorator import api
 from starsmashertools.helpers.clidecorator import cli
@@ -11,7 +10,7 @@ import starsmashertools
 import numpy as np
 import warnings
 
-class Binary(simulation.Simulation, object):
+class Binary(starsmashertools.lib.simulation.Simulation, object):
     def __init__(self, *args, **kwargs):
         super(Binary, self).__init__(*args, **kwargs)
         self._n1 = None
@@ -92,6 +91,7 @@ class Binary(simulation.Simulation, object):
     def get_start2u(self): return path.join(self.directory, "sph.start2u")
 
     def _get_children(self):
+        import starsmashertools.lib.relaxation
         search_directory = kwargs.get('search_directory', preferences.get_default('Simulation', 'search directory'))
         search_directory = path.realpath(search_directory)
 
@@ -99,13 +99,13 @@ class Binary(simulation.Simulation, object):
             children = ['point mass']
         else:
             duplicate = path.find_duplicate_file(self.get_start1u(), search_directory, throw_error=True)
-            children = [relaxation.Relaxation(path.dirname(duplicate))]
+            children = [starsmashertools.lib.relaxation.Relaxation(path.dirname(duplicate))]
 
         if self.isSecondaryPointMass():
             children += ['point mass']
         else:
             duplicate = path.find_duplicate_file(self.get_start2u(), search_directory, throw_error=True)
-            children += [relaxation.Relaxation(path.dirname(duplicate))]
+            children += [starsmashertools.lib.relaxation.Relaxation(path.dirname(duplicate))]
 
         return children
 
