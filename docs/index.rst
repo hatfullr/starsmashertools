@@ -9,8 +9,17 @@ Contents
 --------
 
 .. toctree::
+   :maxdepth: 2
 
    Home <self>
    usage
-   api
    cliprograms
+
+*****************
+API documentation
+*****************
+
+.. toctree::
+   :maxdepth: 2
+
+   api/index
