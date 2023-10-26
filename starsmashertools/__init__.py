@@ -4,10 +4,12 @@ from starsmashertools.helpers.apidecorator import api
 import numpy as np
 import contextlib
 import os
-import importlib.metadata
+import importlib.metadata as metadata
+import importlib.util as util
 
-__version__ = importlib.metadata.version('starsmashertools')
+__version__ = metadata.version('starsmashertools')
 
+SOURCE_DIRECTORY = os.path.dirname(os.path.dirname(util.find_spec('starsmashertools').origin))
 
 # Return the type of simulation that a directory is
 @starsmashertools.helpers.argumentenforcer.enforcetypes
@@ -499,6 +501,7 @@ def _get_decorators():
 del api
 del np
 del contextlib
-del importlib.metadata
+del metadata
+del util
 del starsmashertools
 del os # The most terrifying syntax...
