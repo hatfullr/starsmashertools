@@ -4,20 +4,9 @@ from starsmashertools.helpers.apidecorator import api
 import numpy as np
 import contextlib
 import os
+import importlib.metadata
 
-SOURCE_DIRECTORY = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-
-if not os.path.isfile(os.path.join(SOURCE_DIRECTORY, 'setup.py')):
-    raise Exception("Failed to locate the source directory for file '%s'" % __file__)
-
-import sys
-sys.path.append(SOURCE_DIRECTORY)
-from setup import get_version
-del sys.path[-1]
-
-__version__ = get_version()
-
-
+__version__ = importlib.metadata.version('starsmashertools')
 
 
 # Return the type of simulation that a directory is
@@ -510,7 +499,6 @@ def _get_decorators():
 del api
 del np
 del contextlib
-del sys # The most terrifying syntax...
-del get_version
+del importlib.metadata
 del starsmashertools
 del os # The most terrifying syntax...

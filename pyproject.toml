@@ -4,7 +4,6 @@ requires = [
 ]
 build-backend = "setuptools.build_meta"
 
-
 [project]
 name = "starsmashertools"
 version = '5.31.0'
