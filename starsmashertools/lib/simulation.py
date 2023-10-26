@@ -6,6 +6,7 @@ import starsmashertools.lib.input
 import starsmashertools.lib.output
 import starsmashertools.lib.logfile
 import starsmashertools.lib.units
+import starsmashertools.lib.binary
 import starsmashertools.helpers.stacktrace
 import starsmashertools.helpers.midpoint
 import starsmashertools.helpers.string
@@ -96,7 +97,7 @@ class Simulation(object):
                         for line in f:
                             line = line.strip()
                             if not line: continue
-
+                            
                             if line.lower() == 'point mass':
                                 if children is None: children = []
                                 children += ['point mass']
@@ -113,6 +114,9 @@ class Simulation(object):
                             if simulation is not None:
                                 if children is None: children = []
                                 children += [simulation]
+        if isinstance(self, starsmashertools.lib.binary.Binary):
+            if len(children) != 2:
+                raise Exception("File '%s' indicates that the binary simulation has only one child. If one of the stars is a point mass, please add a line 'point mass' to the file.")
         return children
 
     # Load the children from the file saved in data/
@@ -285,7 +289,7 @@ class Simulation(object):
                 if self._children is None:
                     # If we didn't get the children from the hint files,
                     # search for the children using the overidden method
-                    print("I am here")
+                    
                     self._children = self._get_children()
                     
                     if self._children is None:
