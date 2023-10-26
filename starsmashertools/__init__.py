@@ -62,11 +62,15 @@ def dynamical(*args, **kwargs):
     return starsmashertools.lib.dynamical.Dynamical(*args, **kwargs)
 
 @api
-def output(filename : str):
+def output(
+        filename : str,
+        simulation : starsmashertools.lib.simulation.Simulation | type(None) = None,
+):
     import starsmashertools.lib.output
     import starsmashertools.helpers.path
-    directory = starsmashertools.helpers.path.dirname(filename)
-    simulation = get_simulation(directory)
+    if simulation is None:
+        directory = starsmashertools.helpers.path.dirname(filename)
+        simulation = get_simulation(directory)
     return starsmashertools.lib.output.Output(filename, simulation)
 
 @api
