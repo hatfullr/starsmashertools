@@ -1,5 +1,5 @@
 simulation
 ==========
 
-.. autoclass:: starsmashertools.lib.simulation
+.. autoclass:: starsmashertools.lib.simulation.Simulation
    :members:
