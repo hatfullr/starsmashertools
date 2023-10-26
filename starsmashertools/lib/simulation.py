@@ -285,7 +285,7 @@ class Simulation(object):
                 if self._children is None:
                     # If we didn't get the children from the hint files,
                     # search for the children using the overidden method
-                    
+                    print("I am here")
                     self._children = self._get_children()
                     
                     if self._children is None:
