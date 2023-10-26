@@ -28,9 +28,9 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
 
     @api
     @cli('starsmashertools')
-    def get_relaxations(self, *args, cli : bool = False, **kwargs):
+    def get_relaxations(self, cli : bool = False, **kwargs):
         print("This is being called")
-        return self.get_children(*args, **kwargs)[0].get_children(*args, cli=cli, **kwargs)
+        return self.get_children(**kwargs)[0].get_children(cli=cli, **kwargs)
 
     @api
     @cli('starsmashertools')
