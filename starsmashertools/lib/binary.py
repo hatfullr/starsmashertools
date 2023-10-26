@@ -90,9 +90,12 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
     @api
     def get_start2u(self): return path.join(self.directory, "sph.start2u")
 
-    def _get_children(self):
+    def _get_children(
+            self,
+            verbose : bool = False,
+    ):
         import starsmashertools.lib.relaxation
-        search_directory = kwargs.get('search_directory', preferences.get_default('Simulation', 'search directory'))
+        search_directory = preferences.get_default('Simulation', 'search directory'))
         search_directory = path.realpath(search_directory)
 
         if self.isPrimaryPointMass():
