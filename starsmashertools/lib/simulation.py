@@ -29,7 +29,7 @@ class Simulation(object):
             self,
             directory : str,
     ):
-        directory = path.realpath(directory)
+        directory = path.realpath(directory.strip())
         
         if not Simulation.valid_directory(directory):
             raise Simulation.InvalidDirectoryError(directory)
