@@ -114,10 +114,12 @@ class Simulation(object):
                             if simulation is not None:
                                 if children is None: children = []
                                 children += [simulation]
-        import starsmashertools.lib.binary
-        if isinstance(self, starsmashertools.lib.binary.Binary):
-            if len(children) != 2:
-                raise Exception("File '%s' indicates that the binary simulation has only one child. If one of the stars is a point mass, please add a line 'point mass' to the file.")
+        
+        if children is not None:
+            import starsmashertools.lib.binary
+            if isinstance(self, starsmashertools.lib.binary.Binary):
+                if len(children) != 2:
+                    raise Exception("File '%s' indicates that the binary simulation has only one child. If one of the stars is a point mass, please add a line 'point mass' to the file.")
         return children
 
     # Load the children from the file saved in data/
