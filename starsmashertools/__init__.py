@@ -17,7 +17,6 @@ __version__ = get_version()
 
 
 
-
 # Return the type of simulation that a directory is
 @starsmashertools.helpers.argumentenforcer.enforcetypes
 @api

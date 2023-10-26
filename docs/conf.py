@@ -14,10 +14,6 @@
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
 
-import starsmashertools
-from gendocs import Generator
-Generator().DocumentPackages(starsmashertools)
-
 
 # -- Project information -----------------------------------------------------
 
