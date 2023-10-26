@@ -17,7 +17,7 @@ from starsmashertools.helpers.clidecorator import cli
 from starsmashertools.lib.teos import TEOS
 import numpy as np
 import glob
-import tarfile
+import warnings
 
 class Simulation(object):
     ############################################################################
