@@ -163,13 +163,13 @@ class Simulation(object):
             if not isinstance(children_object, dict):
                 raise TypeError("The object saved in '%s' must be a dictionary. Try deleting or renaming the file and running your code again." % str(filename))
 
-        if 'version' in children_object.keys():
-            if children_object['version'].split('.')[0] < starsmashertools.__version__.split('.')[0]:
-                warnings.warn("The children data in '%s' is from version '%s' < '%s' so it will be deleted and made anew." % (filename, children_object['version'], starsmashertools.__version__))
+            if 'version' in children_object.keys():
+                if children_object['version'].split('.')[0] < starsmashertools.__version__.split('.')[0]:
+                    warnings.warn("The children data in '%s' is from version '%s' < '%s' so it will be deleted and made anew." % (filename, children_object['version'], starsmashertools.__version__))
+                    should_remake = True
+            else:
+                warnings.warn("The children data in '%s' is from a different version than the current version so it will be deleted and made anew." % filename)
                 should_remake = True
-        else:
-            warnings.warn("The children data in '%s' is from a different version than the current version so it will be deleted and made anew." % filename)
-            should_remake = True
 
             
         # Children can sometimes be 'None'
