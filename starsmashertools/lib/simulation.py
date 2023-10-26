@@ -333,10 +333,6 @@ class Simulation(object):
         Returns
         -------
         `list`
-
-        See Also
-        --------
-        ``glob``
         """
         if recursive: _path = path.join(self.directory, '**', filename_or_pattern)
         else: _path = path.join(self.directory, filename_or_pattern)
@@ -551,31 +547,31 @@ class Simulation(object):
         Parameters
         ----------
         filename : str, None, default = None
-            The name of the resulting compressed file. If `None` then the name
+            The name of the resulting compressed file. If ``None`` then the name
             of the file will be the name of the simulation directory with
-            `.tar.{method}` on the end, where `{method}` is replaced with the
-            compression method shorthand, e.g. `gz`, `bz2`, etc.
+            ``.zip`` on the end.
         
         include_patterns : list, None, default = None
-            File name patterns to include in the compression. If `None`, uses 
-            the `compress include` value in `~.preferences`.
+            File name patterns to include in the compression. If ``None``, uses 
+            the ``compress include`` value in
+            :mod:`preferences <starsmashertools.preferences>`.
 
         exclude_patterns : list, None, default = None
-            File name patterns to exclude in the compression. If `None`, uses
-            the `compress exclude` value from `~.preferences`.
+            File name patterns to exclude in the compression. If ``None``, uses
+            the ``compress exclude`` value from `~.preferences`.
 
         recursive : bool, default = True
-            If `True`, subdirectories are also searched for files matching the
-            given patterns. If `False`, only searches the main simulation
+            If ``True``, subdirectories are also searched for files matching the
+            given patterns. If ``False``, only searches the main simulation
             directory.
 
         delete : bool, default = True
-            If `True`, the files which are compressed are deleted.
+            If ``True``, the files which are compressed are deleted.
 
         delete_after : bool, default = True
-            If `True`, compressed files are deleted only after all files have
-            been compressed. If `False`, each file is deleted after it has been
-            compressed. If `delete` is `False` this option is ignored.
+            If ``True``, compressed files are deleted only after all files have
+            been compressed. If ``False``, each file is deleted after it has
+            been compressed. If ``delete = False`` this option is ignored.
 
         Other Parameters
         ----------------
