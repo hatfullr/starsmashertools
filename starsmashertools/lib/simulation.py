@@ -643,7 +643,7 @@ class Simulation(object):
 
         See Also
         --------
-        :ref:`compress`
+        :func:`compress`
         :func:`~.helpers.compresisontask.CompressionTask.decompress`
         """
 
