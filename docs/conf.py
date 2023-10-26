@@ -31,7 +31,6 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.napoleon',
     'sphinx.ext.intersphinx',
-    'sphinxext.github',
 ]
 
 # Copied from from https://github.com/pypr/pysph/blob/master/docs/source/conf.py
