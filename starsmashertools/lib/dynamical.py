@@ -4,6 +4,7 @@ import starsmashertools.helpers.path as path
 import starsmashertools.preferences as preferences
 from starsmashertools.helpers.apidecorator import api
 from starsmashertools.helpers.clidecorator import cli
+import starsmashertools.helpers.midpoint
 
 
 class Dynamical(starsmashertools.lib.simulation.Simulation, object):
@@ -29,3 +30,38 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
     @cli('starsmashertools')
     def get_relaxations(self, *args, cli : bool = False, **kwargs):
         return self.get_children(*args, **kwargs)[0].get_children(*args, cli=cli, **kwargs)
+
+    @api
+    @cli('starsmashertools')
+    def get_plunge_time(self, threshold : int | float = 0.005, cli : bool = False):
+        """
+        Obtain the plunge-in time for a dynamical simulation which originated
+        from a binary simulation. The plunge time here is defined as the time at
+        which the simulation exceeds a given threshold on total ejected mass.
+
+        Parameters
+        ----------
+        threshold : int, float, default = 0.005
+            The ejected mass threshold in simulation units (default solar
+            masses).
+
+        Returns
+        -------
+        `starsmashertools.lib.units.Unit`
+            The plunge time.
+        """
+        children = self.get_children()
+        if children and isinstance(children[0], starsmashertools.lib.binary.Binary):
+            m = starsmashertools.helpers.midpoint.Midpoint(self.get_output())
+            m.set_criteria(
+                lambda output: output['mejecta'] < threshold,
+                lambda output: output['mejecta'] == threshold,
+                lambda output: output['mejecta'] > threshold,
+            )
+            output = m.get()
+            ret = output['t'] * self.units['t']
+            if cli: return str(output) + "\n" + str(ret.auto())
+            return ret
+            
+        raise Exception("Cannot obtain the plunge time for a dynamical simulation that did not originate from a Binary simulation")
+            
