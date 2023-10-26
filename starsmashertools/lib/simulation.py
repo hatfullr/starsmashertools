@@ -124,6 +124,10 @@ class Simulation(object):
             raise FileNotFoundError(filename)
         
         children_object = jsonfile.load(filename)
+        version = children_object.pop('version')
+        if version.split('.')[0] < starsmashertools.__version__.split('.')[0]:
+            warnings.warn("The children data stored in '%s' is from a different version of starsmashertools. If you encounter an error, try deleting the children data")
+        
         for directory, _children in children_object.items():
             simulation = starsmashertools.get_simulation(directory)
             if simulation == self:
@@ -149,7 +153,7 @@ class Simulation(object):
             
             if not isinstance(children_object, dict):
                 raise TypeError("The object saved in '%s' must be a dictionary. Try deleting or renaming the file and running your code again." % str(filename))
-
+        
         # Children can sometimes be 'None'
         to_save = []
         for child in self._children:
@@ -157,6 +161,7 @@ class Simulation(object):
                 child = child.directory
             to_save += [child]
         children_object[self.directory] = to_save
+        children_object['version'] = starsmashertools.__version__
         jsonfile.save(filename, children_object)
 
 
