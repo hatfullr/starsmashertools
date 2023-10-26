@@ -48,14 +48,17 @@ def get_type(directory : str):
 
 @api
 def relaxation(*args, **kwargs):
+    import starsmashertools.lib.relaxation
     return starsmashertools.lib.relaxation.Relaxation(*args, **kwargs)
 
 @api
 def binary(*args, **kwargs):
+    import starsmashertools.lib.binary
     return starsmashertools.lib.binary.Binary(*args, **kwargs)
 
 @api
 def dynamical(*args, **kwargs):
+    import starsmashertools.lib.dynamical
     return starsmashertools.lib.dynamical.Dynamical(*args, **kwargs)
 
 @api
@@ -68,6 +71,7 @@ def output(filename : str):
 
 @api
 def iterator(*args, **kwargs):
+    import starsmashertools.lib.output
     return starsmashertools.lib.output.OutputIterator(*args, **kwargs)
 
 # Returns an Output object which contains only the particles specified
