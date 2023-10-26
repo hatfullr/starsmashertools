@@ -100,13 +100,17 @@ class Binary(simulation.Simulation, object):
         else:
             duplicate = path.find_duplicate_file(self.get_start1u(), search_directory, throw_error=True)
             children = [relaxation.Relaxation(path.dirname(duplicate))]
-        
+
+        print(children)
+            
         if self.isSecondaryPointMass():
             children += ['point mass']
         else:
             duplicate = path.find_duplicate_file(self.get_start2u(), search_directory, throw_error=True)
             children += [relaxation.Relaxation(path.dirname(duplicate))]
-        
+
+        print(children)
+            
         return children
 
     @api
