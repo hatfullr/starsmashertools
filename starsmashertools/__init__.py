@@ -7,6 +7,9 @@ import os
 
 SOURCE_DIRECTORY = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
+if not os.path.isfile(os.path.join(SOURCE_DIRECTORY, 'setup.py')):
+    raise Exception("Failed to locate the source directory '%s'" % SOURCE_DIRECTORY)
+
 import sys
 sys.path.append(SOURCE_DIRECTORY)
 from setup import get_version
