@@ -86,6 +86,7 @@ class Simulation(object):
         raise NotImplementedError
 
     def _get_children_from_hint_files(self):
+        import starsmashertools.helpers.file
         children = None
         hint_filenames = preferences.get_default('Simulation', 'children hint filenames', throw_error=False)
         if hint_filenames is not None:
