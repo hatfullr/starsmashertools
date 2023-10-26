@@ -124,14 +124,17 @@ class Simulation(object):
             raise FileNotFoundError(filename)
         
         children_object = jsonfile.load(filename)
+        version = None
         print_warning = False
         if 'version' in children_object.keys():
             version = children_object.pop('version')
             print_warning = version.split('.')[0] < starsmashertools.__version__.split('.')[0]
         else: print_warning = True
-        if print_warning:  
-            warnings.warn("The children data stored in '%s' is from a different version of starsmashertools. If you encounter an error, try deleting the children data" % filename)
-        
+        if print_warning:
+            if version:
+                warnings.warn("The children data stored in '%s' is from version '%s' < '%s'. If you encounter an error, try deleting the children data." % (filename, version, starsmashertools.__version__))
+            else:
+                warnings.warn("The children data stored in '%s' is from a different version. If you encounter an error, try deleting the children data." % filename)
         
         for directory, _children in children_object.items():
             simulation = starsmashertools.get_simulation(directory)
@@ -151,14 +154,24 @@ class Simulation(object):
             raise TypeError("Property Simulation._children must be a non-str iterable")
 
         filename = preferences.get_default('Simulation', 'children file', throw_error=True)
-
+        
+        should_remake = False
         children_object = {}
         if path.isfile(filename):
             children_object = jsonfile.load(filename)
             
             if not isinstance(children_object, dict):
                 raise TypeError("The object saved in '%s' must be a dictionary. Try deleting or renaming the file and running your code again." % str(filename))
-        
+
+        if 'version' in children_object.keys():
+            if children_object['version'].split('.')[0] < starsmashertools.__version__.split('.')[0]:
+                warnings.warn("The children data in '%s' is from version '%s' < '%s' so it will be deleted and made anew." % (filename, children_object['version'], starsmashertools.__version__))
+                should_remake = True
+        else:
+            warnings.warn("The children data in '%s' is from a different version than the current version so it will be deleted and made anew." % filename)
+            should_remake = True
+
+            
         # Children can sometimes be 'None'
         to_save = []
         for child in self._children:
@@ -167,7 +180,13 @@ class Simulation(object):
             to_save += [child]
         children_object[self.directory] = to_save
         children_object['version'] = starsmashertools.__version__
-        jsonfile.save(filename, children_object)
+        if should_remake:
+            if path.isfile(filename+".temp"): path.remove(filename+".temp")
+            jsonfile.save(filename+".temp", children_object)
+            path.remove(filename)
+            path.rename(filename+".temp", filename)
+        else:
+            jsonfile.save(filename, children_object)
 
 
 
