@@ -92,16 +92,14 @@ class Binary(simulation.Simulation, object):
     def get_start2u(self): return path.join(self.directory, "sph.start2u")
 
     def _get_children(self):
-        children = []
-
         search_directory = kwargs.get('search_directory', preferences.get_default('Simulation', 'search directory'))
         search_directory = path.realpath(search_directory)
 
         if self.isPrimaryPointMass():
-            children += ['point mass']
+            children = ['point mass']
         else:
             duplicate = path.find_duplicate_file(self.get_start1u(), search_directory, throw_error=True)
-            children += [relaxation.Relaxation(path.dirname(duplicate))]
+            children = [relaxation.Relaxation(path.dirname(duplicate))]
         
         if self.isSecondaryPointMass():
             children += ['point mass']
