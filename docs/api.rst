@@ -6,6 +6,3 @@ API
 
    starsmashertools
 
-.. automodule:: starsmashertools
-   :no-members:
-   :no-undoc-members:
