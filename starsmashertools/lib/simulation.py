@@ -558,7 +558,7 @@ class Simulation(object):
 
         exclude_patterns : list, None, default = None
             File name patterns to exclude in the compression. If ``None``, uses
-            the ``compress exclude`` value from `~.preferences`.
+            the ``compress exclude`` value from :mod:`~.preferences`.
 
         recursive : bool, default = True
             If ``True``, subdirectories are also searched for files matching the
@@ -581,10 +581,9 @@ class Simulation(object):
 
         See Also
         --------
-        `~.decompress`
-        `~.helpers.compressiontask.CompressionTask.compress`
-        `~.helpers.compressiontask.CompressionTask.get_methods`
-        `~.preferences`
+        :func:`~.decompress`
+        :func:`~.helpers.compressiontask.CompressionTask.compress`
+        :mod:`~.preferences`
         """
 
         # Obtain the file names to be compressed.
