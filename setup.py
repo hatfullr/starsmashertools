@@ -34,6 +34,6 @@ if __name__ == "__main__":
         install_requires = [
             'numpy',
             'scipy',
-            'setup',
+            'setuptools>=61.0',
         ],
     )
