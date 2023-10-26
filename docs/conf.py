@@ -12,8 +12,7 @@
 #
 import os
 import sys
-cwd = os.getcwd()
-path = os.path.abspath(os.path.dirname(os.path.dirname(cwd)))
+path = os.path.abspath('../..')
 sys.path.insert(0, path)
 
 # -- Automatic Doc Pages Generation ------------------------------------------
@@ -22,7 +21,7 @@ import starsmashertools
 from gendocs import Generator
 Generator().DocumentPackages(
     [starsmashertools],
-    os.path.join(path, 'README.rst'),
+    '../../README.rst',
     showprivate=True,
     notify=False,
 )
