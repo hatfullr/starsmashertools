@@ -370,38 +370,116 @@ class Simulation(object):
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
+    def get_output_at_time(
+            self,
+            time : int | float | starsmashertools.lib.units.Unit,
+    ):
+        """
+        Return the `starsmashertools.lib.output.Output` object of this
+        simulation whose time best matches the given time. Raises a ValueError
+        if the given time is out of bounds.
+
+        Parameters
+        ----------
+        time : int, float, `starsmashertools.lib.units.Unit`
+            The simulation time to locate. If an `int` or `float` are given then
+            this value represents time in the simulation units. If a 
+            `starsmashertools.lib.units.Unit` is given, it will be converted to
+            this simulation's time unit.
+
+        Returns
+        -------
+        `starsmashertools.lib.output.Output`
+            The Output object closest to the given time.
+        """
+        if isinstance(time, starsmashertools.lib.units.Unit):
+            time = float(time.convert(self.units['t']))
+
+        outputs = self.get_output()
+        if not outputs: raise ValueError("Cannot find output at time %f because there are no output files in simulation '%s'" % (time, str(self.directory)))
+            
+        if time < 0 or time > outputs[-1]['t']:
+            raise ValueError("Time %f is out of bounds [0, %f]" % (time, outputs[-1]['t']))
+        
+        m = starsmashertools.helpers.midpoint.Midpoint(outputs)
+        m.set_criteria(
+            lambda output: output['t'] < time,
+            lambda output: output['t'] == time,
+            lambda output: output['t'] > time,
+        )
+        return m.get()
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
     def get_output(
             self,
             start : int | type(None) = None,
             stop : int | type(None) = None,
             step : int | type(None) = None,
+            times : int | float | starsmashertools.lib.units.Unit | list | tuple | np.ndarray | type(None) = None,
+            indices : list | tuple | np.ndarray | type(None) = None,
     ):
         """
         Obtain a list of `starsmashertools.lib.output.Output` objects associated
-        with this Simulation, sliced by `[start:stop:step]`.
+        with this Simulation. Returns all outputs if no arguments are specified.
         
         Parameters
         ----------
         start : int, None, default = None
-            The starting index of the slice of the list of all output files.
+            The starting index of a slice of the list of all output files.
 
         stop : int, None, default = None
             The ending index in the slice of the list of all output files.
 
         step : int, None, default = None
             How many output files to skip in the slice.
+
+        time : int, float, `starsmashertools.lib.units.Unit`, list, tuple, np.ndarray, default = None
+            If given, returns the output files that are closest to the given
+            simulation time or collection of times. This can possibly include
+            duplicate items.
+
+        indices : list, tuple, np.ndarray, default = None
+            If given, returns the output files at each index from the result of
+            `~.get_outputfiles()`.
         
         Returns
         -------
-        list
-            A list of `starsmashertools.lib.output.Output` objects.
+        list, `starsmashertools.lib.output.Output`
+            A list of `starsmashertools.lib.output.Output` objects. If the list
+            contains only a single item, that item is returned instead.
         """
-        if start is not None and stop is None and step is None:
-            # User is intending to just get a single index
-            if start != -1:
-                stop = start + 1
-        s = slice(start, stop, step)
-        filenames = self.get_outputfiles()[s]
+        filenames = np.asarray(self.get_outputfiles(), dtype=object)
+        if times is not None:
+            starsmashertools.helpers.argumentenforcer.enforcevalues({
+                'start' : [None],
+                'stop' : [None],
+                'step' : [None],
+                'indices' : [None],
+            })
+            if hasattr(times, '__iter__'):
+                ret = [self.get_output_at_time(time) for time in times]
+                if len(ret) == 1: return ret[0]
+                return ret
+            else:
+                return self.get_output_at_time(times)
+        elif indices is not None:
+            starsmashertools.helpers.argumentenforcer.enforcevalues({
+                'start' : [None],
+                'stop' : [None],
+                'step' : [None],
+                'times' : [None],
+            })
+            indices = np.asarray(indices, dtype=int)
+            filenames = filenames[indices]
+        else:
+            if start is not None and stop is None and step is None:
+                # User is intending to just get a single index
+                if start != -1:
+                    stop = start + 1
+            s = slice(start, stop, step)
+            filenames = filenames.tolist()[s]
+        
         ret = [starsmashertools.lib.output.Output(filename, self) for filename in filenames]
         if len(ret) == 1: return ret[0]
         return ret
@@ -454,9 +532,9 @@ class Simulation(object):
                 r2 = np.sum((xyz - center)**2, axis=-1)
                 frac = np.sum(masked['am'][r2 >= radiusSqr]) / np.sum(masked['am'])
             return frac
-                
-        filenames = self.get_outputfiles()
-        outputs = [starsmashertools.lib.output.Output(filename, self) for filename in filenames]
+        outputs = self.get_output()
+        #filenames = self.get_outputfiles()
+        #outputs = [starsmashertools.lib.output.Output(filename, self) for filename in filenames]
         m = starsmashertools.helpers.midpoint.Midpoint(outputs)
         
         if search_window[0] > 0:
@@ -664,12 +742,31 @@ class Simulation(object):
             ret[output] = output.header
         return ret
 
-    
+    @api
+    @cli('starsmashertools', -1)
+    def get_ejected_mass(self, *args, cli : bool = False, **kwargs):
+        """
+        Return the total ejected mass for the given output file indices.
 
+        Parameters
+        ----------
 
+        Returns
+        -------
+        """
+        
+        outputs = self.get_output(*args, **kwargs)
+        if not isinstance(outputs, list): outputs = [outputs]
+        ret = np.zeros(len(outputs))
+        for i, output in enumerate(outputs):
+            if 'mejecta' in output.keys():
+                ret[i] = output['mejecta']
+            elif np.any(output['unbound']):
+                ret[i] = np.sum(output['am'][output['unbound']])
+        if len(ret) == 1: ret = ret[0]
 
-
-
+        if cli: return str(ret)
+        return ret
 
 
 
