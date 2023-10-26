@@ -95,7 +95,7 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
             verbose : bool = False,
     ):
         import starsmashertools.lib.relaxation
-        search_directory = preferences.get_default('Simulation', 'search directory'))
+        search_directory = preferences.get_default('Simulation', 'search directory')
         search_directory = path.realpath(search_directory)
 
         if self.isPrimaryPointMass():
