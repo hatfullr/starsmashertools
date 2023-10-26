@@ -31,4 +31,7 @@ if __name__ == "__main__":
             os.path.join('bin','editpdc'),
             os.path.join('bin','timing'),
         ],
+        install_requires = [
+            'numpy',
+        ],
     )
