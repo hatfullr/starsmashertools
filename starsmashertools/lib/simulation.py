@@ -216,7 +216,7 @@ class Simulation(object):
     
     @api
     @cli('starsmashertools')
-    def get_children(self, cli : bool = False):
+    def get_children(self, verbose : bool = False, cli : bool = False):
         """
         Return a list of `starsmashertools.lib.simulation.Simulation` objects
         that were used to create this simulation. For example, if this
@@ -229,12 +229,16 @@ class Simulation(object):
         overridden in subclasses of Simulation. This allows the results to be
         stored on the hard drive in starsmashertools/data/ for quick access.
         
+        Parameters
+        ----------
+        verbose : bool, default = False
+            If `True`, debug messages will be printed to the console.
+
         Returns
         -------
         list
             A list of the child simulations.
         """
-        verbose = kwargs.get('verbose', False)
         if self._children is None:
             # First see if the children are given to us in the data/ directory.
             # Load in the object for the first time if needed.
