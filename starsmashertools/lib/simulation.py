@@ -185,6 +185,7 @@ class Simulation(object):
             jsonfile.save(filename+".temp", children_object)
             path.remove(filename)
             path.rename(filename+".temp", filename)
+            path.remove(filename+".temp")
         else:
             jsonfile.save(filename, children_object)
 
