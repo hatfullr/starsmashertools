@@ -130,7 +130,7 @@ class Simulation(object):
             print_warning = version.split('.')[0] < starsmashertools.__version__.split('.')[0]
         else: print_warning = True
         if print_warning:  
-            warnings.warn("The children data stored in '%s' is from a different version of starsmashertools. If you encounter an error, try deleting the children data")
+            warnings.warn("The children data stored in '%s' is from a different version of starsmashertools. If you encounter an error, try deleting the children data" % filename)
         
         
         for directory, _children in children_object.items():
