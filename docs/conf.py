@@ -14,8 +14,8 @@
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
 
-import numpy
-import starsmashertools
+#import numpy
+#import starsmashertools
 
 #autodoc_mock_imports = ['numpy']
 
