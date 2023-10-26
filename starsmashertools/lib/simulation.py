@@ -183,9 +183,7 @@ class Simulation(object):
         if should_remake:
             if path.isfile(filename+".temp"): path.remove(filename+".temp")
             jsonfile.save(filename+".temp", children_object)
-            path.remove(filename)
-            path.rename(filename+".temp", filename)
-            path.remove(filename+".temp")
+            path.replace(filename+".temp", filename)
         else:
             jsonfile.save(filename, children_object)
 
