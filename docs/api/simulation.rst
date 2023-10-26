@@ -1,5 +1,5 @@
-StarSmasher Simulation
-======================
+simulation
+==========
 
-.. automodule:: starsmashertools.lib.simulation
+.. autoclass:: starsmashertools.lib.simulation
    :members:
