@@ -16,6 +16,8 @@ docutils==0.18.1
     # via
     #   sphinx
     #   sphinx-rtd-theme
+gendocs>=0.4.0
+    # Added manually
 idna==3.4
     # via requests
 imagesize==1.4.1
