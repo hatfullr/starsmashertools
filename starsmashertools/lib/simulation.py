@@ -124,9 +124,14 @@ class Simulation(object):
             raise FileNotFoundError(filename)
         
         children_object = jsonfile.load(filename)
-        version = children_object.pop('version')
-        if version.split('.')[0] < starsmashertools.__version__.split('.')[0]:
+        print_warning = False
+        if 'version' in children_object.keys():
+            version = children_object.pop('version')
+            print_warning = version.split('.')[0] < starsmashertools.__version__.split('.')[0]
+        else: print_warning = True
+        if print_warning:  
             warnings.warn("The children data stored in '%s' is from a different version of starsmashertools. If you encounter an error, try deleting the children data")
+        
         
         for directory, _children in children_object.items():
             simulation = starsmashertools.get_simulation(directory)
