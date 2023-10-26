@@ -91,7 +91,7 @@ class Binary(simulation.Simulation, object):
     @api
     def get_start2u(self): return path.join(self.directory, "sph.start2u")
 
-    def _get_children(self, *args, **kwargs):
+    def _get_children(self):
         children = []
 
         search_directory = kwargs.get('search_directory', preferences.get_default('Simulation', 'search directory'))

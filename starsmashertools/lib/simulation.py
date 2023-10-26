@@ -81,28 +81,8 @@ class Simulation(object):
             return True
         return False
 
-    @api
-    def get_compressed_properties(self):
-        """
-        Get a dictionary of properties on the files contained in the compressed
-        archive.
-
-        Returns
-        -------
-        dict
-            A dictionary whose keys are the names of the files in the compressed
-            archive that they would have if the archive were decompressed. Each
-            value is a dictionary holding various values corresponding to each
-            file in the archive.
-        """
-        if not self.compressed: return {}
-        filename = self._get_compression_filename()
-        return starsmashertools.helpers.compressiontask.CompressionTask.get_compressed_properties(filename)
-
-    
-
     # Override this in children. Must return a list of Simulation objects
-    def _get_children(self, *args, **kwargs):
+    def _get_children(self):
         raise NotImplementedError
 
     def _get_children_from_hint_files(self):
@@ -233,16 +213,27 @@ class Simulation(object):
                 if path.getsize(_path) > 0:
                     self._logfiles += [starsmashertools.lib.logfile.LogFile(_path, self)]
         return self._logfiles
-
     
-
-    # Return a list of Simulation objects used to create this simulation.
-    # For example, if this Simulation is a dynamical simulation (nrelax = 0),
-    # then it has one child, which is the binary scan that it originated from.
-    #@profile
     @api
     @cli('starsmashertools')
-    def get_children(self, *args, cli : bool = False, **kwargs):
+    def get_children(self, cli : bool = False):
+        """
+        Return a list of `starsmashertools.lib.simulation.Simulation` objects
+        that were used to create this simulation. For example, if this
+        simulation is a dynamical simulation (nrelax = 0), then it has one
+        child, which is the binary scan that it originated from. Similarly, a
+        binary scan has two children, which are each the stellar relaxations
+        that make up the two stars in the binary.
+
+        This function acts as a wrapper for `~._get_children`, which is
+        overridden in subclasses of Simulation. This allows the results to be
+        stored on the hard drive in starsmashertools/data/ for quick access.
+        
+        Returns
+        -------
+        list
+            A list of the child simulations.
+        """
         verbose = kwargs.get('verbose', False)
         if self._children is None:
             # First see if the children are given to us in the data/ directory.
@@ -263,7 +254,7 @@ class Simulation(object):
                     # If we didn't get the children from the hint files,
                     # search for the children using the overidden method
                     
-                    self._children = self._get_children(*args, **kwargs)
+                    self._children = self._get_children()
                     
                     if self._children is None:
                         raise Exception("Children found was 'None'. If you want to specify that a Simulation has no children, then its get_children() method should return empty list '[]', not 'None'.")
@@ -484,81 +475,23 @@ class Simulation(object):
         if len(ret) == 1: return ret[0]
         return ret
 
-
-    # Return the Output file which corresponds with the beginning of an envelope
-    # disruption event for a star consisting of the given IDs. An envelope is
-    # considered 'disrupted' when some fraction of the particles are outside
-    # some radius (measured from either the center of mass of the IDs or the
-    # position of a core particle if there is one in the IDs).
-    #
-    # frac: The fraction of particles outside 'radius' compared to particles
-    #       inside 'radius' for which the envelope is considered disrupted
-    @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
-    def get_envelope_disruption(
-            self,
-            IDs : list | tuple | np.ndarray,
-            radius : float,
-            frac : float,
-            omit_large : bool = True,
-            boundonly : bool = True,
-            # Give times in simulation units here
-            search_window : tuple = (0, None),
-    ):
-        inv_nparticles = 1. / len(IDs)
-        radiusSqr = radius * radius
-        def get_frac(output):
-            idx = np.full(len(output['ID']), False)
-            idx[IDs] = True
-            if boundonly:  idx[output['unbound']] = False
-            if omit_large: idx[2*output['hp'] > radius] = False
+    def get_compressed_properties(self):
+        """
+        Get a dictionary of properties on the files contained in the compressed
+        archive.
 
-            with starsmashertools.mask(output, idx) as masked:
-                xyz = np.column_stack((masked['x'],masked['y'],masked['z']))
-                cores = masked['u'] == 0
-                ncores = sum(cores)
-                if ncores == 1:
-                    xc = masked['x'][cores][0]
-                    yc = masked['y'][cores][0]
-                    zc = masked['z'][cores][0]
-                else:
-                    xc, yc, zc = starsmashertools.math.center_of_mass(
-                        masked['am'],
-                        masked['x'],
-                        masked['y'],
-                        masked['z'],
-                    )
-                center = np.array([xc, yc, zc])
-                r2 = np.sum((xyz - center)**2, axis=-1)
-                frac = np.sum(masked['am'][r2 >= radiusSqr]) / np.sum(masked['am'])
-            return frac
-        outputs = self.get_output()
-        #filenames = self.get_outputfiles()
-        #outputs = [starsmashertools.lib.output.Output(filename, self) for filename in filenames]
-        m = starsmashertools.helpers.midpoint.Midpoint(outputs)
-        
-        if search_window[0] > 0:
-            m.set_criteria(
-                lambda output: output['t'] < search_window[0],
-                lambda output: output['t'] == search_window[0],
-                lambda output: output['t'] > search_window[0],
-            )
-            m.objects = m.objects[m.objects.index(m.get()):]
-        if search_window[1] is not None:
-            m.set_criteria(
-                lambda output: output['t'] < search_window[1],
-                lambda output: output['t'] == search_window[1],
-                lambda output: output['t'] > search_window[1],
-            )
-            m.objects = m.objects[:m.objects.index(m.get())]
-        
-        m.set_criteria(
-            lambda output: get_frac(output) < frac,
-            lambda output: get_frac(output) == frac,
-            lambda output: get_frac(output) > frac,
-        )
-        return m.get()
-
+        Returns
+        -------
+        dict
+            A dictionary whose keys are the names of the files in the compressed
+            archive that they would have if the archive were decompressed. Each
+            value is a dictionary holding various values corresponding to each
+            file in the archive.
+        """
+        if not self.compressed: return {}
+        filename = self._get_compression_filename()
+        return starsmashertools.helpers.compressiontask.CompressionTask.get_compressed_properties(filename)
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
