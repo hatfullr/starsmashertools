@@ -10,12 +10,14 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-import os
-import sys
-sys.path.insert(0, os.path.abspath(os.path.join('..', 'starsmashertools')))
+#import os
+#import sys
+#sys.path.insert(0, os.path.abspath(os.path.join('..', 'starsmashertools')))
 
 #import numpy
-#import starsmashertools
+import starsmashertools
+from gendocs import Generator
+Generator().DocumentPackages(starsmashertools)
 
 #autodoc_mock_imports = ['numpy']
 
@@ -43,7 +45,7 @@ intersphinx_mapping = {
 }
 intersphinx_disabled_domains = ["std"]
 
-#templates_path = ["_templates"]
+templates_path = ["_templates"]
 
 # -- Options for EPUB output
 epub_show_urls = "footnote"
