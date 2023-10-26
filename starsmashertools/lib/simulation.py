@@ -627,12 +627,10 @@ class Simulation(object):
         ----------
         filename : str, None default = None
             The filename to decompress. If `None`, the simulation directory is
-            searched for a compressed file whose path ends with `.tar.{method}`
-            where `{method}` is one of the available compression methods from
-            `~helpers.compressiontask.CompressionTask.get_methods`.
-            The file chosen is one which has a `compression.sstools` file
-            included in it, which is an empty file that is created when using
-            `~helpers.compressiontask.CompressionTask.compress`.
+            searched for a compressed file whose path ends with '.zip'.
+            The file chosen is one which has a ``compression.sstools`` file
+            included in it, which created by
+            :func:`~helpers.compressiontask.CompressionTask.compress`.
 
         delete : bool, default = True
             If `True`, the compressed file is deleted after decompression.
@@ -645,9 +643,8 @@ class Simulation(object):
 
         See Also
         --------
-        `~.compress`
-        `~.helpers.compresisontask.CompressionTask.decompress`
-        `~.helpers.compressiontask.CompressionTask.get_methods`
+        :ref:`compress`
+        :func:`~.helpers.compresisontask.CompressionTask.decompress`
         """
 
         if not self.compressed:
