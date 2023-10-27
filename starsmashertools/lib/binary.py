@@ -23,14 +23,14 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
     def get_primary(self, output : starsmashertools.lib.output.Output):
         if output not in self:
             raise ValueError("Argument 'output' must be an output file from simulation '%s', not '%s'" % (self.directory, output.simulation.directory))
-        return starsmashertools.get_particles(self.get_primary_IDs(), output)
+        return starsmashertools.get_particles(output, self.get_primary_IDs())
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def get_secondary(self, output : starsmashertools.lib.output.Output):
         if output not in self:
             raise ValueError("Argument 'output' must be an output file from simulation '%s', not '%s'" % (self.directory, output.simulation.directory))
-        return starsmashertools.get_particles(self.get_secondary_IDs(), output)
+        return starsmashertools.get_particles(output, self.get_secondary_IDs())
 
     @api
     @cli('starsmashertools')
