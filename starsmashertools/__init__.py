@@ -81,12 +81,12 @@ def relaxation(*args, **kwargs):
     Other Parameters
     ----------------
     *args
-        Positional arguments are passed directly to
-        :func:`~.lib.relaxation.Relaxation.__init__`.
+        Positional arguments are passed directly to the constructor method of
+        :class:`~.lib.relaxation.Relaxation`.
 
     **kwargs
-        Keyword arguments are passed directly to
-        :func:`~.lib.relaxation.Relaxation.__init__`.
+        Keyword arguments are passed directly to the constructor method of 
+        :class:`~.lib.relaxation.Relaxation`.
 
     Returns
     -------
@@ -103,12 +103,12 @@ def binary(*args, **kwargs):
     Other Parameters
     ----------------
     *args
-        Positional arguments are passed directly to
-        :func:`~.lib.binary.Binary.__init__`.
+        Positional arguments are passed directly to the constructor method of
+        :class:`~.lib.binary.Binary`.
 
     **kwargs
-        Keyword arguments are passed directly to
-        :func:`~.lib.binary.Binary.__init__`.
+        Keyword arguments are passed directly to the constructor method of
+        :class:`~.lib.binary.Binary`.
 
     Returns
     -------
@@ -125,12 +125,12 @@ def dynamical(*args, **kwargs):
     Other Parameters
     ----------------
     *args
-        Positional arguments are passed directly to
-        :func:`~.lib.dynamical.Dynamical.__init__`.
+        Positional arguments are passed directly to the constructor method of
+        :class:`~.lib.dynamical.Dynamical`.
 
     **kwargs
-        Keyword arguments are passed directly to
-        :func:`~.lib.dynamical.Dynamical.__init__`.
+        Keyword arguments are passed directly to the constructor method of 
+        :class:`~.lib.dynamical.Dynamical`.
 
     Returns
     -------
@@ -202,12 +202,12 @@ def iterator(*args, **kwargs):
     Other Parameters
     ----------------
     *args
-        Positional arguments are passed directly to
-        :func:`~.lib.output.OutputIterator.__init__`
+        Positional arguments are passed directly to the constructor method of 
+        :class:`~.lib.output.OutputIterator`
 
     **kwargs
-        Keyword arguments are passed directly to
-        :func:`~.lib.output.OutputIterator.__init__`
+        Keyword arguments are passed directly to the constructor method of 
+        :class:`~.lib.output.OutputIterator`
 
     Returns
     -------
@@ -215,7 +215,7 @@ def iterator(*args, **kwargs):
 
     See Also
     --------
-    :func:`~.lib.output.OutputIterator.__init__`
+    Constructor method of :class:`~.lib.output.OutputIterator`
     """
     import starsmashertools.lib.output
     return starsmashertools.lib.output.OutputIterator(*args, **kwargs)
@@ -317,7 +317,7 @@ def mask(
 
     Parameters
     ----------
-    output : `~.lib.output.Output`
+    output : :class:`~.lib.output.Output`
         The StarSmasher output file to mask.
 
     mask : np.ndarray, list, tuple

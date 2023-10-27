@@ -1,9 +1,6 @@
 API Documentation
 =================
 
-.. automodule:: starsmashertools
-   :members:
-
 .. toctree::
    :maxdepth: 2
 	      
@@ -14,3 +11,5 @@ API Documentation
    compressiontask
    midpoint
    
+.. automodule:: starsmashertools
+   :members:
