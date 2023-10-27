@@ -1,7 +1,7 @@
 API Documentation
 =================
 
-.. automodule:: starsmashertools
+.. automodule:: starsmashertools.lib
    :imported-members:
    :members:
    :show-inheritance:
