@@ -689,14 +689,6 @@ gravconst = Unit(6.67390e-08, 'cm*cm*cm/g*s*s')
         
 
 class Units(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
-# This class is used to convert the raw StarSmasher outputs to cgs units. It
-# should never be used for converting StarSmasher outputs to any units other
-# than cgs units. You're welcome to manipulate the units in your own code after
-# using the values here, but you should never edit the values in this class.
-# 
-# Note that currently the setting of values 'gram', 'sec', 'cm', and 'kelvin' in
-# src/starsmasher.h is not supported. We expect all these values to equal 1.d0
-# for now.
     @api
     def __init__(self, simulation):
 
