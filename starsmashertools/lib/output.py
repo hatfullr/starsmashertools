@@ -196,8 +196,13 @@ class Output(dict, object):
                 self._cache[key] = self._cache[key](self)
         return self._cache[key]
 
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
-    def mask(self, mask):
+    def mask(self, mask : np.ndarray | list | tuple):
+        if not isinstance(mask, np.ndarray):
+            mask = np.asarray(mask)
+        if mask.dtype.type == np.bool_ and len(mask) != self['ntot']:
+            raise Exception("The given mask does not contain particle IDs but its length (%d) != the number of particles (%d) in the output file '%s'" % (len(mask), self['ntot'], str(self.path)))
         self._mask = mask
 
     @api

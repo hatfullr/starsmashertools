@@ -380,7 +380,7 @@ class Simulation(object):
         ----------------
         **kwargs
             Other keyword arguments are passed directly to 
-            `starsmashertools.lib.output.OutputIterator`
+            `starsmashertools.lib.output.OutputIterator`.
         
         Returns
         -------

@@ -11,10 +11,31 @@ __version__ = metadata.version('starsmashertools')
 
 SOURCE_DIRECTORY = os.path.dirname(os.path.dirname(util.find_spec('starsmashertools').origin))
 
-# Return the type of simulation that a directory is
 @starsmashertools.helpers.argumentenforcer.enforcetypes
 @api
 def get_simulation(directory : str):
+    """
+    Obtain a :class:`~.lib.simulation.Simulation` of the expected subclass type
+    for the given directory path.
+
+    Parameters
+    ----------
+    directory : str
+        A path to a StarSmasher simulation directory.
+
+    Returns
+    -------
+    :class:`~.lib.simulation.Simulation`
+
+    Examples
+    --------
+    This example obtains a :class:`~.lib.simulation.Simulation` object from a
+    directory located at "/home/me/mysimulation"::
+        
+        import starsmashertools
+        simulation = starsmashertools.get_simulation('/home/me/mysimulation')
+    
+    """
     import starsmashertools.lib.simulation
     
     simulation = starsmashertools.lib.simulation.Simulation(directory)
@@ -33,6 +54,19 @@ def get_simulation(directory : str):
 @starsmashertools.helpers.argumentenforcer.enforcetypes
 @api
 def get_type(directory : str):
+    """
+    Find the type of simulation located at the given directory.
+
+    Parameters
+    ----------
+    directory : str
+        A path to a StarSmasher simulation directory.
+
+    Returns
+    -------
+    :class:`~.lib.relaxation.Relaxation`, :class:`~.lib.binary.Binary`, or 
+    :class:`~.lib.dynamical.Dynamical`
+    """
     try:
         return type(get_simulation(directory))
     except NotImplementedError as e:
@@ -41,16 +75,67 @@ def get_type(directory : str):
 
 @api
 def relaxation(*args, **kwargs):
+    """
+    Get a :class:`~.lib.relaxation.Relaxation` type StarSmasher simulation.
+
+    Other Parameters
+    ----------------
+    *args
+        Positional arguments are passed directly to
+        :func:`~.lib.relaxation.Relaxation.__init__`.
+
+    **kwargs
+        Keyword arguments are passed directly to
+        :func:`~.lib.relaxation.Relaxation.__init__`.
+
+    Returns
+    -------
+    :class:`~.lib.relaxation.Relaxation`
+    """
     import starsmashertools.lib.relaxation
     return starsmashertools.lib.relaxation.Relaxation(*args, **kwargs)
 
 @api
 def binary(*args, **kwargs):
+    """
+    Get a :class:`~.lib.binary.Binary` type StarSmasher simulation.
+
+    Other Parameters
+    ----------------
+    *args
+        Positional arguments are passed directly to
+        :func:`~.lib.binary.Binary.__init__`.
+
+    **kwargs
+        Keyword arguments are passed directly to
+        :func:`~.lib.binary.Binary.__init__`.
+
+    Returns
+    -------
+    :class:`~.lib.binary.Binary`
+    """
     import starsmashertools.lib.binary
     return starsmashertools.lib.binary.Binary(*args, **kwargs)
 
 @api
 def dynamical(*args, **kwargs):
+    """
+    Get a :class:`~.lib.dynamical.Dynamical` type StarSmasher simulation.
+
+    Other Parameters
+    ----------------
+    *args
+        Positional arguments are passed directly to
+        :func:`~.lib.dynamical.Dynamical.__init__`.
+
+    **kwargs
+        Keyword arguments are passed directly to
+        :func:`~.lib.dynamical.Dynamical.__init__`.
+
+    Returns
+    -------
+    :class:`~.lib.dynamical.Dynamical`
+    """
     import starsmashertools.lib.dynamical
     return starsmashertools.lib.dynamical.Dynamical(*args, **kwargs)
 
@@ -59,6 +144,46 @@ def output(
         filename : str,
         simulation : starsmashertools.lib.simulation.Simulation | type(None) = None,
 ):
+    """
+    Retrieve an :class:`~.lib.output.Output` object identified by its file name,
+    given the :class:`~.lib.simulation.Simulation` it belongs to. This can be
+    useful for working outside the expectations set in :mod:`preferences`.
+
+    Parameters
+    ----------
+    filename : str
+        The specific file name to retrieve.
+
+    simulation : :class:`~.lib.simulation.Simulation`, None, default = None
+        The simulation that the file located at `filename` belongs to. If `None`
+        is specified, a guess will be made that the simulation directory is the
+        same as the `filename` directory.
+        
+    Returns
+    -------
+    :class:`~.lib.output.Output`
+        The output file object associated with `filename`.
+
+    Examples
+    --------
+    This example obtains an output file named 'mysim/custom.out'::
+
+        import starsmashertools
+        output = starsmashertools.output('mysim/custom.out')
+
+
+    This example assumes that 'mysim' is an invalid StarSmasher simulation
+    directory, and that the simulation directory is actually located at
+    '/home/me/sim'::
+
+        import starsmashertools
+        simulation = starsmashertools.get_simulation('/home/me/sim')
+        output = starsmashertools.output('mysim/custom.out', simulation)
+
+    See Also
+    --------
+    :class:`~.lib.output.Output`
+    """
     import starsmashertools.lib.output
     import starsmashertools.helpers.path
     if simulation is None:
@@ -68,35 +193,66 @@ def output(
 
 @api
 def iterator(*args, **kwargs):
+    """
+    Obtain a :class:`~.lib.output.OutputIterator` that can be used to iterate
+    through output files. Using an iterator in this way is usually faster than
+    looping through the files normally because an
+    :class:`~.lib.output.OutputIterator` asynchronously reads ahead.
+    
+    Other Parameters
+    ----------------
+    *args
+        Positional arguments are passed directly to
+        :func:`~.lib.output.OutputIterator.__init__`
+
+    **kwargs
+        Keyword arguments are passed directly to
+        :func:`~.lib.output.OutputIterator.__init__`
+
+    Returns
+    -------
+    :class:`~.lib.output.OutputIterator`
+
+    See Also
+    --------
+    :func:`~.lib.output.OutputIterator.__init__`
+    """
     import starsmashertools.lib.output
     return starsmashertools.lib.output.OutputIterator(*args, **kwargs)
 
-# Returns an Output object which contains only the particles specified
-# by the given mask. The mask can be either a numpy boolean array
 @starsmashertools.helpers.argumentenforcer.enforcetypes
 @api
 def get_particles(
-        _mask : np.ndarray | list | tuple,
-        output : starsmashertools.lib.output.Output | starsmashertools.lib.output.OutputIterator,
+        output : starsmashertools.lib.output.Output,
+        particles : np.ndarray | list | tuple,
 ):
-    import copy
-    if isinstance(output, starsmashertools.lib.output.Output):
-        with mask(output, _mask) as masked_output:
-            return copy.deepcopy(masked_output)
-    raise NotImplementedError
-
     """
-    if not hasattr(output, '__iter__'):
-        output = [output]
+    Mask the given output file such that it contains only the particles
+    specified by `particles`.
 
-    ret = []
-    for o in output:
-        with mask(o, _mask) as masked_output:
-            ret += [copy.deepcopy(masked_output)]
+    Parameters
+    ----------
+    output : :class:`~.lib.output.Output`
+        The simulation output files from which to extract the particle
+        information.
+
+    particles : np.ndarray, list, tuple
+        A collection of particle IDs as zeroth-indexed integers or as a numpy
+        boolean array.
     
-    if len(ret) == 1: return ret[0]
-    return ret
+    Returns
+    -------
+    :class:`~.lib.output.Output`
+        A copy of `output`, masked such that it includes only the specified
+        particles.
+
+    See Also
+    --------
+    :func:`mask`
     """
+    import copy
+    with mask(output, particles) as masked_output:
+        return copy.deepcopy(masked_output)
 
 @contextlib.contextmanager
 @starsmashertools.helpers.argumentenforcer.enforcetypes
@@ -155,6 +311,39 @@ def mask(
         output: starsmashertools.lib.output.Output,
         mask : np.ndarray | list | tuple,
 ):
+    """
+    Apply a mask to the given :class:`~.lib.output.Output` object that hides
+    selected particles.
+
+    Parameters
+    ----------
+    output : `~.lib.output.Output`
+        The StarSmasher output file to mask.
+
+    mask : np.ndarray, list, tuple
+        The mask to apply to `output`, which can be either a collection of 
+        zeroth-indexed integers representing the particle IDs, or a collection
+        of ``bool`` values the same length as the number of particles in
+        `output`.
+
+    Returns
+    -------
+    :class:`~.lib.output.Output`
+        The masked output file.
+
+    Examples
+    --------
+    This example prints the x positions of particles 0 and 4000 from the first 
+    output file in the current working directory::
+
+        import starsmashertools
+        simulation = starsmashertools.get_simulation('.')
+        output = starsmashertools.get_output(0)
+        with starsmashertools.mask(output, [0, 4000]) as masked:
+            print(masked['x'])
+
+    
+    """
     if output._mask is not None:
         raise Exception("Cannot mask output that is already masked: '%s'" % str(output.path))
 
@@ -178,7 +367,7 @@ def interpolate(
 
     Parameters
     ----------
-    outputs : list, tuple, `~.lib.output.OutputIterator`
+    outputs : list, tuple, :class:`~.lib.output.OutputIterator`
         The outputs to interpolate.
 
     values : list, tuple
@@ -189,8 +378,8 @@ def interpolate(
     function
         A callable function that accepts a time as input and returns a
         dictionary whose keys are that of the `values` arguments and values are
-        particle quantities interpolated at the given time. Raises a ValueError
-        if the input time is out of bounds of the interpolation.
+        particle quantities interpolated at the given time. Raises a
+        ``ValueError`` if the input time is out of bounds of the interpolation.
     """
     import starsmashertools.math
     import numpy as np
