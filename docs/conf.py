@@ -41,6 +41,8 @@ napoleon_numpy_docstring = True
 napoleon_include_private_with_doc = False
 napoleon_include_special_with_doc = True
 
+autodoc_typehints = 'none'
+
 # This probably isn't right
 intersphinx_mapping = {
     'cyarray': ('https://cyarray.readthedocs.io/en/latest', None),
