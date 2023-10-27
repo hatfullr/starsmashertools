@@ -2,9 +2,6 @@ API Documentation
 =================
 
 .. automodule:: starsmashertools
+   :imported-members:
    :members:
-
-.. toctree::
-   :maxdepth: 3
-	      
-   simulation
+   :show-inheritance:
