@@ -102,7 +102,7 @@ class CompressionTask(object):
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     def isCompressedFile(filename : str):
         """
-        Check if the given filename was compressed by `~.compress`.
+        Check if the given filename was compressed by :func:`compress`.
 
         Parameters
         ----------
@@ -111,8 +111,8 @@ class CompressionTask(object):
 
         Returns
         -------
-            `True` if the filename was compressed by `~.compress` and `False`
-            otherwise.
+            `True` if the filename was compressed by :func:`compress` and
+            `False` otherwise.
         """
         if not starsmashertools.helpers.path.isfile(filename):
             raise FileNotFoundError(filename)
@@ -216,7 +216,7 @@ class CompressionTask(object):
         preserving file creation times.
         
         A special file is added to the final compressed file for identification 
-        later when using `~.decompress`.
+        later when using :func:`decompress`.
         
         Parameters
         ----------
@@ -248,9 +248,9 @@ class CompressionTask(object):
 
         See Also
         --------
-        `~.compress_serial`
-        `~.compress_parallel`
-        `~.decompress`
+        :func:`compress_serial`
+        :func:`compress_parallel`
+        :func:`decompress`
         """
         
         if nprocs == 0:
@@ -314,8 +314,8 @@ class CompressionTask(object):
 
         See Also
         --------
-        `~.compress_parallel`
-        `~.decompress_serial`
+        :func:`compress_parallel`
+        :func:`decompress`
         """
         
         if starsmashertools.helpers.path.isfile(filename):
@@ -364,8 +364,8 @@ class CompressionTask(object):
     ):
         """
         Perform compression in parallel mode. The list of files is divvied up
-        among processes, who each do `~.compress_serial`. When all processes are
-        finished each zip file is added to the final main zip file.
+        among processes, who each do :func:`compress_serial`. When all processes
+        are finished each zip file is added to the final main zip file.
 
         Parameters
         ----------
@@ -378,11 +378,12 @@ class CompressionTask(object):
         Other Parameters
         ----------------
         kwargs : dict
-            Other keyword arguments are passed directly to `~.compress_serial`.
+            Other keyword arguments are passed directly to
+            :func:`compress_serial`.
 
         See Also
         --------
-        `~.compress_serial`
+        :func:`compress_serial`
         """
 
         if starsmashertools.helpers.path.isfile(filename):
@@ -431,7 +432,7 @@ class CompressionTask(object):
             verbose : typing.Callable | bool = False,
     ):
         """
-        Decompress a file created by `~.compress`.
+        Decompress a file created by :func:`compress`.
 
         Parameters
         ----------
@@ -451,7 +452,7 @@ class CompressionTask(object):
         
         See Also
         --------
-        `~.compress`
+        :func:`compress`
         """
         
         # Check to make sure this is one we compressed

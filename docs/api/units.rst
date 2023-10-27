@@ -9,4 +9,5 @@ Units
 .. autoclass:: starsmashertools.lib.units.Units
    :members:
    :undoc-members:
+   :show-inheritance:
 

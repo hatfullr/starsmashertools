@@ -3,5 +3,5 @@ Midpoint
 
 .. autoclass:: starsmashertools.helpers.midpoint.Midpoint
    :members:
-   :inheritance:
+   :show-inheritance:
    :undoc-members:
