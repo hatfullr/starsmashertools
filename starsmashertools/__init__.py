@@ -15,9 +15,8 @@ SOURCE_DIRECTORY = os.path.dirname(os.path.dirname(util.find_spec('starsmasherto
 @api
 def get_simulation(directory : str):
     """
-    Obtain a :class:`~.lib.simulation.Simulation` of the expected subclass type
-    for the given directory path.
-
+    Obtain a StarSmasher simulation from a directory.
+    
     Parameters
     ----------
     directory : str
@@ -25,7 +24,9 @@ def get_simulation(directory : str):
 
     Returns
     -------
-    :class:`~.lib.simulation.Simulation`
+    :class:`~.lib.relaxation.Relaxation`, :class:`~.lib.binary.Binary`, 
+    :class:`~.lib.dynamical.Dynamical`, or :class:`~.lib.simulation.Simulation`
+        The StarSmasher simulation at the given `directory`.
 
     Examples
     --------
@@ -36,20 +37,7 @@ def get_simulation(directory : str):
         simulation = starsmashertools.get_simulation('/home/me/mysimulation')
     
     """
-    import starsmashertools.lib.simulation
-    
-    simulation = starsmashertools.lib.simulation.Simulation(directory)
-    nrelax = simulation['nrelax']
-    if nrelax == 0:
-        import starsmashertools.lib.dynamical
-        return starsmashertools.lib.dynamical.Dynamical(directory)
-    if nrelax == 1:
-        import starsmashertools.lib.relaxation
-        return starsmashertools.lib.relaxation.Relaxation(directory)
-    if nrelax == 2:
-        import starsmashertools.lib.binary
-        return starsmashertools.lib.binary.Binary(directory)
-    raise NotImplementedError("nrelax = %d" % nrelax)
+    return get_type(directory)(directory)
 
 @starsmashertools.helpers.argumentenforcer.enforcetypes
 @api
@@ -64,14 +52,25 @@ def get_type(directory : str):
 
     Returns
     -------
-    :class:`~.lib.relaxation.Relaxation`, :class:`~.lib.binary.Binary`, or 
-    :class:`~.lib.dynamical.Dynamical`
+    :class:`~.lib.relaxation.Relaxation`, :class:`~.lib.binary.Binary`, 
+    :class:`~.lib.dynamical.Dynamical`, or :class:`~.lib.simulation.Simulation`
     """
-    try:
-        return type(get_simulation(directory))
-    except NotImplementedError as e:
-        if "nrelax =" in str(e):
-            return None
+    import starsmashertools.lib.simulation
+    
+    simulation = starsmashertools.lib.simulation.Simulation(directory)
+    
+    nrelax = simulation['nrelax']
+    if nrelax == 0:
+        import starsmashertools.lib.dynamical
+        return starsmashertools.lib.dynamical.Dynamical
+    if nrelax == 1:
+        import starsmashertools.lib.relaxation
+        return starsmashertools.lib.relaxation.Relaxation
+    if nrelax == 2:
+        import starsmashertools.lib.binary
+        return starsmashertools.lib.binary.Binary
+    # If it's some other type
+    return starsmashertools.lib.simulation.Simulation
 
 @api
 def relaxation(*args, **kwargs):
