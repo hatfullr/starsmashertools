@@ -47,11 +47,17 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
 
         Returns
         -------
-        `starsmashertools.lib.units.Unit`
-            The plunge time.
+        :class:`~.lib.units.Unit` or `None`
+            The plunge time. Returns `None` if there is not yet any plunge-in
+            event in this simulation.
         """
         children = self.get_children()
         if children and isinstance(children[0], starsmashertools.lib.binary.Binary):
+            # Check for presence of plunge-in
+            if self.get_output(-1)['mejecta'] < threshold:
+                if cli: return 'No plunge-in detected yet'
+                return None
+            
             m = starsmashertools.helpers.midpoint.Midpoint(self.get_output())
             m.set_criteria(
                 lambda output: output['mejecta'] < threshold,
