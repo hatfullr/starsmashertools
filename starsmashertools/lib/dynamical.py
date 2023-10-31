@@ -119,7 +119,7 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
         for output in outputs:
             if filter_unbound: output.mask(output['unbound'])
             x = output['x']
-            if len(x) == 0: result += np.zeros(3)
+            if len(x) == 0: result += [np.zeros(3)]
             y = output['y']
             z = output['z']
 
