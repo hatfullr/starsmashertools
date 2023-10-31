@@ -78,7 +78,8 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
     def get_orbital_energy(
             self,
             *args,
-            *,
+            /,
+            indices : list | tuple | np.ndarray | type(None) = None,
             origin : tuple | list | np.ndarray = (0, 0, 0),
             filter_unbound : bool = True,
             **kwargs
@@ -104,6 +105,13 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
         **kwargs
             Other keyword arguments are passed directly to
             :func:`~.lib.simulation.Simulation.get_output`
+
+        Returns
+        -------
+        np.ndarray, list
+            If there are multiple output files, returns a list. Otherwise
+            returns a ``np.ndarray`` of shape (3,). Each element is the x, y,
+            and z components of the orbital energy respectively.
         """
         
         outputs = self.get_output(*args, **kwargs)
