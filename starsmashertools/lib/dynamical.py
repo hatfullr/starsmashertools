@@ -70,4 +70,71 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
             return ret
             
         raise Exception("Cannot obtain the plunge time for a dynamical simulation that did not originate from a Binary simulation")
+
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def get_orbital_energy(
+            self,
+            *args,
+            origin : tuple | list | np.ndarray = (0, 0, 0),
+            filter_unbound = True,
+            **kwargs
+    ):
+        """
+        Obtain the sum of the orbital energy of each particle about the rotation
+        axis. Particles that are unbound 
+
+        Parameters
+        ----------
+        origin : tuple, list, np.ndarray, default = (0, 0, 0)
+            The origin relative to the center of mass.
+
+        filter_unbound : bool, default = True
+            If `True` then only bound particles are used.
+        
+        Other Parameters
+        ----------------
+        *args
+            Positional arguments are passed directly to
+            :func:`~.lib.simulation.Simulation.get_output`
+        
+        **kwargs
+            Other keyword arguments are passed directly to
+            :func:`~.lib.simulation.Simulation.get_output`
+        """
+
+        
+        outputs = self.get_output(*args, **kwargs)
+        if not isinstance(outputs, list): outputs = [outputs]
+
+        result = []
+        for output in outputs:
+            if filter_unbound: output.mask(output['unbound'])
+            x = output['x']
+            if len(x) == 0: result += np.zeros(3)
+            y = output['y']
+            z = output['z']
+
+            x -= origin[0]
+            y -= origin[1]
+            z -= origin[2]
             
+            m = output['am']
+            vx = output['vx']
+            vy = output['vy']
+            vz = output['vz']
+            ax = output['vxdot']
+            ay = output['vydot']
+            az = output['vzdot']
+
+            vx2 = vx * vx
+            vy2 = vy * vy
+            vz2 = vz * vz
+            
+            dLxdt = np.sum(m * (vy2 - vz2 + y*az - z*ay))
+            dLydt = np.sum(m * (vz2 - vx2 + z*ax - x*az))
+            dLzdt = np.sum(m * (vx2 - vy2 + x*ay - y*ax))
+            result += [np.array([dLxdt, dLydt, dLzdt])]
+        if len(result) == 1: return result[0]
+        return result
