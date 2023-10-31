@@ -73,7 +73,7 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
         raise Exception("Cannot obtain the plunge time for a dynamical simulation that did not originate from a Binary simulation")
 
 
-    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    #@starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def get_orbital_energy(
             self,
