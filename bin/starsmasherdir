@@ -105,38 +105,54 @@ remaining (estimated):
         remaining_other=get_size_string(remaining_other),
     )
 
-def compress(from_argument=False, **kwargs):
-    if not from_argument: kwargs['verbose'] = kwargs.get('verbose', cli.write)
-    previous = get_size_string(simulation.get_size())
-    try:
-        simulation.compress(**kwargs)
-    except:
-        if from_argument: raise
-        else:
-            cli.write("")
-            starsmashertools.bintools.print_error(halt=False)
-            return ""
-    
+def compress(simulation, from_argument=False, **kwargs):
     if not from_argument:
-        new = get_size_string(simulation.get_size())
-        return "Directory size: %s -> %s" % (previous, new)
+        kwargs['verbose'] = kwargs.get('verbose', cli.write)
+        if not isinstance(simulation, starsmashertools.lib.simulation.Simulation):
+            raise TypeError("When compress is called from interactive mode, the given simulation must be of type 'starsmashertools.lib.simulation.Simulation', not '%s'" % type(simulation).__name__)
+        simulation = [simulation]
+
+    ret = []
+    for s in simulation:    
+        previous = get_size_string(s.get_size())
+        try:
+            s.compress(**kwargs)
+        except:
+            if from_argument: raise
+            else:
+                cli.write("")
+                starsmashertools.bintools.print_error(halt=False)
+                return ""
+
+        if not from_argument:
+            new = get_size_string(s.get_size())
+            ret += ["%s\nDirectory size: %s -> %s" % (s.directory, previous, new)]
+    return newline.join(ret)
 
 
-def decompress(from_argument=False, **kwargs):
-    if not from_argument: kwargs['verbose'] = kwargs.get('verbose', cli.write)
-    previous = get_size_string(simulation.get_size())
-    try:
-        simulation.decompress(**kwargs)
-    except:
-        if from_argument: raise
-        else:
-            cli.write("")
-            starsmashertools.bintools.print_error(halt=False)
-            return ""
-    
+def decompress(simulation, from_argument=False, **kwargs):
     if not from_argument:
-        new = get_size_string(simulation.get_size())
-        return "Directory size: %s -> %s" % (previous, new)
+        kwargs['verbose'] = kwargs.get('verbose', cli.write)
+        if not isinstance(simulation, starsmashertools.lib.simulation.Simulation):
+            raise TypeError("When decompress is called from interactive mode, the given simulation must be of type 'starsmashertools.lib.simulation.Simulation', not '%s'" % type(simulation).__name__)
+        simulation = [simulation]
+
+    ret = []
+    for s in simulation:
+        previous = get_size_string(s.get_size())
+        try:
+            s.decompress(**kwargs)
+        except:
+            if from_argument: raise
+            else:
+                cli.write("")
+                starsmashertools.bintools.print_error(halt=False)
+                return ""
+
+        if not from_argument:
+            new = get_size_string(s.get_size())
+            ret += ["%s\nDirectory size: %s -> %s" % (s.directory, previous, new)]
+    return newline.join(ret)
 
 def get_redundant():
     ret = []
@@ -173,7 +189,7 @@ cli = starsmashertools.bintools.cli.CLI(
 
 cli.parser.add_argument(
     'directory',
-    nargs='?',
+    nargs='*',
     type=str,
     default=os.getcwd(),
     metavar='directory',
@@ -186,7 +202,7 @@ cli.parser.add_argument(
     action='store_true',
     default=False,
     required=False,
-    help='Compress the contents of the directory into a single file with this name. The files that are compressed are deleted. All contents will be stored in a file located in the simulation directory. Raises an exception if the directory is already compressed.',
+    help='Compress the contents of the directories into a single file each. The files that are compressed are deleted after compression has completed. Cannot be specified when -d/--decompress are specified. Raises an exception if the directory is already compressed.',
 )
 
 
@@ -196,22 +212,37 @@ cli.parser.add_argument(
     action='store_true',
     default=False,
     required=False,
-    help='Compress the contents of the directory into a single file with this name. The files that are compressed are deleted. All contents will be stored in a file located in the simulation directory. Raises an exception if the directory is not compressed.',
+    help='Decompress directories into a single file with this name and delete the compressed file afterwards. Cannot be specified when -c/--compress are specified. Raises an exception if the directory is not currently compressed.',
 )
 
 
-simulation = starsmashertools.get_simulation(cli.args['directory'])
+
+if cli.args['compress'] and cli.args['decompress']:
+    help_message = cli.parser.format_help()
+    raise Exception("Cannot specify both compress and decompress options at the same time.\n\n%s" % help_message)
+
+#if len(cli.args['directory']) > 1:
+simulations = [starsmashertools.get_simulation(directory) for directory in cli.args['directory']]
+
+if len(simulations) == 1: simulation = simulations[0]
+#else:
+#    simulation = starsmashertools.get_simulation(cli.args['directory'][0])
 
 
 if cli.args['compress']:
     compress(
+        simulations,
         from_argument=True,
         delete=True,
         delete_after=True,
     )
     quit()
 if cli.args['decompress']:
-    decompress(from_argument=True)
+    decompress(
+        simulations,
+        from_argument=True,
+        delete=True,
+    )
     quit()
 
 
@@ -274,7 +305,7 @@ compresspage = cli.add_list(
 
 keeppage = cli.add_page(
     [],
-    lambda delete=False, delete_after=False: compress(delete=delete, delete_after=delete_after),
+    lambda simulation=simulation: compress(simulation, delete=False, delete_after=False),
     _quit = False,
     header=newline,
 )
@@ -282,7 +313,7 @@ compresspage.connect(keeppage, [0, 'Keep'])
 
 deletepage = cli.add_page(
     [],
-    lambda delete=True, delete_after=False: compress(delete=delete, delete_after=delete_after),
+    lambda simulation=simulation: compress(simulation, delete=True, delete_after=False),
     _quit = False,
     header=newline,
 )
@@ -290,7 +321,7 @@ compresspage.connect(deletepage, [1, 'Delete'])
 
 deleteafterpage = cli.add_page(
     [],
-    lambda delete=True, delete_after=True: compress(delete=delete, delete_after=delete_after),
+    lambda simulation=simulation: compress(simulation, delete=True, delete_after=True),
     _quit = False,
     header=newline,
 )
@@ -299,7 +330,7 @@ compresspage.connect(deleteafterpage, [2, 'Delete after'])
 
 decompresspage = cli.add_page(
     [],
-    decompress,
+    lambda simulation=simulation: decompress(simulation),
     _quit=False,
     header=newline,
 )
