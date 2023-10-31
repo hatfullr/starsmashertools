@@ -319,7 +319,7 @@ class CompressionTask(object):
         """
         
         if starsmashertools.helpers.path.isfile(filename):
-            raise FileExistsError(filename)
+            raise FileExistsError("Cannot compress simulation because it is already compressed at '%s'" % filename)
 
         if isinstance(verbose, bool) and verbose:
             verbose = lambda message: print(message)
@@ -387,7 +387,7 @@ class CompressionTask(object):
         """
 
         if starsmashertools.helpers.path.isfile(filename):
-            raise FileExistsError(filename)
+            raise FileExistsError("Cannot compress simulation because it is already compressed at '%s'" % filename)
 
         CompressionTask._create_pool()
         
@@ -454,6 +454,9 @@ class CompressionTask(object):
         --------
         :func:`compress`
         """
+
+        if not starsmashertools.helpers.path.isfile(filename):
+            raise FileNotFoundError("Cannot decompress simulation because the corresponding compression file was not found: '%s'" % filename)
         
         # Check to make sure this is one we compressed
         if not CompressionTask.isCompressedFile(filename):

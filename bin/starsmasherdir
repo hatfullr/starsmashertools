@@ -105,33 +105,38 @@ remaining (estimated):
         remaining_other=get_size_string(remaining_other),
     )
 
-def compress(**kwargs):
-    kwargs['verbose'] = kwargs.get('verbose', cli.write)
+def compress(from_argument=False, **kwargs):
+    if not from_argument: kwargs['verbose'] = kwargs.get('verbose', cli.write)
     previous = get_size_string(simulation.get_size())
     try:
         simulation.compress(**kwargs)
     except:
-        cli.write("")
-        starsmashertools.bintools.print_error(halt=False)
-        return ""
-    new = get_size_string(simulation.get_size())
+        if from_argument: raise
+        else:
+            cli.write("")
+            starsmashertools.bintools.print_error(halt=False)
+            return ""
     
-    return "Directory size: %s -> %s" % (previous, new)
+    if not from_argument:
+        new = get_size_string(simulation.get_size())
+        return "Directory size: %s -> %s" % (previous, new)
 
 
-def decompress(**kwargs):
-    kwargs['verbose'] = kwargs.get('verbose', cli.write)
+def decompress(from_argument=False, **kwargs):
+    if not from_argument: kwargs['verbose'] = kwargs.get('verbose', cli.write)
     previous = get_size_string(simulation.get_size())
     try:
         simulation.decompress(**kwargs)
     except:
-        cli.write("")
-        starsmashertools.bintools.print_error(halt=False)
-        return ""
-
-    new = get_size_string(simulation.get_size())
+        if from_argument: raise
+        else:
+            cli.write("")
+            starsmashertools.bintools.print_error(halt=False)
+            return ""
     
-    return "Directory size: %s -> %s" % (previous, new)
+    if not from_argument:
+        new = get_size_string(simulation.get_size())
+        return "Directory size: %s -> %s" % (previous, new)
 
 def get_redundant():
     ret = []
@@ -163,15 +168,14 @@ def delete_redundant():
 cli = starsmashertools.bintools.cli.CLI(
     'starsmasherdir',
     "Perform various operations on a StarSmasher simulation directory. You can change the default values for options in the preferences.py file.",
+    require_valid_directory=False,
 )
 
 cli.parser.add_argument(
-    '-d',
-    '--directory',
+    'directory',
     nargs='?',
     type=str,
     default=os.getcwd(),
-    required=False,
     metavar='directory',
     help='The StarSmasher simulation directory. Defaults to the current working directory if not specified.',
 )
@@ -179,13 +183,36 @@ cli.parser.add_argument(
 cli.parser.add_argument(
     '-c',
     '--compress',
-    default=os.path.basename(os.getcwd()),
+    action='store_true',
+    default=False,
     required=False,
-    metavar='',
-    help='Compress the contents of the directory into a single file with this name. The files that are compressed are deleted. All contents will be stored in a file located in the simulation directory.',
+    help='Compress the contents of the directory into a single file with this name. The files that are compressed are deleted. All contents will be stored in a file located in the simulation directory. Raises an exception if the directory is already compressed.',
 )
 
+
+cli.parser.add_argument(
+    '-d',
+    '--decompress',
+    action='store_true',
+    default=False,
+    required=False,
+    help='Compress the contents of the directory into a single file with this name. The files that are compressed are deleted. All contents will be stored in a file located in the simulation directory. Raises an exception if the directory is not compressed.',
+)
+
+
 simulation = starsmashertools.get_simulation(cli.args['directory'])
+
+
+if cli.args['compress']:
+    compress(
+        from_argument=True,
+        delete=True,
+        delete_after=True,
+    )
+    quit()
+if cli.args['decompress']:
+    decompress(from_argument=True)
+    quit()
 
 
 def on_mainmenu_get_content():
@@ -217,11 +244,6 @@ def on_mainmenu_get_content():
 
 mainmenu = cli.add_list(
     [int, str],
-    items = [
-        'estimate size',
-        'compress',
-        'decompress',
-    ],
     bullet='%5d)',
     header=starsmashertools.bintools.Style.bold("Main Menu") + newline + newline + ("Directory = %s" % cli.args['directory']) + newline + newline + 'Choose an option' + newline,
 )
