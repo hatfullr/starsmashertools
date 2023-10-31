@@ -221,12 +221,10 @@ if cli.args['compress'] and cli.args['decompress']:
     help_message = cli.parser.format_help()
     raise Exception("Cannot specify both compress and decompress options at the same time.\n\n%s" % help_message)
 
-#if len(cli.args['directory']) > 1:
+
 simulations = [starsmashertools.get_simulation(directory) for directory in cli.args['directory']]
 
 if len(simulations) == 1: simulation = simulations[0]
-#else:
-#    simulation = starsmashertools.get_simulation(cli.args['directory'][0])
 
 
 if cli.args['compress']:
