@@ -78,8 +78,9 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
     def get_orbital_energy(
             self,
             *args,
+            /,
             origin : tuple | list | np.ndarray = (0, 0, 0),
-            filter_unbound = True,
+            filter_unbound : bool = True,
             **kwargs
     ):
         """
