@@ -104,7 +104,6 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
             Other keyword arguments are passed directly to
             :func:`~.lib.simulation.Simulation.get_output`
         """
-
         
         outputs = self.get_output(*args, **kwargs)
         if not isinstance(outputs, list): outputs = [outputs]
