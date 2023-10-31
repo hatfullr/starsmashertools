@@ -5,6 +5,7 @@ import starsmashertools.preferences as preferences
 from starsmashertools.helpers.apidecorator import api
 from starsmashertools.helpers.clidecorator import cli
 import starsmashertools.helpers.midpoint
+import numpy as np
 
 
 class Dynamical(starsmashertools.lib.simulation.Simulation, object):
