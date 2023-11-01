@@ -83,8 +83,30 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
             **kwargs
     ):
         """
-        Obtain the sum of the orbital energy of each particle about the rotation
-        axis. Particles that are unbound 
+        Obtain the sum of the orbital energy of each particle about some origin,
+        where origin (0, 0, 0) is the center of mass. Two metrics are returned:
+        the orbital energy in the phi hat direction and the theta hat direction,
+        where phi is the azimuthal angle and theta is the polar angle. The
+        orbital energy of a single particle is its kinetic energy in some given
+        direction mv^2/2.
+
+        We obtain the velocities by first writing the velocity in spherical
+        coordinates: \vec{v} = v_r\hat{r} + r\dot{\theta}\hat{\theta} + 
+        \dot{\phi}r\sin\phi\hat{\phi}. In this way, the velocity components are:
+        v_\theta = r\dot{\theta} and v_\phi = \dot{\phi}r\sin\phi. To find the
+        angular velocities \dot{\theta} and \dot{\phi}, we use their spherical
+        coordinate relations \cos\theta = z/r and \tan\phi = y/x.
+        Differentiating each with respect to time yields: \dot{\theta} = 
+        (r'/r^2) [ (zx v_x + zy v_y) / r'^2 - v_z], where r' = sqrt(x^2 + y^2),
+        and \dot{\phi} = (x v_y - y v_x) / r'^2. Therefore,
+        
+        v_\theta = y/r [ (zx v_x + zy v_y) / r'^2 - v_z ]
+          v_\phi = r/r'^2 (x v_y - y v_x)
+
+        The corresponding orbital energies of a particle are:
+        
+        E_{orb,i,\theta} = m_i v_{\theta,i}^2 / 2
+          E_{orb,i,\phi} = m_i v_{\phi,i}^2 / 2
 
         Parameters
         ----------
@@ -106,41 +128,47 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
 
         Returns
         -------
-        np.ndarray, list
-            If there are multiple output files, returns a list. Otherwise
-            returns a ``np.ndarray`` of shape (3,). Each element is the x, y,
-            and z components of the orbital energy respectively.
+        list
+            The total orbital energy E_{orb,\theta} summed over every particle.
+            If `filter_unbound` is `True` then an output that has no bound
+            particles has a value of 0.
+
+        list
+            The total orbital energy E_{orb,\phi} summed over every particle. If
+            `filter_unbound` is `True` then an output that has no bound
+            particles has a value of 0.
         """
         outputs = self.get_output(*args, **kwargs)
         if not isinstance(outputs, list): outputs = [outputs]
 
-        result = []
+        Eorbtheta = []
+        Eorbphi = []
         for output in outputs:
             if filter_unbound: output.mask(~output['unbound'])
-            x = output['x']
-            if len(x) == 0: result += [np.zeros(3)]
-            y = output['y']
-            z = output['z']
-
+            m = output['am']
+            if len(m) == 0:
+                Eorbtheta += [0.]
+                Eorbphi += [0.]
+            
+            x, y, z = output['x'], output['y'], output['z']
             x -= origin[0]
             y -= origin[1]
             z -= origin[2]
             
-            m = output['am']
+            rprime2 = x**2 + y**2
+            r2 = rprime2 + z**2
+            rprime = np.sqrt(rprime2)
+            r = np.sqrt(r2)
+            
             vx = output['vx']
             vy = output['vy']
             vz = output['vz']
-            ax = output['vxdot']
-            ay = output['vydot']
-            az = output['vzdot']
 
-            vx2 = vx * vx
-            vy2 = vy * vy
-            vz2 = vz * vz
+            v_theta = y/r * ((z*x*vx + z*y*vy)/rprime2 - vz)
+            v_phi = r/rprime2 * (x*vy - y*vx)
             
-            dLxdt = np.sum(m * (vy2 - vz2 + y*az - z*ay))
-            dLydt = np.sum(m * (vz2 - vx2 + z*ax - x*az))
-            dLzdt = np.sum(m * (vx2 - vy2 + x*ay - y*ax))
-            result += [np.array([dLxdt, dLydt, dLzdt])]
-        if len(result) == 1: return result[0]
-        return result
+            Eorbtheta += [0.5 * np.sum(m * v_theta**2)]
+            Eorbphi += [0.5 * np.sum(m * v_phi**2)]
+        
+        if len(outputs) == 1: return Eorbtheta[0], Eorbphi[0]
+        return Eorbtheta, Eorbphi
