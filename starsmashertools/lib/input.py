@@ -169,6 +169,7 @@ class Input(dict, object):
 
         # Overwrite the default values with values from the sph.input file
         inputfile = self.get_input_filename(init_file = init_file)
+        inputfile = path.join(self.directory, inputfile)
         with starsmashertools.helpers.file.open(inputfile, 'r') as f:
             for line in f:
                 ls = line.strip()
