@@ -16,6 +16,25 @@ serialization_methods = {
     bool        : {'name' : 'bool' , 'conversions' : [lambda obj: obj, lambda obj: obj]},
     type(None)  : {'name' : 'None' , 'conversions' : [lambda obj: obj, lambda obj: obj]},
 
+    np.int8     : {'name' :  'np.int8', 'conversions' : [lambda obj: int(obj), lambda obj : np.int8(obj)]},
+    np.int16    : {'name' : 'np.int16', 'conversions' : [lambda obj: int(obj), lambda obj : np.int16(obj)]},
+    np.int32    : {'name' : 'np.int32', 'conversions' : [lambda obj: int(obj), lambda obj : np.int32(obj)]},
+    np.int64    : {'name' : 'np.int64', 'conversions' : [lambda obj: int(obj), lambda obj : np.int64(obj)]},
+
+    np.uint8     : {'name' :  'np.uint8', 'conversions' : [lambda obj: int(obj), lambda obj : np.uint8(obj)]},
+    np.uint16    : {'name' : 'np.uint16', 'conversions' : [lambda obj: int(obj), lambda obj : np.uint16(obj)]},
+    np.uint32    : {'name' : 'np.uint32', 'conversions' : [lambda obj: int(obj), lambda obj : np.uint32(obj)]},
+    np.uint64    : {'name' : 'np.uint64', 'conversions' : [lambda obj: int(obj), lambda obj : np.uint64(obj)]},
+
+    np.float16    : {'name' :  'np.float16', 'conversions' : [lambda obj: float(obj), lambda obj : np.float16(obj)]},
+    np.float32    : {'name' :  'np.float32', 'conversions' : [lambda obj: float(obj), lambda obj : np.float32(obj)]},
+    np.float64    : {'name' :  'np.float64', 'conversions' : [lambda obj: float(obj), lambda obj : np.float64(obj)]},
+    np.float128   : {'name' : 'np.float128', 'conversions' : [lambda obj: float(obj), lambda obj : np.float128(obj)]},
+
+    np.bool_    : {'name' :  'np.bool_', 'conversions' : [lambda obj: bool(obj), lambda obj : np.bool_(obj)]},
+    np.bytes_   : {'name' :  'np.bytes_', 'conversions' : [lambda obj: bytes(obj), lambda obj : np.bytes_(obj)]},
+    np.str_     : {'name' :  'np.str_', 'conversions' : [lambda obj: str(obj), lambda obj : np.str_(obj)]},
+
     # User conversions
     np.ndarray : {'name' : 'np.ndarray', 'conversions' : [
         lambda obj: obj.tolist(),    # To JSON
