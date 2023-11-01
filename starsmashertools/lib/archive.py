@@ -57,16 +57,21 @@ class Archive(dict, object):
         return super(Archive, self).__setitem__(identifier, value)
 
     def load(self):
+        """
+        Load this archive from its filename.
+        """
         with zipfile.ZipFile(self.filename, mode='r') as zfile:
             data = zfile.read('data')
         obj = starsmashertools.helpers.jsonfile.load_bytes(data)
         self._from_json(obj)
 
     def save(self):
+        """
+        Overwrite the archive with this archive's current data.
+        """
         data = starsmashertools.helpers.jsonfile.save_bytes(self._to_json())
-        zinfo = zipfile.ZipInfo('data')
-        with zipfile.ZipFile(self.filename, mode='a', compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zfile:
-            zfile.writestr(zinfo, data)
+        with zipfile.ZipFile(self.filename, mode='w', compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zfile:
+            zfile.writestr('data', data)
 
     def _to_json(self):
         cpy = copy.deepcopy(self)
@@ -75,8 +80,16 @@ class Archive(dict, object):
         return cpy
 
     def _from_json(self, json):
+        self.clear()
         for identifier, val in json.items():
             self[identifier] = ArchiveValue._from_json(val)
+
+
+    def _should_replace(self, identifier, other):
+        if identifier in self.keys():
+            return other.is_newer_than(self[identifier])
+        return True
+            
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
@@ -103,13 +116,10 @@ class Archive(dict, object):
         """
 
         value = ArchiveValue(*args, **kwargs)
-        if identifier in self.keys():
-            if value.is_newer_than(self[identifier]):
-                self[identifier] = value
-            else:
-                warnings.warn("'%s' is older than the archived value '%s' so it was not added to archive '%s'" % (str(value), str(self[identifier]), self.filename))
-        else:
+        if self._should_replace(identifier, value):
             self[identifier] = value
+        elif identifier in self.keys() and self[identifier].is_newer_than(value):
+            warnings.warn("'%s' is older than the archived value '%s' so it was not added to archive '%s'" % (str(value), str(self[identifier]), self.filename))
             
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
@@ -119,7 +129,20 @@ class Archive(dict, object):
         del self[identifier]
 
 
-
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def combine(
+            self,
+            other : 'str | Archive',
+            save : bool = True,
+    ):
+        if isinstance(other, str):
+            other = Archive(other)
+        identifiers = self.keys()
+        for identifier, val in other.items():
+            if self._should_replace(identifier, val):
+                self[identifier] = val
+        if save: self.save()
 
 
 

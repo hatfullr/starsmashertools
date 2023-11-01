@@ -40,6 +40,43 @@ class TestArchive(unittest.TestCase):
         self.assertTrue(new_archive['test'].value == 1)
         self.assertTrue(new_archive['test'].mtime == 6)
         self.assertTrue(new_archive['test'].origin == 'filename')
+
+        new_archive.remove('test')
+        self.assertFalse('test' in new_archive.keys())
+
+        filename = os.path.join('data', 'log0.sph')
+        with open(filename, 'r') as f:
+            content = f.read()
+        self.archive.add(
+            'log',
+            content,
+            filename,
+        )
+
+        self.archive.save()
+        archive_size = os.path.getsize(self.archive.filename)
+        log_size = os.path.getsize(filename)
+
+        self.assertLess(archive_size, log_size)
+        
+        new_archive = starsmashertools.lib.archive.Archive(self.archive.filename)
+        self.assertEqual(new_archive['log'].value, content)
+
+    def test_combine(self):
+        self.archive.add('test', 0, 'filename', mtime = 5)
+        
+        other = starsmashertools.lib.archive.Archive('test2.dat')
+        other.add('test', 1, 'filename', mtime = 6)
+        other.add('test2', -1, 'ff', mtime=0)
+        
+        self.archive.combine(other, save = False)
+        self.assertTrue(self.archive['test'].value == 1)
+        self.assertTrue(self.archive['test'].mtime == 6)
+        self.assertTrue(self.archive['test'].origin == 'filename')
+
+        self.assertTrue(self.archive['test2'].value == -1)
+        self.assertTrue(self.archive['test2'].mtime == 0)
+        self.assertTrue(self.archive['test2'].origin == 'ff')
         
 
 if __name__ == "__main__":
