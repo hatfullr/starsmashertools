@@ -92,10 +92,6 @@ defaults = {
         'original initial restartrad' : 'restartrad.sph.orig',
     },
     'Input' : {
-        # We choose whichever name we find first in the directory
-        'input filenames' : [
-            'sph.input',
-        ],
         'src init filename' : 'init.f',
     },
     'LogFile' : {
