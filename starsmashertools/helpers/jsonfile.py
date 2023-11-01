@@ -56,15 +56,16 @@ class Decoder(json.JSONDecoder):
                     return method(obj['value'])
         return obj
 
-
+def save_bytes(obj, encoder=Encoder):
+    return json.dumps(obj, indent=4, cls=encoder).encode('utf-8')
 
 def save(filename, obj, encoder=Encoder):
     if filename.endswith('.gz'):
         f = gzip.open(filename, 'w')
-        writemethod = lambda o: f.write(json.dumps(o, indent=4, cls=encoder).encode('utf-8'))
+        writemethod = lambda o: f.write(save_bytes(o, encoder=encoder))
     elif filename.endswith('.zip'):
         f = zipfile.ZipFile(filename, mode='w', compression=zipfile.ZIP_DEFLATED, compresslevel=9)
-        writemethod = lambda o: f.writestr(starsmashertools.helpers.path.basename(filename).replace(".zip",""), json.dumps(o, indent=4, cls=encoder).encode('utf-8'))
+        writemethod = lambda o: f.writestr(starsmashertools.helpers.path.basename(filename).replace(".zip",""), save_bytes(o, encoder=encoder))
     else:
         f = open(filename, 'w')
         writemethod = lambda o: f.write(json.dumps(o, indent=4, cls=encoder))
@@ -88,11 +89,11 @@ def save(filename, obj, encoder=Encoder):
 def load(filename, decoder=Decoder):
     if filename.endswith('.gz'):
         f = gzip.open(filename, 'r')
-        readmethod = lambda: load_bytes(f.read())
+        readmethod = lambda: load_bytes(f.read(), decoder=decoder)
 
     elif filename.endswith('.zip'):
         f = zipfile.ZipFile(filename, 'r', compression=zipfile.ZIP_DEFLATED, compresslevel=9)
-        readmethod = lambda: load_bytes(f.read(starsmashertools.helpers.path.basename(filename).replace(".zip","")))
+        readmethod = lambda: load_bytes(f.read(starsmashertools.helpers.path.basename(filename).replace(".zip","")), decoder=decoder)
     else:
         f = open(filename, 'r')
         readmethod = lambda: json.load(f, cls=decoder)
