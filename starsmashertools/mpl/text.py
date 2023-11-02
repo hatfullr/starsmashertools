@@ -6,8 +6,16 @@ import matplotlib.text
 import matplotlib.axes
 import starsmashertools.mpl.axes
 
-def _global_label(fig, text, loc, offset=(0, 0), **kwargs):
-    bbox = starsmashertools.mpl.axes.get_bbox(fig.axes)
+def _global_label(axes, text, loc, offset=(0, 0), anchor='figure', **kwargs):
+    if not isinstance(axes, matplotlib.figure.Figure):
+        if isinstance(axes, np.ndarray): fig = axes.flatten()[0].get_figure()
+        else: fig = axes.get_figure()
+    else:
+        _temp = axes
+        axes = axes.axes
+        fig = _temp
+    
+    bbox = starsmashertools.mpl.axes.get_bbox(axes)
     
     center = (
         0.5 * (bbox.x0 + bbox.x1),
@@ -15,17 +23,33 @@ def _global_label(fig, text, loc, offset=(0, 0), **kwargs):
     )
     
     if loc == 'left':
-        x = offset[0]
+        if anchor == 'figure': x = offset[0]
+        elif anchor == 'axes':
+            x = bbox.x0 - offset[0]
+            kwargs['ha'] = 'left'
+        else: raise NotImplementedError(anchor)
         y = center[1] + offset[1]
     elif loc == 'right':
-        x = 1. - offset[0]
+        if anchor == 'figure': x = 1. - offset[0]
+        elif anchor == 'axes':
+            x = bbox.x1 + offset[0]
+            kwargs['ha'] = 'right'
+        else: raise NotImplementedError(anchor)
         y = center[1] + offset[1]
     elif loc == 'bottom':
+        if anchor == 'figure': y = offset[1]
+        elif anchor == 'axes':
+            y = bbox.y0 - offset[1]
+            kwargs['va'] = 'top'
+        else: raise NotImplementedError(anchor)
         x = center[0] + offset[0]
-        y = offset[1]
     elif loc == 'top':
+        if anchor == 'figure': y = 1. - offset[1]
+        elif anchor == 'axes':
+            y = bbox.y1 + offset[1]
+            kwargs['va'] = 'bottom'
+        else: raise NotImplementedError(anchor)
         x = center[0] + offset[0]
-        y = 1. - offset[1]
     else:
         raise ValueError("Argument 'loc' must be one of 'bottom' or 'top' for x labels and 'left' or 'right' for y labels, not '%s'" % loc)
     
