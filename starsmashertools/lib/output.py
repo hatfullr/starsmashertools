@@ -194,7 +194,16 @@ class Output(dict, object):
         if key in self._cache.keys():
             if callable(self._cache[key]):
                 self._cache[key] = self._cache[key](self)
-        return self._cache[key]
+        ret = self._cache[key]
+        if self._mask is not None:
+            if not isinstance(self._mask, np.ndarray):
+                raise TypeError("Property 'Output._mask' must be of type 'np.ndarray', not '%s'" % type(self._mask).__name__)
+            try:
+                ret = ret[self._mask]
+            except IndexError as e:
+                if 'boolean index did not match indexed array' in str(e):
+                    pass
+        return ret
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
