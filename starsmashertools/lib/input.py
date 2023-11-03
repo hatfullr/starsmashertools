@@ -43,7 +43,7 @@ class Input(dict, object):
         """
         init_file = path.realpath(path.join(self.src, preferences.get_default(self, 'src init filename', throw_error=True)))
         if not path.isfile(init_file):
-            raise Exception("Missing init file '%s'" % init_file)
+            raise FileNotFoundError("Missing init file '%s'" % init_file)
         return init_file
         
     @starsmashertools.helpers.argumentenforcer.enforcetypes
