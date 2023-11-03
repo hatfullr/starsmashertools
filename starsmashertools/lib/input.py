@@ -5,9 +5,15 @@ import starsmashertools.helpers.file
 from starsmashertools.helpers.apidecorator import api
 import starsmashertools.helpers.argumentenforcer
 
-# This represents the inputs sent to StarSmasher, where the keys
-# are variable names and the values are the values of those variables
 class Input(dict, object):
+    """
+    This class holds information about inputs that are sent to a StarSmasher
+    simulation. It is a dictionary whose keys are StarSmasher code variable
+    names and the values are the actual values that those variables have in
+    StarSmasher at runtime. We accomplish this by reading the StarSmasher source
+    code available in the simulation directory as well as the input list
+    (usually called 'sph.input') to determine each value.
+    """
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def __init__(self, directory : str):
@@ -18,6 +24,9 @@ class Input(dict, object):
 
     @property
     def src(self):
+        """
+        The StarSmasher source directory.
+        """
         if self._src is None:
             self._src = path.get_src(self.directory, throw_error=True)
         return self._src
@@ -28,6 +37,10 @@ class Input(dict, object):
         return super(Input, self).__getitem__(item, **kwargs)
 
     def get_init_file(self):
+        """
+        Obtain the "init.f" file that StarSmasher uses to initialize the
+        simulation.
+        """
         init_file = path.realpath(path.join(self.src, preferences.get_default(self, 'src init filename', throw_error=True)))
         if not path.isfile(init_file):
             raise Exception("Missing init file '%s'" % init_file)
@@ -38,12 +51,25 @@ class Input(dict, object):
             self,
             init_file : str | type(None) = None,
     ):
-
         """
         Open up the init.f file to figure out what it reads as the input file.
-        We search for the 'namelist' block in the variable declarations of
+        We search for the "namelist" block in the variable declarations of
         init.f and then search the simulation directory's files for one whose
         first line matches the namelist name.
+
+        Parameters
+        ----------
+        init_file : str, None, default = None
+            A path to the init.f file in the StarSmasher source code. If `None`,
+            then the value is set to the return value of
+            :func:`~.get_init_file`.
+
+        Returns
+        -------
+        str
+            A path to the name of the input file, which is "sph.input" by
+            default unless "init.f" in the StarSmasher source code has been
+            modified.
         """
         if init_file is None: init_file = self.get_init_file()
 
@@ -112,6 +138,11 @@ class Input(dict, object):
     
     @api
     def initialize(self):
+        """
+        Read the StarSmasher input file and the "init.f" file to determine the
+        value of each StarSmasher input variable. Fills this object with keys
+        and values.
+        """
         if self._initialized: raise Exception("Cannot initialize an Input object that is already initialized")
 
         init_file = self.get_init_file()
