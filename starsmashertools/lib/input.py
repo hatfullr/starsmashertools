@@ -230,6 +230,7 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
                 
                 # Skip non-namelist members
                 if key not in namelist_variables: continue
+                print(key, to_eval)
                 obj[key] = eval(to_eval.replace("!","#"), {}, obj)
         return obj
 
