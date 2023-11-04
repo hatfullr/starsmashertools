@@ -4,8 +4,9 @@ import starsmashertools.preferences as preferences
 import starsmashertools.helpers.file
 from starsmashertools.helpers.apidecorator import api
 import starsmashertools.helpers.argumentenforcer
+import starsmashertools.helpers.readonlydict
 
-class Input(dict, object):
+class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
     """
     This class holds information about inputs that are sent to a StarSmasher
     simulation. It is a dictionary whose keys are StarSmasher code variable
@@ -18,7 +19,7 @@ class Input(dict, object):
     @api
     def __init__(self, directory : str):
         self.directory = directory
-        super(Input, self).__init__()
+        
         self._src = None
         self._initialized = False
 
@@ -143,6 +144,8 @@ class Input(dict, object):
         if self._initialized: raise Exception("Cannot initialize an Input object that is already initialized")
 
         init_file = self.get_init_file()
+
+        obj = {}
         
         # Read the init.f file to obtain default values
         listening = None
@@ -170,7 +173,7 @@ class Input(dict, object):
                         line = line.replace('namelist/input/','').replace('$','')
                         for name in line.strip().split(','):
                             if name:
-                                self[name] = None
+                                obj[name] = None
                     else:
                         listening = 'values'
 
@@ -184,16 +187,16 @@ class Input(dict, object):
 
                     val = '='.join(ls[1:])
                     val = string.fortran_to_python(val)
-                    self[key] = eval(val.replace("!","#"), {}, self)
+                    obj[key] = eval(val.replace("!","#"), {}, obj)
         
         # Save default values
-        self.defaults = {}
-        for key, val in self.items():
-            self.defaults[key] = val
+        defaults = {}
+        for key, val in obj.items():
+            defaults[key] = val
 
-        self.overrides = {}
-        for key, val in self.items():
-            self.overrides[key] = None
+        overrides = {}
+        for key, val in obj.items():
+            overrides[key] = None
 
         # Overwrite the default values with values from the sph.input file
         inputfile = self.get_input_filename(init_file = init_file)
@@ -222,7 +225,8 @@ class Input(dict, object):
                 # about doing the same, but it does make it very easy to convert the string to
                 # an appropriate type
                 v = eval(val.replace("!","#"))
-                if key in self.defaults.keys(): self.overrides[key] = v
-                self[key] = v
+                if key in defaults.keys(): overrides[key] = v
+                obj[key] = v
 
+        super(Input, self).__init__(obj)
         self._initialized = True
