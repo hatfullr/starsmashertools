@@ -247,10 +247,7 @@ print('')
             for obj in scandir(directory):
                 if obj.is_dir():
                     path = obj.path
-                    print("path=",path)
                     contents = [o.name for o in scandir(path) if o.is_file()]
-                    print(contents)
-                    print(src_identifiers)
                     for filename in src_identifiers:
                         if filename not in contents: break
                     else:
