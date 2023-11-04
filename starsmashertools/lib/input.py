@@ -76,7 +76,7 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
         filename_listening = False
         input_filename = None
         content = []
-        print("init_file=",init_file)
+        
         with starsmashertools.helpers.file.open(init_file, 'r') as f:
             for line in f:
                 ls = line.strip()
