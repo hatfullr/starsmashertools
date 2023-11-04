@@ -198,9 +198,9 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
         # Get the namelist variable names
         namelist_variables, namelist_stop_idx = self.get_namelist(init_file = init_file)
         
-        # Search the remaining body of the code for variable assignments
-        body = lines[namelist_stop_idx:]
-
+        # Search the body of the code for variable assignments
+        body = self._isolate_get_input_subroutine(lines)
+        
         for i, line in enumerate(body):
             if line.strip().lower() in ['end', 'end subroutine', 'end subroutine get_input']:
                 body = body[:i+1]
