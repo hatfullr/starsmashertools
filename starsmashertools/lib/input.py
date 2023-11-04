@@ -95,7 +95,7 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
                 print(init_file)
                 path = starsmashertools.helpers.path.relpath(
                     path,
-                    start=starsmashertools.helpers.path.dirname(init_file),
+                    start=init_file,#starsmashertools.helpers.path.dirname(init_file),
                 )
                 print(path)
                 namelist_names = self._get_namelist_names(path)
