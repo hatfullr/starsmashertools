@@ -294,7 +294,7 @@ class LogFile(object):
 
         num_iters = self.get_number_of_iterations()
         if stop is None: stop = num_iters
-        toget = np.arange(start, stop, step)
+        toget = np.arange(start, stop + 1, step)
 
         startline = LogFile.Iteration.startline
         length = self.get_iteration_content_length()
