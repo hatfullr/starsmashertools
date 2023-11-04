@@ -5,6 +5,7 @@ import starsmashertools.helpers.file
 from starsmashertools.helpers.apidecorator import api
 import starsmashertools.helpers.argumentenforcer
 import starsmashertools.helpers.readonlydict
+import copy
 
 class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
     """
@@ -132,7 +133,107 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
             raise Exception("Failed to find the input filename in '%s'" % init_file)
         return input_filename
 
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    def get_default_values(self, init_file : str | type(None) = None):
+        if init_file is None: init_file = self.get_init_file()
+
+        input_filename = self.get_input_filename(init_file = init_file)
+        
+        obj = {}
+        
+        # Read the init.f file to obtain default values
+        with starsmashertools.helpers.file.open(init_file, 'r') as f:
+            lines = f.read().split("\n")
+
+
+        # Isolate the get_input subroutine
+        for i, line in enumerate(lines):
+            if line.strip() == 'subroutine get_input':
+                subroutine_start = i
+                break
+        for i, line in enumerate(lines[subroutine_start:]):
+            if line.strip() in ['end', 'end subroutine']:
+                subroutine_stop = subroutine_start + i
+                break
+        lines = lines[subroutine_start:subroutine_stop]
+        content = "\n".join(lines)
+
+        # Find the namelist for the inputs
+        for i, line in enumerate(lines):
+            if 'namelist/' in line:
+                namelist_start_idx = i
+                break
+        for i, line in enumerate(lines[namelist_start_idx+1:]):
+            if not line.strip().startswith('$'):
+                namelist_stop_idx = namelist_start_idx + i + 1
+                break
+        namelist = "\n".join(lines[namelist_start_idx:namelist_stop_idx])
+        namelist = namelist.replace('$', '')
+        namelist = namelist.split('/')[2]
+
+        # Get the namelist variable names
+        namelist_variables = [item.strip().lower() for item in namelist.replace('\n','').split(',')]
+
+        # Search the remaining body of the code for variable assignments
+        body = lines[namelist_stop_idx:]
+        for i, line in enumerate(body):
+            ls = line.strip()
+
+            # Ignore empty lines
+            if len(ls) == 0: continue
+
+            # Ignore comments
+            if line[0] in starsmashertools.helpers.file.fortran_comment_characters:
+                continue
+
+            # Stop when StarSmasher opens the input file to overwrite defaults
+            if 'open(' in ls.lower() and input_filename in ls:
+                break
+            
+            if '=' in ls:
+                # Skip leading '!' fortran comments
+                if '!' in ls and ls.index('!') < ls.index('='): continue
+                
+                send = '='.join(ls.split('=')[1:])
+                to_eval = starsmashertools.helpers.string.fortran_to_python(send)
+                key = ls.split('=')[0].lower()
+
+                # Skip non-namelist members
+                if key not in namelist_variables: continue
+                obj[key] = eval(to_eval.replace("!","#"), {}, obj)
+        return obj
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    def get_input_values(
+            self,
+            defaults : dict = {},
+            filename : str | type(None) = None,
+            init_file : str | type(None) = None,
+    ):
+        if filename is None:
+            filename = starsmashertools.helpers.path.join(
+                self.directory,
+                self.get_input_filename(init_file = init_file),
+            )
+
+        with starsmashertools.helpers.file.open(filename, 'r') as f:
+            content = f.read()
+
+        obj = copy.deepcopy(defaults)
+        for line in content.split("\n"):
+            ls = line.strip()
+            if '=' in ls:
+                # Skip leading '!' fortran comments
+                if '!' in ls and ls.index('!') < ls.index('='): continue
+                to_eval = starsmashertools.helpers.string.fortran_to_python(line.replace(',','')).strip()
+                key = to_eval.split('=')[0].lower()
+                to_eval = '='.join(to_eval.split('=')[1:])
+                obj[key] = eval(to_eval.replace("!","#"))
+        
+        return obj
+                
     
+
     @api
     def initialize(self):
         """
@@ -143,89 +244,8 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
         if self._initialized: raise Exception("Cannot initialize an Input object that is already initialized")
 
         init_file = self.get_init_file()
-
-        obj = {}
+        defaults = self.get_default_values(init_file = init_file)
+        inputs = self.get_input_values(defaults=defaults, init_file = init_file)
         
-        # Read the init.f file to obtain default values
-        listening = None
-        with starsmashertools.helpers.file.open(init_file, 'r') as f:
-            for line in f:
-                ls = line.strip()
-                # Skip empty lines
-                if not ls: continue
-
-                # Always skip comments
-                if line[0] in starsmashertools.helpers.file.fortran_comment_characters:
-                    continue
-                
-                if listening is None and line.strip().startswith('subroutine get_input'):
-                    listening = 'namelist'
-                    continue
-
-                # Get the namelist for the inputs
-                if listening == 'namelist':
-                    if not line.strip():
-                        listening = 'values'
-                        continue
-
-                    if 'namelist/input/' in line or '$' in line:
-                        line = line.replace('namelist/input/','').replace('$','')
-                        for name in line.strip().split(','):
-                            if name:
-                                obj[name] = None
-                    else:
-                        listening = 'values'
-
-                if listening == 'values':
-                    ls = line.strip()
-                    if ls.lower().startswith("end") or ls.lower().startswith("open("): break
-                    if '=' not in line: continue
-
-                    ls = ls.split('=')
-                    key = ls[0].lower()
-
-                    val = '='.join(ls[1:])
-                    val = string.fortran_to_python(val)
-                    obj[key] = eval(val.replace("!","#"), {}, obj)
-        
-        # Save default values
-        defaults = {}
-        for key, val in obj.items():
-            defaults[key] = val
-
-        overrides = {}
-        for key, val in obj.items():
-            overrides[key] = None
-
-        # Overwrite the default values with values from the sph.input file
-        inputfile = self.get_input_filename(init_file = init_file)
-        inputfile = path.join(self.directory, inputfile)
-        with starsmashertools.helpers.file.open(inputfile, 'r') as f:
-            for line in f:
-                ls = line.strip()
-
-                if not ls: continue # Skip empty lines
-
-                # Always skip comments
-                if line[0] == '!':
-                    continue
-
-                # Only process this string if it evaluates some variable
-                if '=' not in ls: continue
-
-                ls = ls.split('=')
-
-                key = ls[0].lower()
-                val = "=".join(ls[1:])
-                val = val.replace(",","")
-                val = string.fortran_to_python(val)
-
-                # Fortran cannot evaluate expressions in an input file, so we don't need to worry
-                # about doing the same, but it does make it very easy to convert the string to
-                # an appropriate type
-                v = eval(val.replace("!","#"))
-                if key in defaults.keys(): overrides[key] = v
-                obj[key] = v
-
-        super(Input, self).__init__(obj)
+        super(Input, self).__init__(inputs)
         self._initialized = True
