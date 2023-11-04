@@ -43,6 +43,19 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
         simulation.
         """
         return path.realpath(path.join(self.src, preferences.get_default(self, 'src init filename', throw_error=True)))
+
+    def _isolate_get_input_subroutine(self, lines):
+        # Isolate the get_input subroutine
+        for i, line in enumerate(lines):
+            if line.strip() == 'subroutine get_input':
+                subroutine_start = i
+                break
+        for i, line in enumerate(lines[subroutine_start:]):
+            if line.strip() in ['end', 'end subroutine']:
+                subroutine_stop = subroutine_start + i
+                break
+        lines = lines[subroutine_start:subroutine_stop]
+        return lines
         
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     def get_input_filename(
@@ -71,68 +84,32 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
         """
         if init_file is None: init_file = self.get_init_file()
 
-        inSubroutine = False
-        namelist_name = None
-        filename_listening = False
-        input_filename = None
-        content = []
-        
         with starsmashertools.helpers.file.open(init_file, 'r') as f:
-            for line in f:
-                ls = line.strip()
+            lines = f.read().split('\n')
 
-                # Skip empty lines
-                if not ls: continue
+        lines = self._isolate_get_input_subroutine(lines)
+        for line in lines:
+            if 'namelist/' in line:
+                namelist_name = line.split('/')[1]
+                break
+        else:
+            raise Exception("Failed to find the namelist name in '%s'" % init_file)
 
-                # Always skip comments
-                if line[0] in starsmashertools.helpers.file.fortran_comment_characters:
-                    continue
+        
+        for i, line in enumerate(lines):
+            if 'read(' in line and namelist_name in line:
+                read_index = i
+                file_no = line.split('(')[1].split(',')[0]
+                break
+        else:
+            raise Exception("Failed to find where the namelist gets read in '%s'" % init_file)
 
-                if ls.lower().startswith('subroutine get_input'):
-                    inSubroutine = True
-
-                # Read until we get to the namelist we are looking for
-                if not inSubroutine: continue
-                
-                if ls.lower() in ['end', 'end subroutine']:
-                    inSubroutine = False
-                    break
-
-                # ----------
-                # Below this point we are inside the get_input subroutine
-
-                if ls.lower().startswith('namelist'):
-                    namelist_name = ls.lower().split('/')[1]
-
-                # Keep reading until we locate the namelist
-                if namelist_name is None: continue
-                
-                if not filename_listening:
-                    if ls.lower().startswith('open('):
-                        # Start listening for the filename we want to find
-                        filename_listening = True
-                        content += [ls]
-                        continue
-                else: # We are listening for a filename
-                    content += [ls]
-                    if ls.lower().startswith('close('):
-                        filenum = content[0].lower().replace('open(','').split(',')[0]
-                        for l in content:
-                            if l.lower().startswith('read(%s' % filenum):
-                                if l.lower().split(',')[1].replace(')','') == namelist_name:
-                                    _f = content[0].lower().split('file')[1].split(',')[0].replace('=','').replace("'",'').replace('"','').strip()
-                                    idx0 = content[0].lower().index(_f)
-                                    idx1 = idx0 + len(_f)
-                                    input_filename = content[0][idx0:idx1]
-                                    break
-                        else: continue
-                        # We have located the input filename
-                        break
-
-                    
-        if input_filename is None:
-            raise Exception("Failed to find the input filename in '%s'" % init_file)
-        return input_filename
+        for line in lines[:read_index][::-1]:
+            if 'open' in line and file_no in line:
+                for part in line.split(','):
+                    if 'file' in part and '=' in part:
+                        return part.split('=')[1].replace('"','').replace("'",'')
+        raise Exception("Failed to find the input filename in '%s'" % init_file)
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     def get_default_values(self, init_file : str | type(None) = None):
@@ -148,15 +125,7 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
 
 
         # Isolate the get_input subroutine
-        for i, line in enumerate(lines):
-            if line.strip() == 'subroutine get_input':
-                subroutine_start = i
-                break
-        for i, line in enumerate(lines[subroutine_start:]):
-            if line.strip() in ['end', 'end subroutine']:
-                subroutine_stop = subroutine_start + i
-                break
-        lines = lines[subroutine_start:subroutine_stop]
+        lines = self._isolate_get_input_subroutine(lines)
         content = "\n".join(lines)
 
         # Find the namelist for the inputs
