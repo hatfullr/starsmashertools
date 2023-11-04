@@ -76,6 +76,7 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
         filename_listening = False
         input_filename = None
         content = []
+        print("init_file=",init_file)
         with starsmashertools.helpers.file.open(init_file, 'r') as f:
             for line in f:
                 ls = line.strip()
@@ -210,8 +211,7 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
             filename : str | type(None) = None,
             init_file : str | type(None) = None,
     ):
-        if init_file is None:
-            init_file = self.get_input_filename(init_file = init_file)
+        if init_file is None: init_file = self.get_init_file()
         if defaults is None:
             defaults = self.get_default_values(init_file = init_file)
         if filename is None:
