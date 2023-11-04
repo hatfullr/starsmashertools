@@ -68,8 +68,8 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
                 path_or_lines = f.read().split('\n')
         ret = []
         for line in path_or_lines:
-            if 'namelist/' in line:
-                ret += [line.split('/')[1]]
+            if 'namelist' in line and '/' in line:
+                ret += [line.split('/')[1].strip()]
         return ret
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
@@ -77,14 +77,15 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
             self,
             init_file : str | type(None) = None,
     ):
+        if init_file is None: init_file = self.get_init_file()
+        
         with starsmashertools.helpers.file.open(init_file, 'r') as f:
             lines = f.read().split('\n')
 
         lines = self._isolate_get_input_subroutine(lines)
 
         namelist_names = self._get_namelist_names(lines)
-        if namelist_names: return namelist_names[0]
-
+        if namelist_names: return namelist_names[0], init_file
 
         # If we got here then it means the namelist might appear in one of the
         # 'included' files
@@ -100,10 +101,39 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
                 for name in namelist_names:
                     for line in lines:
                         if name in line and 'read(' in line:
-                            return name
+                            return name, path
         
         raise Exception("Failed to find the input namelist name in '%s'" % init_file)
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    def get_namelist(
+            self,
+            init_file : str | type(None) = None,
+    ):
+        namelist_name, filename = self.get_namelist_name(init_file = init_file)
+
+        with starsmashertools.helpers.file.open(filename, 'r') as f:
+            lines = f.read().split('\n')
+
+        for i, line in enumerate(lines):
+            if 'namelist' in line and '/' in line:
+                if line.split('/')[1].strip() == namelist_name:
+                    start_idx = i
+                    break
+        else:
+            raise Exception("This should never be possible 1")
         
+        for i, line in enumerate(lines[start_idx + 1:]):
+            if '$' in line or '&' in line: continue
+            else:
+                stop_idx = start_idx + i + 1
+                break
+        else:
+            stop_idx = start_idx + 1
+
+        content = ''.join(lines[start_idx:stop_idx])
+        content = content.replace('$','').replace('&','')
+        return [item.strip() for item in content.split('/')[2].split(',')], stop_idx
         
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     def get_input_filename(
@@ -136,7 +166,7 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
             lines = f.read().split('\n')
 
         lines = self._isolate_get_input_subroutine(lines)
-        namelist_name = self.get_namelist_name(init_file = init_file)
+        namelist_name, filename = self.get_namelist_name(init_file = init_file)
         
         for i, line in enumerate(lines):
             if 'read(' in line and namelist_name in line:
@@ -165,29 +195,17 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
         with starsmashertools.helpers.file.open(init_file, 'r') as f:
             lines = f.read().split("\n")
 
-
-        # Isolate the get_input subroutine
-        lines = self._isolate_get_input_subroutine(lines)
-        content = "\n".join(lines)
-
-        # Find the namelist for the inputs
-        for i, line in enumerate(lines):
-            if 'namelist/' in line:
-                namelist_start_idx = i
-                break
-        for i, line in enumerate(lines[namelist_start_idx+1:]):
-            if not line.strip().startswith('$'):
-                namelist_stop_idx = namelist_start_idx + i + 1
-                break
-        namelist = "\n".join(lines[namelist_start_idx:namelist_stop_idx])
-        namelist = namelist.replace('$', '')
-        namelist = namelist.split('/')[2]
-
         # Get the namelist variable names
-        namelist_variables = [item.strip().lower() for item in namelist.replace('\n','').split(',')]
-
+        namelist_variables, namelist_stop_idx = self.get_namelist(init_file = init_file)
+        
         # Search the remaining body of the code for variable assignments
         body = lines[namelist_stop_idx:]
+
+        for i, line in enumerate(body):
+            if line.strip() in ['end', 'end subroutine']:
+                body = body[:i+1]
+                break
+        
         for i, line in enumerate(body):
             ls = line.strip()
 
