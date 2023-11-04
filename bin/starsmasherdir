@@ -226,8 +226,6 @@ if isinstance(cli.args['directory'], str):
 
 simulations = [starsmashertools.get_simulation(directory) for directory in cli.args['directory']]
 
-if len(simulations) == 1: simulation = simulations[0]
-
 
 if cli.args['compress']:
     compress(
@@ -245,6 +243,11 @@ if cli.args['decompress']:
     )
     quit()
 
+if len(simulations) > 1:
+    raise Exception("You can only specify one directory when running in interactive mode")
+
+cli.args['directory'] = cli.args['directory'][0]
+if len(simulations) == 1: simulation = simulations[0]
 
 def on_mainmenu_get_content():
     global mainmenu
