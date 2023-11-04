@@ -92,13 +92,10 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
         for line in lines:
             if 'include' in line:
                 path = line.split('include ')[1].strip().replace("'",'').replace('"','')
-                print(path)
-                print(init_file)
-                path = starsmashertools.helpers.path.relpath(
+                path = starsmashertools.helpers.path.join(
+                    starsmashertools.helpers.path.dirname(init_file),
                     path,
-                    start=init_file,#starsmashertools.helpers.path.dirname(init_file),
                 )
-                print(path)
                 namelist_names = self._get_namelist_names(path)
                 for name in namelist_names:
                     for line in lines:
