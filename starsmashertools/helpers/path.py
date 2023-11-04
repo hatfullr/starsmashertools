@@ -207,7 +207,8 @@ def get_src(directory, throw_error=False):
     if not isdir(directory):
         raise FileNotFoundError("Directory does not exist: '%s'" % str(directory))
     
-    if directory == '/': raise Exception
+    if directory == os.path.abspath(os.sep): # root directory
+        raise Exception("A search for the StarSmasher source directory extended to the root directory and thus we failed to find the source directory. Please make sure there is a copy of the StarSmasher source code in your simulation directory.")
     #print("get_src",directory)
     directory = realpath(directory)
     
