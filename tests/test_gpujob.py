@@ -13,7 +13,7 @@ class TestGPUJob(unittest.TestCase):
         outputs = [np.full(5, np.nan)]
 
         g = starsmashertools.helpers.gpujob.GPUJob(inputs, outputs)
-        self.assertEqual(g.resolution, outputs[0].shape)
+        self.assertEqual(g._resolution, outputs[0].shape)
         with self.assertRaises(NotImplementedError):
             g.run()
 

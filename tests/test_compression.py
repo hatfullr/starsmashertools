@@ -84,7 +84,8 @@ class TestCompression(unittest.TestCase):
 
         total_compressed = get_size(start_path = self.simulation.directory)
         self.assertLess(total_compressed, total_regular)
-        print("serial=",total_compressed, total_regular)
+        if __name__ == "__main__":
+            print("serial=",total_compressed, total_regular)
 
         self.simulation.decompress(verbose=False)
         
@@ -111,7 +112,8 @@ class TestCompression(unittest.TestCase):
 
         total_compressed = get_size(start_path = self.simulation.directory)
         self.assertLess(total_compressed, total_regular)
-        print("parallel=",total_compressed, total_regular)
+        if __name__ == "__main__":
+            print("parallel=",total_compressed, total_regular)
 
         self.simulation.decompress(verbose = False)
         self.assertFalse(self.simulation.compressed)
