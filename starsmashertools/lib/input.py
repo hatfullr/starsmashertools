@@ -1,6 +1,6 @@
-import starsmashertools.helpers.string as string
-import starsmashertools.helpers.path as path
-import starsmashertools.preferences as preferences
+import starsmashertools.helpers.string
+import starsmashertools.helpers.path
+import starsmashertools.preferences
 import starsmashertools.helpers.file
 from starsmashertools.helpers.apidecorator import api
 import starsmashertools.helpers.argumentenforcer
@@ -29,7 +29,7 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
         The StarSmasher source directory.
         """
         if self._src is None:
-            self._src = path.get_src(self.directory, throw_error=True)
+            self._src = starsmashertools.helpers.path.get_src(self.directory, throw_error=True)
         return self._src
 
     @api
@@ -42,7 +42,12 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
         Obtain the "init.f" file that StarSmasher uses to initialize the
         simulation.
         """
-        return path.realpath(path.join(self.src, preferences.get_default(self, 'src init filename', throw_error=True)))
+        return starsmashertools.helpers.path.realpath(
+            starsmashertools.helpers.path.join(
+                self.src,
+                starsmashertools.preferences.get_default(self, 'src init filename', throw_error=True),
+            ),
+        )
 
     def _isolate_get_input_subroutine(self, lines):
         # Isolate the get_input subroutine
