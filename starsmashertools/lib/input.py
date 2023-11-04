@@ -202,7 +202,7 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
         body = lines[namelist_stop_idx:]
 
         for i, line in enumerate(body):
-            if line.strip() in ['end', 'end subroutine']:
+            if line.strip().lower() in ['end', 'end subroutine', 'end subroutine get_input']:
                 body = body[:i+1]
                 break
         
