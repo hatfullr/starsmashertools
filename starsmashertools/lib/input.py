@@ -19,7 +19,6 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
     @api
     def __init__(self, directory : str):
         self.directory = directory
-        
         self._src = None
         self._initialized = False
 
