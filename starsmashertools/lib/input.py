@@ -189,15 +189,15 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
             # Stop when StarSmasher opens the input file to overwrite defaults
             if 'open(' in ls.lower() and input_filename in ls:
                 break
-            
+
             if '=' in ls:
                 # Skip leading '!' fortran comments
                 if '!' in ls and ls.index('!') < ls.index('='): continue
                 
                 send = '='.join(ls.split('=')[1:])
                 to_eval = starsmashertools.helpers.string.fortran_to_python(send)
-                key = ls.split('=')[0].lower()
-
+                key = ls.split('=')[0].lower().strip()
+                
                 # Skip non-namelist members
                 if key not in namelist_variables: continue
                 obj[key] = eval(to_eval.replace("!","#"), {}, obj)
@@ -206,10 +206,14 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     def get_input_values(
             self,
-            defaults : dict = {},
+            defaults : dict | type(None) = {},
             filename : str | type(None) = None,
             init_file : str | type(None) = None,
     ):
+        if init_file is None:
+            init_file = self.get_input_filename(init_file = init_file)
+        if defaults is None:
+            defaults = self.get_default_values(init_file = init_file)
         if filename is None:
             filename = starsmashertools.helpers.path.join(
                 self.directory,
@@ -217,10 +221,10 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
             )
 
         with starsmashertools.helpers.file.open(filename, 'r') as f:
-            content = f.read()
+            lines = f.read().split("\n")
 
         obj = copy.deepcopy(defaults)
-        for line in content.split("\n"):
+        for line in lines:
             ls = line.strip()
             if '=' in ls:
                 # Skip leading '!' fortran comments
@@ -244,8 +248,8 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
         if self._initialized: raise Exception("Cannot initialize an Input object that is already initialized")
 
         init_file = self.get_init_file()
-        defaults = self.get_default_values(init_file = init_file)
-        inputs = self.get_input_values(defaults=defaults, init_file = init_file)
+        #defaults = self.get_default_values(init_file = init_file)
+        inputs = self.get_input_values(defaults=None, init_file = init_file)
         
         super(Input, self).__init__(inputs)
         self._initialized = True
