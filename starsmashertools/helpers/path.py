@@ -247,14 +247,17 @@ print('')
             for obj in scandir(directory):
                 if obj.is_dir():
                     path = obj.path
+                    print("path=",path)
                     contents = [o.name for o in scandir(path) if o.is_file()]
+                    print(contents)
+                    print(src_identifiers)
                     for filename in src_identifiers:
                         if filename not in contents: break
                     else:
                         return path
 
     if throw_error:
-        raise Exception("Failed to find the source directory in '%s'" % directory)
+        raise FileNotFoundError("Failed to find the source directory in '%s'. Please make sure there is a directoy which contains all the following file names: %s" % (directory, starsmashertools.helpers.string.list_to_string(src_identifiers)))
 
 
 
