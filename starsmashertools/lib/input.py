@@ -92,6 +92,7 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
         for line in lines:
             if 'include' in line:
                 path = line.split('include ')[1].strip().replace("'",'').replace('"','')
+                print(path)
                 print(init_file)
                 path = starsmashertools.helpers.path.relpath(
                     path,
