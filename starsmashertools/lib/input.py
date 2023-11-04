@@ -206,7 +206,7 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     def get_input_values(
             self,
-            defaults : dict | type(None) = {},
+            defaults : dict | type(None) = None,
             filename : str | type(None) = None,
             init_file : str | type(None) = None,
     ):
@@ -246,10 +246,5 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
         and values.
         """
         if self._initialized: raise Exception("Cannot initialize an Input object that is already initialized")
-
-        init_file = self.get_init_file()
-        #defaults = self.get_default_values(init_file = init_file)
-        inputs = self.get_input_values(defaults=None, init_file = init_file)
-        
-        super(Input, self).__init__(inputs)
+        super(Input, self).__init__(self.get_input_values())
         self._initialized = True
