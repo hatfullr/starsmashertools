@@ -64,7 +64,7 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
 
     def _get_namelist_names(self, path_or_lines):
         if isinstance(path_or_lines, str):
-            with starsmashertools.helpers.file.open(path, 'r') as f:
+            with starsmashertools.helpers.file.open(path_or_lines, 'r') as f:
                 path_or_lines = f.read().split('\n')
         ret = []
         for line in path_or_lines:
