@@ -56,6 +56,49 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
                 break
         lines = lines[subroutine_start:subroutine_stop]
         return lines
+
+    def _get_namelist_names(self, path_or_lines):
+        if isinstance(path_or_lines, str):
+            with starsmashertools.helpers.file.open(path, 'r') as f:
+                path_or_lines = f.read().split('\n')
+        ret = []
+        for line in path_or_lines:
+            if 'namelist/' in line:
+                ret += [line.split('/')[1]]
+        return ret
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    def get_namelist_name(
+            self,
+            init_file : str | type(None) = None,
+    ):
+        with starsmashertools.helpers.file.open(init_file, 'r') as f:
+            lines = f.read().split('\n')
+
+        lines = self._isolate_get_input_subroutine(lines)
+
+        namelist_names = self._get_namelist_names(lines)
+        if namelist_names: return namelist_names[0]
+
+
+        # If we got here then it means the namelist might appear in one of the
+        # 'included' files
+        content = '\n'.join(lines)
+        for line in lines:
+            if 'include' in line:
+                path = line.split('include ')[1].strip().replace("'",'').replace('"','')
+                path = starsmashertools.helpers.path.relpath(
+                    path,
+                    start=starsmashertools.helpers.path.dirname(init_file),
+                )
+                namelist_names = self._get_namelist_names(path)
+                for name in namelist_names:
+                    for line in lines:
+                        if name in line and 'read(' in line:
+                            return name
+        
+        raise Exception("Failed to find the input namelist name in '%s'" % init_file)
+        
         
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     def get_input_filename(
@@ -88,13 +131,7 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
             lines = f.read().split('\n')
 
         lines = self._isolate_get_input_subroutine(lines)
-        for line in lines:
-            if 'namelist/' in line:
-                namelist_name = line.split('/')[1]
-                break
-        else:
-            raise Exception("Failed to find the namelist name in '%s'" % init_file)
-
+        namelist_name = self.get_namelist_name(init_file = init_file)
         
         for i, line in enumerate(lines):
             if 'read(' in line and namelist_name in line:
