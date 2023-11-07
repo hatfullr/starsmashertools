@@ -166,7 +166,7 @@ class CompressionTask(object):
             obj['arcnames'] += [arcname]
             obj['mtimes'] += [starsmashertools.helpers.path.getmtime(_file)]
             if CompressionTask.isCompressedFile(_file):
-                with zipfile.ZipFile(_file, 'r') as _zfile:
+                with zipfile.ZipFile(_file, mode='r') as _zfile:
                     obj['identifiers'] += [CompressionTask.get_compression_identifier(_zfile)]
             else: obj['identifiers'] += [None]
         
@@ -325,8 +325,11 @@ class CompressionTask(object):
             verbose = lambda message: print(message)
 
         dirname = starsmashertools.helpers.path.dirname(filename)
-        with zipfile.ZipFile(filename, mode='w', compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zfile:
-            try:
+        try:
+            with zipfile.ZipFile(filename, mode='w', compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zfile:
+
+                CompressionTask._pack_compression_file(zfile, files)
+            
                 for _file in files:
                     if verbose: verbose(_file)
                     arcname = CompressionTask._filename_to_arcname(_file, dirname)
@@ -340,12 +343,12 @@ class CompressionTask(object):
 
                     if delete and not delete_after:
                         starsmashertools.helpers.path.remove(_file)
-
-                CompressionTask._pack_compression_file(zfile, files)
-            except:
-                zfile.extractall(path=dirname)
-                starsmashertools.helpers.path.remove(zfile.filename)
-                raise
+        except:
+            if starsmashertools.helpers.path.isfile(filename):
+                with zipfile.ZipFile(filename, mode='r') as zfile:
+                    zfile.extractall(path=dirname)
+                starsmashertools.helpers.path.remove(filename)
+            raise
 
         # Remove the old files
         if delete and delete_after:
