@@ -668,7 +668,6 @@ class Simulation(object):
         -------
         int
         """
-        print(self.directory)
         return path.get_directory_size(self.directory)
 
 

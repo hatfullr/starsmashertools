@@ -65,6 +65,7 @@ def get_directory_size(path : str):
     -------
     int
     """
+    print(path)
     if not isdir(path): raise FileNotFoundError(path)
     return sum(entry.stat().st_size for entry in scandir(path))
     
