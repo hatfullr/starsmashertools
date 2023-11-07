@@ -35,14 +35,44 @@ class Archive(dict, object):
         archive.save()
 
     """
+
+    
+    def REPLACE_OLD(old_value : "ArchiveValue", new_value : "ArchiveValue"):
+        """
+        A function that decides whether or not to replace an old value. The old
+        value is replaced if its file modification time is less than the new
+        value's. This function can be registered as a replacement checker in an
+        :class:`~.Archive`. This is a valid flag for the `replacement_flags`
+        keyword in the constructor of an :class:`~.Archive`.
+        
+        Parameters
+        ----------
+        old_value : ArchiveValue
+            The old :class:`~.ArchiveValue` found in the archive.
+
+        new_value : ArchiveValue
+            The new :class:`~.ArchiveValue` whose identifier matches that of the
+            `old_value`. If this function returns `True` then this will replace
+            `old_value` in the archive.
+
+        Returns
+        -------
+        bool
+            If `True` then `new_value` will replace `old_value` in the archive.
+            Otherwise, no replacement is made.
+        """
+        return new_value.mtime > old_value.mtime
+    
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def __init__(
             self,
             filename : str,
             load : bool = True,
+            replacement_flags : list | tuple = (REPLACE_OLD,),
     ):
         self.filename = filename
+        self.replacement_flags = replacement_flags
 
         super(Archive, self).__init__()
 
@@ -85,10 +115,14 @@ class Archive(dict, object):
             self[identifier] = ArchiveValue._from_json(val)
 
 
-    def _should_replace(self, identifier, other):
-        if identifier in self.keys():
-            return other.is_newer_than(self[identifier])
-        return True
+    def _should_add(self, identifier : str, new_value : "ArchiveValue"):
+        if identifier not in self.keys(): return True
+        old_value = self[identifier]
+        for flag in self.replacement_flags:
+            if flag(old_value, new_value):
+                return True
+                
+        return False
             
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
@@ -116,10 +150,13 @@ class Archive(dict, object):
         """
 
         value = ArchiveValue(*args, **kwargs)
-        if self._should_replace(identifier, value):
+        if self._should_add(identifier, value):
             self[identifier] = value
-        elif identifier in self.keys() and self[identifier].is_newer_than(value):
-            warnings.warn("'%s' is older than the archived value '%s' so it was not added to archive '%s'" % (str(value), str(self[identifier]), self.filename))
+        
+        #if self._should_replace(identifier, value):
+        #    self[identifier] = value
+        #elif identifier in self.keys() and self[identifier].is_newer_than(value):
+        #    warnings.warn("'%s' is older than the archived value '%s' so it was not added to archive '%s'" % (str(value), str(self[identifier]), self.filename))
             
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
@@ -140,7 +177,7 @@ class Archive(dict, object):
             other = Archive(other)
         identifiers = self.keys()
         for identifier, val in other.items():
-            if self._should_replace(identifier, val):
+            if self._should_add(identifier, val):
                 self[identifier] = val
         if save: self.save()
 
@@ -195,28 +232,6 @@ class ArchiveValue(object):
 
     def __str__(self):
         return 'ArchiveValue(%s)' % str(self.value)
-
-    @starsmashertools.helpers.argumentenforcer.enforcetypes
-    @api
-    def is_newer_than(self, other : 'ArchiveValue'):
-        """
-        Returns `True` if this :class:`ArchiveValue` is more recent than
-        `other`.
-
-        Parameters
-        ----------
-        other : ArchiveValue
-            The value to compare to this one.
-
-        Returns
-        -------
-        bool
-            `True` if this value is more recent than `other` and `False`
-            otherwise. Returns `False` if both values have the same modification
-            times.
-        """
-        return self.mtime > other.mtime
-
 
     def _to_json(self):
         """
