@@ -30,8 +30,7 @@ class ColoredPlot(matplotlib.collections.LineCollection, object):
         segments = self.get_segments()
         xy = []
         for segment in segments:
-            xy1, xy2 = segment
-            xy += [xy1]
-            xy += [xy2]
+            for _xy in segment:
+                xy += [_xy]
         return np.asarray(xy)
         
