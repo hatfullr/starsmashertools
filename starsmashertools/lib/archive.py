@@ -121,7 +121,6 @@ class Archive(dict, object):
         for flag in self.replacement_flags:
             if flag(old_value, new_value):
                 return True
-                
         return False
             
 

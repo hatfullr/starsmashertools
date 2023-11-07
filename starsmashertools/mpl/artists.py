@@ -25,3 +25,13 @@ class ColoredPlot(matplotlib.collections.LineCollection, object):
         axes._request_autoscale_view("x")
         axes._request_autoscale_view("y")
 
+    def get_xydata(self):
+        import numpy as np
+        segments = self.get_segments()
+        xy = []
+        for segment in segments:
+            xy1, xy2 = segment
+            xy += [xy1]
+            xy += [xy2]
+        return np.asarray(xy)
+        

@@ -9,6 +9,12 @@ import fnmatch
 import collections
 import warnings
 
+def replace(file1 : str, file2 : str):
+    if (starsmashertools.helpers.ssh.isRemote(file1) or
+        starsmashertools.helpers.ssh.isRemote(file2)):
+        raise NotImplementedError
+    return os.replace(file1, file2)
+
 def utime(path, *args, **kwargs):
     if starsmashertools.helpers.ssh.isRemote(path):
         raise NotImplementedError
