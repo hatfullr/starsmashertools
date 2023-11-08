@@ -425,16 +425,16 @@ class Simulation(object):
         outputs = self.get_output()
         if not outputs: raise ValueError("Cannot find output at time %f because there are no output files in simulation '%s'" % (time, str(self.directory)))
         
-        tend = outputs[-1]['t'].convert(time.label)
+        tend = (outputs[-1]['t'] * self.units['t']).convert(time.label)
         
         if time < 0 or time > tend:
             raise ValueError("Time %f is out of bounds [0, %f]" % (time, tend))
         
         m = starsmashertools.helpers.midpoint.Midpoint(outputs)
         m.set_criteria(
-            lambda output: output['t'] < time.convert(output['t'].label),
-            lambda output: output['t'] == time.convert(output['t'].label),
-            lambda output: output['t'] > time.convert(output['t'].label),
+            lambda output: (output['t'] * self.units['t']).convert(time.label) < time,
+            lambda output: (output['t'] * self.units['t']).convert(time.label) == time,
+            lambda output: (output['t'] * self.units['t']).convert(time.label) > time,
         )
         return m.get()
 
