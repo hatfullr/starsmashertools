@@ -418,20 +418,23 @@ class Simulation(object):
         `starsmashertools.lib.output.Output`
             The Output object closest to the given time.
         """
-        if isinstance(time, starsmashertools.lib.units.Unit):
-            time = float(time.convert(self.units['t']))
+        if not isinstance(time, starsmashertools.lib.units.Unit):
+            time *= self.units['t']
+            #time = float(time.convert(self.units['t'].label))
 
         outputs = self.get_output()
         if not outputs: raise ValueError("Cannot find output at time %f because there are no output files in simulation '%s'" % (time, str(self.directory)))
-            
-        if time < 0 or time > outputs[-1]['t']:
-            raise ValueError("Time %f is out of bounds [0, %f]" % (time, outputs[-1]['t']))
+        
+        tend = outputs[-1]['t'].convert(time.label)
+        
+        if time < 0 or time > tend:
+            raise ValueError("Time %f is out of bounds [0, %f]" % (time, tend))
         
         m = starsmashertools.helpers.midpoint.Midpoint(outputs)
         m.set_criteria(
-            lambda output: output['t'] < time,
-            lambda output: output['t'] == time,
-            lambda output: output['t'] > time,
+            lambda output: output['t'] < time.convert(output['t'].label),
+            lambda output: output['t'] == time.convert(output['t'].label),
+            lambda output: output['t'] > time.convert(output['t'].label),
         )
         return m.get()
 
