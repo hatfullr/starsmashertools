@@ -428,7 +428,7 @@ class Simulation(object):
         tend = (outputs[-1]['t'] * self.units['t']).convert(time.label)
         
         if time < 0 or time > tend:
-            raise ValueError("Time %f is out of bounds [0, %f]" % (time, tend))
+            raise ValueError("Time %s is out of bounds [0, %s]" % (str(time), str(tend)))
         
         m = starsmashertools.helpers.midpoint.Midpoint(outputs)
         m.set_criteria(
