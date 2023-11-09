@@ -105,13 +105,29 @@ def _check_type(obj, _types):
             else:
                 return None
             new_type = numpy_conversions.get(obj.dtype.type, None)
-            if new_type is None: return None
-            if new_type not in _types.__args__: return others
+            if new_type is None:
+                return _types.__args__
+            if new_type not in _types.__args__:
+                return others
+            return None
+
+        if isinstance(obj, _types.__args__): return None
+
+        # If obj isn't a numpy array, then check if it is a numpy type that can
+        # be converted to a base type
+        if isinstance(obj, tuple(numpy_conversions.keys())):
+            # It can be converted
+            new_type = numpy_conversions.get(obj.dtype.type, None)
+            if new_type is None: return _types.__args__
+            if new_type not in _types.__args__:
+                return _types.__args__
             return None
         
+        # This is the regular check
         if (not isinstance(obj, _types.__args__) and
             not any([issubclass(obj.__class__, t) for t in _types.__args__])):
             return _types.__args__
+
     else:
         if hasattr(_types, '__iter__') and not _types in [str, dict]:
             try:

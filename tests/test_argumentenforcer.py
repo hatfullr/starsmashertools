@@ -115,9 +115,11 @@ starsmashertools.helpers.argumentenforcer.enforcetypes({{'a' : [{_type}]}})
         def f(a : int | float | np.ndarray): return None
         f(int())
         f(float())
-        with self.assertRaises(error):
-            f(np.int32())
-            f(np.float16())
+        f(np.int32())
+        f(np.float16())
+        #with self.assertRaises(error):
+        #    f(np.int32())
+        #    f(np.float16())
 
         @starsmashertools.helpers.argumentenforcer.enforcetypes
         def f(a : int | float | list | tuple | np.ndarray): return None
@@ -127,11 +129,11 @@ starsmashertools.helpers.argumentenforcer.enforcetypes({{'a' : [{_type}]}})
         f(float())
         f(np.array([float()]))
         f(np.array([int()]))
+        f(np.int32())
+        f(np.float64())
+        f(np.array([int()], dtype=np.int32))
+        f(np.array([float()], dtype=np.float64))
         with self.assertRaises(error):
-            f(np.int32())
-            f(np.float64())
-            f(np.array([0], dtype=np.int32))
-            f(np.array([float()], dtype=np.float64))
             f(np.array([[]], dtype=list))
 
         @starsmashertools.helpers.argumentenforcer.enforcetypes
