@@ -429,7 +429,7 @@ class ParticleIterator(OutputIterator, object):
             *args,
             **kwargs
     ):
-        if isinstance(particle_IDs, int): particle_IDs = [particle_IDs]
+        if not hasattr(particle_IDs, '__iter__'): particle_IDs = [particle_IDs]
         super(ParticleIterator, self).__init__(*args, **kwargs)
         self.particle_IDs = particle_IDs
 
