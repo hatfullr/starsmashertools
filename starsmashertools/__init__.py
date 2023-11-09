@@ -257,7 +257,7 @@ def get_particles(
 @starsmashertools.helpers.argumentenforcer.enforcetypes
 @api
 def trace_particles(
-        particles : np.int8 | np.int16 | np.int32 | np.int64 | int | list | tuple | np.ndarray,
+        particles : int | list | tuple | np.ndarray,
         outputs_or_simulation : list | tuple | starsmashertools.lib.output.OutputIterator | starsmashertools.lib.simulation.Simulation,
         **kwargs
 ):
