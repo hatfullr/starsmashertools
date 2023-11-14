@@ -4,6 +4,7 @@ import starsmashertools.helpers.file
 import starsmashertools.lib.logfile
 from starsmashertools.helpers.apidecorator import api
 from starsmashertools.helpers.clidecorator import cli
+import starsmashertools.helpers.argumentenforcer
 import starsmashertools.math
 import numpy as np
 import copy
@@ -72,6 +73,7 @@ class Relaxation(starsmashertools.lib.simulation.Simulation, object):
         return self._isPolytrope
 
     @cli('starsmashertools')
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
     def get_n(self, cli : bool = False):
         if self._n is None:
             # Check for log files
@@ -80,7 +82,7 @@ class Relaxation(starsmashertools.lib.simulation.Simulation, object):
                 self._n = int(logfiles[0].get('parent: n=').replace('parent: n=', '').strip())
             else: # If there's no log files, check for output files
                 try:
-                    data = self.get_data(0)
+                    data = self.get_output(0)
                 except IndexError:
                     raise Exception("Cannot find the number of particles because there are no log files and there are no data files in '%s'" % self.directory)
 
@@ -88,7 +90,14 @@ class Relaxation(starsmashertools.lib.simulation.Simulation, object):
                 self._n = header['ntot']
         return self._n
 
-
+    @cli('starsmashertools')
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    def get_final_radius(self, cli : bool = False):
+        output = self.get_output(-1)
+        result = np.amax(output['r'] + 2*output['hp'])
+        if cli:
+            return "max(r + 2h) = %15.7E" % result
+        return result
 
 
     class Profile(dict, object):
