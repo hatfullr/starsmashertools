@@ -10,3 +10,10 @@ if [ $? -ne 0 ]; then
     echo "Install failed"
     exit 1
 fi
+
+which starsmashertools &>/dev/null
+if [ $? -ne 0 ]; then
+    echo "Warning: cannot find command 'starsmashertools'"
+    echo "To complete your installation add the following line to $HOME/.bashrc:"
+    echo 'export PATH="$HOME/.local/bin:$PATH"'
+fi
