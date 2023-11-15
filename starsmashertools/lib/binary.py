@@ -326,15 +326,21 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
                     string += ["Star %d: None (point mass)" % (i+1)]
             return "\n".join(string)
         return output1, output2
-        
-        
-        
-        
-        
 
     @api
     @cli('starsmashertools')
     def get_primary_mass(self, cli : bool = False):
+        """
+        Return the mass of the primary star (usually the donor). First the log
+        files are searched, and if no log files are found then the first output
+        file is checked. If there are no output files then the sph.start1u file
+        is checked, and if it doesn't exist then an error is raised.
+
+        Returns
+        -------
+        float
+            The mass of the primary (donor) star.
+        """
         logfiles = self.get_logfiles()
         if logfiles:
             try:
@@ -344,12 +350,31 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
                 pass
         # If the log files failed, check the first output file
         output = self.get_output(0)
+        if not output:
+            # If there's no output files, then try to get sph.start1u
+            start1u = self.get_start1u()
+            if not starsmashertools.helpers.path.isfile(start1u):
+                raise FileNotFoundError("Cannot get the primary's mass because the simulation has no log files, no output files, and the sph.start1u file is missing, in '%s'" % self.directory)
+            output = starsmashertools.lib.output.Output(start1u, self)
+
         with starsmashertools.mask(output, self.get_primary_IDs()) as masked:
             return np.sum(masked['am'])
 
     @api
     @cli('starsmashertools')
     def get_secondary_mass(self, cli : bool = False):
+        """
+        Return the mass of the secondary star (usually the accretor). First the
+        log files are searched, and if no log files are found then the first
+        output file is checked. If there are no output files then the
+        sph.start1u file is checked, and if it doesn't exist then an error is
+        raised.
+
+        Returns
+        -------
+        float
+            The mass of the secondary (accretor) star.
+        """
         logfiles = self.get_logfiles()
         if logfiles:
             try:
@@ -359,5 +384,12 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
                 pass
         # If the log files failed, check the first output file
         output = self.get_output(0)
+        if not output:
+            # If there's no output files, then try to get sph.start1u
+            start2u = self.get_start2u()
+            if not starsmashertools.helpers.path.isfile(start2u):
+                raise FileNotFoundError("Cannot get the secondary's mass because the simulation has no log files, no output files, and the sph.start2u file is missing, in '%s'" % self.directory)
+            output = starsmashertools.lib.output.Output(start2u, self)
+        
         with starsmashertools.mask(output, self.get_secondary_IDs()) as masked:
             return np.sum(masked['am'])
