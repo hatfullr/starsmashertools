@@ -1,6 +1,10 @@
 #!/bin/bash
 
 python3 -m pip install --no-build-isolation -e .
+if [ $? -ne 0 ]; then
+    echo "Install failed"
+    exit 1
+fi
 
 which starsmashertools &>/dev/null
 if [ $? -ne 0 ]; then
@@ -9,4 +13,12 @@ if [ $? -ne 0 ]; then
     echo '   export PATH="$HOME/.local/bin:$PATH"'
     echo "Then refresh your environment:"
     echo '   source ~/.bashrc'
+    exit 1
+fi
+
+# Import starsmashertools. If the version installed is not the most recent then
+# this will print a warning to the user.
+python3 -c 'import starsmashertools'
+if [ $? -ne 0 ]; then
+    exit 1
 fi
