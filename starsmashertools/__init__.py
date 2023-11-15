@@ -7,36 +7,59 @@ import os
 import importlib.metadata as metadata
 import importlib.util as util
 import warnings
-import urllib.request
-import urllib.error
 
 __version__ = metadata.version('starsmashertools')
 
 SOURCE_DIRECTORY = os.path.dirname(os.path.dirname(util.find_spec('starsmashertools').origin))
 
+
+# Format warnings in a way that doesn't print the source code line
+def showwarning(message, category, filename, lineno, *args, file=None, line=None, **kwargs):
+    content = warnings.formatwarning(message, category, filename, lineno, line)
+    print('\n'.join(content.split('\n')[:-2]))
+warnings.showwarning = showwarning
+
 # If our current version mis-matches the installed version, show a warning
-def get_latest_version():
-    url = 'https://raw.githubusercontent.com/hatfullr/starsmashertools/main/pyproject.toml'
-    contents = urllib.request.urlopen(url, timeout=1).read().decode('utf-8')
-    for line in contents.split('\n'):
-        if line.startswith('version'):
-            return line.split('=')[1].replace("'",'').replace('"','').strip()
-    return None
+def _check_version():
+    # Don't do this on my local development machine. I increment the version
+    # number on each commit and I don't want to run the install script every
+    # time I commit b/c it's kind of slow. We just check if the .git directory
+    # exists.
 
-connected = True
-try:
-    latest_version = get_latest_version()
-except urllib.error.URLError as e:
-    # Simply don't bother checking the latest version if the user isn't
-    # connected to the internet.
-    connected = False
-if connected:
-    if latest_version is None:
-        warnings.warn("Failed to find the version number in the pyproject.toml file downloaded from GitHub. It is uncertain if your current starsmashertools version is the most recent version.")
-    elif latest_version != __version__:
-        warnings.warn("Current starsmashertools version is '%s', while latest version on GitHub is '%s'. If you just downloaded the latest version make sure you also run the install script." % (__version__, latest_version))
+    if os.path.isdir(os.path.join(SOURCE_DIRECTORY, '.git')):
+        return
 
+    import urllib.request
+    import urllib.error
+    
+    def get_latest_version():
+        url = 'https://raw.githubusercontent.com/hatfullr/starsmashertools/main/pyproject.toml'
+        request = urllib.request.Request(url)
+        # This is to get the most recent webpage
+        request.add_header('Cache-Control', 'max-age=0')
+        response = urllib.request.urlopen(request)
+        contents = response.read().decode('utf-8')
+        for line in contents.split('\n'):
+            if line.startswith('version'):
+                return line.split('=')[1].replace("'",'').replace('"','').strip()
+        return None
 
+    connected = True
+    try:
+        latest_version = get_latest_version()
+    except Exception as e:
+        # Simply don't bother checking the latest version if anything goes wrong.
+        # This way the user can always still use their installed version.
+        if not isinstance(e, urllib.error.URLError):
+            warnings.warn("Something went wrong while checking the latest version of starsmashertools while connected to the internet. This should never happen, but if it does then you can safely ignore this warning. You can filter this warning out by importing the 'warnings' package before importing starsmashertools and writing \"warnings.filterwarnings(action='ignore')\" before the starsmashertools import and \"warnings.resetwarnings()\" after the import.")
+        connected = False
+    if connected:
+        if latest_version is None:
+            warnings.warn("Failed to find the version number in the pyproject.toml file downloaded from GitHub. It is uncertain if your current starsmashertools version is the most recent version.")
+        elif latest_version != __version__:
+            warnings.warn("Current starsmashertools version is '%s', while latest version on GitHub is '%s'. If you just downloaded the latest version make sure you also run the install script." % (__version__, latest_version))
+
+_check_version()
 
 
         
