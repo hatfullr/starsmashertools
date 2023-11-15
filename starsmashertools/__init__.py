@@ -6,11 +6,40 @@ import contextlib
 import os
 import importlib.metadata as metadata
 import importlib.util as util
+import warnings
+import urllib.request
+import urllib.error
 
 __version__ = metadata.version('starsmashertools')
 
 SOURCE_DIRECTORY = os.path.dirname(os.path.dirname(util.find_spec('starsmashertools').origin))
 
+# If our current version mis-matches the installed version, show a warning
+def get_latest_version():
+    url = 'https://raw.githubusercontent.com/hatfullr/starsmashertools/main/pyproject.toml'
+    contents = urllib.request.urlopen(url, timeout=1).read().decode('utf-8')
+    for line in contents.split('\n'):
+        if line.startswith('version'):
+            return line.split('=')[1].replace("'",'').replace('"','').strip()
+    return None
+
+connected = True
+try:
+    latest_version = get_latest_version()
+except urllib.error.URLError as e:
+    # Simply don't bother checking the latest version if the user isn't
+    # connected to the internet.
+    connected = False
+if connected:
+    if latest_version is None:
+        warnings.warn("Failed to find the version number in the pyproject.toml file downloaded from GitHub. It is uncertain if your current starsmashertools version is the most recent version.")
+    elif latest_version != __version__:
+        warnings.warn("Current starsmashertools version is '%s', while latest version on GitHub is '%s'. If you just downloaded the latest version make sure you also run the install script." % (__version__, latest_version))
+
+
+
+
+        
 @starsmashertools.helpers.argumentenforcer.enforcetypes
 @api
 def get_simulation(directory : str):

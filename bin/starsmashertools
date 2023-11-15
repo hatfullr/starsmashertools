@@ -87,14 +87,14 @@ def call_function(function):
 
 
 
-
-
 ################################################################################
 ################################# Front end ####################################
 ################################################################################
 cli = starsmashertools.bintools.cli.CLI(
     'starsmashertools',
     "Analyze a StarSmasher simulation directory.",
+    # We don't need a valid directory if we are just checking the package version
+    require_valid_directory = False,
 )
 
 cli.parser.add_argument(
@@ -108,7 +108,21 @@ cli.parser.add_argument(
     help='The StarSmasher simulation directory to analyze. Defaults to the current working directory if not specified.',
 )
 
+cli.parser.add_argument(
+    '--version',
+    action='store_true',
+    default=False,
+    help='Print the starsmashertools version to the console. Other command line options are ignored when this flag is specified.'
+)
 
+
+
+if cli.args['version']:
+    print(starsmashertools.__version__)
+    quit()
+
+
+# Now we check for a valid directory (implicitly)
 simulation = starsmashertools.get_simulation(cli.args['directory'])
 
 available_functions = get_available_functions()
