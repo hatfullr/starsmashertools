@@ -339,7 +339,7 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
         Returns
         -------
         float
-            The mass of the primary (donor) star.
+            The mass of the primary (usually the donor) star.
         """
         logfiles = self.get_logfiles()
         if logfiles:
@@ -367,13 +367,13 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
         Return the mass of the secondary star (usually the accretor). First the
         log files are searched, and if no log files are found then the first
         output file is checked. If there are no output files then the
-        sph.start1u file is checked, and if it doesn't exist then an error is
+        sph.start2u file is checked, and if it doesn't exist then an error is
         raised.
 
         Returns
         -------
         float
-            The mass of the secondary (accretor) star.
+            The mass of the secondary (usually the accretor) star.
         """
         logfiles = self.get_logfiles()
         if logfiles:
@@ -385,7 +385,7 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
         # If the log files failed, check the first output file
         output = self.get_output(0)
         if not output:
-            # If there's no output files, then try to get sph.start1u
+            # If there's no output files, then try to get sph.start2u
             start2u = self.get_start2u()
             if not starsmashertools.helpers.path.isfile(start2u):
                 raise FileNotFoundError("Cannot get the secondary's mass because the simulation has no log files, no output files, and the sph.start2u file is missing, in '%s'" % self.directory)
@@ -393,3 +393,85 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
         
         with starsmashertools.mask(output, self.get_secondary_IDs()) as masked:
             return np.sum(masked['am'])
+
+    @api
+    @cli('starsmashertools')
+    def get_primary_core_mass(self, cli : bool = False):
+        """
+        Return the mass of the core particle in the primary (usually the donor)
+        star, if it has a core particle.
+
+        Returns
+        -------
+        float or None
+            The mass of the core particle in the primary (usually the donor)
+            star. If there is no core particle, returns `None`.
+        """
+
+        if self.get_n1() == 1: # The primary is a point mass particle
+            return self['mbh']
+        
+        logfiles = self.get_logfiles()
+        search_string = 'is a corepoint of mass'
+        if logfiles:
+            try:
+                return float(logfiles[0].get(search_string).replace(search_string, '').strip())
+            except starsmashertools.lib.logfile.LogFile.PhraseNotFoundError:
+                # I think this means the primary has no core particle
+                return None
+            
+        # If there's no log files, then check for output files
+        output = self.get_output(0)
+        if not output:
+            # If there's no output files, then try to get sph.start1u
+            start1u = self.get_start1u()
+            if not starsmashertools.helpers.path.isfile(start1u):
+                raise FileNotFoundError("Cannot get the primary's core mass because there is more than 1 particle for the primary star and the simulation has no log files, no output files, and the sph.start1u file is missing, in '%s'" % self.directory)
+            output = starsmashertools.lib.output.Output(start1u, self)
+
+        with starsmashertools.mask(output, self.get_primary_IDs()) as masked:
+            idx = masked['u'] == 0
+        
+            sumidx = sum(idx)
+            if sumidx == 0: return None
+            if sumidx == 1: return masked['am'][idx][0]
+            else:
+                raise Exception("The primary star has multiple core particles, which doesn't make sense.")
+
+    @api
+    @cli('starsmashertools')
+    def get_secondary_core_mass(self, cli : bool = False):
+        """
+        Return the mass of the core particle in the secondary (usually the
+        accretor) star, if it has a core particle.
+
+        Returns
+        -------
+        float or None
+            The mass of the core particle in the secondary (usually the
+            accretor) star. If there is no core particle, returns `None`.
+        """
+
+        if self.get_n2() == 1: # The secondary is a point mass particle
+            return self['mbh']
+        
+        # We can't rely on log files for the secondary, because StarSmasher only
+        # gives us hints for the primary core particle.
+        
+        # Check for output files
+        output = self.get_output(0)
+        if not output:
+            # If there's no output files, then try to get sph.start1u
+            start2u = self.get_start2u()
+            if not starsmashertools.helpers.path.isfile(start2u):
+                raise FileNotFoundError("Cannot get the secondary's core mass because there is more than 1 particle for the secondary star, the simulation has no output files, and the sph.start2u file is missing, in '%s'" % self.directory)
+            output = starsmashertools.lib.output.Output(start2u, self)
+
+        with starsmashertools.mask(output, self.get_secondary_IDs()) as masked:
+            idx = masked['u'] == 0
+        
+            sumidx = sum(idx)
+            if sumidx == 0: return None
+            if sumidx == 1: return masked['am'][idx][0]
+            else:
+                raise Exception("The secondary star has multiple core particles, which doesn't make sense.")
