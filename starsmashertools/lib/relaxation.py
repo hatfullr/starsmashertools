@@ -55,7 +55,8 @@ class Relaxation(starsmashertools.lib.simulation.Simulation, object):
                     return self._isPolytrope
 
             # If searching the log files was a bust, try looking for an sph.init file
-            initfile = starsmashertools.helpers.path.join(self.directory, 'sph.init')
+            initfile = self._get_sphinit_filename()
+            #initfile = starsmashertools.helpers.path.join(self.directory, 'sph.init')
             if starsmashertools.helpers.path.isfile(initfile):
                 with starsmashertools.helpers.file.open(initfile, 'r') as f:
                     f.readline()
@@ -65,10 +66,10 @@ class Relaxation(starsmashertools.lib.simulation.Simulation, object):
                 self._isPolytrope = iname == '1es'
                 return self._isPolytrope
             
-            raise Exception("Cannot determine if relaxation is a polytrope because it is missing log files and/or an sph.init file '%s'" % self.directory)
+            raise Exception("Cannot determine if relaxation is a polytrope because it is missing log files and also missing init file '%s'" % initfile)
 
         if self._isPolytrope is None:
-            raise Exception("Internal failure. Could not determine if relaxation is a polytrope because it is missing log files and/or an sph.init file '%s'" % self.directory)
+            raise Exception("Internal failure. Could not determine if relaxation is a polytrope because it is missing log files and init file '%s'" % initfile)
         
         return self._isPolytrope
 

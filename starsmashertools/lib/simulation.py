@@ -1,12 +1,11 @@
-import starsmashertools.preferences as preferences
-import starsmashertools.helpers.path as path
-import starsmashertools.helpers.jsonfile as jsonfile
+import starsmashertools.preferences
+import starsmashertools.helpers.path
+import starsmashertools.helpers.jsonfile
 import starsmashertools
 import starsmashertools.lib.input
 import starsmashertools.lib.output
 import starsmashertools.lib.logfile
 import starsmashertools.lib.units
-import starsmashertools.helpers.stacktrace
 import starsmashertools.helpers.midpoint
 import starsmashertools.helpers.string
 import starsmashertools.helpers.argumentenforcer
@@ -29,7 +28,7 @@ class Simulation(object):
             self,
             directory : str,
     ):
-        directory = path.realpath(directory.strip())
+        directory = starsmashertools.helpers.path.realpath(directory.strip())
         
         if not Simulation.valid_directory(directory):
             raise Simulation.InvalidDirectoryError(directory)
@@ -46,12 +45,6 @@ class Simulation(object):
         self._compression_task = None
 
         self.reader = starsmashertools.lib.output.Reader(self)
-
-    @property
-    def compressed(self):
-        filename = self._get_compression_filename()
-        if not starsmashertools.helpers.path.isfile(filename): return False
-        return starsmashertools.helpers.compressiontask.CompressionTask.isCompressedFile(filename)
             
     def __hash__(self):
         return hash(self.directory)
@@ -61,7 +54,7 @@ class Simulation(object):
         # Check if the basenames are the same, so that e.g. pdc.json
         # files can work on different file systems
         if not isinstance(other, Simulation): return False
-        return path.basename(self.directory) == path.basename(other.directory)
+        return starsmashertools.helpers.path.samefile(self.directory, other.directory)
 
     @api
     def __getitem__(self, key): return self.input[key]
@@ -69,7 +62,7 @@ class Simulation(object):
     @api
     def __contains__(self, item):
         if isinstance(item, str):
-            if path.isfile(item):
+            if starsmashertools.helpers.path.isfile(item):
                 return item in self.get_output_iterator()
         elif isinstance(item, starsmashertools.lib.output.Output):
             return item in self.get_output_iterator()
@@ -88,11 +81,11 @@ class Simulation(object):
     def _get_children_from_hint_files(self):
         import starsmashertools.helpers.file
         children = None
-        hint_filenames = preferences.get_default('Simulation', 'children hint filenames', throw_error=False)
+        hint_filenames = starsmashertools.preferences.get_default('Simulation', 'children hint filenames', throw_error=False)
         if hint_filenames is not None:
             for name in hint_filenames:
-                fname = path.join(self.directory, name)
-                if path.isfile(fname):
+                fname = starsmashertools.helpers.path.join(self.directory, name)
+                if starsmashertools.helpers.path.isfile(fname):
                     with starsmashertools.helpers.file.open(fname, 'r') as f:
                         for line in f:
                             line = line.strip()
@@ -124,13 +117,13 @@ class Simulation(object):
 
     # Load the children from the file saved in data/
     def _load_children(self, verbose=False):
-        filename = preferences.get_default('Simulation', 'children file', throw_error=True)
+        filename = starsmashertools.preferences.get_default('Simulation', 'children file', throw_error=True)
         if verbose: print("Loading children from file")
         children = None
-        if not path.isfile(filename):
+        if not starsmashertools.helpers.path.isfile(filename):
             raise FileNotFoundError(filename)
         
-        children_object = jsonfile.load(filename)
+        children_object = starsmashertools.helpers.jsonfile.load(filename)
         version = None
         print_warning = False
         if 'version' in children_object.keys():
@@ -160,12 +153,12 @@ class Simulation(object):
         if not hasattr(self._children, '__iter__') or isinstance(self._children, str):
             raise TypeError("Property Simulation._children must be a non-str iterable")
 
-        filename = preferences.get_default('Simulation', 'children file', throw_error=True)
+        filename = starsmashertools.preferences.get_default('Simulation', 'children file', throw_error=True)
         
         should_remake = False
         children_object = {}
-        if path.isfile(filename):
-            children_object = jsonfile.load(filename)
+        if starsmashertools.helpers.path.isfile(filename):
+            children_object = starsmashertools.helpers.jsonfile.load(filename)
             
             if not isinstance(children_object, dict):
                 raise TypeError("The object saved in '%s' must be a dictionary. Try deleting or renaming the file and running your code again." % str(filename))
@@ -188,20 +181,42 @@ class Simulation(object):
         children_object[self.directory] = to_save
         children_object['version'] = starsmashertools.__version__
         if should_remake:
-            if path.isfile(filename+".temp"): path.remove(filename+".temp")
-            jsonfile.save(filename+".temp", children_object)
-            path.replace(filename+".temp", filename)
+            if starsmashertools.helpers.path.isfile(filename+".temp"):
+                starsmashertools.helpers.path.remove(filename+".temp")
+            starsmashertools.helpers.jsonfile.save(filename+".temp", children_object)
+            starsmashertools.helpers.path.replace(filename+".temp", filename)
         else:
-            jsonfile.save(filename, children_object)
-
-
+            starsmashertools.helpers.jsonfile.save(filename, children_object)
 
     def _get_compression_filename(self):
-        dirname = path.basename(self.directory)
-        return path.join(self.directory, dirname+".zip")
+        dirname = starsmashertools.helpers.path.basename(self.directory)
+        return starsmashertools.helpers.path.join(self.directory, dirname+".zip")
         
+    def _get_sphinit_filename(self):
+        # Obtain the 'sph.init' file this simulation uses by checking the
+        # StarSmasher source code for the filename that gets read.
+        src = starsmashertools.helpers.path.get_src(self.directory)
+        initfile = starsmashertools.helpers.path.join(src, 'init.f')
+        last_open_line = None
+        with starsmashertools.helpers.file.open(initfile, 'r') as f:
+            for line in f:
+                ls = line.strip()
+                if ls.startswith('open('): last_open_line = line
+                if ls == 'read(12,initt)': break
+            else:
+                raise Exception("Failed to find the init file name because a line with content 'read(12,initt)' was not found in '%s'" % initfile)
 
+        if last_open_line is None:
+            raise Exception("Failed to find a line where the init file gets opened in '%s'" % initfile)
 
+        for s in last_open_line.split(','):
+            if s.startswith('file') and '=' in s:
+                return s.split('=')[1].replace("'",'').replace('"','')
+
+        raise Exception("Something went wrong while parsing the Fortran code to find the init file name in '%s'" % initfile)
+            
+            
+    
 
 
 
@@ -246,8 +261,14 @@ class Simulation(object):
     @property
     def teos(self):
         if self._teos is None and self['neos'] == 2:
-            self._teos = TEOS(path.realpath(path.join(self.directory, self['eosfile'])))
+            self._teos = TEOS(starsmashertools.helpers.path.realpath(starsmashertools.helpers.path.join(self.directory, self['eosfile'])))
         return self._teos
+
+    @property
+    def compressed(self):
+        filename = self._get_compression_filename()
+        if not starsmashertools.helpers.path.isfile(filename): return False
+        return starsmashertools.helpers.compressiontask.CompressionTask.isCompressedFile(filename)
 
     @api
     def get_compressed_properties(self):
@@ -277,7 +298,7 @@ class Simulation(object):
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def valid_directory(directory : str):
-        return path.get_src(directory) is not None
+        return starsmashertools.helpers.path.get_src(directory) is not None
 
     # Keywords are passed to logfile.find() method
     @api
@@ -285,7 +306,7 @@ class Simulation(object):
         if self._logfiles is None:
             self._logfiles = []
             for _path in starsmashertools.lib.logfile.find(self.directory, **kwargs):
-                if path.getsize(_path) > 0:
+                if starsmashertools.helpers.path.getsize(_path) > 0:
                     self._logfiles += [starsmashertools.lib.logfile.LogFile(_path, self)]
         return self._logfiles
     
@@ -374,14 +395,14 @@ class Simulation(object):
         -------
         `list`
         """
-        if recursive: _path = path.join(self.directory, '**', filename_or_pattern)
-        else: _path = path.join(self.directory, filename_or_pattern)
+        if recursive: _path = starsmashertools.helpers.path.join(self.directory, '**', filename_or_pattern)
+        else: _path = starsmashertools.helpers.path.join(self.directory, filename_or_pattern)
         return glob.glob(_path, recursive=recursive)
         
     @api
     def get_outputfiles(self, pattern : str | type(None) = None):
         if pattern is None:
-            pattern = preferences.get_default('Simulation', 'output files', throw_error=True)
+            pattern = starsmashertools.preferences.get_default('Simulation', 'output files', throw_error=True)
         matches = self.get_file(pattern)
         if matches:
             matches = sorted(matches)
@@ -451,9 +472,9 @@ class Simulation(object):
 
         # Obtain the file names to be compressed.
         if include_patterns is None:
-            include_patterns = preferences.get_default('Simulation', 'compress include')
+            include_patterns = starsmashertools.preferences.get_default('Simulation', 'compress include')
         if exclude_patterns is None:
-            exclude_patterns = preferences.get_default('Simulation', 'compress exclude')
+            exclude_patterns = starsmashertools.preferences.get_default('Simulation', 'compress exclude')
 
         exclude_files = []
         for pattern in exclude_patterns:
@@ -467,8 +488,8 @@ class Simulation(object):
             
         for key, val in self.items():
             if not isinstance(val, str): continue
-            _path = path.join(self.directory, val)
-            if not path.isfile(_path): continue
+            _path = starsmashertools.helpers.path.join(self.directory, val)
+            if not starsmashertools.helpers.path.isfile(_path): continue
             files += [_path]
 
         filename = self._get_compression_filename()
@@ -531,7 +552,7 @@ class Simulation(object):
         -------
         int
         """
-        return path.get_directory_size(self.directory)
+        return starsmashertools.helpers.path.get_directory_size(self.directory)
 
 
 
