@@ -213,12 +213,24 @@ class Simulation(object):
     ############################################################################
     # public attributes
 
-    @staticmethod
-    @starsmashertools.helpers.argumentenforcer.enforcetypes
-    @api
-    def valid_directory(directory : str):
-        return path.get_src(directory) is not None
+    ###
+    # Exceptions
+    ###
 
+    class InvalidDirectoryError(Exception): pass
+    
+    class OutputNotInSimulationError(Exception):
+        def __init__(self, simulation, output, message=None):
+            if message is None:
+                message = "Output is not a member of simulation: '%s' for simulation '%s'" % (output.path, simulation.directory)
+            super(Simulation.OutputNotInSimulationError, self).__init__(message)
+
+
+    
+    ###
+    # Object functionality
+    ###
+    
     @api
     def keys(self, *args, **kwargs): return self.input.keys(*args, **kwargs)
     @api
@@ -237,7 +249,35 @@ class Simulation(object):
             self._teos = TEOS(path.realpath(path.join(self.directory, self['eosfile'])))
         return self._teos
 
-        
+    @api
+    def get_compressed_properties(self):
+        """
+        Get a dictionary of properties on the files contained in the compressed
+        archive.
+
+        Returns
+        -------
+        dict
+            A dictionary whose keys are the names of the files in the compressed
+            archive that they would have if the archive were decompressed. Each
+            value is a dictionary holding various values corresponding to each
+            file in the archive.
+        """
+        if not self.compressed: return {}
+        filename = self._get_compression_filename()
+        return starsmashertools.helpers.compressiontask.CompressionTask.get_compressed_properties(filename)
+
+    
+    
+    ###
+    # Files and directories
+    ###
+
+    @staticmethod
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def valid_directory(directory : str):
+        return path.get_src(directory) is not None
 
     # Keywords are passed to logfile.find() method
     @api
@@ -352,6 +392,156 @@ class Simulation(object):
     def get_initialfile(self, pattern : str | type(None) = None):
         return self.get_outputfiles(pattern=pattern)[0]
 
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def compress(
+            self,
+            filename : str | type(None) = None,
+            include_patterns : list | type(None) = None,
+            exclude_patterns : list | type(None) = None,
+            recursive : bool = True,
+            delete : bool = True,
+            delete_after : bool = True,
+            **kwargs,
+    ):
+        """
+        Create a compressed version of the Simulation. File creation times are
+        preserved.
+
+        Parameters
+        ----------
+        filename : str, None, default = None
+            The name of the resulting compressed file. If `None` then the name
+            of the file will be the name of the simulation directory with
+            '.zip' on the end.
+        
+        include_patterns : list, None, default = None
+            File name patterns to include in the compression. If `None`, uses 
+            the "compress include" value in :mod:`~.preferences`.
+
+        exclude_patterns : list, None, default = None
+            File name patterns to exclude in the compression. If `None`, uses
+            the "compress exclude" value from :mod:`~.preferences`.
+
+        recursive : bool, default = True
+            If `True`, subdirectories are also searched for files matching the
+            given patterns. If `False`, only searches the main simulation
+            directory.
+
+        delete : bool, default = True
+            If `True`, the files which are compressed are deleted.
+
+        delete_after : bool, default = True
+            If `True`, compressed files are deleted only after all files have
+            been compressed. If `False`, each file is deleted after it has
+            been compressed. If ``delete = False`` this option is ignored.
+
+        Other Parameters
+        ----------------
+        **kwargs
+            Remaining keyword arguments are passed directly to 
+            :func:`~helpers.compressiontask.CompressionTask.compress`.
+
+        See Also
+        --------
+        :func:`decompress`
+        :func:`~.helpers.compressiontask.CompressionTask.compress`
+        :mod:`~.preferences`
+        """
+
+        # Obtain the file names to be compressed.
+        if include_patterns is None:
+            include_patterns = preferences.get_default('Simulation', 'compress include')
+        if exclude_patterns is None:
+            exclude_patterns = preferences.get_default('Simulation', 'compress exclude')
+
+        exclude_files = []
+        for pattern in exclude_patterns:
+            fs = self.get_file(pattern, recursive=recursive)
+            exclude_files += fs
+        
+        files = []
+        for pattern in include_patterns:
+            fs = self.get_file(pattern, recursive=recursive)
+            files += [f for f in fs if f not in exclude_files]
+            
+        for key, val in self.items():
+            if not isinstance(val, str): continue
+            _path = path.join(self.directory, val)
+            if not path.isfile(_path): continue
+            files += [_path]
+
+        filename = self._get_compression_filename()
+        self._compression_task = starsmashertools.helpers.compressiontask.CompressionTask()
+        self._compression_task.compress(files, filename, delete=delete, delete_after=delete_after, **kwargs)
+        self._compression_task = None
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def decompress(
+            self,
+            filename : str | type(None) = None,
+            delete : bool = True,
+            **kwargs
+    ):
+        """
+        Decompress the simulation from the given filename.
+
+        Parameters
+        ----------
+        filename : str, None default = None
+            The filename to decompress. If `None`, the simulation directory is
+            searched for a compressed file whose path ends with '.zip'.
+            The file chosen is one which has a ``compression.sstools`` file
+            included in it, which created by
+            :func:`~helpers.compressiontask.CompressionTask.compress`.
+
+        delete : bool, default = True
+            If `True`, the compressed file is deleted after decompression.
+        
+        Other Parameters
+        ----------------
+        **kwargs
+            Remaining keyword arguments are passed directly to
+            `~helpers.compressiontask.CompressionTask.decompress`.
+
+        See Also
+        --------
+        :func:`compress`
+        :func:`~.helpers.compresisontask.CompressionTask.decompress`
+        """
+
+        if not self.compressed:
+            raise Exception("Cannot decompress a simulation that is not compressed")
+        
+        self._compression_task = starsmashertools.helpers.compressiontask.CompressionTask()
+        
+        if filename is None:
+            filename = self._get_compression_filename()
+            self._compression_task.decompress(filename, delete=delete, **kwargs)
+            self._compression_task = None
+            return
+        raise FileNotFoundError("Failed to find any valid compressed files in directory '%s'" % self.directory)
+
+    @api
+    def get_size(self):
+        """Returns the size of the simulation in bytes.
+
+        Returns
+        -------
+        int
+        """
+        return path.get_directory_size(self.directory)
+
+
+
+
+
+
+    ###
+    # Simulation outputs
+    ###
+    
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def get_output_iterator(
@@ -514,167 +704,6 @@ class Simulation(object):
         return ret
 
     @api
-    def get_compressed_properties(self):
-        """
-        Get a dictionary of properties on the files contained in the compressed
-        archive.
-
-        Returns
-        -------
-        dict
-            A dictionary whose keys are the names of the files in the compressed
-            archive that they would have if the archive were decompressed. Each
-            value is a dictionary holding various values corresponding to each
-            file in the archive.
-        """
-        if not self.compressed: return {}
-        filename = self._get_compression_filename()
-        return starsmashertools.helpers.compressiontask.CompressionTask.get_compressed_properties(filename)
-
-    @starsmashertools.helpers.argumentenforcer.enforcetypes
-    @api
-    def compress(
-            self,
-            filename : str | type(None) = None,
-            include_patterns : list | type(None) = None,
-            exclude_patterns : list | type(None) = None,
-            recursive : bool = True,
-            delete : bool = True,
-            delete_after : bool = True,
-            **kwargs,
-    ):
-        """
-        Create a compressed version of the Simulation. File creation times are
-        preserved.
-
-        Parameters
-        ----------
-        filename : str, None, default = None
-            The name of the resulting compressed file. If `None` then the name
-            of the file will be the name of the simulation directory with
-            '.zip' on the end.
-        
-        include_patterns : list, None, default = None
-            File name patterns to include in the compression. If `None`, uses 
-            the "compress include" value in :mod:`~.preferences`.
-
-        exclude_patterns : list, None, default = None
-            File name patterns to exclude in the compression. If `None`, uses
-            the "compress exclude" value from :mod:`~.preferences`.
-
-        recursive : bool, default = True
-            If `True`, subdirectories are also searched for files matching the
-            given patterns. If `False`, only searches the main simulation
-            directory.
-
-        delete : bool, default = True
-            If `True`, the files which are compressed are deleted.
-
-        delete_after : bool, default = True
-            If `True`, compressed files are deleted only after all files have
-            been compressed. If `False`, each file is deleted after it has
-            been compressed. If ``delete = False`` this option is ignored.
-
-        Other Parameters
-        ----------------
-        **kwargs
-            Remaining keyword arguments are passed directly to 
-            :func:`~helpers.compressiontask.CompressionTask.compress`.
-
-        See Also
-        --------
-        :func:`decompress`
-        :func:`~.helpers.compressiontask.CompressionTask.compress`
-        :mod:`~.preferences`
-        """
-
-        # Obtain the file names to be compressed.
-        if include_patterns is None:
-            include_patterns = preferences.get_default('Simulation', 'compress include')
-        if exclude_patterns is None:
-            exclude_patterns = preferences.get_default('Simulation', 'compress exclude')
-
-        exclude_files = []
-        for pattern in exclude_patterns:
-            fs = self.get_file(pattern, recursive=recursive)
-            exclude_files += fs
-        
-        files = []
-        for pattern in include_patterns:
-            fs = self.get_file(pattern, recursive=recursive)
-            files += [f for f in fs if f not in exclude_files]
-            
-        for key, val in self.items():
-            if not isinstance(val, str): continue
-            _path = path.join(self.directory, val)
-            if not path.isfile(_path): continue
-            files += [_path]
-
-        filename = self._get_compression_filename()
-        self._compression_task = starsmashertools.helpers.compressiontask.CompressionTask()
-        self._compression_task.compress(files, filename, delete=delete, delete_after=delete_after, **kwargs)
-        self._compression_task = None
-
-    @starsmashertools.helpers.argumentenforcer.enforcetypes
-    @api
-    def decompress(
-            self,
-            filename : str | type(None) = None,
-            delete : bool = True,
-            **kwargs
-    ):
-        """
-        Decompress the simulation from the given filename.
-
-        Parameters
-        ----------
-        filename : str, None default = None
-            The filename to decompress. If `None`, the simulation directory is
-            searched for a compressed file whose path ends with '.zip'.
-            The file chosen is one which has a ``compression.sstools`` file
-            included in it, which created by
-            :func:`~helpers.compressiontask.CompressionTask.compress`.
-
-        delete : bool, default = True
-            If `True`, the compressed file is deleted after decompression.
-        
-        Other Parameters
-        ----------------
-        **kwargs
-            Remaining keyword arguments are passed directly to
-            `~helpers.compressiontask.CompressionTask.decompress`.
-
-        See Also
-        --------
-        :func:`compress`
-        :func:`~.helpers.compresisontask.CompressionTask.decompress`
-        """
-
-        if not self.compressed:
-            raise Exception("Cannot decompress a simulation that is not compressed")
-        
-        self._compression_task = starsmashertools.helpers.compressiontask.CompressionTask()
-        
-        if filename is None:
-            filename = self._get_compression_filename()
-            self._compression_task.decompress(filename, delete=delete, **kwargs)
-            self._compression_task = None
-            return
-        raise FileNotFoundError("Failed to find any valid compressed files in directory '%s'" % self.directory)
-
-
-    @api
-    def get_size(self):
-        """Returns the size of the simulation in bytes.
-
-        Returns
-        -------
-        int
-        """
-        return path.get_directory_size(self.directory)
-
-
-    @api
     def get_output_headers(self, **kwargs):
         """
         Read all the headers of the output files in this simulation and return
@@ -708,47 +737,11 @@ class Simulation(object):
             ret[output] = output.header
         return ret
 
-    @api
-    @cli('starsmashertools', -1)
-    def get_ejected_mass(self, *args, cli : bool = False, **kwargs):
-        """
-        Return the total ejected mass for the given output file indices.
-
-        Parameters
-        ----------
-
-        Returns
-        -------
-        """
-        
-        outputs = self.get_output(*args, **kwargs)
-        if not isinstance(outputs, list): outputs = [outputs]
-        ret = np.zeros(len(outputs))
-        for i, output in enumerate(outputs):
-            if 'mejecta' in output.keys():
-                ret[i] = output['mejecta']
-            elif np.any(output['unbound']):
-                ret[i] = np.sum(output['am'][output['unbound']])
-        if len(ret) == 1: ret = ret[0]
-
-        if cli: return str(ret)
-        return ret
 
 
 
 
 
-
-
-
-    class InvalidDirectoryError(Exception): pass
-    
-
-    class OutputNotInSimulationError(Exception):
-        def __init__(self, simulation, output, message=None):
-            if message is None:
-                message = "Output is not a member of simulation: '%s' for simulation '%s'" % (output.path, simulation.directory)
-            super(Simulation.OutputNotInSimulationError, self).__init__(message)
 
 
             
