@@ -6,18 +6,11 @@ import contextlib
 import os
 import importlib.metadata as metadata
 import importlib.util as util
-import warnings
 
 __version__ = metadata.version('starsmashertools')
 
 SOURCE_DIRECTORY = os.path.dirname(os.path.dirname(util.find_spec('starsmashertools').origin))
 
-
-# Format warnings in a way that doesn't print the source code line
-def showwarning(message, category, filename, lineno, *args, file=None, line=None, **kwargs):
-    content = warnings.formatwarning(message, category, filename, lineno, line)
-    print('\n'.join(content.split('\n')[:-2]))
-warnings.showwarning = showwarning
 
 # If our current version mis-matches the installed version, show a warning
 def _check_version():
@@ -31,6 +24,16 @@ def _check_version():
 
     import urllib.request
     import urllib.error
+    import warnings
+
+    # Format warnings in a way that doesn't print the source code line
+    def showwarning(message, category, filename, lineno, *args, file=None, line=None, **kwargs):
+        content = warnings.formatwarning(message, category, filename, lineno, line)
+        lines = content.split('\n')
+        lines = [line for line in lines if line]
+        if len(lines) >= 2:
+            lines = lines[:-2]
+        print('\n'.join(lines))
     
     def get_latest_version():
         url = 'https://raw.githubusercontent.com/hatfullr/starsmashertools/main/pyproject.toml'
@@ -51,16 +54,24 @@ def _check_version():
         # Simply don't bother checking the latest version if anything goes wrong.
         # This way the user can always still use their installed version.
         if not isinstance(e, urllib.error.URLError):
+            orig_showwarning = warnings.showwarning
+            warnings.showwarning = showwarning
             warnings.warn("Something went wrong while checking the latest version of starsmashertools while connected to the internet. This should never happen, but if it does then you can safely ignore this warning. You can filter this warning out by importing the 'warnings' package before importing starsmashertools and writing \"warnings.filterwarnings(action='ignore')\" before the starsmashertools import and \"warnings.resetwarnings()\" after the import.")
+            warnings.showwarning = orig_showwarning
         connected = False
     if connected:
         if latest_version is None:
+            orig_showwarning = warnings.showwarning
+            warnings.showwarning = showwarning
             warnings.warn("Failed to find the version number in the pyproject.toml file downloaded from GitHub. It is uncertain if your current starsmashertools version is the most recent version.")
+            warnings.showwarning = orig_showwarning
         elif latest_version != __version__:
+            orig_showwarning = warnings.showwarning
+            warnings.showwarning = showwarning
             warnings.warn("Current starsmashertools version is '%s', while latest version on GitHub is '%s'. If you just downloaded the latest version make sure you also run the install script." % (__version__, latest_version))
+            warnings.showwarning = orig_showwarning
 
 _check_version()
-
 
         
 @starsmashertools.helpers.argumentenforcer.enforcetypes
