@@ -5,7 +5,6 @@
 
 import starsmashertools
 import starsmashertools.preferences
-import starsmashertools.mpl.plotdata
 import starsmashertools.helpers.path
 import starsmashertools.bintools.cli
 import starsmashertools.bintools

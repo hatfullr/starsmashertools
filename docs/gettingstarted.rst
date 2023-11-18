@@ -120,7 +120,7 @@ Here `starsmashertools` has automatically detected the simulation as a dynamical
 
    [Output('out0000.sph'), Output('out0001.sph'), Output('out0002.sph'), Output('out0003.sph'), Output('out0004.sph')]
 
-The output files in the simulation directory are stored as a :py:meth:`~starsmashertools.lib.output.Output` objects, which function like a Python dictionary except the values cannot be modified and the information is read from the files only after the first `__getitem__` request, such as `output['x']` to get the particle x positions:
+The output files in the simulation directory are stored as :py:meth:`~starsmashertools.lib.output.Output` objects, which function like Python dictionaries except their values cannot be modified and information is read from the files only after the first `__getitem__` request, such as `output['x']` to get the particle x positions:
 
 .. code-block:: python
 
