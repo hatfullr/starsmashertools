@@ -341,7 +341,7 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
             all_outputs = outputs1 + outputs2
             results = {}
             for output in all_outputs:
-                results[output] = self.get_fRLOF(o)
+                results[output] = self.get_fRLOF(output)
                 
             for output in outputs1:
                 results1[1] += results[output][0]
