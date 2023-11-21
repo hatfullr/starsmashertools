@@ -319,7 +319,7 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
         if cli:
             # Give some additional fRLOF values in the vicinity of the found output files
             window = 3
-            outputs = self.get_outputs()
+            outputs = self.get_output()
 
             outputs1 = []
             outputs2 = []
