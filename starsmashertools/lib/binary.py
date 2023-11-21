@@ -323,20 +323,22 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
 
             outputs1 = []
             outputs2 = []
+            results1 = [[], []]
+            results2 = [[], []]
             
             if output1 is not None:
                 idx1 = outputs.index(output1)
                 bottom1 = max(idx1 - window, 0)
                 top1 = min(idx1 + window, len(outputs) - 1)
-                outputs1 = outputs[bottom1:top1]
-                results1 = [outputs1, []]
+                outputs1 = outputs[bottom1:top1 + 1]
+                results1[0] = outputs1
                 
             if output2 is not None:
                 idx2 = outputs.index(output2)
                 bottom2 = max(idx2 - window, 0)
                 top2 = min(idx2 + window, len(outputs) - 1)
-                outputs2 = outputs[bottom2:top2]
-                results2 = [outputs2, []]
+                outputs2 = outputs[bottom2:top2 + 1]
+                results2[0] = outputs2
 
             all_outputs = outputs1 + outputs2
             results = {}
@@ -344,9 +346,9 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
                 results[output] = self.get_fRLOF(output)
                 
             for output in outputs1:
-                results1[1] += results[output][0]
+                results1[1] += [results[output][0]]
             for output in outputs2:
-                results2[1] += results[output][1]
+                results2[1] += [results[output][1]]
             
             string = []
             for i, result in enumerate([results1, results2]):
