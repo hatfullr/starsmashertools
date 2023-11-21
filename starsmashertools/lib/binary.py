@@ -317,13 +317,39 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
         if which == 'primary': return output1
         if which == 'secondary': return output2
         if cli:
+            # Give some additional fRLOF values in the vicinity of the found output files
+            window = 3
+            outputs = self.get_outputs()
+
+            outputs1 = []
+            outputs2 = []
+            
+            if output1 is not None:
+                idx1 = output_files.index(output1)
+                bottom1 = max(idx1 - window, 0)
+                top1 = min(idx1 + window, len(outputs) - 1)
+                outputs1 = outputs[bottom1:top1]
+                
+            if output2 is not None:
+                idx2 = output_files.index(output2)
+                bottom2 = max(idx2 - window, 0)
+                top2 = min(idx2 + window, len(outputs) - 1)
+                outputs2 = outputs[bottom2:top2]
+            
             string = []
-            for i, (o, fRLOF) in enumerate([[output1, fRLOF1], [output2, fRLOF2]]):
-                if o is not None:
-                    string += ["Star %d: %s" % (i+1,o.path)]
-                    string += ["   fRLOF = " + str(fRLOF)]
-                else:
+            for i, outputs in enumerate([outputs1, outputs2]):
+                if not outputs:
                     string += ["Star %d: None (point mass)" % (i+1)]
+                else:
+                    string += ["Star %d:" % (i+1)]
+                    for o in outputs:
+                        fRLOF = self.get_fRLOF(o)
+                        string += [
+                            "   %15s  fRLOF = %11.7" % (
+                                starsmashertools.helpers.path.basename(o.path),
+                                str(fRLOF))
+                        ]
+                        
             return "\n".join(string)
         return output1, output2
 
