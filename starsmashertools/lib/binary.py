@@ -343,11 +343,10 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
                 else:
                     string += ["Star %d:" % (i+1)]
                     for o in outputs:
-                        fRLOF = self.get_fRLOF(o)
                         string += [
-                            "   %15s  fRLOF = %11.7" % (
+                            "   %15s  fRLOF = %11.7f" % (
                                 starsmashertools.helpers.path.basename(o.path),
-                                str(fRLOF))
+                                self.get_fRLOF(o))
                         ]
                         
             return "\n".join(string)
