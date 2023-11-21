@@ -329,25 +329,38 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
                 bottom1 = max(idx1 - window, 0)
                 top1 = min(idx1 + window, len(outputs) - 1)
                 outputs1 = outputs[bottom1:top1]
+                results1 = [outputs1, []]
                 
             if output2 is not None:
                 idx2 = outputs.index(output2)
                 bottom2 = max(idx2 - window, 0)
                 top2 = min(idx2 + window, len(outputs) - 1)
                 outputs2 = outputs[bottom2:top2]
+                results2 = [outputs2, []]
+
+            all_outputs = outputs1 + outputs2
+            results = {}
+            for output in all_outputs:
+                results[output] = self.get_fRLOF(o)
+                
+            for output in outputs1:
+                results1[1] += results[output][0]
+            for output in outputs2:
+                results2[1] += results[output][1]
             
             string = []
-            for i, outputs in enumerate([outputs1, outputs2]):
+            for i, result in enumerate([results1, results2]):
+                outputs, fRLOFs = result
                 if not outputs:
                     string += ["Star %d: None (point mass)" % (i+1)]
                 else:
                     string += ["Star %d:" % (i+1)]
-                    for o in outputs:
+                    for o, fRLOF in zip(outputs, fRLOFs):
                         string += [
                             "   %15s  fRLOF = %11.7f" % (
                                 starsmashertools.helpers.path.basename(o.path),
-                                self.get_fRLOF(o))
-                        ]
+                                fRLOF,
+                            )]
                         
             return "\n".join(string)
         return output1, output2
