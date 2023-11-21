@@ -325,13 +325,13 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
             outputs2 = []
             
             if output1 is not None:
-                idx1 = output_files.index(output1)
+                idx1 = outputs.index(output1)
                 bottom1 = max(idx1 - window, 0)
                 top1 = min(idx1 + window, len(outputs) - 1)
                 outputs1 = outputs[bottom1:top1]
                 
             if output2 is not None:
-                idx2 = output_files.index(output2)
+                idx2 = outputs.index(output2)
                 bottom2 = max(idx2 - window, 0)
                 top2 = min(idx2 + window, len(outputs) - 1)
                 outputs2 = outputs[bottom2:top2]
