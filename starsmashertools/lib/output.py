@@ -418,8 +418,8 @@ class OutputIterator(object):
 class ParticleIterator(OutputIterator, object):
     """
     Similar to an OutputIterator, but instead of iterating through all the
-    particles in each Output file, we iterate through a single one instead. This
-    involves a different kind of Reader.
+    particles in each Output file, we iterate through a list of particles
+    instead. This involves a different kind of Reader.
     """
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
