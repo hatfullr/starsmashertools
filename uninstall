@@ -1,5 +1,6 @@
 #!/bin/bash
 
-python3 -m pip uninstall --yes starsmashertools
+pip3 uninstall --yes starsmashertools
+#python3 -m pip uninstall --yes starsmashertools
 
 \rm -rf *.egg-info
