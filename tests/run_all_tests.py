@@ -1,4 +1,13 @@
-import os
+#import os
+import subprocess
 
-os.system("python3 -m unittest")
+# This actually produces an error when something goes wrong
+subprocess.check_output(
+    'python3 -m unittest',
+    shell=True,
+    text=True,
+)
+
+
+#os.system("python3 -m unittest")
 
