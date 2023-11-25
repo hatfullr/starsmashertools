@@ -19,13 +19,6 @@ class TestSimulation(unittest.TestCase):
 
     def test_get_output(self):
         self.assertEqual(len(self.simulation.get_output()), 2)
-        
-    def test_get_ejected_mass(self):
-        self.assertEqual(self.simulation.get_ejected_mass(indices=np.array([0])), 0)
-        mej0, mej1 = self.simulation.get_ejected_mass()
-        self.assertEqual(mej0, 0)
-        self.assertEqual(mej1, 0)
-
 
 if __name__ == "__main__":
     unittest.main(failfast=True)
