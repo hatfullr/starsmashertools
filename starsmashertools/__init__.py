@@ -722,8 +722,5 @@ except: pass
 try: del os # The most terrifying syntax...
 except: pass
 
-try: del lib
-except: pass
-
 try: del f
 except: pass
