@@ -9,17 +9,20 @@ import importlib.util as util
 
 __version__ = metadata.version('starsmashertools')
 
-SOURCE_DIRECTORY = os.path.dirname(os.path.dirname(util.find_spec('starsmashertools').origin))
+if __file__.endswith(os.path.join('starsmashertools', 'starsmashertools','__init__.py')):
+    SOURCE_DIRECTORY = os.path.dirname(os.path.dirname(__file__))
+else:
+    SOURCE_DIRECTORY = os.path.dirname(os.path.dirname(util.find_spec('starsmashertools').origin))
 
 
 # If our current version mis-matches the installed version, show a warning
 def _check_version():
     # Don't do this on my local development machine. I increment the version
     # number on each commit and I don't want to run the install script every
-    # time I commit b/c it's kind of slow. We just check if the .git directory
-    # exists.
+    # time I commit b/c it's kind of slow.
+    import os
 
-    if os.path.isdir(os.path.join(SOURCE_DIRECTORY, '.git')):
+    if os.path.samefile(SOURCE_DIRECTORY, '/home/hatfull/starsmashertools'):
         return
 
     import urllib.request
@@ -29,6 +32,7 @@ def _check_version():
     # Format warnings in a way that doesn't print the source code line
     def showwarning(message, category, filename, lineno, *args, file=None, line=None, **kwargs):
         content = warnings.formatwarning(message, category, filename, lineno, line)
+        content = 'UserWarning:' + 'UserWarning:'.join(content.split('UserWarning:')[1:])
         lines = content.split('\n')
         lines = [line for line in lines if line]
         if len(lines) >= 2:
@@ -202,58 +206,6 @@ def dynamical(*args, **kwargs):
     return starsmashertools.lib.dynamical.Dynamical(*args, **kwargs)
 
 @api
-def output(
-        filename : str,
-        simulation : starsmashertools.lib.simulation.Simulation | type(None) = None,
-):
-    """
-    Retrieve an :class:`~.lib.output.Output` object identified by its file name,
-    given the :class:`~.lib.simulation.Simulation` it belongs to. This can be
-    useful for working outside the expectations set in :mod:`preferences`.
-
-    Parameters
-    ----------
-    filename : str
-        The specific file name to retrieve.
-
-    simulation : :class:`~.lib.simulation.Simulation`, None, default = None
-        The simulation that the file located at `filename` belongs to. If `None`
-        is specified, a guess will be made that the simulation directory is the
-        same as the `filename` directory.
-        
-    Returns
-    -------
-    :class:`~.lib.output.Output`
-        The output file object associated with `filename`.
-
-    Examples
-    --------
-    This example obtains an output file named 'mysim/custom.out'::
-
-        import starsmashertools
-        output = starsmashertools.output('mysim/custom.out')
-
-
-    This example assumes that 'mysim' is an invalid StarSmasher simulation
-    directory, and that the simulation directory is actually located at
-    '/home/me/sim'::
-
-        import starsmashertools
-        simulation = starsmashertools.get_simulation('/home/me/sim')
-        output = starsmashertools.output('mysim/custom.out', simulation)
-
-    See Also
-    --------
-    :class:`~.lib.output.Output`
-    """
-    import starsmashertools.lib.output
-    import starsmashertools.helpers.path
-    if simulation is None:
-        directory = starsmashertools.helpers.path.dirname(filename)
-        simulation = get_simulation(directory)
-    return starsmashertools.lib.output.Output(filename, simulation)
-
-@api
 def iterator(*args, **kwargs):
     """
     Obtain a :class:`~.lib.output.OutputIterator` that can be used to iterate
@@ -370,7 +322,7 @@ def trace_particles(
 @starsmashertools.helpers.argumentenforcer.enforcetypes
 @api
 def mask(
-        output: starsmashertools.lib.output.Output,
+        output : starsmashertools.lib.output.Output,
         mask : np.ndarray | list | tuple,
 ):
     """
@@ -420,7 +372,7 @@ def mask(
 @starsmashertools.helpers.argumentenforcer.enforcetypes
 @api
 def interpolate(
-        outputs : list | tuple | starsmashertools.lib.output.OutputIterator,
+        outputs : "list | tuple | starsmashertools.lib.output.OutputIterator",
         values : list,
 ):
     """
@@ -749,10 +701,29 @@ def _get_decorators():
 
 
 # Cleanup
-del api
-del np
-del contextlib
-del metadata
-del util
-del starsmashertools
-del os # The most terrifying syntax...
+try: del api
+except: pass
+
+try: del np
+except: pass
+
+try: del contextlib
+except: pass
+
+try: del metadata
+except: pass
+
+try: del util
+except: pass
+
+try: del starsmashertools
+except: pass
+
+try: del os # The most terrifying syntax...
+except: pass
+
+try: del lib
+except: pass
+
+try: del f
+except: pass
