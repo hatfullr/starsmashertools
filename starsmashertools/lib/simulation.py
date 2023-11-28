@@ -252,6 +252,21 @@ class Simulation(object):
     def values(self, *args, **kwargs): return self.input.values(*args, **kwargs)
     @api
     def items(self, *args, **kwargs): return self.input.items(*args, **kwargs)
+
+    @property
+    def isRelaxation(self):
+        import starsmashertools.lib.relaxation
+        return isinstance(self, starsmashertools.lib.relaxation.Relaxation)
+
+    @property
+    def isBinary(self):
+        import starsmashertools.lib.binary
+        return isinstance(self, starsmashertools.lib.binary.Binary)
+
+    @property
+    def isDynamical(self):
+        import starsmashertools.lib.dynamical
+        return isinstance(self, starsmashertools.lib.dynamical.Dynamical)
     
     @property
     def units(self):
