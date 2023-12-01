@@ -32,8 +32,7 @@ class TestCompression(unittest.TestCase):
         self.skip_tearDown = False
     
     def setUp(self):
-        curdir = os.getcwd()
-        self.orig_directory = os.path.join(curdir, 'data')
+        self.orig_directory = os.path.join(starsmashertools.SOURCE_DIRECTORY,'tests','data')
 
         self.orig_files = ['log0.sph', 'out000.sph', 'sph.eos']
         self.orig_files = [os.path.join(self.orig_directory, f) for f in self.orig_files]
@@ -65,7 +64,7 @@ class TestCompression(unittest.TestCase):
             orig_mtime = starsmashertools.helpers.path.getmtime(orig_file)
             if starsmashertools.helpers.path.isfile(new_file):
                 new_mtime = starsmashertools.helpers.path.getmtime(new_file)
-                self.assertEqual(orig_mtime, new_mtime)
+                self.assertEqual(int(orig_mtime), int(new_mtime), msg=new_file)
         
         compression_filename = self.simulation._get_compression_filename() + ".json"
         self.assertFalse(os.path.isfile(compression_filename))

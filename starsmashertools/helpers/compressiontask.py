@@ -477,8 +477,10 @@ class CompressionTask(object):
                 
                 # Note: extract does not remove the file from the zip archive.
                 zfile.extract(zinfo, path=dirname)
-                
+
                 mtime = datetime.datetime(*zinfo.date_time).timestamp()
+                # Note: this mtime is accurate only up to the decimal. The
+                # zipfile module does not support additional accuracy...
                 starsmashertools.helpers.path.utime(fname, times=(time.time(), mtime))
             CompressionTask._unpack_compression_file(zfile)
         
