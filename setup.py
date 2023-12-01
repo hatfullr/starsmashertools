@@ -32,7 +32,6 @@ setuptools.setup(
     ],
     install_requires = [
         'numpy>=1.21.5',
-        'scipy',
         'setuptools>=61.0',
     ],
 )
