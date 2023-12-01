@@ -31,7 +31,7 @@ setuptools.setup(
         os.path.join('bin','timing'),
     ],
     install_requires = [
-        'numpy',
+        'numpy>=1.21.5',
         'scipy',
         'setuptools>=61.0',
     ],
