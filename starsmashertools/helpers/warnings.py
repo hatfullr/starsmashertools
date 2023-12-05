@@ -12,7 +12,8 @@ def warn(message, category=UserWarning):
     )
     frame = inspect.currentframe()
     while frame is not None:
-        filename = os.path.realpath(frame.filename)
+        finfo = inspect.getframeinfo(frame)
+        filename = os.path.realpath(finfo.filename)
         if not filename.startswith(src): break
         frame = frame.f_back
 
@@ -26,8 +27,8 @@ def warn(message, category=UserWarning):
     thewarning = warnings.warn_explicit(
         message,
         category,
-        frame.filename,
-        frame.lineno,
+        finfo.filename,
+        finfo.lineno,
     )
     return thewarning
 
