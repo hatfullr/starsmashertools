@@ -435,13 +435,14 @@ class Simulation(object):
                         self._continuationFrom = simulation
                         break
             
+            if self._continuationFrom is None:
+                message = "Failed to find the simulation from which this simulation was a continuation of: '{simulation}'\nThis means that file '{initialfile}' is not a duplicate of any output file in any simulation in the search directory, and there are no other output files that match the very first output file of this simulation to within the threshold in starsmashertools.preferences: '{search_directory}'".format(
+                    simulation = self.directory,
+                    initialfile = starsmashertools.helpers.path.basename(restartradfile),
+                    search_directory = search_directory,
+                )
+                starsmashertools.helpers.warnings.warn(message)
             self._continuationSearched = True
-            message = "Failed to find the Simulation from which this Simulation was a continuation of: '{simulation}'\nThis means that file '{initialfile}' is not a duplicate of any output file in any simulation in the search directory '{search_directory}'".format(
-                simulation = self.directory,
-                initialfile = starsmashertools.helpers.path.basename(restartradfile),
-                search_directory = search_directory,
-            )
-            starsmashertools.helpers.warnings.warn(message)
         return self._continuationFrom
 
     @api
