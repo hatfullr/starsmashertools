@@ -368,7 +368,7 @@ class Simulation(object):
         except starsmashertools.lib.output.Reader.CorruptedFileError as e:
             import warnings, inspect
             message = str(e)+"\nUsing the first output file instead of the restartrad file"
-            warnings.warn_explicit(message, UserWarning, __file__, inspect.getframeinfo(inspect.currentframe()).lineno)
+            warnings.showwarning(message, UserWarning, __file__, inspect.getframeinfo(inspect.currentframe()).lineno)
             #warnings.warn(, skip_file_prefixes=(starsmashertools.helpers.path.dirname(__file__),))
             # If the restartrad file is corrupted, try to access just the very
             # first output file
