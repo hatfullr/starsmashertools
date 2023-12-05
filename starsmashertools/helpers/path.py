@@ -200,14 +200,7 @@ def scandir(path):
 def get_all_subdirectories(path):
     if starsmashertools.helpers.ssh.isRemote(path):
         raise NotImplementedError
-    return glob.glob(os.path.join(path, "*", ""), recursive=True)
-    #def iteration(directory, result = []):
-    #    for f in scandir(directory):
-    #        if not f.is_dir(): continue
-    #        if f.path not in result: result += [f.path]
-    #        result += iteration(f.path, result = result)
-    #    return result
-    #return iteration(path)
+    return glob.glob(os.path.join(path, "**", ""), recursive=True)
 
 pattern_matches = collections.OrderedDict()
 
