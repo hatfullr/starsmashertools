@@ -4,7 +4,7 @@ import matplotlib.patches
 import matplotlib.colors
 import matplotlib.transforms
 import numpy as np
-import warnings
+import starsmashertools.helpers.warnings
 import starsmashertools.mpl.blackbodycmap
 import starsmashertools.helpers.argumentenforcer
 
@@ -213,7 +213,7 @@ def discretize(
             arr = objproperties['array']
             
             if isinstance(obj, matplotlib.image.AxesImage):
-                warnings.warn("imshow data will be edited", stacklevel=2)
+                starsmashertools.helpers.warnings.warn("imshow data will be edited", stacklevel=2)
                 data = arr.data
             elif isinstance(obj, matplotlib.collections.PathCollection):
                 data = arr.data.ravel()

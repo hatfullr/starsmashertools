@@ -5,7 +5,6 @@ from starsmashertools.helpers.apidecorator import api
 import zipfile
 import copy
 import inspect
-import warnings
 
 class Archive(dict, object):
     """
@@ -151,11 +150,6 @@ class Archive(dict, object):
         value = ArchiveValue(*args, **kwargs)
         if self._should_add(identifier, value):
             self[identifier] = value
-        
-        #if self._should_replace(identifier, value):
-        #    self[identifier] = value
-        #elif identifier in self.keys() and self[identifier].is_newer_than(value):
-        #    warnings.warn("'%s' is older than the archived value '%s' so it was not added to archive '%s'" % (str(value), str(self[identifier]), self.filename))
             
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
