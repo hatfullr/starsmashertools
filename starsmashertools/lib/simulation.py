@@ -253,12 +253,12 @@ class Simulation(object):
         otherwise.
         """
         if self._isContinuation is None:
-            outputfiles = self.get_outputfiles()
-            if not outputfiles: # Try first log file if there's no output files
-                logfiles = self.get_logfiles()
-                if not logfiles: raise Exception("Cannot determine if simulation is a continuation because it has no output files and no log files: '%s'" % self.directory)
-                self._isContinuation = int(logfiles[0].get_start_time()) == 0
-            self._isContinuation = int(self.get_output(0)['t']) == 0
+            try:
+                continued_from = self.get_simulation_continued_from()
+            except Exception as e:
+                if 'Failed to find the Simulation from which this Simulation was a continuation of' in str(e):
+                    self._isContinuation = False
+                else: raise(e)
         return self._isContinuation
 
     @api
@@ -287,6 +287,29 @@ class Simulation(object):
         )
         return starsmashertools.helpers.path.realpath(search_directory)
 
+    
+    @api
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @staticmethod
+    def compare_type(
+            sim1 : "starsmashertools.lib.simulation.Simulation",
+            sim2 : "starsmashertools.lib.simulation.Simulation",
+    ):
+        """
+        Return True if "sim1" is the same simulation type as "sim2", and False
+        otherwise.
+        
+        Parameters
+        ----------
+        sim1 : :class:`starsmashertools.lib.simulation.Simulation`
+        sim2 : :class:`starsmashertools.lib.simulation.Simulation`
+
+        Returns
+        -------
+        bool
+        """
+        return isinstance(sim1, type(sim2))
+        
     @api
     def get_simulation_continued_from(self, **kwargs):
         """
@@ -313,10 +336,7 @@ class Simulation(object):
         """
         import starsmashertools.helpers.path
         import starsmashertools.lib.output
-        if not self.isContinuation: return None
 
-        failed = False
-        
         search_directory = self.get_search_directory(throw_error = True)
         restartradfile = self.get_initialfile()
         duplicate = starsmashertools.helpers.path.find_duplicate_file(
@@ -370,6 +390,11 @@ class Simulation(object):
             try:
                 simulation = starsmashertools.get_simulation(directory)
             except: continue
+
+            if simulation == self: continue # Skip over ourself
+
+            # Skip simulations of a different type
+            if not Simulation.compare_type(self, simulation): continue
             
             # No output files
             if not simulation.get_outputfiles(): continue
