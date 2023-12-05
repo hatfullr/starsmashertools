@@ -11,18 +11,10 @@ defaults = {
             'init.f',
             'output.f',
         ],
-        'children file' : os.path.join(
-            os.path.dirname(os.path.realpath(__file__)),
-            'data',
-            'children.json.gz',
-        ),
-        # You can create a file with one of these names in your simulation
-        # directories to instruct starsmashertools on where to find the children
-        # simulations. Each file should be a text file with one directory per
-        # line.
-        'children hint filenames' : [
-            'children.sstools',
-        ],
+        # You can create a file with this name in your simulation directories to
+        # instruct starsmashertools on where to find the child simulations. Each
+        # file should be a text file with one directory per line.
+        'children hint filename' : 'children.sstools',
         'output files' : 'out*.sph',
         
         # Files which are defined in the StarSmasher code and present in the

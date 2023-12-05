@@ -8,6 +8,7 @@ import numpy as np
 import fnmatch
 import collections
 import warnings
+import starsmashertools.helpers.string
 
 def samefile(file_or_dir1 : str, file_or_dir2 : str):
     if (starsmashertools.helpers.ssh.isRemote(file_or_dir1) or
@@ -112,13 +113,24 @@ def relpath(path, start=os.curdir):
         raise NotImplementedError
     return os.path.relpath(path, start=start)
 
-def isfile(path, isRemote=None):
-    if isRemote is not None and not isRemote:
-        return os.path.isfile(path)
-    
-    if starsmashertools.helpers.ssh.isRemote(path):
+def exists(path, isRemote=None):
+    if isRemote is None:
+        isRemote = starsmashertools.helpers.ssh.isRemote(path)
+    if isRemote:
         address, remote_path = starsmashertools.helpers.ssh.split_address(path)
-        return bool(starsmashertools.helpers.ssh.run_python(
+        return starsmashertools.helpers.string.parse(
+            starsmashertools.helpers.ssh.run_python(
+            address, "import os; print(os.path.exists('%s'))" % remote_path
+        ))
+    return os.path.exists(path)
+
+def isfile(path, isRemote=None):
+    if isRemote is None:
+        isRemote = starsmashertools.helpers.ssh.isRemote(path)
+    if isRemote:
+        address, remote_path = starsmashertools.helpers.ssh.split_address(path)
+        return starsmashertools.helpers.string.parse(
+            starsmashertools.helpers.ssh.run_python(
             address, "import os; print(os.path.isfile('%s'))" % remote_path
         ))
     return os.path.isfile(path)

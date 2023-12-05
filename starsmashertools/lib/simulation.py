@@ -1,22 +1,11 @@
-import starsmashertools.preferences
-import starsmashertools.helpers.path
-import starsmashertools.helpers.jsonfile
-import starsmashertools
-import starsmashertools.lib.input
-import starsmashertools.lib.output
-import starsmashertools.lib.logfile
+# These need to be imported at the top because they are used in parts of
+# parameter annotations. Everything else should be loaded dynamically to avoid
+# errors.
 import starsmashertools.lib.units
-import starsmashertools.helpers.midpoint
-import starsmashertools.helpers.string
 import starsmashertools.helpers.argumentenforcer
-import starsmashertools.helpers.file
-import starsmashertools.helpers.compressiontask
 from starsmashertools.helpers.apidecorator import api
 from starsmashertools.helpers.clidecorator import cli
-from starsmashertools.lib.teos import TEOS
 import numpy as np
-import glob
-import warnings
 
 class Simulation(object):
     ############################################################################
@@ -28,6 +17,10 @@ class Simulation(object):
             self,
             directory : str,
     ):
+        import starsmashertools.lib.input
+        import starsmashertools.lib.output
+        import starsmashertools.helpers.path
+        
         directory = starsmashertools.helpers.path.realpath(directory.strip())
         
         if not Simulation.valid_directory(directory):
@@ -53,6 +46,8 @@ class Simulation(object):
     def __eq__(self, other):
         # Check if the basenames are the same, so that e.g. pdc.json
         # files can work on different file systems
+        import starsmashertools.helpers.path
+        
         if not isinstance(other, Simulation): return False
         return starsmashertools.helpers.path.samefile(self.directory, other.directory)
 
@@ -61,6 +56,9 @@ class Simulation(object):
 
     @api
     def __contains__(self, item):
+        import starsmashertools.helpers.path
+        import starsmashertools.lib.output
+        
         if isinstance(item, str):
             if starsmashertools.helpers.path.isfile(item):
                 return item in self.get_output_iterator()
@@ -78,35 +76,39 @@ class Simulation(object):
     def _get_children(self):
         raise NotImplementedError
 
-    def _get_children_from_hint_files(self):
+    def _load_children_from_hint_files(self):
+        import starsmashertools.preferences
         import starsmashertools.helpers.file
         children = None
-        hint_filenames = starsmashertools.preferences.get_default('Simulation', 'children hint filenames', throw_error=False)
-        if hint_filenames is not None:
-            for name in hint_filenames:
-                fname = starsmashertools.helpers.path.join(self.directory, name)
-                if starsmashertools.helpers.path.isfile(fname):
-                    with starsmashertools.helpers.file.open(fname, 'r') as f:
-                        for line in f:
-                            line = line.strip()
-                            if not line: continue
-                            
-                            if line.lower() == 'point mass':
-                                if children is None: children = []
-                                children += ['point mass']
-                                continue
-                            
-                            simulation = None
-                            try:
-                                simulation = starsmashertools.get_simulation(line)
-                            except FileNotFoundError as e:
-                                if 'Directory does not exist' in str(e):
-                                    warnings.warn("Failed to find directory in children hint file '%s': '%s'" % (fname, line))
-                                else: raise
+        hint_filename = starsmashertools.preferences.get_default(
+            'Simulation', 'children hint filename', throw_error=True)
+        fname = self.get_file(hint_filename, recursive = False)
+        if not fname: return children # If the file wasn't found
 
-                            if simulation is not None:
-                                if children is None: children = []
-                                children += [simulation]
+        fname = fname[0]
+        
+        with starsmashertools.helpers.file.open(fname, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if not line: continue
+
+                if line.lower() == 'point mass':
+                    if children is None: children = []
+                    children += ['point mass']
+                    continue
+
+                simulation = None
+                try:
+                    simulation = starsmashertools.get_simulation(line)
+                except FileNotFoundError as e:
+                    if 'Directory does not exist' in str(e):
+                        import warnings
+                        warnings.warn("Failed to find directory in children hint file '%s': '%s'" % (fname, line))
+                    else: raise
+
+                if simulation is not None:
+                    if children is None: children = []
+                    children += [simulation]
         
         if children is not None:
             import starsmashertools.lib.binary
@@ -115,86 +117,33 @@ class Simulation(object):
                     raise Exception("File '%s' indicates that the binary simulation has only one child. If one of the stars is a point mass, please add a line 'point mass' to the file.")
         return children
 
-    # Load the children from the file saved in data/
-    def _load_children(self, verbose=False):
-        filename = starsmashertools.preferences.get_default('Simulation', 'children file', throw_error=True)
-        if verbose: print("Loading children from file")
-        children = None
-        if not starsmashertools.helpers.path.isfile(filename):
-            raise FileNotFoundError(filename)
-        
-        children_object = starsmashertools.helpers.jsonfile.load(filename)
-        version = None
-        print_warning = False
-        if 'version' in children_object.keys():
-            version = children_object.pop('version')
-            print_warning = version.split('.')[0] < starsmashertools.__version__.split('.')[0]
-        else: print_warning = True
-        if print_warning:
-            if version:
-                warnings.warn("The children data stored in '%s' is from version '%s' < '%s'. If you encounter an error, try deleting the children data." % (filename, version, starsmashertools.__version__))
-            else:
-                warnings.warn("The children data stored in '%s' is from a different version. If you encounter an error, try deleting the children data." % filename)
-        
-        for directory, _children in children_object.items():
-            simulation = starsmashertools.get_simulation(directory)
-            if simulation == self:
-                if children is None: children = []
-                # Sometimes children can be 'point mass'
-                for child in _children:
-                    if isinstance(child, str) and child.lower() != 'point mass':
-                        child = starsmashertools.get_simulation(child)
-                    children += [child]
-        
-        return children
+    def _save_children_to_hint_file(self, children, verbose : bool = False):
+        import starsmashertools.preferences
+        import starsmashertools.helpers.file
+        import starsmashertools.helpers.path
 
-    def _save_children(self, children_object=None, verbose=False):
-        if verbose: print("Saving children to file")
-        if not hasattr(self._children, '__iter__') or isinstance(self._children, str):
-            raise TypeError("Property Simulation._children must be a non-str iterable")
-
-        filename = starsmashertools.preferences.get_default('Simulation', 'children file', throw_error=True)
-        
-        should_remake = False
-        children_object = {}
-        if starsmashertools.helpers.path.isfile(filename):
-            children_object = starsmashertools.helpers.jsonfile.load(filename)
-            
-            if not isinstance(children_object, dict):
-                raise TypeError("The object saved in '%s' must be a dictionary. Try deleting or renaming the file and running your code again." % str(filename))
-
-            if 'version' in children_object.keys():
-                if children_object['version'].split('.')[0] < starsmashertools.__version__.split('.')[0]:
-                    warnings.warn("The children data in '%s' is from version '%s' < '%s' so it will be deleted and made anew." % (filename, children_object['version'], starsmashertools.__version__))
-                    should_remake = True
-            else:
-                warnings.warn("The children data in '%s' is from a different version than the current version so it will be deleted and made anew." % filename)
-                should_remake = True
-
-            
-        # Children can sometimes be 'None'
-        to_save = []
-        for child in self._children:
-            if isinstance(child, Simulation):
-                child = child.directory
-            to_save += [child]
-        children_object[self.directory] = to_save
-        children_object['version'] = starsmashertools.__version__
-        if should_remake:
-            if starsmashertools.helpers.path.isfile(filename+".temp"):
-                starsmashertools.helpers.path.remove(filename+".temp")
-            starsmashertools.helpers.jsonfile.save(filename+".temp", children_object)
-            starsmashertools.helpers.path.replace(filename+".temp", filename)
-        else:
-            starsmashertools.helpers.jsonfile.save(filename, children_object)
-
+        hint_filename = starsmashertools.preferences.get_default(
+            'Simulation', 'children hint filename', throw_error=True)
+        fname = starsmashertools.helpers.path.join(
+            self.directory,
+            hint_filename,
+        )
+        towrite = "\n".join([child.directory for child in children])
+        with starsmashertools.helpers.file.open(fname, 'w') as f:
+            for child in children:
+                f.write(towrite)
+    
     def _get_compression_filename(self):
+        import starsmashertools.helpers.path
         dirname = starsmashertools.helpers.path.basename(self.directory)
         return starsmashertools.helpers.path.join(self.directory, dirname+".zip")
         
     def _get_sphinit_filename(self):
         # Obtain the 'sph.init' file this simulation uses by checking the
         # StarSmasher source code for the filename that gets read.
+        import starsmashertools.helpers.path
+        import starsmashertools.helpers.file
+        
         src = starsmashertools.helpers.path.get_src(self.directory)
         initfile = starsmashertools.helpers.path.join(src, 'init.f')
         last_open_line = None
@@ -276,11 +225,22 @@ class Simulation(object):
     @property
     def teos(self):
         if self._teos is None and self['neos'] == 2:
-            self._teos = TEOS(starsmashertools.helpers.path.realpath(starsmashertools.helpers.path.join(self.directory, self['eosfile'])))
+            import starsmashertools.helpers.path
+            import starsmashertools.lib.teos
+            self._teos = starsmashertools.lib.teos.TEOS(
+                starsmashertools.helpers.path.realpath(
+                    starsmashertools.helpers.path.join(
+                        self.directory,
+                        self['eosfile'],
+                    )
+                )
+            )
         return self._teos
 
     @property
     def compressed(self):
+        import starsmashertools.helpers.path
+        import starsmashertools.helpers.compressiontask
         filename = self._get_compression_filename()
         if not starsmashertools.helpers.path.isfile(filename): return False
         return starsmashertools.helpers.compressiontask.CompressionTask.isCompressedFile(filename)
@@ -299,6 +259,7 @@ class Simulation(object):
             value is a dictionary holding various values corresponding to each
             file in the archive.
         """
+        import starsmashertools.helpers.compressiontask
         if not self.compressed: return {}
         filename = self._get_compression_filename()
         return starsmashertools.helpers.compressiontask.CompressionTask.get_compressed_properties(filename)
@@ -313,11 +274,14 @@ class Simulation(object):
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def valid_directory(directory : str):
+        import starsmashertools.helpers.path
         return starsmashertools.helpers.path.get_src(directory) is not None
 
     # Keywords are passed to logfile.find() method
     @api
     def get_logfiles(self,**kwargs):
+        import starsmashertools.lib.logfile
+        import starsmashertools.helpers.path
         if self._logfiles is None:
             self._logfiles = []
             for _path in starsmashertools.lib.logfile.find(self.directory, **kwargs):
@@ -336,9 +300,15 @@ class Simulation(object):
         binary scan has two children, which are each the stellar relaxations
         that make up the two stars in the binary.
 
+        If the simulation's directory contains a file with the name specified in
+        `~.preferences` (key 'children hint filename'; default = 
+        'children.sstools') then it will be read as a text file where each line
+        is the path to a different child simulation directory. If that file
+        doesn't exist then it will be created after the children have been found
+        for the first time.
+
         This function acts as a wrapper for `~._get_children`, which is
-        overridden in subclasses of Simulation. This allows the results to be
-        stored on the hard drive in starsmashertools/data/ for quick access.
+        overridden in subclasses of Simulation.
         
         Parameters
         ----------
@@ -351,31 +321,23 @@ class Simulation(object):
             A list of the child simulations.
         """
         if self._children is None:
-            # First see if the children are given to us in the data/ directory.
-            # Load in the object for the first time if needed.
-            try:
-                self._children = self._load_children(verbose=verbose)
-            except FileNotFoundError:
-                pass
+            # Get the children from the hint files
+            self._children = self._load_children_from_hint_files()
             
             # If loading the children didn't work
             if self._children is None:
                 if verbose: print("Searching for child simulations for the first time for '%s'" % self.directory)
                 
-                # If there wasn't a file to load in the data/ directory, locate
-                # the children manually and save them to the data/ directory.
-                self._children = self._get_children_from_hint_files()
-                if self._children is None:
-                    # If we didn't get the children from the hint files,
-                    # search for the children using the overidden method
-                    
-                    self._children = self._get_children()
-                    
-                    if self._children is None:
-                        raise Exception("Children found was 'None'. If you want to specify that a Simulation has no children, then its get_children() method should return empty list '[]', not 'None'.")
+                self._children = self._get_children()
                 
-                # Now save the children to the data/ directory
-                self._save_children(verbose=verbose)
+                if self._children is None:
+                    raise Exception("Children found was 'None'. If you want to specify that a Simulation has no children, then its get_children() method should return empty list '[]', not 'None'.")
+                
+                # Now save the children
+                self._save_children_to_hint_file(
+                    self._children,
+                    verbose=verbose,
+                )
 
         if cli:
             string = []
@@ -410,12 +372,15 @@ class Simulation(object):
         -------
         `list`
         """
+        import starsmashertools.helpers.path
+        import glob
         if recursive: _path = starsmashertools.helpers.path.join(self.directory, '**', filename_or_pattern)
         else: _path = starsmashertools.helpers.path.join(self.directory, filename_or_pattern)
         return glob.glob(_path, recursive=recursive)
         
     @api
     def get_outputfiles(self, pattern : str | type(None) = None):
+        import starsmashertools.preferences
         if pattern is None:
             pattern = starsmashertools.preferences.get_default('Simulation', 'output files', throw_error=True)
         matches = self.get_file(pattern)
@@ -484,6 +449,9 @@ class Simulation(object):
         :func:`~.helpers.compressiontask.CompressionTask.compress`
         :mod:`~.preferences`
         """
+        import starsmashertools.preferences
+        import starsmashertools.helpers.path
+        import starsmashertools.helpers.compressiontask
 
         # Obtain the file names to be compressed.
         if include_patterns is None:
@@ -546,6 +514,7 @@ class Simulation(object):
         :func:`compress`
         :func:`~.helpers.compresisontask.CompressionTask.decompress`
         """
+        import starsmashertools.helpers.compressiontask
 
         if not self.compressed:
             raise Exception("Cannot decompress a simulation that is not compressed")
@@ -567,6 +536,7 @@ class Simulation(object):
         -------
         int
         """
+        import starsmashertools.helpers.path
         return starsmashertools.helpers.path.get_directory_size(self.directory)
 
 
@@ -613,6 +583,7 @@ class Simulation(object):
         iterator
             The created `starsmashertools.lib.output.OutputIterator` instance.
         """
+        import starsmashertools.lib.output
         # Now that we have all the file names, we can create an output iterator
         # from them
         outputs = self.get_output(start=start, stop=stop, step=step)
@@ -644,6 +615,7 @@ class Simulation(object):
         `starsmashertools.lib.output.Output`
             The Output object closest to the given time.
         """
+        import starsmashertools.helpers.midpoint
         if not isinstance(time, starsmashertools.lib.units.Unit):
             time *= self.units['t']
             #time = float(time.convert(self.units['t'].label))
@@ -706,6 +678,7 @@ class Simulation(object):
             A list of `starsmashertools.lib.output.Output` objects. If the list
             contains only a single item, that item is returned instead.
         """
+        import starsmashertools.lib.output
         filenames = np.asarray(self.get_outputfiles(), dtype=object)
         if times is not None:
             starsmashertools.helpers.argumentenforcer.enforcevalues({
