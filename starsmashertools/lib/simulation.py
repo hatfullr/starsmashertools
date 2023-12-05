@@ -104,7 +104,7 @@ class Simulation(object):
                 except FileNotFoundError as e:
                     if 'Directory does not exist' in str(e):
                         import warnings
-                        warnings.warn("Failed to find directory in children hint file '%s': '%s'" % (fname, line))
+                        warnings.warn("Failed to find directory in children hint file '%s': '%s'" % (fname, line), stacklevel=2)
                     else: raise
 
                 if simulation is not None:
@@ -366,7 +366,7 @@ class Simulation(object):
             t = initial_output['t']
         except starsmashertools.lib.output.Reader.CorruptedFileError as e:
             import warnings
-            warnings.warn(str(e)+"\nUsing the first output file instead of the restartrad file")
+            warnings.warn(str(e)+"\nUsing the first output file instead of the restartrad file", stacklevel=2)
             # If the restartrad file is corrupted, try to access just the very
             # first output file
             initial_output = self.get_output(0)
