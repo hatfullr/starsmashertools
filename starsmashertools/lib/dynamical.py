@@ -12,7 +12,12 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
         
         if self.isContinuation:
             continued_from = self.get_simulation_continued_from()
-            return continued_from.get_children(*args, **kwargs)
+            if starsmashertools.lib.simulation.Simulation.compare_type(
+                    continued_from,
+                    self,
+            ):
+                return continued_from.get_children(*args, **kwargs)
+            return continued_from
 
         search_directory = self.get_search_directory(throw_error = True)
         restartradfile = self.get_initialfile()

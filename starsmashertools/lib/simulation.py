@@ -132,6 +132,7 @@ class Simulation(object):
             hint_filename,
         )
         towrite = "\n".join([child.directory for child in children])
+        print("towrite =",towrite)
         with starsmashertools.helpers.file.open(fname, 'w') as f:
             for child in children:
                 f.write(towrite)
@@ -286,8 +287,8 @@ class Simulation(object):
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @staticmethod
     def compare_type(
-            sim1 : "starsmashertools.lib.simulation.Simulation",
-            sim2 : "starsmashertools.lib.simulation.Simulation",
+            sim1 : "type | starsmashertools.lib.simulation.Simulation",
+            sim2 : "type | starsmashertools.lib.simulation.Simulation",
     ):
         """
         Return True if "sim1" is the same simulation type as "sim2", and False
@@ -302,7 +303,17 @@ class Simulation(object):
         -------
         bool
         """
-        return isinstance(sim1, type(sim2))
+        t1 = sim1
+        t2 = sim2
+        if isinstance(t1, type) and not isinstance(t2, type):
+            return isinstance(t2, t1)
+        if not isinstance(t1, type) and isinstance(t2, type):
+            return isinstance(t1, t2)
+        if not isinstance(t1, type) and not isinstance(t2, type):
+            return isinstance(t1, type(t2))
+        if isinstance(t1, type) and isinstance(t2, type):
+            return t1 is t2
+        raise Exception("This should never happen")
         
     @api
     def get_simulation_continued_from(self, **kwargs):
@@ -344,7 +355,7 @@ class Simulation(object):
 
             if duplicate is not None:
                 dirname = starsmashertools.helpers.path.dirname(duplicate)
-                self._continuationFrom = Simulation(dirname)
+                self._continuationFrom = starsmashertools.get_simulation(dirname)
 
             if self._continuationFrom is None:
                 # If we didn't find a duplicate file, then there's still a chance that
