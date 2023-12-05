@@ -262,7 +262,7 @@ class Simulation(object):
         return self._isContinuation
 
     @api
-    def get_search_directory(self):
+    def get_search_directory(self, **kwargs):
         """
         Get the default search directory from `starsmashertools.preferences`.
         
