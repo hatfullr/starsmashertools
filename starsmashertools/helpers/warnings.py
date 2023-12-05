@@ -1,8 +1,9 @@
 # A custom replacement for Python's crappy warning system
-from builtins import warnings as python_warnings
+#from builtins import warnings as python_warnings
 import inspect
 import starsmashertools
 import os
+import warnings
 
 def warn(message, category=UserWarning):
     src = os.path.join(
@@ -18,15 +19,16 @@ def warn(message, category=UserWarning):
     # If the caller was in the starsmashertools source directory, then behave
     # normally.
     if frame is None:
-        return python_warnings.warn(message, category=category)
+        return warnings.warn(message, category=category)
 
     # If the caller was outside the starsmashertools source directory, call a
     # proper-looking warning
-    thewarning = python_warnings.warn_explicit(
+    thewarning = warnings.warn_explicit(
         message,
         category,
         frame.filename,
         frame.lineno,
     )
     return thewarning
+
     
