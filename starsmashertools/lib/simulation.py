@@ -431,6 +431,8 @@ class Simulation(object):
             _xyz += vxyz * dt # 'interpolate'
             
             # compare
+            print(simulation.directory)
+            print("   ",np.amax(np.abs(xyz - _xyz)))
             if np.all(np.abs(xyz - _xyz) <= threshold):
                 return simulation
         
