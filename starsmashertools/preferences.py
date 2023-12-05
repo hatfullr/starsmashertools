@@ -30,6 +30,8 @@ defaults = {
         # Files you want to exclude from compression
         'compress exclude' : [
         ],
+        # You must give a value in centimeters
+        'get_simulation_continued_from position threshold' : 0.01 * 6.9599e10,
     },
     
     # 
