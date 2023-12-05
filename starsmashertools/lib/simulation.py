@@ -132,7 +132,6 @@ class Simulation(object):
             hint_filename,
         )
         towrite = "\n".join([child.directory for child in children])
-        print("towrite =",towrite)
         with starsmashertools.helpers.file.open(fname, 'w') as f:
             for child in children:
                 f.write(towrite)

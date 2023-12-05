@@ -17,7 +17,7 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
                     self,
             ):
                 return continued_from.get_children(*args, **kwargs)
-            return continued_from
+            return [continued_from]
 
         search_directory = self.get_search_directory(throw_error = True)
         restartradfile = self.get_initialfile()
