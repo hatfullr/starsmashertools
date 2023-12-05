@@ -387,6 +387,8 @@ class Simulation(object):
             initial_output['y'] * float(self.units['y']),
             initial_output['z'] * float(self.units['z']),
         ))
+
+        print(all_directories)
         
         ntot = initial_output.header['ntot']
         for directory in all_directories:
