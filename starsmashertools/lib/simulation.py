@@ -363,14 +363,14 @@ class Simulation(object):
             self,
         )
         try:
-            t = initial_output.header['t']
+            t = initial_output['t']
         except starsmashertools.lib.output.Reader.CorruptedFileError as e:
             import warnings
             warnings.warn(str(e)+"\nUsing the first output file instead of the restartrad file")
             # If the restartrad file is corrupted, try to access just the very
             # first output file
             initial_output = self.get_output(0)
-            t = initial_output.header['t']
+            t = initial_output['t']
 
         threshold = starsmashertools.preferences.get_default(
             'Simulation',
