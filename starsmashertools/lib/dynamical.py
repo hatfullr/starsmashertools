@@ -1,29 +1,40 @@
 import starsmashertools.lib.simulation
-import starsmashertools.lib.binary
-import starsmashertools.helpers.path as path
-import starsmashertools.preferences as preferences
 from starsmashertools.helpers.apidecorator import api
 from starsmashertools.helpers.clidecorator import cli
-import starsmashertools.helpers.midpoint
 import numpy as np
 
 
 class Dynamical(starsmashertools.lib.simulation.Simulation, object):
     def _get_children(self, *args, **kwargs):
-        search_directory = kwargs.get('search_directory', preferences.get_default('Simulation', 'search directory'))
-        search_directory = path.realpath(search_directory)
+        import starsmashertools.preferences
+        import starsmashertools.helpers.path
+        import starsmashertools.lib.binary
         
-        restartradfile = self.get_initialfile()
-        duplicate = path.find_duplicate_file(restartradfile, search_directory, throw_error=True)
+        if self.isContinuation:
+            continued_from = self.get_simulation_continued_from()
+            return continued_from.get_children(*args, **kwargs)
 
-        return [starsmashertools.lib.binary.Binary(path.dirname(duplicate))]
+        search_directory = self.get_search_directory(throw_error = True)
+        restartradfile = self.get_initialfile()
+        duplicate = starsmashertools.helpers.path.find_duplicate_file(
+            restartradfile, search_directory, throw_error=True)
+        dirname = starsmashertools.helpers.path.dirname(duplicate)
+        return [starsmashertools.lib.binary.Binary(dirname)]
 
     @api
     def get_initialfile(self):
         # We assume a dynamical run always begins from a restartrad.sph file,
         # and that the file was copied from a restartrad.sph.orig file.
-        filename = path.join(self.directory, preferences.get_default('Dynamical', 'original initial restartrad'))
-        if not path.isfile(filename):
+        import starsmashertools.helpers.path
+        import starsmashertools.preferences
+        filename = starsmashertools.helpers.path.join(
+            self.directory,
+            starsmashertools.preferences.get_default(
+                'Dynamical',
+                'original initial restartrad',
+            ),
+        )
+        if not starsmashertools.helpers.path.isfile(filename):
             raise FileNotFoundError(filename)
         return filename
 
@@ -34,7 +45,11 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
 
     @api
     @cli('starsmashertools')
-    def get_plunge_time(self, threshold : int | float = 0.005, cli : bool = False):
+    def get_plunge_time(
+            self,
+            threshold : int | float = 0.005,
+            cli : bool = False,
+    ):
         """
         Obtain the plunge-in time for a dynamical simulation which originated
         from a binary simulation. The plunge time here is defined as the time at
@@ -52,6 +67,9 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
             The plunge time. Returns `None` if there is not yet any plunge-in
             event in this simulation.
         """
+        import starsmashertools.lib.binary
+        import starsmashertools.helpers.midpoint
+        
         children = self.get_children()
         if children and isinstance(children[0], starsmashertools.lib.binary.Binary):
             # Check for presence of plunge-in

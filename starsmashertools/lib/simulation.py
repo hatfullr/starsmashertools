@@ -36,6 +36,7 @@ class Simulation(object):
         self._teos = None
         self._logfiles = None
         self._compression_task = None
+        self._isContinuation = None
 
         self.reader = starsmashertools.lib.output.Reader(self)
             
@@ -245,6 +246,80 @@ class Simulation(object):
         if not starsmashertools.helpers.path.isfile(filename): return False
         return starsmashertools.helpers.compressiontask.CompressionTask.isCompressedFile(filename)
 
+    @property
+    def isContinuation(self):
+        """
+        True if this simulation is a continuation of another simulation. False
+        otherwise.
+        """
+        if self._isContinuation is None:
+            outputfiles = self.get_outputfiles()
+            if not outputfiles: # Try first log file if there's no output files
+                logfiles = self.get_logfiles()
+                if not logfiles: raise Exception("Cannot determine if simulation is a continuation because it has no output files and no log files: '%s'" % self.directory)
+                self._isContinuation = int(logfiles[0].get_start_time()) == 0
+            self._isContinuation = int(self.get_output(0)['t']) == 0
+        return self._isContinuation
+
+    @api
+    def get_search_directory(self):
+        """
+        Get the default search directory from `starsmashertools.preferences`.
+        
+        Other Parameters
+        ----------------
+        **kwargs
+            Keywords are passed directly to
+            :func:`starsmashertools.preferences.get_default`.
+
+        Returns
+        -------
+        str
+            The "realpath" (:func:`os.path.realpath`) of the default search
+            directory.
+        """
+        import starsmashertools.preferences
+        import starsmashertools.helpers.path
+        search_directory = starsmashertools.preferences.get_default(
+            'Simulation',
+            'search directory',
+            **kwargs,
+        )
+        return starsmashertools.helpers.path.realpath(search_directory)
+
+    @api
+    def get_simulation_continued_from(self, **kwargs):
+        """
+        Get the :class:`starsmashertools.lib.simulation.Simulation` from which
+        this simulation was a continuation of. If this simulation is not a
+        continuation, returns None.
+
+        The default search directory from `starsmashertools.preferences` is
+        checked for a duplicate file to this simulation's initial file (called 
+        'restartrad.sph.orig' by default). If a duplicate is not found then an
+        Exception is raised.
+
+        Returns
+        -------
+        :class:`starsmashertools.lib.simulation.Simulation` or `None`
+            The simulation from which this simulation continued from.
+        """
+        import starsmashertools.helpers.path
+        if not self.isContinuation: return None
+        search_directory = self.get_search_directory(throw_error = True)
+        restartradfile = self.get_initialfile()
+        duplicate = starsmashertools.helpers.path.find_duplicate_file(
+                restartradfile, search_directory, throw_error=False)
+        if duplicate is None:
+            message = "Failed to find the Simulation from which this Simulation was a continuation of: '{simulation}'\nThis means that file '{initialfile}' is not a duplicate of any output file in any simulation in the search directory '{search_directory}'".format(
+                simulation = self.directory,
+                initialfile = starsmashertools.helpers.path.basename(restartradfile),
+                search_directory = search_directory,
+            )
+            raise Exception(message)
+        dirname = starsmashertools.helpers.path.dirname(duplicate)
+        return Simulation(dirname)
+
     @api
     def get_compressed_properties(self):
         """
@@ -279,7 +354,23 @@ class Simulation(object):
 
     # Keywords are passed to logfile.find() method
     @api
-    def get_logfiles(self,**kwargs):
+    def get_logfiles(self, **kwargs):
+        """
+        Get a list of :class:`starsmashertools.lib.logfile.LogFile`, sorted by
+        oldest-to-newest, including those in subdirectories in the simulation
+        directory.
+
+        Other Parameters
+        ----------------
+        **kwargs
+            Passed directly to :func:`starsmashertools.lib.logfile.find`.
+
+        Returns
+        -------
+        list
+            A list of :class:`starsmashertools.lib.logfile.LogFile` sorted from
+            oldest-to-newest by system modification times.
+        """
         import starsmashertools.lib.logfile
         import starsmashertools.helpers.path
         if self._logfiles is None:
@@ -287,6 +378,9 @@ class Simulation(object):
             for _path in starsmashertools.lib.logfile.find(self.directory, **kwargs):
                 if starsmashertools.helpers.path.getsize(_path) > 0:
                     self._logfiles += [starsmashertools.lib.logfile.LogFile(_path, self)]
+        if self._logfiles: # Sort the log files by modification times
+            modtimes = [starsmashertools.helpers.path.getmtime(p.path) for p in self._logfiles]
+            self._logfiles = [x for _, x in sorted(zip(modtimes, self._logfiles), key=lambda pair: pair[0])]
         return self._logfiles
     
     @api
