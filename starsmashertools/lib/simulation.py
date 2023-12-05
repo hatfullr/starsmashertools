@@ -36,7 +36,8 @@ class Simulation(object):
         self._teos = None
         self._logfiles = None
         self._compression_task = None
-        self._isContinuation = None
+        self._continuationFrom = None
+        self._continuationSearched = False
 
         self.reader = starsmashertools.lib.output.Reader(self)
             
@@ -253,14 +254,7 @@ class Simulation(object):
         True if this simulation is a continuation of another simulation. False
         otherwise.
         """
-        if self._isContinuation is None:
-            try:
-                continued_from = self.get_simulation_continued_from()
-            except Exception as e:
-                if 'Failed to find the Simulation from which this Simulation was a continuation of' in str(e):
-                    self._isContinuation = False
-                else: raise(e)
-        return self._isContinuation
+        return self.get_simulation_continued_from() is not None
 
     @api
     def get_search_directory(self, **kwargs):
@@ -287,7 +281,6 @@ class Simulation(object):
             **kwargs,
         )
         return starsmashertools.helpers.path.realpath(search_directory)
-
     
     @api
     @starsmashertools.helpers.argumentenforcer.enforcetypes
@@ -330,6 +323,11 @@ class Simulation(object):
         particle positions are within some threshold value. You can set the
         threshold value in `starsmashertools.preferences`.
 
+        This function might take a long time, as it uses 
+        :func:`starsmashertools.helpers.path.get_all_subdirectories` which
+        spends a long time searching for subdirectories the first time it's
+        called, but it caches results for fast access on subsequent calls.
+
         Returns
         -------
         :class:`starsmashertools.lib.simulation.Simulation` or `None`
@@ -337,113 +335,114 @@ class Simulation(object):
         """
         import starsmashertools.helpers.path
         import starsmashertools.lib.output
-
-        search_directory = self.get_search_directory(throw_error = True)
-        restartradfile = self.get_initialfile()
-        duplicate = starsmashertools.helpers.path.find_duplicate_file(
-                restartradfile, search_directory, throw_error=False)
         
-        if duplicate is not None:
-            dirname = starsmashertools.helpers.path.dirname(duplicate)
-            return Simulation(dirname)
+        if not self._continuationSearched:
+            search_directory = self.get_search_directory(throw_error = True)
+            restartradfile = self.get_initialfile()
+            duplicate = starsmashertools.helpers.path.find_duplicate_file(
+                    restartradfile, search_directory, throw_error=False)
 
-        # If we didn't find a duplicate file, then there's still a chance that
-        # this output file came from a restartrad.sph file of a different
-        # simulation, which may or may not have now been overwritten. We'll thus
-        # check each simulation in the search directory for:
-        #    1) If it's of the same type as this simulation
-        #    2) If the number of particles is the same
-        #    3) If it has output files near the time stamp of the restartrad
-        #    4) If the particles in the nearest time stamp are nearly the same
-        #       as those in the restartrad file
+            if duplicate is not None:
+                dirname = starsmashertools.helpers.path.dirname(duplicate)
+                self._continuationFrom = Simulation(dirname)
 
-        all_directories = starsmashertools.helpers.path.get_all_subdirectories(search_directory)
-        
-        initial_output = starsmashertools.lib.output.Output(
-            restartradfile,
-            self,
-        )
-        try:
-            t = initial_output['t']
-        except starsmashertools.lib.output.Reader.CorruptedFileError as e:
-            import starsmashertools.helpers.warnings
-            message = "starsmashertools.lib.output.Reader.CorruptedFileError: "+str(e)+"\nUsing the first output file instead of the restartrad file"
+            if self._continuationFrom is None:
+                # If we didn't find a duplicate file, then there's still a chance that
+                # this output file came from a restartrad.sph file of a different
+                # simulation, which may or may not have now been overwritten. We'll thus
+                # check each simulation in the search directory for:
+                #    1) If it's of the same type as this simulation
+                #    2) If the number of particles is the same
+                #    3) If it has output files near the time stamp of the restartrad
+                #    4) If the particles in the nearest time stamp are nearly the same
+                #       as those in the restartrad file
+
+                initial_output = starsmashertools.lib.output.Output(
+                    restartradfile,
+                    self,
+                )
+                try:
+                    t = initial_output['t']
+                except starsmashertools.lib.output.Reader.CorruptedFileError as e:
+                    import starsmashertools.helpers.warnings
+                    message = "starsmashertools.lib.output.Reader.CorruptedFileError: "+str(e)+"\nUsing the first output file instead of the restartrad file"
+                    starsmashertools.helpers.warnings.warn(message)
+
+                    # If the restartrad file is corrupted, try to access just the very
+                    # first output file
+                    initial_output = self.get_output(0)
+                    t = initial_output['t']
+
+                threshold = starsmashertools.preferences.get_default(
+                    'Simulation',
+                    'get_simulation_continued_from position threshold',
+                    throw_error = True,
+                )
+
+                t *= self.units['t']
+                xyz = np.column_stack(( # Needs to be in cgs
+                    initial_output['x'] * float(self.units['x']),
+                    initial_output['y'] * float(self.units['y']),
+                    initial_output['z'] * float(self.units['z']),
+                ))
+
+                all_directories = starsmashertools.helpers.path.get_all_subdirectories(search_directory)
+
+                ntot = initial_output.header['ntot']
+                for directory in all_directories:
+                    try:
+                        simulation = starsmashertools.get_simulation(directory)
+                    except: continue
+
+                    if simulation == self: continue # Skip over ourself
+
+                    # Skip simulations of a different type
+                    if not Simulation.compare_type(self, simulation): continue
+
+                    # No output files
+                    if not simulation.get_outputfiles(): continue
+
+                    # Different number of particles
+                    if simulation.get_output(0).header['ntot'] != ntot: continue
+
+                    t0 = simulation.get_output(0).header['t'] * simulation.units['t']
+                    t1 = simulation.get_output(-1).header['t'] * simulation.units['t']
+                    # The restartrad file's time stamp is out of range for this
+                    # simulation
+                    if not (t0 <= t and t <= t1): continue
+
+                    closest_file = simulation.get_output(times = [t])
+                    _t = closest_file.header['t'] * simulation.units['t']
+                    dt = float((t - _t).convert('s')) # needs to be in cgs
+
+                    # Now we will 'interpolate' the particle positions from the time in
+                    # the closest_file to the time in the original file
+                    vxyz = np.column_stack(( # Needs to be in cgs
+                        closest_file['vx'] * float(simulation.units['vx']),
+                        closest_file['vy'] * float(simulation.units['vy']),
+                        closest_file['vz'] * float(simulation.units['vz']),
+                    ))
+                    _xyz = np.column_stack(( # Needs to be in cgs
+                        closest_file['x'] * float(simulation.units['x']),
+                        closest_file['y'] * float(simulation.units['y']),
+                        closest_file['z'] * float(simulation.units['z']),
+                    ))
+
+                    _xyz += vxyz * dt # 'interpolate'
+
+                    # compare
+                    if np.all(np.abs(xyz - _xyz) <= threshold):
+                        self._continuationFrom = simulation
+                        break
+            
+            self._continuationSearched = True
+            message = "Failed to find the Simulation from which this Simulation was a continuation of: '{simulation}'\nThis means that file '{initialfile}' is not a duplicate of any output file in any simulation in the search directory '{search_directory}'".format(
+                simulation = self.directory,
+                initialfile = starsmashertools.helpers.path.basename(restartradfile),
+                search_directory = search_directory,
+            )
             starsmashertools.helpers.warnings.warn(message)
-
-            # If the restartrad file is corrupted, try to access just the very
-            # first output file
-            initial_output = self.get_output(0)
-            t = initial_output['t']
-
-        threshold = starsmashertools.preferences.get_default(
-            'Simulation',
-            'get_simulation_continued_from position threshold',
-            throw_error = True,
-        )
-        
-        t *= self.units['t']
-        xyz = np.column_stack(( # Needs to be in cgs
-            initial_output['x'] * float(self.units['x']),
-            initial_output['y'] * float(self.units['y']),
-            initial_output['z'] * float(self.units['z']),
-        ))
-
-        print(all_directories)
-        
-        ntot = initial_output.header['ntot']
-        for directory in all_directories:
-            try:
-                simulation = starsmashertools.get_simulation(directory)
-            except: continue
-
-            if simulation == self: continue # Skip over ourself
-
-            # Skip simulations of a different type
-            if not Simulation.compare_type(self, simulation): continue
-            
-            # No output files
-            if not simulation.get_outputfiles(): continue
-
-            # Different number of particles
-            if simulation.get_output(0).header['ntot'] != ntot: continue
-            
-            t0 = simulation.get_output(0).header['t'] * simulation.units['t']
-            t1 = simulation.get_output(-1).header['t'] * simulation.units['t']
-            # The restartrad file's time stamp is out of range for this
-            # simulation
-            if not (t0 <= t and t <= t1): continue
-            
-            closest_file = simulation.get_output(times = [t])
-            _t = closest_file.header['t'] * simulation.units['t']
-            dt = float((t - _t).convert('s')) # needs to be in cgs
-            
-            # Now we will 'interpolate' the particle positions from the time in
-            # the closest_file to the time in the original file
-            vxyz = np.column_stack(( # Needs to be in cgs
-                closest_file['vx'] * float(simulation.units['vx']),
-                closest_file['vy'] * float(simulation.units['vy']),
-                closest_file['vz'] * float(simulation.units['vz']),
-            ))
-            _xyz = np.column_stack(( # Needs to be in cgs
-                closest_file['x'] * float(simulation.units['x']),
-                closest_file['y'] * float(simulation.units['y']),
-                closest_file['z'] * float(simulation.units['z']),
-            ))
-
-            _xyz += vxyz * dt # 'interpolate'
-            
-            # compare
-            print(simulation.directory)
-            print("   ",np.amax(np.abs(xyz - _xyz)))
-            if np.all(np.abs(xyz - _xyz) <= threshold):
-                return simulation
-        
-        message = "Failed to find the Simulation from which this Simulation was a continuation of: '{simulation}'\nThis means that file '{initialfile}' is not a duplicate of any output file in any simulation in the search directory '{search_directory}'".format(
-            simulation = self.directory,
-            initialfile = starsmashertools.helpers.path.basename(restartradfile),
-            search_directory = search_directory,
-        )
-        raise Exception(message)
+        return self._continuationFrom
 
     @api
     def get_compressed_properties(self):

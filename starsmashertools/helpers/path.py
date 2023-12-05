@@ -197,10 +197,14 @@ def scandir(path):
         raise NotImplementedError
     return os.scandir(path)
 
+subdirectories = {}
+
 def get_all_subdirectories(path):
     if starsmashertools.helpers.ssh.isRemote(path):
         raise NotImplementedError
-    return glob.glob(os.path.join(path, "**", ""), recursive=True)
+    if path in subdirectories.keys(): return subdirectories[path]
+    subdirectories[path] = glob.glob(os.path.join(path, "**", ""), recursive=True)
+    return subdirectories[path]
 
 pattern_matches = collections.OrderedDict()
 
@@ -216,6 +220,12 @@ def find_duplicate_file(filepath, search_directory, pattern="out*.sph", throw_er
 
     search_string = join(search_directory,"**",pattern)
 
+    if search_directory in subdirectories.keys():
+        matches = []
+        for directory in subdirectories[search_directory]:
+            matches += glob.glob(join(directory, pattern), recursive=True)
+        pattern_matches[search_string] = matches
+    
     # Try to limit exhaustive searches
     matches = None
     if search_string in pattern_matches.keys():
