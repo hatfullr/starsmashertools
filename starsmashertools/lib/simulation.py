@@ -80,6 +80,7 @@ class Simulation(object):
     def _load_children_from_hint_files(self):
         import starsmashertools.preferences
         import starsmashertools.helpers.file
+        import starsmashertools.helpers.path
         children = None
         hint_filename = starsmashertools.preferences.get_default(
             'Simulation', 'children hint filename', throw_error=True)
@@ -104,7 +105,7 @@ class Simulation(object):
                 except FileNotFoundError as e:
                     if 'Directory does not exist' in str(e):
                         import warnings
-                        warnings.warn("Failed to find directory in children hint file '%s': '%s'" % (fname, line), stacklevel=2)
+                        warnings.warn("Failed to find directory in children hint file '%s': '%s'" % (fname, line), skip_file_prefixes=(starsmashertools.helpers.path.dirname(__filename__),))
                     else: raise
 
                 if simulation is not None:
@@ -366,7 +367,7 @@ class Simulation(object):
             t = initial_output['t']
         except starsmashertools.lib.output.Reader.CorruptedFileError as e:
             import warnings
-            warnings.warn(str(e)+"\nUsing the first output file instead of the restartrad file", stacklevel=2)
+            warnings.warn(str(e)+"\nUsing the first output file instead of the restartrad file", skip_file_prefixes=(starsmashertools.helpers.path.dirname(__file__),))
             # If the restartrad file is corrupted, try to access just the very
             # first output file
             initial_output = self.get_output(0)
