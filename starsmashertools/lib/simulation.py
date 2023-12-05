@@ -356,8 +356,8 @@ class Simulation(object):
         #    3) If it has output files near the time stamp of the restartrad
         #    4) If the particles in the nearest time stamp are nearly the same
         #       as those in the restartrad file
-        
-        all_directories = [f.path for f in starsmashertools.helpers.path.scandir(search_directory) if f.is_dir()]
+
+        all_directories = starsmashertools.helpers.path.get_all_subdirectories(search_directory)
         
         initial_output = starsmashertools.lib.output.Output(
             restartradfile,
