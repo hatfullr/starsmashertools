@@ -197,34 +197,16 @@ class FluxFinder(object):
             self.output['tau'] = tau
             self.output['flux'] = flux
 
+    @staticmethod
     def get_flux(
-            self,
             z : np.ndarray,
             r2 : np.ndarray,
             drprime2 : np.ndarray,
             kapparho : np.ndarray,
             flux : np.ndarray,
+            tau_ray_max : float | int,
             flux_weighted_averages = [],
     ):
-        """
-        Get the flux emitted from the interacting particles on a ray.
-
-        Parameters
-        ----------
-        z : np.ndarray
-
-        r2 : np.ndarray
-
-        drprime2 : np.ndarray
-
-        kapparho : np.ndarray
-
-        flux : np.ndarray
-
-        flux_weighted_averages : list
-            
-        """
-        
         total_flux = 0.
         weighted_averages = [0.] * len(flux_weighted_averages)
         
@@ -266,7 +248,7 @@ class FluxFinder(object):
                 # (https://stackoverflow.com/a/75556529/4954083)
                 tau_ray = np.dot(kapparho[idx_sorted[i + 1:]], ds)
                 
-                if tau_ray <= self.tau_ray_max:
+                if tau_ray <= tau_ray_max:
                     if tau_ray < 0: raise Exception("Bad tau_ray")
                     exptau = np.exp(-tau_ray)
                     f = flux[idx_sorted[i]] * exptau
@@ -355,13 +337,14 @@ class FluxFinder(object):
                 if not np.any(interacting): continue
                 
                 drprime2 = drprime2[interacting_xy]
-
-                flux[ii, jj], averages = self.get_flux(
+                
+                flux[ii, jj], averages = FluxFinder.get_flux(
                     z[interacting],
                     rloc2[interacting],
                     drprime2,
                     kapparho[interacting],
                     pflux[interacting],
+                    self.tau_ray_max,
                     flux_weighted_averages = [arr[interacting] for arr in self.flux_weighted_averages],
                 )
                 
