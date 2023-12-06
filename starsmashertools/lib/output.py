@@ -225,9 +225,73 @@ class Output(dict, object):
     @api
     def get_file_creation_time(self):
         return starsmashertools.helpers.path.getmtime(self.path)
-    
 
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def rotate(
+            self,
+            keys : list, tuple = [('x', 'y', 'z'), ('vx', 'vy', 'vz'), ('vxdot', 'vydot', 'vzdot')],
+            xangle : float = 0.,
+            yangle : float = 0.,
+            zangle : float = 0.,
+    ):
+        """
+        Rotate the particles using an Euler rotation.
 
+        An Euler rotation can be understood as follows. Imagine the x, y, and z
+        axes as dowels. First the z-axis dowel is rotated `zangle` degrees
+        clockwise, then the y-axis dowel is rotated `yangle` degrees clockwise,
+        and finally the x-axis dowel is rotated `xangle` degrees clockwise.
+
+        Parameters
+        ----------
+        keys : list, tuple, np.ndarray, default = [('x', 'y', 'z'), ('vx', 'vy', 'vz'), ('vxdot', 'vydot', 'vzdot')]
+            The particle quantities to rotate. You should carefully specify all
+            vector particle quantities (those with x, y, and z components).
+
+        xangle : float, default = 0.
+            The x component of an Euler rotation in degrees. Either `xangle` or
+            `yangle` can be thought of as equivalent to polar angle "theta", but
+            not both.
+        
+        yangle : float, default = 0.
+            The y component of an Euler rotation in degrees. Either `xangle` or
+            `yangle` can be thought of as equivalent to polar angle "theta", but
+            not both.
+
+        zangle : float, default = 0.
+            The z component of an Euler rotation in degrees. This can be thought
+            of as equivalent to azimuthal angle "phi".
+        """
+        
+        xanglerad = float(xangle) / 180. * np.pi
+        yanglerad = float(yangle) / 180. * np.pi
+        zanglerad = float(zangle) / 180. * np.pi
+        
+        for xkey, ykey, zkey in keys:
+            x, y, z = output[xkey], output[ykey], output[zkey]
+            
+            if zangle != 0: # Rotate about z
+                rold = np.sqrt(x * x + y * y)
+                phi = np.arctan2(y, x)
+                phi -= zanglerad
+                x = rold * np.cos(phi)
+                y = rold * np.sin(phi)
+            if yangle != 0: # Rotate about y
+                rold = np.sqrt(z * z + x * x)
+                phi = np.arctan2(z, x)
+                phi -= yanglerad
+                z = rold * np.sin(phi)
+                x = rold * np.cos(phi)
+            if xangle != 0: # Rotate about x
+                rold = np.sqrt(y * y + z * z)
+                phi = np.arctan2(z, y)
+                phi -= xanglerad
+                y = rold * np.cos(phi)
+                z = rold * np.sin(phi)
+
+            output[xkey], output[ykey], output[zkey] = x, y, z
+        
 
 
 
