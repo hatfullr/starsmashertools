@@ -123,6 +123,13 @@ defaults = {
     'GPUJob' : {
         'threadsperblock' : 512,
     },
+    'FluxFinder' : {
+        # The following options only apply for ncooling=2 or 3
+        # Opacities within this temperature range will be set to 'dust opacity'
+        'dust temperature range' : [100., 1000.],
+        'dust opacity' : 1.0,
+        'tau particle cutoff' : 1.e-5,
+    },
 }
 
 

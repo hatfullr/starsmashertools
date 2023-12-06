@@ -154,6 +154,8 @@ class Output(dict, object):
         return super(Output, self).items(*args, **kwargs)
     @api
     def copy_from(self, obj):
+        self._mask = obj._mask
+        
         for key in self._isRead.keys():
             self._isRead[key] = True
         
@@ -230,10 +232,10 @@ class Output(dict, object):
     @api
     def rotate(
             self,
-            keys : list, tuple = [('x', 'y', 'z'), ('vx', 'vy', 'vz'), ('vxdot', 'vydot', 'vzdot')],
-            xangle : float = 0.,
-            yangle : float = 0.,
-            zangle : float = 0.,
+            keys : list | tuple = [('x', 'y', 'z'), ('vx', 'vy', 'vz'), ('vxdot', 'vydot', 'vzdot')],
+            xangle : float | int = 0.,
+            yangle : float | int = 0.,
+            zangle : float | int = 0.,
     ):
         """
         Rotate the particles using an Euler rotation.
@@ -269,7 +271,7 @@ class Output(dict, object):
         zanglerad = float(zangle) / 180. * np.pi
         
         for xkey, ykey, zkey in keys:
-            x, y, z = output[xkey], output[ykey], output[zkey]
+            x, y, z = self[xkey], self[ykey], self[zkey]
             
             if zangle != 0: # Rotate about z
                 rold = np.sqrt(x * x + y * y)
@@ -290,7 +292,7 @@ class Output(dict, object):
                 y = rold * np.cos(phi)
                 z = rold * np.sin(phi)
 
-            output[xkey], output[ykey], output[zkey] = x, y, z
+            self[xkey], self[ykey], self[zkey] = x, y, z
         
 
 

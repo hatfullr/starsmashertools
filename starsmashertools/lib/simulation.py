@@ -977,10 +977,65 @@ class Simulation(object):
             ret[output] = output.header
         return ret
 
+    """
+    @api
+    def get_flux(self, *args, **kwargs):
+        #""
+        Return a :class:`starsmashertools.flux.fluxfinder.FluxFinder` which can
+        be used to obtain the radiative flux for some given
+        :class:`~.lib.output.Output` objects.
 
+        Parameters
+        ----------
+        *args
+            If a single argument is given and it is a 
+            :class:`~.lib.output.Output`, a
+            :class:`~.lib.output.OutputIterator`, or an iterable of
+            :class:`~.lib.output.Output`, then those objects will be passed
+            directly to :class:`starsmashertools.flux.fluxfinder.FluxFinder`.
+            Otherwise, all positional arguments are passed directly to
+            :func:`~.get_output`.
 
+        **kwargs
+            If `*args` has a single element which is a
+            :class:`~.lib.output.Output`, a
+            :class:`~.lib.output.OutputIterator`, or an iterable of
+            :class:`~.lib.output.Output`, then an error will be raised if any
+            keyword arguments are given. Otherwise, all keyword arguments are
+            passed directly to to :func:`~.get_output`.
+        
+        Returns
+        -------
+        :class:`starsmashertools.flux.fluxfinder.FluxFinder`
+            This can be used to get the radiative flux using, e.g.,
+            :func:`starsmashertools.flux.fluxfinder.FluxFinder.get`.
+        #""
+        import starsmashertools.lib.output
+        import starsmashertools.flux.fluxfinder
+        import copy
 
+        outputs = None
+        
+        if len(args) == 1:
+            outputs = args[0]
 
+            if not isinstance(outputs, starsmashertools.lib.output.OutputIterator):
+                if isinstance(outputs, starsmashertools.lib.output.Output):
+                    outputs = [outputs]
+                elif hasattr(outputs, '__iter__'):
+                    # If any are not Output type, then revert to passing the
+                    # arguments directly to get_output
+                    for output in copy.deepcopy(outputs):
+                        if not isinstance(output, starsmashertools.lib.output.Output):
+                            outputs = None
+                            break
+        
+        # Revert to passing everything to get_output
+        if outputs is None: 
+            outputs = self.get_output(*args, **kwargs)
+            
+        return starsmashertools.flux.fluxfinder.FluxFinder(outputs)
+    """
 
 
 
