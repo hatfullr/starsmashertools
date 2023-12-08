@@ -62,6 +62,7 @@ class FluxFinder(object):
         self.include_in_rotation = include_in_rotation
         self.extent = extent
         self.flux_weighted_averages = flux_weighted_averages
+        self.contributing_particle_IDs = None
 
     def check_outputs(self):
         """
@@ -197,8 +198,8 @@ class FluxFinder(object):
             self.output['tau'] = tau
             self.output['flux'] = flux
 
-    @staticmethod
     def get_flux(
+            self,
             z : np.ndarray,
             r2 : np.ndarray,
             drprime2 : np.ndarray,
@@ -338,7 +339,7 @@ class FluxFinder(object):
                 
                 drprime2 = drprime2[interacting_xy]
                 
-                flux[ii, jj], averages = FluxFinder.get_flux(
+                flux[ii, jj], averages = self.get_flux(
                     z[interacting],
                     rloc2[interacting],
                     drprime2,
