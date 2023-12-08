@@ -99,7 +99,7 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
             verbose : bool = False,
     ):
         import starsmashertools.lib.relaxation
-        import starsmsahertools.preferences
+        import starsmashertools.preferences
         import starsmashertools.helpers.path
         
         search_directory = starsmashertools.preferences.get_default('Simulation', 'search directory')
