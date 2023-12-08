@@ -9,7 +9,8 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
         import starsmashertools.preferences
         import starsmashertools.helpers.path
         import starsmashertools.lib.binary
-        
+
+        """
         if self.isContinuation:
             continued_from = self.get_simulation_continued_from()
             if starsmashertools.lib.simulation.Simulation.compare_type(
@@ -18,7 +19,8 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
             ):
                 return continued_from.get_children(*args, **kwargs)
             return [continued_from]
-
+        """
+        
         search_directory = self.get_search_directory(throw_error = True)
         restartradfile = self.get_initialfile()
         duplicate = starsmashertools.helpers.path.find_duplicate_file(

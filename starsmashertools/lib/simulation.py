@@ -248,14 +248,16 @@ class Simulation(object):
         if not starsmashertools.helpers.path.isfile(filename): return False
         return starsmashertools.helpers.compressiontask.CompressionTask.isCompressedFile(filename)
 
+    """
     @property
     def isContinuation(self):
-        """
+        #""
         True if this simulation is a continuation of another simulation. False
         otherwise.
-        """
+        #""
         return self.get_simulation_continued_from() is not None
-
+    """
+        
     @api
     def get_search_directory(self, **kwargs):
         """
@@ -313,10 +315,11 @@ class Simulation(object):
         if isinstance(t1, type) and isinstance(t2, type):
             return t1 is t2
         raise Exception("This should never happen")
-        
+
+    """
     @api
     def get_simulation_continued_from(self):
-        """
+        #""
         Get the :class:`starsmashertools.lib.simulation.Simulation` from which
         this simulation was a continuation of. If this simulation is not a
         continuation, returns None.
@@ -342,7 +345,7 @@ class Simulation(object):
         -------
         :class:`starsmashertools.lib.simulation.Simulation` or `None`
             The simulation from which this simulation continued from.
-        """
+        #""
         import starsmashertools.helpers.path
         import starsmashertools.lib.output
 
@@ -374,7 +377,7 @@ class Simulation(object):
                     self,
                 )
                 try:
-                    t = initial_output['t']
+                    t = initial_output.header['t']
                 except starsmashertools.lib.output.Reader.CorruptedFileError as e:
                     import starsmashertools.helpers.warnings
                     message = "starsmashertools.lib.output.Reader.CorruptedFileError: "+str(e)+"\nUsing the first output file instead of the restartrad file"
@@ -383,8 +386,8 @@ class Simulation(object):
                     # If the restartrad file is corrupted, try to access just the very
                     # first output file
                     initial_output = self.get_output(0)
-                    t = initial_output['t']
-
+                    t = initial_output.header['t']
+                
                 threshold = starsmashertools.preferences.get_default(
                     'Simulation',
                     'get_simulation_continued_from position threshold',
@@ -461,7 +464,8 @@ class Simulation(object):
         
         self._searching_for_continuation = False
         return self._continuationFrom
-
+    """
+    
     @api
     def get_compressed_properties(self):
         """
