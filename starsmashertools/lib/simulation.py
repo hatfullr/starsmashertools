@@ -133,8 +133,7 @@ class Simulation(object):
         )
         towrite = "\n".join([child.directory for child in children])
         with starsmashertools.helpers.file.open(fname, 'w') as f:
-            for child in children:
-                f.write(towrite)
+            f.write(towrite)
     
     def _get_compression_filename(self):
         import starsmashertools.helpers.path
