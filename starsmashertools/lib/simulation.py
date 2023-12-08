@@ -118,7 +118,7 @@ class Simulation(object):
             import starsmashertools.lib.binary
             if isinstance(self, starsmashertools.lib.binary.Binary):
                 if len(children) != 2:
-                    raise Exception("File '%s' indicates that the binary simulation has only one child. If one of the stars is a point mass, please add a line 'point mass' to the file.")
+                    raise Exception("File '%s' indicates that the binary simulation has only one child. If one of the stars is a point mass, please add a line 'point mass' to the file." % fname)
         return children
 
     def _save_children_to_hint_file(self, children, verbose : bool = False):
