@@ -132,7 +132,7 @@ class Simulation(object):
             self.directory,
             hint_filename,
         )
-        towrite = "\n".join([child.directory for child in children])
+        towrite = "\n".join([child if isinstance(child, str) else child.directory for child in children])
         with starsmashertools.helpers.file.open(fname, 'w') as f:
             f.write(towrite)
     
