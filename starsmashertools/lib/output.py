@@ -295,10 +295,9 @@ class Output(dict, object):
             self[xkey], self[ykey], self[zkey] = x, y, z
         
     @api
-    def get_flux(self, *args, **kwargs):
+    def get_flux_finder(self, *args, **kwargs):
         """
-        Create a :class:`starsmashertools.flux.fluxfinder.FluxFinder` instance
-        and run its :func:`~.flux.fluxfinder.FluxFinder.get` method.
+        Create a :class:`starsmashertools.flux.fluxfinder.FluxFinder` instance.
 
         Parameters
         ----------
@@ -314,14 +313,14 @@ class Output(dict, object):
 
         Returns
         -------
-        A :class:`starsmashertools.flux.fluxfinder.FluxFinder` whose
-        :func:`~.flux.fluxfinder.FluxFinder.get` method has been called.
+        FluxFinder
+            A :class:`starsmashertools.flux.fluxfinder.FluxFinder` instance.
         """
 
         import starsmashertools.flux.fluxfinder
-
-        instance = starsmashertools.flux.fluxfinder.FluxFinder(self, *args, **kwargs)
-        instance.get()
+        instance = starsmashertools.flux.fluxfinder.FluxFinder(
+            self, *args, **kwargs
+        )
         return instance
 
 
