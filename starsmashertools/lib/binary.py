@@ -1,14 +1,9 @@
 import starsmashertools.lib.simulation
-import starsmashertools.helpers.path as path
-import starsmashertools.preferences as preferences
+import starsmashertools.lib.output
 from starsmashertools.helpers.apidecorator import api
 from starsmashertools.helpers.clidecorator import cli
 import starsmashertools.helpers.argumentenforcer
-import starsmashertools.helpers.midpoint
-import starsmashertools.math
-import starsmashertools
 import numpy as np
-import warnings
 
 class Binary(starsmashertools.lib.simulation.Simulation, object):
     def __init__(self, *args, **kwargs):
@@ -21,6 +16,7 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def get_primary(self, output : starsmashertools.lib.output.Output):
+        import starsmashertools
         if output not in self:
             raise ValueError("Argument 'output' must be an output file from simulation '%s', not '%s'" % (self.directory, output.simulation.directory))
         return starsmashertools.get_particles(output, self.get_primary_IDs())
@@ -28,6 +24,7 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def get_secondary(self, output : starsmashertools.lib.output.Output):
+        import starsmashertools
         if output not in self:
             raise ValueError("Argument 'output' must be an output file from simulation '%s', not '%s'" % (self.directory, output.simulation.directory))
         return starsmashertools.get_particles(output, self.get_secondary_IDs())
@@ -45,6 +42,9 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
         return self._n2
 
     def _get_n1_n2(self):
+        import starsmashertools.helpers.path
+        import starsmashertools.lib.logfile
+        
         logfiles = self.get_logfiles()
         if logfiles:
             try:
@@ -64,12 +64,12 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
             start1u = self.get_start1u()
             start2u = self.get_start2u()
 
-            if path.isfile(start1u):
+            if starsmashertools.helpers.path.isfile(start1u):
                 header = self.reader.read(start1u, return_headers=True, return_data=False)
                 self._n1 = header['ntot']
             else: # Must be a point mass
                 self._n1 = 1
-            if path.isfile(start2u):
+            if starsmashertools.helpers.path.isfile(start2u):
                 header = self.reader.read(start2u, return_headers=True, return_data=False)
                 self._n2 = header['ntot']
             else: # Must be a point mass
@@ -86,29 +86,36 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
     def isSecondaryPointMass(self, cli : bool = False): return self.get_n2() == 1
 
     @api
-    def get_start1u(self): return path.join(self.directory, "sph.start1u")
+    def get_start1u(self):
+        import starsmashertools.helpers.path
+        return starsmashertools.helpers.path.join(self.directory, "sph.start1u")
     @api
-    def get_start2u(self): return path.join(self.directory, "sph.start2u")
+    def get_start2u(self):
+        import starsmashertools.helpers.path
+        return starsmashertools.helpers.path.join(self.directory, "sph.start2u")
 
     def _get_children(
             self,
             verbose : bool = False,
     ):
         import starsmashertools.lib.relaxation
-        search_directory = preferences.get_default('Simulation', 'search directory')
-        search_directory = path.realpath(search_directory)
+        import starsmsahertools.preferences
+        import starsmashertools.helpers.path
+        
+        search_directory = starsmashertools.preferences.get_default('Simulation', 'search directory')
+        search_directory = starsmashertools.helpers.path.realpath(search_directory)
 
         if self.isPrimaryPointMass():
             children = ['point mass']
         else:
-            duplicate = path.find_duplicate_file(self.get_start1u(), search_directory, throw_error=True)
-            children = [starsmashertools.lib.relaxation.Relaxation(path.dirname(duplicate))]
+            duplicate = starsmashertools.helpers.path.find_duplicate_file(self.get_start1u(), search_directory, throw_error=True)
+            children = [starsmashertools.lib.relaxation.Relaxation(starsmashertools.helpers.path.dirname(duplicate))]
 
         if self.isSecondaryPointMass():
             children += ['point mass']
         else:
-            duplicate = path.find_duplicate_file(self.get_start2u(), search_directory, throw_error=True)
-            children += [starsmashertools.lib.relaxation.Relaxation(path.dirname(duplicate))]
+            duplicate = starsmashertools.helpers.path.find_duplicate_file(self.get_start2u(), search_directory, throw_error=True)
+            children += [starsmashertools.lib.relaxation.Relaxation(starsmashertools.helpers.path.dirname(duplicate))]
 
         return children
 
@@ -125,6 +132,10 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def get_COMs(self, output : starsmashertools.lib.output.Output | starsmashertools.lib.output.OutputIterator):
+        import starsmashertools.math
+        import starsmashertools.lib.simulation
+        import starsmashertools.lib.output
+        
         if output not in self:
             raise starsmashertools.lib.simulation.Simulation.OutputNotInSimulationError(self, output)
 
@@ -159,6 +170,9 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def get_separation(self, output : starsmashertools.lib.output.Output | starsmashertools.lib.output.OutputIterator):
+        import starsmashertools.lib.output
+        import starsmashertools.lib.simulation
+        
         if output not in self:
             raise starsmashertools.lib.simulation.Simulation.OutputNotInSimulationError(self, output)
         
@@ -174,6 +188,11 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def get_period(self, output : starsmashertools.lib.output.Output | starsmashertools.lib.output.OutputIterator):
+        import starsmashertools.math
+        import starsmashertools.lib.simulation
+        import starsmashertools.lib.output
+        import starsmashertools
+        
         if output not in self:
             raise starsmashertools.lib.simulation.Simulation.OutputNotInSimulationError(self, output)
         
@@ -202,6 +221,12 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def get_fRLOF(self, output : starsmashertools.lib.output.Output | starsmashertools.lib.output.OutputIterator):
+        import starsmashertools.math
+        import starsmashertools.lib.simulation
+        import starsmashertools.lib.output
+        import starsmashertools
+        import warnings
+        
         if output not in self:
             raise starsmashertools.lib.simulation.Simulation.OutputNotInSimulationError(self, output)
 
@@ -283,6 +308,9 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
         `~.get_fRLOF`
         """
 
+        import starsmashertools.helpers.path
+        import starsmashertools.helpers.midpoint
+        
         starsmashertools.helpers.argumentenforcer.enforcevalues({
             'which' : ['primary', 'secondary', 'both'],
         })
@@ -381,6 +409,11 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
         float
             The mass of the primary (usually the donor) star.
         """
+        import starsmashertools.helpers.path
+        import starsmashertools.lib.logfile
+        import starsmashertools.lib.output
+        import starsmashertools
+        
         logfiles = self.get_logfiles()
         if logfiles:
             try:
@@ -415,6 +448,11 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
         float
             The mass of the secondary (usually the accretor) star.
         """
+        import starsmashertools.helpers.path
+        import starsmashertools.lib.logfile
+        import starsmashertools.lib.output
+        import starsmashertools
+        
         logfiles = self.get_logfiles()
         if logfiles:
             try:
@@ -447,7 +485,11 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
             The mass of the core particle in the primary (usually the donor)
             star. If there is no core particle, returns `None`.
         """
-
+        import starsmashertools.helpers.path
+        import starsmashertools.lib.logfile
+        import starsmashertools
+        import starsmashertools.lib.output
+        
         if self.get_n1() == 1: # The primary is a point mass particle
             return self['mbh']
         
@@ -491,6 +533,9 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
             The mass of the core particle in the secondary (usually the
             accretor) star. If there is no core particle, returns `None`.
         """
+        import starsmashertools.helpers.path
+        import starsmashertools.lib.output
+        import starsmashertools
 
         if self.get_n2() == 1: # The secondary is a point mass particle
             return self['mbh']
