@@ -553,7 +553,7 @@ class ParticleIterator(OutputIterator, object):
                 strides=header_stride,
             )
         except Exception as e:
-            raise Exception("This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories. %s" % filename) from e
+            raise Reader.CorruptedFileError("This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories. %s" % filename) from e
         
         for i, (ID, position) in enumerate(zip(IDs, positions)):
             pos = i * data_stride
@@ -567,7 +567,7 @@ class ParticleIterator(OutputIterator, object):
                 strides=data_stride,
             )[np.argsort(sort_indices)]
         except Exception as e:
-            raise Exception("This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories. %s" % filename) from e
+            raise Reader.CorruptedFileError("This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories. %s" % filename) from e
         
         data = {name:d[name].flatten() for name in d.dtype.names}
         data['t'] = header['t'][0]
@@ -646,7 +646,7 @@ class Reader(object):
                 strides=self._stride['header'],
             )
         except Exception as e:
-            raise Exception("This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories. %s" % filename) from e
+            raise Reader.CorruptedFileError("This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories. %s" % filename) from e
 
         ntot = header['ntot'][0]
 
@@ -663,7 +663,7 @@ class Reader(object):
                 strides=8,
             )[0]
         except Exception as e:
-            raise Exception("This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories. %s" % filename) from e
+            raise Reader.CorruptedFileError("This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories. %s" % filename) from e
 
         if ntot != ntot_check:
             raise Reader.CorruptedFileError(filename)
@@ -687,7 +687,7 @@ class Reader(object):
                 strides=self._stride['data'] + self._EOL_size,
             )
         except Exception as e:
-            raise Exception("This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories. %s" % filename) from e
+            raise Reader.CorruptedFileError("This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories. %s" % filename) from e
         
         # Now organize the data into Pythonic structures
         new_data = {}
