@@ -33,7 +33,7 @@ class FluxFinder(object):
 
     required_keys = [
         'x', 'y', 'z', 'radius', 'hp', 
-        'tau', 'flux',
+        'tau', 'flux', 'ID',
     ]
     
     @starsmashertools.helpers.argumentenforcer.enforcetypes
@@ -62,7 +62,9 @@ class FluxFinder(object):
         self.include_in_rotation = include_in_rotation
         self.extent = extent
         self.flux_weighted_averages = flux_weighted_averages
-        self.contributing_particle_IDs = None
+        self.contributing_particle_IDs = []
+
+        self._contributors = None
 
     def check_outputs(self):
         """
@@ -90,6 +92,8 @@ class FluxFinder(object):
         
         # Start with a clean copy of the data
         self.output = copy.deepcopy(self._original_output)
+
+        self._contributors = np.full(len(self.output['x']), False)
 
         # Rotate the particles
         # Check the default value of each one's rotate keys
@@ -139,7 +143,7 @@ class FluxFinder(object):
             )
             c_speed = 2.99792458e10
             a_const = 7.565767e-15
-
+            
             self.output.mask(self.output['tau'] >= tau_particle_cutoff)
             
             units = self.output.simulation.units
@@ -205,6 +209,7 @@ class FluxFinder(object):
             drprime2 : np.ndarray,
             kapparho : np.ndarray,
             flux : np.ndarray,
+            IDs : np.ndarray,
             tau_ray_max : float | int,
             flux_weighted_averages = [],
     ):
@@ -258,12 +263,27 @@ class FluxFinder(object):
                         weighted_averages[_i] += val[idx_sorted[i]] * f
                     
                     total_flux += f
+
+                    self._contributors[IDs[idx_sorted[i]]] = True
+                    #cID = IDs[idx_sorted[i]]
+                    #self.contributing_particle_IDs = list(set(
+                    #    self.contributing_particle_IDs + [cID]
+                    #))
+                    #if cID not in self.contributing_particle_IDs:
+                    #    self.contributing_particle_IDs += [cID]
         
         # Add the surface particle's flux
         f = flux[idx_sorted[-1]]
         for _i, val in enumerate(flux_weighted_averages):
             weighted_averages[_i] += val[idx_sorted[-1]] * f
         total_flux += f
+        self._contributors[IDs[idx_sorted[-1]]] = True
+        #cID = IDs[idx_sorted[-1]]
+        #self.contributing_particle_IDs = list(set(
+        #    self.contributing_particle_IDs + [cID]
+        #))
+        #if cID not in self.contributing_particle_IDs:
+        #    self.contributing_particle_IDs += [cID]
         
         return total_flux, weighted_averages
     
@@ -278,6 +298,8 @@ class FluxFinder(object):
             A 2D array of flux values 
         """
         self.prepare_output()
+
+        #self.contributing_particle_IDs = []
         
         flux = np.zeros(np.asarray(self.resolution) + 1)
         
@@ -289,8 +311,6 @@ class FluxFinder(object):
         x = self.output['x']
         y = self.output['y']
         z = self.output['z']
-        #rho = self.output['rho']
-        #kappa = self.output['opacity']
         rloc = self.output['radius']
         pflux = self.output['flux']
         tau = self.output['tau']
@@ -307,8 +327,9 @@ class FluxFinder(object):
 
         kapparho = tau / rloc
 
-        IDs = np.arange(len(kapparho)) # might not be the actual particle IDs
-
+        _IDs = np.arange(len(kapparho)) # Not the actual particle IDs
+        IDs = self.output['ID'] # The actual particle IDs
+        
         weighted_averages = []
         for key in self.flux_weighted_averages:
             weighted_averages += [np.full(flux.shape, np.nan)]
@@ -320,7 +341,7 @@ class FluxFinder(object):
             
             if not np.any(interacting_x): continue
             
-            interacting_IDs = IDs[interacting_x]
+            interacting_IDs = _IDs[interacting_x]
             y_interacting = y[interacting_x]
             
             deltax2 = deltax2_array[i][interacting_x]
@@ -332,12 +353,9 @@ class FluxFinder(object):
                 
                 interacting_xy = drprime2 < rloc2[interacting_IDs]
                 if not np.any(interacting_xy): continue
-                
-                interacting = interacting_IDs[interacting_xy]
-                
-                if not np.any(interacting): continue
-                
+
                 drprime2 = drprime2[interacting_xy]
+                interacting = interacting_IDs[interacting_xy]
                 
                 flux[ii, jj], averages = self.get_flux(
                     z[interacting],
@@ -345,12 +363,16 @@ class FluxFinder(object):
                     drprime2,
                     kapparho[interacting],
                     pflux[interacting],
+                    IDs[interacting],
                     self.tau_ray_max,
                     flux_weighted_averages = [arr[interacting] for arr in self.flux_weighted_averages],
                 )
                 
                 for _i, val in enumerate(averages):
                     weighted_averages[_i][ii, jj] = val
+
+        # Store a list of all the contributing particles
+        self.contributing_particle_IDs = np.where(self._contributors)[0]
         
         # Complete the weighted averages
         idx = np.logical_and(flux > 0, np.isfinite(flux))
