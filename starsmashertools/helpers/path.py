@@ -10,6 +10,9 @@ import collections
 import warnings
 import starsmashertools.helpers.string
 
+def getcwd():
+    return os.getcwd()
+
 def samefile(file_or_dir1 : str, file_or_dir2 : str):
     if (starsmashertools.helpers.ssh.isRemote(file_or_dir1) or
         starsmashertools.helpers.ssh.isRemote(file_or_dir2)):

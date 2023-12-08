@@ -2,6 +2,7 @@ import numpy as np
 from starsmashertools.helpers.apidecorator import api
 import starsmashertools.helpers.argumentenforcer
 import starsmashertools.lib.output
+import starsmashertools.helpers.readonlydict
 
 # Important note:
 #    I did try writing GPU code for this, but it turns out that serial CPU code
@@ -65,6 +66,7 @@ class FluxFinder(object):
         self.contributing_particle_IDs = []
 
         self._contributors = None
+        self.result = None
 
     def check_outputs(self):
         """
@@ -297,9 +299,8 @@ class FluxFinder(object):
         np.ndarray
             A 2D array of flux values 
         """
+        self.result = None
         self.prepare_output()
-
-        #self.contributing_particle_IDs = []
         
         flux = np.zeros(np.asarray(self.resolution) + 1)
         
@@ -380,9 +381,320 @@ class FluxFinder(object):
             for i in range(len(weighted_averages)):
                 weighted_averages[i][idx] /= flux[idx]
                 weighted_averages[i][~idx] = 0
-        if weighted_averages:
-            if len(weighted_averages) == 1:
-                return flux, weighted_averages[0]
-            return flux, weighted_averages
-        else: return flux
+
+        return FluxFinder.Result(
+            flux,
+            weighted_averages,
+            fluxfinder = self,
+        )
+
+    
+        
+
+
+    class Result(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
+        class FileFormatError(Exception, object): pass
+        
+        def __init__(
+                self,
+                flux : np.ndarray,
+                weighted_averages : np.ndarray,
+                fluxfinder = None,
+                output_file = None,
+                contributing_particle_IDs = None,
+                extent = None,
+                tau_ray_max = None,
+                viewing_angle = None,
+        ):
+            import copy
+            import warnings
+
+            if fluxfinder is not None:
+                output_file = copy.deepcopy(fluxfinder.output.path)
+                contributing_particle_IDs = copy.deepcopy(fluxfinder.contributing_particle_IDs)
+                extent = copy.deepcopy(fluxfinder.extent)
+                tau_ray_max = copy.deepcopy(fluxfinder.tau_ray_max)
+                viewing_angle = copy.deepcopy(fluxfinder.viewing_angle)
                 
+            warnings.filterwarnings(action='ignore')
+
+            log_flux = np.log10(flux)
+            log_weighted_averages = [np.log10(arr) for arr in weighted_averages]
+
+            super(FluxFinder.Result, self).__init__({
+                'output_file' : output_file,
+                'flux' : copy.deepcopy(flux),
+                'log_flux' : copy.deepcopy(log_flux),
+                'weighted_averages' : copy.deepcopy(weighted_averages),
+                'log_weighted_averages' : copy.deepcopy(log_weighted_averages),
+                'contributing_particle_IDs' : contributing_particle_IDs,
+                'extent' : extent,
+                'tau_ray_max' : tau_ray_max,
+                'viewing_angle' : viewing_angle,
+            })
+            warnings.resetwarnings()
+            
+            self.fluxfinder = fluxfinder
+            
+        def __getattribute__(self, attr):
+            if attr != 'keys':
+                if attr in self.keys():
+                    return self[attr]
+            return super(FluxFinder.Result, self).__getattribute__(attr)
+
+        @property
+        def shape(self): return self.flux.shape
+        
+        @starsmashertools.helpers.argumentenforcer.enforcetypes
+        @api
+        def save(
+                self,
+                filename : str | type(None) = None,
+                data_format : str = '%15.7E',
+                log : bool = False,
+        ):
+            """
+            Save to a file.
+
+            Parameters
+            ----------
+            filename : str, None, default = None
+                The file name to save to. If `None` then the file will be saved 
+                in the current working directory as the same name as the output
+                file's basename with an added suffix '.flux.json'. If the file
+                name ends with '.json' then 
+                :func:`starsmashertools.helpers.jsonfile.save` will be used to 
+                save the data. Similarly, if the file name ends with '.json.gz'
+                or '.json.zip' then the file will be compressed according to 
+                :func:`starsmashertools.helpers.jsonfile.save`. Otherwise, the
+                file will be written in a human-readable format.
+
+            data_format : str, default = '%15.7E'
+                The float string formatter to use for array data when writing a
+                non-json formatted file.
+
+            log : bool, default = False
+                If `True`, the log10 values will be saved. If `False`, the 
+                regular values will be saved.
+            """
+            import starsmashertools.helpers.path
+            import starsmashertools.helpers.jsonfile
+            import copy
+
+
+            if filename is None:
+                basename = starsmashertools.helpers.path.basename(
+                    self.output_file,
+                )
+                filename = starsmashertools.helpers.path.join(
+                    starsmashertools.helpers.path.getcwd(),
+                    basename + '.json',
+                )
+
+            if (filename.endswith('.json') or
+                filename.endswith('.json.gz') or
+                filename.endswith('.json.zip')):
+                obj = {}
+                for key, val in self.items():
+                    obj[key] = val
+                obj['log'] = log
+                starsmashertools.helpers.jsonfile.save(filename, obj)
+                return
+
+            def write_array(f, array, fmt, name):
+                f.write('%s\n' % name)
+                f.write(('vmin: '+data_format+'\n') % get_vmin(array))
+                f.write(('vmax: '+data_format+'\n') % get_vmax(array))
+                total_fmt = ' '.join([fmt]*array.shape[0])+'\n'
+                for i, row in enumerate(array):
+                    f.write(total_fmt % tuple(row))
+
+            def get_vmin(array):
+                idx = np.isfinite(array)
+                if not np.any(idx): return -float('inf')
+                return np.nanmin(array[idx])
+
+            def get_vmax(array):
+                idx = np.isfinite(array)
+                if not np.any(idx): return float('inf')
+                return np.nanmax(array[idx])
+
+            flux = self.log_flux if log else self.flux
+            weighted_averages = self.log_weighted_averages if log else self.weighted_averages
+
+            # Otherwise write a human-readable file
+            labels = ['xmin','xmax','ymin','ymax']
+            viewing_labels = ['xangle', 'yangle', 'zangle']
+            try:
+                with open(filename, 'w') as f:
+                    f.write(self.output_file + '\n')
+                    f.write('log: ' + str(log) + '\n')
+                    for item, label in zip(self.viewing_angle, viewing_labels):
+                        f.write((label + ': ' + data_format + '\n') % item)
+
+                    for item, label in zip(self.extent, labels):
+                        f.write((label + ': ' + data_format + '\n') % item)
+                    f.write('Nx: %d\n' % flux.shape[0])
+                    f.write('Ny: %d\n' % flux.shape[1])
+
+                    f.write('\n')
+                    write_array(f, flux, data_format, 'Flux')
+
+                    for i, weighted_average in enumerate(weighted_averages):
+                        f.write('\n')
+                        write_array(
+                            f,
+                            weighted_average,
+                            data_format,
+                            'Weighted Average %d' % i,
+                        )
+
+                    f.write('\ncontributing_particle_IDs:\n')
+
+                    maxID = max(self.contributing_particle_IDs)
+                    length = len(str(maxID))
+                    fmt = ' %' + str(length) + 'd'
+                    i = 0
+                    for ID in self.contributing_particle_IDs:
+                        f.write(fmt % ID)
+                        i += 1
+                        if i == 12:
+                            f.write('\n')
+                            i = 0
+            except:
+                if starsmashertools.helpers.path.exists(filename):
+                    starsmashertools.helpers.path.remove(filename)
+                raise
+                
+        @staticmethod
+        @starsmashertools.helpers.argumentenforcer.enforcetypes
+        @api
+        def load(
+                filename : str,
+        ):
+            import starsmashertools.helpers.path
+            import starsmashertools.helpers.jsonfile
+            import starsmashertools.helpers.string
+            
+            if (filename.endswith('.json') or
+                filename.endswith('.json.gz') or
+                filename.endswith('.json.zip')):
+                obj = starsmashertools.helpers.jsonfile.load(filename)
+                return FluxFinder.Result(
+                    obj['flux'],
+                    obj['weighted_averages'],
+                    output_file = obj['output_file'],
+                    contributing_particle_IDs = obj['contributing_particle_IDs'],
+                    extent = obj['extent'],
+                    tau_ray_max = obj['tau_ray_max'],
+                    viewing_angle = obj['viewing_angle'],
+                )
+
+            def read_array(f, Nx, Ny, log):
+                name = f.readline().strip()
+                vmin = starsmashertools.helpers.string.parse(
+                    f.readline().split(':')[-1].strip(),
+                )
+                vmax = starsmashertools.helpers.string.parse(
+                    f.readline().split(':')[-1].strip(),
+                )
+                data = np.empty((Nx, Ny), dtype=object)
+                for i in range(Ny):
+                    data[i] = f.readline().strip().split()
+                data = data.astype(float)
+                if log: data = 10.**data
+                return data, vmin, vmax, name
+
+            labels = ['xmin','xmax','ymin','ymax']
+            viewing_labels = ['xangle', 'yangle', 'zangle']
+            extent = [None, None, None, None]
+            viewing_angle = [None, None, None]
+            with open(filename, 'r') as f:
+                try:
+                    output_file = f.readline().strip()
+                    log = starsmashertools.helpers.string.parse(
+                        f.readline().split('log:')[-1].strip(),
+                    )
+                    for i, label in enumerate(viewing_labels):
+                        line = f.readline().split(label + ':')[-1].strip()
+                        viewing_angle[i] = starsmashertools.helpers.string.parse(line)
+                    
+                    for i, label in enumerate(labels):
+                        line = f.readline().split(label + ':')[-1].strip()
+                        extent[i] = starsmashertools.helpers.string.parse(line)
+                    Nx = starsmashertools.helpers.string.parse(
+                        f.readline().split('Nx:')[-1].strip(),
+                    )
+                    Ny = starsmashertools.helpers.string.parse(
+                        f.readline().split('Ny:')[-1].strip(),
+                    )
+                except Exception as e:
+                    raise FluxFinder.Result.FileFormatError(filename) from e
+
+                newline = f.readline().strip() # newline
+                if newline:
+                    raise FluxFinder.Result.FileFormatError(filename)
+
+                # flux array
+                flux,vmin,vmax,name = read_array(f, Nx, Ny, log)
+
+                weighted_averages = {}
+                start = f.tell()
+                while True:
+                    start = f.tell()
+                    try:
+                        newline = f.readline()
+                        if newline.strip():
+                            raise FluxFinder.Result.FileFormatError(filename)
+                        data,vmin,vmax,name = read_array(f, Nx, Ny, log)
+                        if 'Weighted Average' not in name:
+                            raise FluxFinder.Result.FileFormatError(filename)
+                        number = starsmashertools.helpers.string.parse(
+                            name.split('Weighted Average')[-1].strip(),
+                        )
+                        weighted_averages[number] = data
+                    except Exception as e:
+                        if isinstance(e, FluxFinder.Result.FileFormatError):
+                            raise(e)
+                        break
+
+                # Finally, read the contributing particles
+                f.seek(start)
+                newline = f.readline().strip()
+                if newline:
+                    raise FluxFinder.Result.FileFormatError(filename)
+
+                try:
+                    f.readline().split('contributing_particle_IDs:')
+                except Exception as e:
+                    raise FluxFinder.Result.FileFormatError(filename) from e
+
+                contributing_particle_IDs = []
+                for line in f:
+                    contributing_particle_IDs += line.strip().split()
+                contributing_particle_IDs = np.array(
+                    contributing_particle_IDs,
+                    dtype = object,
+                ).astype(int).tolist()
+                
+
+            # Now that the file has been read we just need to sort the weighted
+            # averages (if there are any)
+
+            IDs = list(weighted_averages.keys())
+            order = np.argsort(IDs)
+            wa = []
+            for ID in order:
+                wa += [weighted_averages[ID]]
+            weighted_averages = wa
+            
+            return FluxFinder.Result(
+                flux,
+                weighted_averages,
+                fluxfinder = None,
+                output_file = output_file,
+                contributing_particle_IDs = contributing_particle_IDs,
+                extent = extent,
+                tau_ray_max = tau_ray_max,
+                viewing_angle = viewing_angle,
+            )

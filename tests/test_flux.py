@@ -182,13 +182,13 @@ class TestFlux(unittest.TestCase):
         warnings.resetwarnings()
         
         result = finder.get()
-        if np.any(result < 0):
+        if np.any(result.flux < 0):
             raise Exception("Negative flux found")
 
         e = None
         try:
             self.assertEqual(result.shape, expected.shape)
-            self.assertTrue(np.allclose(result, expected, equal_nan=True))
+            self.assertTrue(np.allclose(result.flux, expected, equal_nan=True))
         except Exception as _e:
             e = _e
 
@@ -199,7 +199,7 @@ class TestFlux(unittest.TestCase):
                 expected_ymin,
                 expected_ymin + expected_dy * expected.shape[1],
             ]
-            self.plot(result, expected, finder.extent, expected_extent)
+            self.plot(result.flux, expected, result.extent, expected_extent)
 
         if e: raise(e)
 
