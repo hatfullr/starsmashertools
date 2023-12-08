@@ -553,7 +553,7 @@ class ParticleIterator(OutputIterator, object):
                 strides=header_stride,
             )
         except Exception as e:
-            raise Exception("This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories. %s" % self.path) from e
+            raise Exception("This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories. %s" % filename) from e
         
         for i, (ID, position) in enumerate(zip(IDs, positions)):
             pos = i * data_stride
@@ -567,7 +567,7 @@ class ParticleIterator(OutputIterator, object):
                 strides=data_stride,
             )[np.argsort(sort_indices)]
         except Exception as e:
-            raise Exception("This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories.") from e
+            raise Exception("This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories. %s" % filename) from e
         
         data = {name:d[name].flatten() for name in d.dtype.names}
         data['t'] = header['t'][0]
