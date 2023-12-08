@@ -294,7 +294,35 @@ class Output(dict, object):
 
             self[xkey], self[ykey], self[zkey] = x, y, z
         
+    @api
+    def get_flux(self, *args, **kwargs):
+        """
+        Create a :class:`starsmashertools.flux.fluxfinder.FluxFinder` instance
+        and run its :func:`~.flux.fluxfinder.FluxFinder.get` method.
 
+        Parameters
+        ----------
+        *args
+            Positional arguments are passed directly to the 
+            :class:`starsmashertools.flux.fluxfinder.FluxFinder` constructor,
+            except the first argument to the constructor is always this 
+            :class:`starsmashertools.lib.output.Output` object.
+        
+        **kwargs
+            Keyword arguments are passed directly to the 
+            :class:`starsmashertools.flux.fluxfinder.FluxFinder` constructor.
+
+        Returns
+        -------
+        A :class:`starsmashertools.flux.fluxfinder.FluxFinder` whose
+        :func:`~.flux.fluxfinder.FluxFinder.get` method has been called.
+        """
+
+        import starsmashertools.flux.fluxfinder
+
+        instance = starsmashertools.flux.fluxfinder.FluxFinder(self, *args, **kwargs)
+        instance.get()
+        return instance
 
 
 
