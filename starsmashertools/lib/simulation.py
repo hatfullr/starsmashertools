@@ -38,6 +38,7 @@ class Simulation(object):
         self._compression_task = None
         self._continuationFrom = None
         self._continuationSearched = False
+        self._searching_for_continuation = False
 
         self.reader = starsmashertools.lib.output.Reader(self)
             
@@ -314,7 +315,7 @@ class Simulation(object):
         raise Exception("This should never happen")
         
     @api
-    def get_simulation_continued_from(self, **kwargs):
+    def get_simulation_continued_from(self):
         """
         Get the :class:`starsmashertools.lib.simulation.Simulation` from which
         this simulation was a continuation of. If this simulation is not a
@@ -344,6 +345,8 @@ class Simulation(object):
         """
         import starsmashertools.helpers.path
         import starsmashertools.lib.output
+
+        self._searching_for_continuation = True
         
         if not self._continuationSearched:
             search_directory = self.get_search_directory(throw_error = True)
@@ -452,6 +455,11 @@ class Simulation(object):
                 )
                 starsmashertools.helpers.warnings.warn(message)
             self._continuationSearched = True
+
+        if self._continuationFrom == self:
+            raise Exception("A simulation was detected as a continuation of another simulation, but the original simulation was detected as itself.")
+        
+        self._searching_for_continuation = False
         return self._continuationFrom
 
     @api
@@ -605,7 +613,7 @@ class Simulation(object):
         if recursive: _path = starsmashertools.helpers.path.join(self.directory, '**', filename_or_pattern)
         else: _path = starsmashertools.helpers.path.join(self.directory, filename_or_pattern)
         return glob.glob(_path, recursive=recursive)
-        
+    
     @api
     def get_outputfiles(self, pattern : str | type(None) = None):
         import starsmashertools.preferences
@@ -614,8 +622,9 @@ class Simulation(object):
         matches = self.get_file(pattern)
         if matches:
             matches = sorted(matches)
+            
         return matches
-
+    
     # The initial file is always the one that was written first.
     @api
     def get_initialfile(self, pattern : str | type(None) = None):
