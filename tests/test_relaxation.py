@@ -17,9 +17,10 @@ class TestRelaxation(unittest.TestCase):
     def test_get_n(self):
         self.assertEqual(self.simulation.get_n(), 1038)
 
-    def test_get_final_radius(self):
+    def test_get_final_extents(self):
+        extents = self.simulation.get_final_extents()
         self.assertAlmostEqual(
-            self.simulation.get_final_radius(),
+            float(extents.radius)/float(self.simulation.units.length),
             0.876398091009529,
         )
 

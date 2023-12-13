@@ -93,12 +93,16 @@ class Relaxation(starsmashertools.lib.simulation.Simulation, object):
 
     @cli('starsmashertools')
     @starsmashertools.helpers.argumentenforcer.enforcetypes
-    def get_final_radius(self, cli : bool = False):
+    def get_final_extents(self, cli : bool = False):
         output = self.get_output(-1)
-        result = np.amax(output['r'] + 2*output['hp'])
+        extents = output.get_extents(radial = True)
         if cli:
-            return "max(r + 2h) = %15.7E" % result
-        return result
+            rmax = np.amax(output['r']) * self.units.length
+            string = extents.get_cli_string()
+            string += "\n\nmax(r_i) = %s" % str(rmax)
+            string += "\n\nlength unit = %s" % str(self.units.length)
+            return string
+        return extents
 
 
     class Profile(dict, object):

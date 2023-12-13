@@ -323,6 +323,46 @@ class Output(dict, object):
         )
         return instance
 
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def get_extents(self, radial : bool = False):
+        """
+        Get the x, y, and z bounds of the simulation, where the minima are found
+        as min(x - 2*h) and maxima max(x + 2*h) for the x-axis and similarly for
+        the y and z axes.
+
+        Parameters
+        ----------
+        radial : bool, default = False
+            If True, returns a
+            :class:`starsmashertools.helpers.extents.RadialExtents` instead of a
+            :class:`starsmashertools.helpers.extents.Extents`. Use this if you
+            want the extents of a spherically symmetric simulation, such as a
+            :class:`starsmashertools.lib.relaxation.Relaxation`.
+
+        Returns
+        -------
+        :class:`starsmashertools.helpers.extents.Extents` or 
+        :class:`starsmashertools.helpers.extents.RadialExtents`
+        """
+        import starsmashertools.helpers.extents
+        units = self.simulation.units
+        x = self['x'] * float(units['x'])
+        y = self['y'] * float(units['y'])
+        z = self['z'] * float(units['z'])
+        radii = 2 * self['hp'] * float(units['hp'])
+
+        if radial:
+            return starsmashertools.helpers.extents.RadialExtents(self)
+        
+        return starsmashertools.helpers.extents.Extents(
+            xmin = starsmashertools.lib.units.Unit(np.amin(x - radii), units.length.label),
+            xmax = starsmashertools.lib.units.Unit(np.amax(x + radii), units.length.label),
+            ymin = starsmashertools.lib.units.Unit(np.amin(y - radii), units.length.label),
+            ymax = starsmashertools.lib.units.Unit(np.amax(y + radii), units.length.label),
+            zmin = starsmashertools.lib.units.Unit(np.amin(z - radii), units.length.label),
+            zmax = starsmashertools.lib.units.Unit(np.amax(z + radii), units.length.label),
+        )
 
 
 
@@ -350,6 +390,34 @@ class Output(dict, object):
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
 
 
         
@@ -576,6 +644,41 @@ class ParticleIterator(OutputIterator, object):
         return data
                 
                 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     
 
