@@ -78,7 +78,7 @@ This will launch a CLI application which might look something like this:
 
     Main Menu
 
-    Directory = [censored]/simulation-directory
+    Directory = .../simulation-directory
 
     Choose an option
          0) get_children
