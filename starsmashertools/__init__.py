@@ -22,8 +22,9 @@ def _check_version():
     # time I commit b/c it's kind of slow.
     import os
 
-    if os.path.samefile(SOURCE_DIRECTORY, '/home/hatfull/starsmashertools'):
-        return
+    if os.path.exists('/home/hatfull/starsmashertools'):
+        if os.path.samefile(SOURCE_DIRECTORY, '/home/hatfull/starsmashertools'):
+            return
 
     import urllib.request
     import urllib.error
