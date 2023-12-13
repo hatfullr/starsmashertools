@@ -188,7 +188,7 @@ class ArchiveValue(object):
     def __init__(
             self,
             value,
-            origin : str,
+            origin : str | type(None) = None,
             mtime : int | float | type(None) = None
     ):
         """
@@ -216,9 +216,7 @@ class ArchiveValue(object):
         self.value = value
         self.origin = origin
 
-        if mtime is None:
-            if not starsmashertools.helpers.path.isfile(self.origin):
-                raise FileNotFoundError(self.origin)
+        if self.origin is not None and mtime is None:
             mtime = starsmashertools.helpers.path.getmtime(self.origin)
         
         self.mtime = mtime
