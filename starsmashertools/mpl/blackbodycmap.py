@@ -47,7 +47,6 @@ http://www.vendian.org/mncharity/dir3/blackbody/parameters.html
 
 """
 import matplotlib
-from sys import version_info
 from io import StringIO
 from time import time
     
