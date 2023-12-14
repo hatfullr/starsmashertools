@@ -48,10 +48,7 @@ http://www.vendian.org/mncharity/dir3/blackbody/parameters.html
 """
 import matplotlib
 from sys import version_info
-if version_info.major >= 3:
-    from io import StringIO
-else:
-    from StringIO import StringIO
+from io import StringIO
 from time import time
     
 # http://www.vendian.org/mncharity/dir3/blackbody/UnstableURLs/bbr_color.html
