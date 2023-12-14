@@ -1,1 +1,0 @@
-../../data/src/initialize_triple.f

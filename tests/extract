@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 
-
-if __name__ == '__main__':
-    import zipfile
+# Start restore code
+def get_compress_code():
     import os
-    import shutil
-
+    
     compress_filename = 'compress'
     if not os.path.exists(compress_filename):
         raise FileNotFoundError(compress_filename)
@@ -44,10 +42,28 @@ if __name__ == '__main__':
     # Get constant variable values:
     #    zipname
     #    size_identifier
+    #    times_identifier
     #    compression_kwargs
     # and print_progress function
+    return code
+# Stop restore code
+    
+
+
+if __name__ == '__main__':
+    import zipfile
+    import os
+    import shutil
+    import time
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--quiet', action='store_true')
+    parser.add_argument('--no-remove', action='store_true')
+    args = parser.parse_args()
+
+    code = get_compress_code()
     for script in code.values():
-        #print(script)
         exec(script)
 
         
@@ -63,13 +79,22 @@ if __name__ == '__main__':
                 **compression_kwargs
         ) as zfile:
             total = int(zfile.read(size_identifier).decode('utf-8'))
-            print_progress(0)
+            lines = zfile.read(times_identifier).decode('utf-8').split('\n')
+            times = {}
+            for line in lines:
+                if not line.strip(): continue
+                _file, atime, mtime = line.split()
+                times[_file] = (float(atime), float(mtime))
+            
+            if not args.quiet: print_progress(0)
             for zinfo in zfile.infolist():
-                if zinfo.filename == size_identifier: continue
+                if zinfo.filename in [size_identifier, times_identifier]: continue
                 zfile.extract(zinfo)
+                os.utime(zinfo.filename, times = times[zinfo.filename])
+                
                 extracted += [zinfo.filename]
-                extract_size += os.path.get.getsize(zinfo.filename)
-                print_progress(extracted_size / total * 100)
+                extracted_size += os.path.getsize(zinfo.filename)
+                if not args.quiet: print_progress(extracted_size / total * 100)
     except:
         # If something goes wrong, remove the files we extracted
         directories = []
@@ -87,4 +112,4 @@ if __name__ == '__main__':
         raise
 
     # If nothing went wrong, remove the archive
-    os.remove(zipname)
+    if not args.no_remove: os.remove(zipname)

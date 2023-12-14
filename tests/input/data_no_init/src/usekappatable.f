@@ -1,1 +1,0 @@
-../../data/src/usekappatable.f
