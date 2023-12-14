@@ -1,0 +1,151 @@
+#!/usr/bin/env python3
+import zipfile
+
+# We need the comments below to identify this part of the file in extract script
+# Start extract static variables
+zipname = 'archive.zip'
+size_identifier = 'uncompressed_size'
+compression_kwargs = {
+    'compresslevel' : 9,
+      'compression' : zipfile.ZIP_DEFLATED,
+}
+# Stop extract static variables
+
+
+def get_gitignore_patterns(filename):
+    patterns = []
+    with open(filename, 'r') as f:
+        for line in f:
+            if not line.strip(): continue # Skip empty lines
+            if line.strip()[0] == '#': continue # Skip comments
+            patterns += [line.strip()]
+    return patterns
+
+def get_to_compress():
+    import os
+    import starsmashertools
+    import fnmatch
+    directory = os.getcwd()
+
+    gitignore = os.path.join(
+        starsmashertools.SOURCE_DIRECTORY,
+        '.gitignore',
+    )
+    gitignore_patterns = []
+    if os.path.isfile(gitignore):
+        gitignore_patterns = get_gitignore_patterns(gitignore)
+
+    # Only compress files that are in the directories of the current working
+    # directory
+    directories = []
+    for name in os.listdir(directory):
+        if os.path.isdir(name):
+            path = os.path.join(directory, name)
+            if not name.endswith(os.sep): name += os.sep
+            for pattern in gitignore_patterns:
+                if fnmatch.fnmatch(name, pattern): break
+            else: # Doesn't match any gitignore pattern
+                directories += [path]
+
+    # Find all the files to compress
+    files = []
+    for directory in directories:
+        for (dirpath, dirnames, filenames) in os.walk(directory):
+            for filename in filenames:
+                path = os.path.join(dirpath, filename)
+                files += [path]
+    
+    return files
+
+# Start extract print_progress
+def print_progress(progress):
+    string = 'progress = %5.1f%%' % progress
+    if progress == 0:
+        print(string)
+    else:
+        print('\033[F', end='') # Go to top of previous line
+        # Clear the line
+        print(' '*len(string))
+        # Return to the start of previous line
+        print('\033[F', end='')
+        # Print the progress
+        print(string)
+# Stop extract print_progress
+
+def compress(files):
+    import zipfile
+    import os
+    import copy
+    import shutil
+
+    if os.path.exists(zipname):
+        raise FileExistsError(zipname)
+
+    sizes = {_file:os.path.getsize(_file) for _file in files}
+    total = sum([value for key, value in sizes.items()])
+
+    cwd = os.path.realpath(os.getcwd())
+    if not cwd.endswith(os.sep): cwd = cwd + os.sep
+
+    def get_arcname(path):
+        cwd = os.getcwd()
+        if not path.startswith(cwd):
+            raise Exception("Cannot work on a file not in the current working directory")
+        arcname = path.replace(cwd,'')
+        if arcname.startswith(os.sep): arcname = os.sep.join(arcname.split(os.sep)[1:])
+        return arcname
+
+
+    to_remove = []
+    for _file in files:
+        arcname = get_arcname(_file)
+        dirname = os.path.dirname(arcname)
+        while os.sep in dirname:
+            dirname = os.path.dirname(dirname)
+        to_remove += [dirname]
+
+    for t in to_remove:
+        if not os.path.isdir(t):
+            raise FileNotFoundError(t)
+    
+    compressed = 0.
+    try:
+        with zipfile.ZipFile(
+                zipname,
+                mode = 'w',
+                **compression_kwargs
+        ) as zfile:
+            zfile.writestr(
+                size_identifier,
+                str(total),
+            )
+            
+            print_progress(0)
+            for _file in files:
+
+                # Get the files in the directories
+                zfile.write(
+                    _file,
+                    arcname = get_arcname(_file),
+                )
+                compressed += sizes[_file]
+                print_progress(compressed / total * 100)
+
+        # Double check to make sure the zip file does indeed exist
+        if not os.path.exists(zipname): raise FileNotFoundError(zipname)
+    except:
+        # If we fail for any reason, remove the zip file we created (it is
+        # probably corrupted now) and raise the error.
+        if os.path.exists(zipname): os.remove(zipname)
+        raise
+    
+    # After completing successfully, remove the zipped files
+    for t in to_remove:
+        if os.path.isdir(t): shutil.rmtree(t)
+        elif os.path.isfile(t): os.remove(t)
+
+
+if __name__ == '__main__':
+    files = get_to_compress()
+    compress(files)
+    

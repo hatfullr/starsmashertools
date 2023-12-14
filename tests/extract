@@ -1,0 +1,90 @@
+#!/usr/bin/env python3
+
+
+if __name__ == '__main__':
+    import zipfile
+    import os
+    import shutil
+
+    compress_filename = 'compress'
+    if not os.path.exists(compress_filename):
+        raise FileNotFoundError(compress_filename)
+
+    code = {
+        'static variables' : '',
+        'print_progress' : '',
+    }
+    state = {key:'waiting' for key in code.keys()}
+    with open(compress_filename, 'r') as f:
+        
+        for line in f:
+            # Stop if we're done getting info from compress script
+            for value in state.values():
+                if value != 'done': break
+            else: break
+
+            skip = False
+            for key, val in state.items():
+                if val == 'waiting' and line.startswith('# Start extract ' + key):
+                    state[key] = 'listening'
+                    skip = True
+                    break
+                if val == 'listening' and line.startswith('# Stop extract ' + key):
+                    state[key] = 'done'
+                    skip = True
+                    break
+                
+            # Skip this line if it doesn't contain the code we need
+            if skip: continue
+
+            for key, val in state.items():
+                if val == 'listening':
+                    code[key] += line
+
+    # Get constant variable values:
+    #    zipname
+    #    size_identifier
+    #    compression_kwargs
+    # and print_progress function
+    for script in code.values():
+        #print(script)
+        exec(script)
+
+        
+    if not os.path.exists(zipname):
+        raise FileNotFoundError(zipname +". Please run ./compress first.")
+
+    extracted_size = 0.
+    extracted = []
+    try:
+        with zipfile.ZipFile(
+                zipname,
+                mode = 'r',
+                **compression_kwargs
+        ) as zfile:
+            total = int(zfile.read(size_identifier).decode('utf-8'))
+            print_progress(0)
+            for zinfo in zfile.infolist():
+                if zinfo.filename == size_identifier: continue
+                zfile.extract(zinfo)
+                extracted += [zinfo.filename]
+                extract_size += os.path.get.getsize(zinfo.filename)
+                print_progress(extracted_size / total * 100)
+    except:
+        # If something goes wrong, remove the files we extracted
+        directories = []
+        for _file in extracted:
+            dirname = os.path.dirname(_file)
+            while os.sep in dirname:
+                dirname = os.path.dirname(dirname)
+            if dirname not in directories:
+                directories += [dirname]
+
+        for directory in directories:
+            if os.path.isdir(directory): shutil.rmtree(directory)
+            elif os.path.isfile(directory): os.remove(directory)
+        
+        raise
+
+    # If nothing went wrong, remove the archive
+    os.remove(zipname)

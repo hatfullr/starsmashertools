@@ -30,8 +30,9 @@ setuptools.setup(
         os.path.join('bin','outtotxt'),
         os.path.join('bin','timing'),
     ],
+    python_requires='>=3.10.12',
     install_requires = [
+        'setuptools>=68.2.2',
         'numpy>=1.21.5',
-        'setuptools>=61.0',
     ],
 )

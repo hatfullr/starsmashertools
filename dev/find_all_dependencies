@@ -1,0 +1,100 @@
+#!/usr/bin/env python3
+
+not_required = [
+    'numba',
+    'matplotlib',
+]
+
+def get_all_files(directories, ignore_patterns = []):
+    import os
+    import fnmatch
+    
+    all_files = []
+    for directory in directories:
+        for (dirpath, dirnames, filenames) in os.walk(directory):
+            for filename in filenames:
+                path = os.path.join(dirpath, filename)
+                if path == __file__: continue # Skip this file
+                if not os.path.isfile(path): continue # Skip directories
+                # Check for gitignore matches
+                for pattern in ignore_patterns:
+                    if fnmatch.fnmatch(path, pattern):
+                        break
+                else: # File doesn't match any of the gitignore patterns
+                    all_files += [path]
+    return all_files
+
+def get_module_names(files):
+    import dis
+    
+    module_names = []
+    for _file in files:
+        with open(_file, 'r') as f:
+            try:
+                content = f.read()
+            except UnicodeDecodeError: # Skip binary files
+                continue
+        try:
+            instructions = dis.get_instructions(content)
+        except SyntaxError: # Non-python files have syntax errors
+            continue
+        imports = [item for item in instructions if 'IMPORT' in item.opname]
+        for instr in imports:
+            if instr.opname != 'IMPORT_NAME': continue
+            name = instr.argval.split('.')[0]
+            if name not in module_names:
+                module_names += [name]
+    return module_names
+
+def get_gitignore_patterns(gitignore):
+    import os
+    import starsmashertools
+    
+    patterns = []
+    if os.path.exists(gitignore):
+        with open(gitignore, 'r') as f:
+            for line in f:
+                if not line.strip(): continue # Skip empty lines
+                if line.strip()[0] == '#': continue # Skip comments
+                patterns += [os.path.join(
+                    starsmashertools.SOURCE_DIRECTORY,
+                    line.strip(),
+                )]
+    return patterns
+
+if __name__ == '__main__':
+    import starsmashertools
+    import os
+    import importlib
+    import sys
+    
+    gitignore = os.path.join(
+        starsmashertools.SOURCE_DIRECTORY,
+        '.gitignore',
+    )
+    gitignore_patterns = get_gitignore_patterns(gitignore)
+    
+    directories = [starsmashertools.SOURCE_DIRECTORY]
+    all_files = get_all_files(directories, ignore_patterns=gitignore_patterns)
+    
+    module_names = get_module_names(all_files)
+
+    stdliblist = sys.stdlib_module_names
+    python_version = '{major}.{minor}.{micro}'.format(
+        major = sys.version_info.major,
+        minor = sys.version_info.minor,
+        micro = sys.version_info.micro,
+    )
+    
+    print("Current Python version:", python_version)
+    print("\nPackage versions:")
+    for name in module_names:
+        if name in stdliblist: continue
+        if name == 'starsmashertools': continue
+        if name in not_required: continue
+        version = importlib.metadata.version(name)
+        print('   {name}>={version}'.format(name=name,version=version))
+
+    print("\nUpdate the above information in pyproject.toml and setup.py")
+
+
