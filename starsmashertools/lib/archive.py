@@ -1,15 +1,14 @@
-import starsmashertools.helpers.jsonfile
 import starsmashertools.helpers.argumentenforcer
-import starsmashertools.helpers.path
 from starsmashertools.helpers.apidecorator import api
-import zipfile
-import copy
-import inspect
 
 class Archive(dict, object):
     """
     An Archive object stores :class:`ArchiveValue`s in a single file for quick 
-    access.
+    access. Note that :class:`ArchiveValue` can only store data that is JSON
+    serializable. This typically includes only standard types str, bool, float,
+    int, list, tuple, and dict. However, additional types such as np.ndarray,
+    np.integer_, etc. can also be stored. See
+    :py:property:`~.helpers.jsonfile.serialization_methods` for details.
     
     Examples
     --------
@@ -18,20 +17,20 @@ class Archive(dict, object):
     
         import starsmashertools.lib.archive
         import starsmashertools
-    
-        def get_ntot(output):
-            return output['ntot']
         
         simulation = starsmashertools.get_simulation(".")
-
         archive = starsmashertools.lib.archive.Archive("mydata.dat")
+        
         for output in simulation.get_output_iterator():
             archive.add(
-                'ntot.%s' % output.path, # A unique identifier
-                output['ntot'],
-                output.path,
+                output.path, # Some unique string identifier
+                output.header['ntot'], # The value to store
+                origin = output.path, # The file the value originated from
             )
-        archive.save()
+            # Write the archive to mydata.dat. If we save it on every loop
+            # iteration, then interrupting the program won't cause us to lose
+            # any data we already calculated.
+            archive.save()
 
     """
 
@@ -70,6 +69,8 @@ class Archive(dict, object):
             load : bool = True,
             replacement_flags : list | tuple = (REPLACE_OLD,),
     ):
+        import starsmashertools.helpers.path
+        
         self.filename = filename
         self.replacement_flags = replacement_flags
 
@@ -80,6 +81,9 @@ class Archive(dict, object):
 
 
     def __setitem__(self, identifier, value):
+        import inspect
+        import copy
+        
         frame = inspect.currentframe().f_back
         if frame.f_code.co_filename not in [__file__, copy.__file__]:
             raise Exception("Setting values of an Archive is forbidden. You must use the Archive.add() and Archive.remove() functions instead.")
@@ -89,6 +93,9 @@ class Archive(dict, object):
         """
         Load this archive from its filename.
         """
+        import zipfile
+        import starsmashertools.helpers.jsonfile
+        
         with zipfile.ZipFile(self.filename, mode='r') as zfile:
             data = zfile.read('data')
         obj = starsmashertools.helpers.jsonfile.load_bytes(data)
@@ -98,11 +105,15 @@ class Archive(dict, object):
         """
         Overwrite the archive with this archive's current data.
         """
+        import zipfile
+        import starsmashertools.helpers.jsonfile
+        
         data = starsmashertools.helpers.jsonfile.save_bytes(self._to_json())
         with zipfile.ZipFile(self.filename, mode='w', compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zfile:
             zfile.writestr('data', data)
 
     def _to_json(self):
+        import copy
         cpy = copy.deepcopy(self)
         for identifier, val in self.items():
             cpy[identifier] = val._to_json()
@@ -189,7 +200,7 @@ class ArchiveValue(object):
             self,
             value,
             origin : str | type(None) = None,
-            mtime : int | float | type(None) = None
+            mtime : int | float | type(None) = None,
     ):
         """
         ArchiveValue constructor.
