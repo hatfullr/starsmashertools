@@ -4,11 +4,12 @@ import starsmashertools.lib.simulation
 import starsmashertools.lib.output
 import starsmashertools
 import warnings
+import basetest
 
 # Test the functionality of the Simulation class
 # This test depends on 
 
-class TestRelaxation(unittest.TestCase):
+class TestRelaxation(basetest.BaseTest):
     def setUp(self):
         curdir = os.path.dirname(__file__)
         simdir = os.path.join(curdir, 'data')

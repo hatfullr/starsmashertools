@@ -1,10 +1,11 @@
 import starsmashertools.helpers.file
 import unittest
 import os
+import basetest
 
 curdir = os.getcwd()
 
-class TestFile(unittest.TestCase):
+class TestFile(basetest.BaseTest):
     def test_get_phrase(self):
         result = starsmashertools.helpers.file.get_phrase(
             os.path.join('data', 'testfile'),

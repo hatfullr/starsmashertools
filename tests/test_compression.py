@@ -6,6 +6,7 @@ import time
 import multiprocessing
 import zipfile
 import copy
+import basetest
 
 def copydir(directory, new_directory):
     shutil.copytree(directory, new_directory)
@@ -26,7 +27,7 @@ def get_size(start_path = '.'):
     return total_size
 
 
-class TestCompression(unittest.TestCase):
+class TestCompression(basetest.BaseTest):
     def __init__(self, *args, **kwargs):
         super(TestCompression, self).__init__(*args, **kwargs)
         self.skip_tearDown = False

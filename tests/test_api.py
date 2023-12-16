@@ -2,6 +2,7 @@ import unittest
 import starsmashertools.helpers.argumentenforcer
 import os
 import numpy as np
+import basetest
 
 """
 Add tests here for functions tagged with the wrapper "@api".
@@ -9,7 +10,7 @@ Add tests here for functions tagged with the wrapper "@api".
 
 curdir = os.getcwd()
 
-class TestSimulation(unittest.TestCase):
+class TestSimulation(basetest.BaseTest):
     def setUp(self):
         path = os.path.join(curdir, 'data')
         self.simulation = starsmashertools.get_simulation(path)

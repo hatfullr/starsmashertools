@@ -3,13 +3,14 @@ import unittest
 import os
 import time
 import numpy as np
+import basetest
 
 curdir = os.getcwd()
 simdir = os.path.join(curdir, 'data')
 simulation = starsmashertools.get_simulation(simdir)
 logfile = simulation.get_logfiles()[0]
 
-class TestLogFile(unittest.TestCase):
+class TestLogFile(basetest.BaseTest):
     def test_get(self):
         self.assertEqual(int(logfile.get('nkernel is').strip()), simulation['nkernel'])
     def test_has_output_files(self):

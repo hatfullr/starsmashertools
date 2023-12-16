@@ -2,6 +2,7 @@ import unittest
 import starsmashertools.helpers.argumentenforcer
 import numpy as np
 import itertools
+import basetest
 
 # https://docs.python.org/3/library/stdtypes.html
 types = {
@@ -47,7 +48,7 @@ type_combinations = list(itertools.combinations(types.keys(), 3))
 
 
 
-class TestArgumentEnforcer(unittest.TestCase):
+class TestArgumentEnforcer(basetest.BaseTest):
     def test_individual_types(self):
         """
         Test all the types individually

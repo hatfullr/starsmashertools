@@ -1,5 +1,6 @@
 import os
 import numpy as np
+from starsmashertools.lib.archive import REPLACE_OLD
 
 defaults = {
     'Simulation' : {
@@ -15,6 +16,9 @@ defaults = {
         # instruct starsmashertools on where to find the child simulations. Each
         # file should be a text file with one directory per line.
         'children hint filename' : 'children.sstools',
+        # This name will be used to create an archive of computed data. See the
+        # SimulationArchive class for details.
+        'archive filename' : 'sstools.archive',
         'output files' : 'out*.sph',
         
         # Files which are defined in the StarSmasher code and present in the
@@ -129,6 +133,9 @@ defaults = {
         'dust temperature range' : [100., 1000.],
         'dust opacity' : 1.0,
         'tau particle cutoff' : 1.e-5,
+    },
+    'Archive' : {
+        'replacement flags' : (REPLACE_OLD,),
     },
 }
 

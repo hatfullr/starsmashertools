@@ -2,9 +2,9 @@ import unittest
 import starsmashertools.helpers.gpujob
 import starsmashertools.helpers.path
 import numpy as np
+import basetest
 
-
-class TestGPUJob(unittest.TestCase):
+class TestGPUJob(basetest.BaseTest):
     def test(self):
         with self.assertRaises(ValueError):
             g = starsmashertools.helpers.gpujob.GPUJob([], [])

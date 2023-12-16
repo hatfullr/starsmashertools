@@ -261,7 +261,8 @@ class Simulation(object):
     @api
     def get_search_directory(self, **kwargs):
         """
-        Get the default search directory from `starsmashertools.preferences`.
+        Get the default search directory from
+        :py:property:`~.preferences.defaults`.
         
         Other Parameters
         ----------------
@@ -324,17 +325,17 @@ class Simulation(object):
         this simulation was a continuation of. If this simulation is not a
         continuation, returns None.
 
-        The default search directory from `starsmashertools.preferences` is
-        checked for a duplicate file to this simulation's initial file (called 
-        'restartrad.sph.orig' by default). If a duplicate is not found then an
-        Exception is raised.
+        The default search directory from :py:property:`~.preferences.defaults`
+        is checked for a duplicate file to this simulation's initial file
+        (called 'restartrad.sph.orig' by default). If a duplicate is not found 
+        then an Exception is raised.
 
         In case the restartrad file was corrupted, we instead check the first
         output of this simulation and compare it to the other simulations we
         find in the search directory. We interpolate the particle positions to
         try to match the time stamps and then check if all the differences in
         particle positions are within some threshold value. You can set the
-        threshold value in `starsmashertools.preferences`.
+        threshold value in :py:property:`~.preferences.defaults`.
 
         This function might take a long time, as it uses 
         :func:`starsmashertools.helpers.path.get_all_subdirectories` which
@@ -541,11 +542,11 @@ class Simulation(object):
         that make up the two stars in the binary.
 
         If the simulation's directory contains a file with the name specified in
-        `~.preferences` (key 'children hint filename'; default = 
-        'children.sstools') then it will be read as a text file where each line
-        is the path to a different child simulation directory. If that file
-        doesn't exist then it will be created after the children have been found
-        for the first time.
+        :py:property:`~.preferences.defaults` (key 'children hint filename'; 
+        default = 'children.sstools') then it will be read as a text file where
+        each line is the path to a different child simulation directory. If that
+        file doesn't exist then it will be created after the children have been
+        found for the first time.
 
         This function acts as a wrapper for `~._get_children`, which is
         overridden in subclasses of Simulation.
@@ -659,11 +660,13 @@ class Simulation(object):
         
         include_patterns : list, None, default = None
             File name patterns to include in the compression. If `None`, uses 
-            the "compress include" value in :mod:`~.preferences`.
+            the "compress include" value in 
+            :py:property:`~.preferences.defaults`.
 
         exclude_patterns : list, None, default = None
             File name patterns to exclude in the compression. If `None`, uses
-            the "compress exclude" value from :mod:`~.preferences`.
+            the "compress exclude" value from 
+            :py:property:`~.preferences.defaults`.
 
         recursive : bool, default = True
             If `True`, subdirectories are also searched for files matching the
@@ -688,7 +691,7 @@ class Simulation(object):
         --------
         :func:`decompress`
         :func:`~.helpers.compressiontask.CompressionTask.compress`
-        :mod:`~.preferences`
+        :py:property:`~.preferences.defaults`
         """
         import starsmashertools.preferences
         import starsmashertools.helpers.path
@@ -1048,7 +1051,6 @@ class Simulation(object):
             
         return starsmashertools.flux.fluxfinder.FluxFinder(outputs)
     """
-
 
 
             

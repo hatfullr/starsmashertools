@@ -2,8 +2,9 @@ import unittest
 import os
 import starsmashertools
 import starsmashertools.lib.teos
+import basetest
 
-class TestTEOS(unittest.TestCase):
+class TestTEOS(basetest.BaseTest):
     def setUp(self):
         simdir = os.path.join(
             starsmashertools.SOURCE_DIRECTORY,

@@ -1,8 +1,6 @@
 import numpy as np
-import starsmashertools.preferences
 import starsmashertools.helpers.readonlydict
 import starsmashertools.helpers.argumentenforcer
-import copy
 from starsmashertools.helpers.apidecorator import api
 
 
@@ -26,6 +24,9 @@ class Unit(object):
     # Decide on units that give the cleanest value
     @api
     def auto(self, threshold=100, conversions=None):
+        import starsmashertools.preferences
+        import copy
+        
         starsmashertools.helpers.argumentenforcer.enforcetypes({
             'threshold' : [float, int],
         })
@@ -64,6 +65,8 @@ class Unit(object):
 
     @api
     def get_conversion_factor(self, new_label, conversions=None):
+        import starsmashertools.preferences
+        
         # Convert this Unit into a compatible new Unit
         starsmashertools.helpers.argumentenforcer.enforcetypes({
             'new_label' : [str, Unit.Label],
@@ -165,6 +168,9 @@ class Unit(object):
     # Returns a copy of this object in its base units
     @api
     def get_base(self, conversions=None):
+        import starsmashertools.preferences
+        import copy
+        
         if conversions is None:
             conversions = starsmashertools.preferences.get_default('Units', 'unit conversions', throw_error=True)
         
@@ -436,6 +442,9 @@ class Unit(object):
         
         @property
         def short(self):
+            import copy
+            import starsmashertools.preferences
+            
             new_left = copy.deepcopy(self.left)
             new_right = copy.deepcopy(self.right)
             
@@ -491,6 +500,7 @@ class Unit(object):
             Returns `True` if this Label can be safely converted to the other
             Label.
             """
+            import copy
             starsmashertools.helpers.argumentenforcer.enforcetypes({
                 'other' : [str, Unit.Label],
             })
@@ -517,6 +527,7 @@ class Unit(object):
 
         # Return a copy of this label with changes
         def convert(self, old_label, new_label):
+            import copy
             starsmashertools.helpers.argumentenforcer.enforcetypes({
                 'old_label' : [str],
                 'new_label' : [str],
@@ -529,6 +540,7 @@ class Unit(object):
             return ret
 
         def simplify(self):
+            import copy
             for item in self.base:
                 lc, rc = self.left.count(item), self.right.count(item)
                 while item in self.left and item in self.right:
@@ -542,6 +554,8 @@ class Unit(object):
                     if lc == plc and rc == prc: break
 
         def set(self, string):
+            import copy
+            import starsmashertools.preferences
             self.left, self.right = Unit.Label.split(string)
 
             # Break down conversions as needed
@@ -568,6 +582,8 @@ class Unit(object):
             self.simplify()
 
         def organize(self):
+            import copy
+            
             # Sort the left and right arrays starting with the base values first
             # and then any other values after.
             possible_left = copy.deepcopy(self.base)
@@ -593,6 +609,7 @@ class Unit(object):
             return self.long == other
 
         def __mul__(self, other):
+            import copy
             starsmashertools.helpers.argumentenforcer.enforcetypes({'other' : [Unit.Label, int]})
             ret = copy.deepcopy(self)
             if isinstance(other, Unit.Label):
@@ -611,6 +628,7 @@ class Unit(object):
             return self.__mul__(*args, **kwargs)
 
         def __truediv__(self, other):
+            import copy
             starsmashertools.helpers.argumentenforcer.enforcetypes({'other' : [Unit.Label]})
             if self.base != other.base:
                 raise Exception("Cannot combine Unit.Labels of different bases: '%s' and '%s'" % (str(self.base), str(other.base)))
@@ -624,6 +642,8 @@ class Unit(object):
             return ret
 
         def __rtruediv__(self, other):
+            import copy
+            
             starsmashertools.helpers.argumentenforcer.enforcetypes({'other' : [Unit.Label, int]})
             if isinstance(other, int) and other != 1:
                 raise Exception("When dividing an 'int' by a 'Unit.Label', the int must be equal to '1', not '%d'" % other)
@@ -691,7 +711,8 @@ gravconst = Unit(6.67390e-08, 'cm*cm*cm/g*s*s')
 class Units(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
     @api
     def __init__(self, simulation):
-
+        import starsmashertools.preferences
+        
         # Make sure the given simulation argument is of the right type
         import starsmashertools.lib.simulation
         starsmashertools.helpers.argumentenforcer.enforcetypes({

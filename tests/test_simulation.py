@@ -3,11 +3,12 @@ import os
 import starsmashertools.lib.simulation
 import starsmashertools.lib.output
 import starsmashertools
+import basetest
 
 # Test the functionality of the Simulation class
 # This test depends on 
 
-class TestSimulation(unittest.TestCase):
+class TestSimulation(basetest.BaseTest):
     def setUp(self):
         curdir = os.path.dirname(__file__)
         self.simdir = os.path.join(curdir, 'data')

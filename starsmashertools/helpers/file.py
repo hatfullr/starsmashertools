@@ -1,23 +1,16 @@
-import starsmashertools.helpers.path
-import starsmashertools.helpers.ssh
-import starsmashertools.helpers.string
 import starsmashertools.helpers.argumentenforcer
-import tempfile
-import builtins
-import os
-import filecmp
-import numpy as np
 import contextlib
-import copy
-import io
-import mmap
 
 fortran_comment_characters = ['c','C','!','*']
 
 downloaded_files = []
 
-
+"""
 def get_file(path, mode):
+    import starsmashertools.helpers.path
+    import starsmashertools.helpers.ssh
+    import tempfile
+    
     path = starsmashertools.helpers.path.realpath(path)
     if starsmashertools.helpers.ssh.isRemote(path):
         # Shucks. We'll have to copy the contents to the local machine
@@ -38,22 +31,84 @@ def get_file(path, mode):
         downloaded_files += [tfile.name]
         return tfile.name
     return path
+"""
+
+# Handle all our file-locking needs
+def lockf(f, LOCK_EX = False, LOCK_NB = False, LOCK_UN = False):
+    import fcntl
+    
+    # Have to be in write mode
+    if not f.writable():
+        import builtins
+        with builtins.open(f.name, 'r+') as f2:
+            lockf(f2)
+            return
+        
+    if True not in [LOCK_EX, LOCK_NB, LOCK_UN]: return
+    if LOCK_EX and LOCK_NB: flags = fcntl.LOCK_EX | fcntl.LOCK_NB
+    elif LOCK_EX: flags = fcntl.LOCK_EX
+    elif LOCK_UN: flags = fcntl.LOCK_UN
+    
+    fcntl.lockf(f, flags)
+
+def is_file_locked(f):
+    try:
+        # Try to lock the file. If it is currently locked, throw BlockingIOError
+        lockf(f, LOCK_EX = True, LOCK_NB = True)
+        # In case we just locked the file, unlock it
+        lockf(f, LOCK_UN = True)
+    except BlockingIOError:
+        # The file is currently locked
+        return True
+    return False
 
 
 @contextlib.contextmanager
-def open(path, mode, **kwargs):
-    path = get_file(path, mode)
-    f = builtins.open(path, mode, **kwargs)
+def open(path, mode, lock = True, timeout = None, method = None, **kwargs):
+    import starsmashertools.helpers.path
+    import time
+    import builtins
+
+    if method is None: method = builtins.open
+
+    #path = get_file(path, mode)
+
+    basename = starsmashertools.helpers.path.basename(path)
+
+    f = method(path, mode, **kwargs) # opens the file
+
+    underlying_file = None
+    if hasattr(f, 'writable'): underlying_file = f
+    else:
+        import zipfile
+        if isinstance(f, zipfile.ZipFile):
+            underlying_file = f.fp
+        else:
+            raise NotImplementedError("File type '%s'" % type(f).__name__)
+    
+    if lock:
+        if timeout is None: timeout = 30
+        interval = 0.001
+        for i in range(int(timeout / interval)):
+            if not is_file_locked(underlying_file): break
+            time.sleep(interval)
+        else:
+            raise TimeoutError("File cannot be accessed because it is locked by some other process: '%s'.\nKilling the other process should solve the issue, but in case of emergency (on Posix only), try 'python3 -c \"import fcntl; fcntl.fcntl(open('%s', 'w'), fcntl.LOCK_UN)\"'" % (path, path))
+
+        lockf(underlying_file, LOCK_EX=True)
+
     try: yield f
     finally: f.close()
 
 
-
 # Check if the file at the given path is a MESA file
 def isMESA(path):
+    import starsmashertools.helpers.path
+    import starsmashertools.helpers.string
+    
     if not starsmashertools.helpers.path.isfile(path): return False
     
-    with starsmashertools.helpers.file.open(path, 'r') as f:
+    with open(path, 'r') as f:
 
         # The first line is always a bunch of sequential numbers
         line = f.readline()
@@ -113,6 +168,8 @@ def isMESA(path):
 # Check if 2 files are identical
 #@profile
 def compare(file1, file2):
+    import starsmashertools.helpers.path
+    import filecmp
     #file1 = starsmashertools.helpers.path.realpath(file1)
     #file2 = starsmashertools.helpers.path.realpath(file2)
     
@@ -151,6 +208,7 @@ def get_phrase(
     str
 
     """
+    import mmap
     
     with open(path, 'rb') as f:
         buffer = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
@@ -198,6 +256,9 @@ def sort_by_mtimes(
     -------
     list
     """
+    import copy
+    import starsmashertools.helpers.path
+    
     ret = copy.deepcopy(files)
     ret.sort(key=lambda f: starsmashertools.helpers.path.getmtime(f))
     return ret[::-1]
@@ -208,41 +269,13 @@ def sort_by_mtimes(
 def reverse_readline(path, **kwargs):
     """A generator that returns the lines of a file in reverse order
     https://stackoverflow.com/a/23646049/4954083"""
+    import mmap
     with open(path, 'rb') as fh:
         buffer = mmap.mmap(fh.fileno(), 0, access=mmap.ACCESS_READ)
     return reverse_readline_buffer(buffer, **kwargs)
-    """
-        segment = None
-        offset = 0
-        fh.seek(0, os.SEEK_END)
-        file_size = remaining_size = fh.tell()
-        while remaining_size > 0:
-            offset = min(file_size, offset + buf_size)
-            fh.seek(file_size - offset)
-            buffer = fh.read(min(remaining_size, buf_size)).decode(encoding='utf-8')
-            remaining_size -= buf_size
-            lines = buffer.split('\n')
-            # The first line of the buffer is probably not a complete line so
-            # we'll save it and append it to the last line of the next buffer
-            # we read
-            if segment is not None:
-                # If the previous chunk starts right from the beginning of line
-                # do not concat the segment to the last line of new chunk.
-                # Instead, yield the segment first 
-                if buffer[-1] != '\n':
-                    lines[-1] += segment
-                else:
-                    yield segment
-            segment = lines[0]
-            for index in range(len(lines) - 1, 0, -1):
-                if lines[index]:
-                    yield lines[index]
-        # Don't yield None if the file was empty
-        if segment is not None:
-            yield segment
-    """
 
 def reverse_readline_buffer(_buffer, buf_size=8192):
+    import os
     _buffer.seek(0, os.SEEK_END)
     segment = None
     offset = 0

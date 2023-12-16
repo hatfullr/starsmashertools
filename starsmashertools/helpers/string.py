@@ -62,9 +62,11 @@ def shorten(
         left = length_per_side
         right = -length_per_side
         return string[:left+1] + join + string[right:]
-    if where == 'left':
+    elif where == 'left':
+        return join + string[-l:]
+    elif where == 'right':
         return string[:l] + join
-    return join + string[-l:]
+    else: raise NotImplementedError("where = '%s'" % str(where))
     
     
 

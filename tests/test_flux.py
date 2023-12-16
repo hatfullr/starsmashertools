@@ -4,6 +4,7 @@ import starsmashertools.flux.fluxfinder
 import os
 import numpy as np
 import sys
+import basetest
 
 T_dust = 1000.0
 T_dust_min = 100.0
@@ -33,7 +34,7 @@ def read_flux(filename):
     data = data.astype(float)
     return data, xmin, ymin, dx, dy
 
-class TestFlux(unittest.TestCase):
+class TestFlux(basetest.BaseTest):
     def setUp(self):
         directory = os.path.join(
             starsmashertools.SOURCE_DIRECTORY,

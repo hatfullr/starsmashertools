@@ -2,8 +2,9 @@ import unittest
 import starsmashertools.helpers.extents
 import starsmashertools.helpers.argumentenforcer
 import numpy as np
+import basetest
 
-class TestExtents(unittest.TestCase):
+class TestExtents(basetest.BaseTest):
     def testValuedInit(self):
         extents = starsmashertools.helpers.extents.Extents(
             ymin =   np.int64(1),   ymax =           -1,

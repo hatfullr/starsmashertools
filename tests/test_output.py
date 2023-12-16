@@ -3,10 +3,11 @@ import os
 import starsmashertools.lib.output
 import starsmashertools
 import numpy as np
+import basetest
 
 curdir = os.getcwd()
 
-class TestOutput(unittest.TestCase):
+class TestOutput(basetest.BaseTest):
     expected_header = {'ntot': 1038, 'nnopt': 27, 'hco': 1.0, 'hfloor': 0.0, 'sep0': 20000.0, 'tf': 1000.0, 'dtout': 10.0, 'nout': 0, 'nit': 1, 't': 0.06875548945402724, 'nav': 3, 'alpha': 1.0, 'beta': 2.0, 'tjumpahead': 1e+30, 'ngr': 3, 'nrelax': 1, 'trelax': 1e+30, 'dt': 0.04584774736682386, 'omega2': 0.0, 'ncooling': 0, 'erad': 0.0, 'ndisplace': 0, 'displacex': 0.0, 'displacey': 0.0, 'displacez': 0.0}
     
     def setUp(self):

@@ -4,8 +4,9 @@ import starsmashertools.preferences
 import starsmashertools.helpers.argumentenforcer
 import unittest
 import numpy as np
+import basetest
 
-class TestUnits(unittest.TestCase):
+class TestUnits(basetest.BaseTest):
     def test_labels(self):
         l = starsmashertools.lib.units.Unit.Label("cm")
         self.assertTrue(l.is_compatible('m'))

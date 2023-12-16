@@ -1,6 +1,4 @@
-import starsmashertools.preferences as preferences
 import starsmashertools.helpers.argumentenforcer
-import starsmashertools.helpers.path
 import starsmashertools.helpers.file
 import starsmashertools.helpers.string
 import starsmashertools.helpers.readonlydict
@@ -44,6 +42,7 @@ class Output(dict, object):
             simulation,
             mode='raw',
     ):
+        import starsmashertools.helpers.path
         if mode not in Output.modes:
             s = starsmashertools.helpers.string.list_to_string(Output.modes, join='or')
             raise ValueError("Keyword argument 'mode' must be one of %s, not '%s'" % (s, str(mode)))
@@ -64,6 +63,7 @@ class Output(dict, object):
         self.data = None
     
     def __str__(self):
+        import starsmashertools.helpers.path
         string = self.__class__.__name__ + "(%s)"
         return string % ("'%s'" % starsmashertools.helpers.path.basename(self.path))
 
@@ -98,6 +98,7 @@ class Output(dict, object):
         return starsmashertools.helpers.file.compare(self.path, other.path)
 
     def __hash__(self, *args, **kwargs):
+        import starsmashertools.helpers.path
         return self.path.__hash__(*args, **kwargs)
 
     def __copy__(self,*args,**kwargs):
@@ -113,7 +114,8 @@ class Output(dict, object):
             self.read(return_headers=not self._isRead['header'], return_data=not self._isRead['data'])
 
     def _clear_cache(self):
-        self._cache = _copy.copy(preferences.get_default('Output', 'cache'))
+        import starsmashertools.preferences
+        self._cache = _copy.copy(starsmashertools.preferences.get_default('Output', 'cache'))
         # If no cache is defined in preferences
         if self._cache is None: self._cache = {}
 
@@ -226,6 +228,7 @@ class Output(dict, object):
 
     @api
     def get_file_creation_time(self):
+        import starsmashertools.helpers.path
         return starsmashertools.helpers.path.getmtime(self.path)
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
@@ -476,8 +479,9 @@ class OutputIterator(object):
             Other optional keyword arguments that are passed to the
             `.Output.read` function.
         """
+        import starsmashertools.preferences
         
-        if max_buffer_size is None: max_buffer_size = preferences.get_default('OutputIterator', 'max buffer size')
+        if max_buffer_size is None: max_buffer_size = starsmashertools.preferences.get_default('OutputIterator', 'max buffer size')
         self.max_buffer_size = max_buffer_size
         self.onFlush = onFlush
         self.simulation = simulation
@@ -498,6 +502,7 @@ class OutputIterator(object):
         self._buffer_index = -1
 
     def __str__(self):
+        import starsmashertools.helpers.path
         string = self.__class__.__name__ + "(%s)"
         if len(self.filenames) == 0: return string % ""
         bname1 = starsmashertools.helpers.path.basename(self.filenames[0])
@@ -508,6 +513,7 @@ class OutputIterator(object):
     def __repr__(self): return str(self)
 
     def __contains__(self, item):
+        import starsmashertools.helpers.path
         if isinstance(item, Output):
             for filename in self.filenames:
                 if starsmashertools.helpers.file.compare(item.path, filename):
@@ -731,6 +737,7 @@ class Reader(object):
             return_data=True,
             verbose=False,
     ):
+        import starsmashertools.helpers.path
         if verbose: print(filename)
 
         if True not in [return_headers, return_data]:
@@ -805,6 +812,7 @@ class Reader(object):
     # This method returns instructions on how to read the data files
     @staticmethod
     def get_output_format(simulation):
+        import starsmashertools.helpers.path
         # Expected data types
         data_types = ('integer', 'real', 'logical', 'character')
         
