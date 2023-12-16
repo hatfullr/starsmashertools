@@ -7,6 +7,7 @@ class ArchiveValue(object):
     @api
     def __init__(
             self,
+            identifier : str,
             value,
             origin : str | type(None) = None,
             mtime : int | float | type(None) = None,
@@ -16,11 +17,15 @@ class ArchiveValue(object):
 
         Parameters
         ----------
+        identifier : str
+            A unique string identifier that is used by :class:`~.Archive` 
+            objects when storing and accessing data in the archive.
+        
         value : serializable types
             A value that is one of the serializable types, found in the keys of
             :py:property:`~.helpers.jsonfile.serialization_methods`.
         
-        origin : str
+        origin : str, None, default = None
             Path to the file from which this value originated.
 
         mtime : int, float, None, default = None
@@ -35,6 +40,7 @@ class ArchiveValue(object):
             'value' : _types,
         })
 
+        self.identifier = identifier
         self.value = value
         self.origin = origin
 
@@ -57,11 +63,12 @@ class ArchiveValue(object):
         }
 
     @staticmethod
-    def _from_json(json):
+    def _from_json(identifier, json):
         """
         Return a :class:`ArchiveValue` object from the given json object.
         """
         return ArchiveValue(
+            identifier,
             json['value'],
             json['origin'],
             json['mtime'],
@@ -97,7 +104,11 @@ def REPLACE_OLD(
     """
     return new_value.mtime > old_value.mtime
 
-
+def REPLACE_NEQ(
+        old_value : ArchiveValue,
+        new_value : ArchiveValue,
+):
+    return new_value.value != old_value.value
 
         
 
@@ -308,18 +319,23 @@ class Archive(dict, object):
         import zipfile
         import starsmashertools.helpers.jsonfile
         import starsmashertools.helpers.file
+        import starsmashertools.helpers.path
+
+        if starsmashertools.helpers.path.exists(self.filename):
+            if starsmashertools.helpers.path.getsize(self.filename) == 0:
+                starsmashertools.helpers.path.remove(self.filename)
         
         with starsmashertools.helpers.file.open(
                 self.filename, 'r', method = zipfile.ZipFile,
-                timeout = timeout,
+                timeout = timeout, compression = zipfile.ZIP_DEFLATED,
+                compresslevel = 9
         ) as zfile:
             data = zfile.read(self._dataname)
         data = starsmashertools.helpers.jsonfile.load_bytes(data)
-
         with self.nosave():
             self.clear()
             for identifier, val in data.items():
-                self[identifier] = ArchiveValue._from_json(val)
+                self[identifier] = ArchiveValue._from_json(identifier, val)
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
@@ -332,6 +348,9 @@ class Archive(dict, object):
         import zipfile
         import starsmashertools.helpers.jsonfile
         import starsmashertools.helpers.file
+        import starsmashertools.helpers.path
+        import time
+        import os
         
         data = {}
         for key, val in self.items():
@@ -340,30 +359,32 @@ class Archive(dict, object):
         # Convert the data to a readable JSON format which supports
         # serialization of many types
         datastr = starsmashertools.helpers.jsonfile.save_bytes(data)
-        
+
+        # There's a chance that the process could be killed before we actually
+        # successfully write the zip file, which would corrupt the whole file.
+        # So instead we save to a temporary file, which we then use to overwrite
+        # the actual zipfile
+        dataname = self._dataname
+
         with starsmashertools.helpers.file.open(
                 self.filename, 'w', method = zipfile.ZipFile,
                 timeout = timeout,
                 compression = zipfile.ZIP_DEFLATED,
-                compresslevel = 9
+                compresslevel = 9,
+                lock = True,
         ) as zfile:
-            zfile.writestr(self._dataname, datastr)
+            zfile.writestr(dataname, datastr)
     
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
-    def add(self, identifier : str, *args, **kwargs):
+    def add(self, *args, **kwargs):
         """
         Create a new :class:`ArchiveValue` and add it to the archive. If there
         already exists a :class:`ArchiveValue` with the same `identifier` in the
         archive, then if the origin file is different we overwrite the old
         value. Otherwise, if the file's modification time is more recent than
         the archived value, we also overwrite the old value.
-
-        Parameters
-        ----------
-        identifier : str
-            The string by which this new value will be known in the archive.
 
         Other Parameters
         ----------
@@ -375,7 +396,7 @@ class Archive(dict, object):
         """
         
         value = ArchiveValue(*args, **kwargs)
-        self[identifier] = ArchiveValue(*args, **kwargs)
+        self[value.identifier] = value
             
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
@@ -406,8 +427,30 @@ class Archive(dict, object):
 
 
     
-
-
+class OutputArchiveValue(ArchiveValue, object):
+    """
+    This class is used specifically for storing an :class:`~.lib.output.Output`
+    object in an Archive. If the output file is stored on a different file
+    system originally, then we should not identify it by its absolute path.
+    Instead we should identify it as its relative path to the simulation
+    directory.
+    """
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def __init__(
+            self,
+            output : "starsmashertools.lib.output.Output",
+            value : dict,
+    ):
+        origin = None
+        identifier = SimulationArchive.get_identifier_static(output)
+        mtime = starsmashertools.helpers.path.getmtime(output.path)
+        super(OutputArchiveValue, self).__init__(
+            identifier,
+            value,
+            origin = origin,
+            mtime = mtime,
+        )
 
 
 
@@ -452,7 +495,6 @@ class SimulationArchive(Archive, object):
     def __init__(
             self,
             simulation : "starsmashertools.lib.simulation.Simulation",
-            filename : str | type(None) = None,
             replacement_flags : list | tuple | type(None) = None,
     ):
         """
@@ -464,13 +506,7 @@ class SimulationArchive(Archive, object):
         ----------
         simulation : :class:`starsmashertools.lib.simulation.Simulation`
             The simulation to which this archive belongs.
-
-        filename : str, None, default = None
-            The name of the file to use as the archive. If `None` then the value
-            of 'archive filename' from the defaults in
-            :py:property:`~.preferences.defaults`. If a ``str`` is given, it
-            will be interpreted as a path relative to the simulation directory.
-
+        
         replacement_flags : list, tuple, None, default = None
             A collection of functions which return boolean operators to
             determine if a new :class:`~.ArchiveValue` should overwrite an old
@@ -478,44 +514,91 @@ class SimulationArchive(Archive, object):
             full description. 
         """
         import starsmashertools.helpers.path
+        import starsmashertools.preferences
 
         # Ensure that the filename is located in the simulation directory
-        filename = starsmashertools.helpers.path.realpath(filename)
-        dirname = starsmashertools.helpers.path.dirname(filename)
-        if dirname != simulation.directory:
-            basename = starsmashertools.helpers.path.basename(filename)
-            filename = starsmashertools.helpers.path.join(
-                simulation.directory,
-                basename,
-            )
-        
+        filename = starsmashertools.helpers.path.join(
+            simulation.directory,
+            starsmashertools.preferences.get_default(
+                'Simulation',
+                'archive filename',
+                throw_error = True,
+            ),
+        )
         super(SimulationArchive, self).__init__(
             filename,
-            load = False,
+            load = True,
             replacement_flags = replacement_flags,
+            auto_save = True,
+        )
+
+    @api
+    def get_identifier(self, output : "starsmashertools.lib.output.Output"):
+        """
+        Obtain the expected identifier for the given
+        :class:`~.lib.output.Output` object.
+
+        Parameters
+        ----------
+        output : :class:`starsmashertools.lib.output.Output`
+            The :class:`starsmashertools.lib.output.Output` object for which to
+            get the :class:`~.SimulationArchive` identifier.
+
+        Returns
+        -------
+        str
+            The output file's expected identifier in this archive.
+        """
+        return SimulationArchive.get_identifier_static(output)
+
+    @api
+    @staticmethod
+    def get_identifier_static(output : "starsmashertools.lib.output.Output"):
+        """
+        Obtain the expected identifier for the given
+        :class:`~.lib.output.Output` object.
+
+        Parameters
+        ----------
+        output : :class:`starsmashertools.lib.output.Output`
+            The :class:`starsmashertools.lib.output.Output` object for which to
+            get the :class:`~.SimulationArchive` identifier.
+
+        Returns
+        -------
+        str
+            The output file's expected identifier in this archive.
+        """
+        import starsmashertools.helpers.path
+        import starsmashertools.lib.output
+
+        starsmashertools.helpers.argumentenforcer.enforcetypes({
+            'output' : [starsmashertools.lib.output.Output],
+        })
+        
+        return starsmashertools.helpers.path.relpath(
+            output.path,
+            start = output.simulation.directory,
         )
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
-    def add(
-            self,
-            value,
-            identifier : str,
-            origin : "starsmashertools.lib.output.Output | type(None)" = None,
-    ):
-        import starsmashertools.lib.output
-        import starsmashertools.helpers.path
-        
-        if isinstance(origin, starsmashertools.lib.output.Output):
-            origin = origin.path
-            identifier += " " + starsmashertools.helpers.path.basename(origin)
-        
-        return super(SimulationArchive, self).add(identifier, value, origin)
+    def add_output(self, *args, **kwargs):
+        """
+        Add an :class:`~.OutputArchiveValue` to the archive.
 
-    #@starsmashertools.helpers.argumentenforcer.enforcetypes
-    #@api
-    #def remove(
-    #        self,
-    #        identifier : str,
-    #):
+        Parameters
+        ----------
+        *args
+            Positional arguments are passed directly to
+            :class:`~.OutputArchiveValue`.
+        
+        **kwargs
+            Keyword arguments are passed directly to
+            :class:`~.OutputArchiveValue`.
+        
+        """
+        val = OutputArchiveValue(*args, **kwargs)
+        self[val.identifier] = val
+
         

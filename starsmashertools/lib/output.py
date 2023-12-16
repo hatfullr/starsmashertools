@@ -134,6 +134,7 @@ class Output(dict, object):
         obj = {key:None for key in ret}
         for key in self._cache.keys(): obj[key] = None
         return obj.keys()
+    
     @api
     def values(self, *args, **kwargs):
         if 'ensure_read' in kwargs.keys():
@@ -144,6 +145,7 @@ class Output(dict, object):
             if key in keys:
                 self[key] = self.from_cache(key)
         return super(Output, self).values(*args, **kwargs)
+    
     @api
     def items(self, *args, **kwargs):
         if 'ensure_read' in kwargs.keys():
@@ -154,6 +156,7 @@ class Output(dict, object):
             if key not in keys:
                 self[key] = self.from_cache(key)
         return super(Output, self).items(*args, **kwargs)
+    
     @api
     def copy_from(self, obj):
         self._mask = obj._mask
@@ -167,32 +170,50 @@ class Output(dict, object):
     def read(self, return_headers=True, return_data=True, **kwargs):
         if self._isRead['header']: return_headers = False
         if self._isRead['data']: return_data = False
+
+        self._header = None
+        self.data = None
+
+        read_header = return_headers
+        read_data = return_data
         
-        obj = self.simulation.reader.read(
-            self.path,
-            return_headers=return_headers,
-            return_data=return_data,
-            **kwargs
-        )
-        
-        self.data, self._header = None, None
-        if return_headers and return_data:
-            self.data, self._header = obj
-        elif not return_headers and return_data:
-            self.data = obj
-        elif return_headers and not return_data:
-            self._header = obj
+        # Check if the archive already has the header
+        identifier = self.simulation.archive.get_identifier(self)
+        if identifier in self.simulation.archive:
+            archived_value = self.simulation.archive[identifier]
+            self._header = archived_value.value.get('header', None)
+            read_header = False
+            self._isRead['header'] = True
+
+        if read_header or read_data:
+            obj = self.simulation.reader.read(
+                self.path,
+                return_headers=read_header,
+                return_data=read_data,
+                **kwargs
+            )
+
+            if read_header and read_data:
+                self.data, self._header = obj
+            elif not read_header and read_data:
+                self.data = obj
+            elif read_header and not read_data:
+                self._header = obj
         
         if self._header is not None:
             for key, val in self._header.items():
                 self[key] = val
+
+            # Save the header to the simulation archive
+            self.simulation.archive.add_output(self, {'header' : self._header})
         
         if self.data is not None:
             for key, val in self.data.items():
                 self[key] = val
 
-        if return_headers: self._isRead['header'] = True
-        if return_data: self._isRead['data'] = True
+        if read_header: self._isRead['header'] = True
+        if read_data: self._isRead['data'] = True
+        
     @api
     def from_cache(self, key):
         if key in self._cache.keys():
@@ -488,6 +509,8 @@ class OutputIterator(object):
         self.asynchronous = asynchronous
         self.kwargs = kwargs
 
+        self._simulation_auto_save = None
+
         for m in self.onFlush:
             if not callable(m):
                 raise TypeError("Callbacks in keyword 'onFlush' must be callable, but received '%s'" % str(m))
@@ -530,6 +553,10 @@ class OutputIterator(object):
     def __iter__(self): return self
     
     def __next__(self):
+        if self._simulation_auto_save is None:
+            import copy
+            self._simulation_auto_save = copy.deepcopy(self.simulation.archive.auto_save)
+            self.simulation.archive.auto_save = False
         if len(self.filenames) == 0: self.stop()
         
         self._buffer_index += 1
@@ -558,11 +585,13 @@ class OutputIterator(object):
     def next(self, *args, **kwargs): return self.__next__(self, *args, **kwargs)
 
     def stop(self):
+        self.simulation.archive.auto_save = self._simulation_auto_save
         # Ensure that we do the flush methods whenever we stop iterating
         self.flush()
         raise StopIteration
 
     def flush(self):
+        self.simulation.archive.save()
         for m in self.onFlush:
             r = m()
             if isinstance(r, str) and r == 'break':
@@ -701,7 +730,8 @@ class Reader(object):
     EOL = 'f8'
     
     def __init__(self, simulation):
-        header_format, header_names, data_format, data_names = Reader.get_output_format(simulation)
+        self.simulation = simulation
+        header_format, header_names, data_format, data_names = Reader.get_output_format(self.simulation)
         
         self._dtype = {
             'data' : np.dtype([(name, fmt) for name, fmt in zip(data_names, data_format.split(","))]),
@@ -730,22 +760,9 @@ class Reader(object):
                     raise Reader.UnexpectedFileFormatError
         return ret
 
-    def read(
-            self,
-            filename,
-            return_headers=True,
-            return_data=True,
-            verbose=False,
-    ):
+    def _read_header(self, buffer, return_headers, filesize):
+        import starsmashertools.helpers.readonlydict
         import starsmashertools.helpers.path
-        if verbose: print(filename)
-
-        if True not in [return_headers, return_data]:
-            raise ValueError("One of 'return_headers' or 'return_data' must be True")
-        
-        with starsmashertools.helpers.file.open(filename, 'rb') as f:
-            # This speeds up reading significantly.
-            buffer = mmap.mmap(f.fileno(),0,access=mmap.ACCESS_READ)
         
         try:
             header = self._read(
@@ -761,9 +778,6 @@ class Reader(object):
         ntot = header['ntot'][0]
 
         # Check for corrupted files
-
-        filesize = starsmashertools.helpers.path.getsize(filename)
-
         try:
             ntot_check = self._read(
                 buffer=buffer,
@@ -778,15 +792,20 @@ class Reader(object):
         if ntot != ntot_check:
             raise Reader.CorruptedFileError(filename)
 
-        if return_headers:
-            new_header = {}
-            for name in header[0].dtype.names:
-                new_header[name] = np.array(header[name])[0]
-            header = starsmashertools.helpers.readonlydict.ReadOnlyDict(new_header)
+        #if return_headers:
+        #    new_header = {}
+        #    for name in header[0].dtype.names:
+        #        new_header[name] = np.array(header[name])[0]
+        #    header = starsmashertools.helpers.readonlydict.ReadOnlyDict(new_header)
+        new_header = {}
+        for name in header[0].dtype.names:
+            new_header[name] = np.array(header[name])[0]
+        header = starsmashertools.helpers.readonlydict.ReadOnlyDict(new_header)
+        return header
 
-        if return_headers and not return_data:
-            return header
 
+    def _read_data(self, buffer, ntot):
+        import starsmashertools.helpers.readonlydict
         # There are 'ntot' particles to read
         try:
             data = self._read(
@@ -803,7 +822,34 @@ class Reader(object):
         new_data = {}
         for name in data[0].dtype.names:
             new_data[name] = np.array(data[name])
-        data = starsmashertools.helpers.readonlydict.ReadOnlyDict(new_data)
+        return starsmashertools.helpers.readonlydict.ReadOnlyDict(new_data)
+    
+
+    def read(
+            self,
+            filename,
+            return_headers=True,
+            return_data=True,
+            verbose=False,
+    ):
+        import starsmashertools.helpers.file
+        if verbose: print(filename)
+
+        if True not in [return_headers, return_data]:
+            raise ValueError("One of 'return_headers' or 'return_data' must be True")
+
+        filesize = starsmashertools.helpers.path.getsize(filename)
+        
+        with starsmashertools.helpers.file.open(filename, 'rb') as f:
+            # This speeds up reading significantly.
+            buffer = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
+        
+        header = self._read_header(buffer, return_headers, filesize)
+            
+        if return_headers and not return_data:
+            return header
+
+        data = self._read_data(buffer, header['ntot'])
         
         if return_headers: return data, header
         else: return data

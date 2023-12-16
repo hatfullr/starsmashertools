@@ -1,6 +1,6 @@
 import os
 import numpy as np
-from starsmashertools.lib.archive import REPLACE_OLD
+from starsmashertools.lib.archive import REPLACE_OLD, REPLACE_NEQ
 
 defaults = {
     'Simulation' : {
@@ -18,6 +18,9 @@ defaults = {
         'children hint filename' : 'children.sstools',
         # This name will be used to create an archive of computed data. See the
         # SimulationArchive class for details.
+        # CAUTION: Editing this value will cause any old archives in simulations
+        #          to be unrecognized by starsmashertools. You will need to
+        #          change their names before you can use them again.
         'archive filename' : 'sstools.archive',
         'output files' : 'out*.sph',
         
@@ -135,7 +138,7 @@ defaults = {
         'tau particle cutoff' : 1.e-5,
     },
     'Archive' : {
-        'replacement flags' : (REPLACE_OLD,),
+        'replacement flags' : (REPLACE_OLD, REPLACE_NEQ,),
     },
 }
 

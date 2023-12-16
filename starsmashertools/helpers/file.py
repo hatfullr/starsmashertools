@@ -36,7 +36,7 @@ def get_file(path, mode):
 # Handle all our file-locking needs
 def lockf(f, LOCK_EX = False, LOCK_NB = False, LOCK_UN = False):
     import fcntl
-    
+
     # Have to be in write mode
     if not f.writable():
         import builtins
@@ -64,10 +64,11 @@ def is_file_locked(f):
 
 
 @contextlib.contextmanager
-def open(path, mode, lock = True, timeout = None, method = None, **kwargs):
+def open(path, mode, lock = True, lock_file = None, timeout = None, method = None, **kwargs):
     import starsmashertools.helpers.path
     import time
     import builtins
+    import zipfile
 
     if method is None: method = builtins.open
 
@@ -76,29 +77,48 @@ def open(path, mode, lock = True, timeout = None, method = None, **kwargs):
     basename = starsmashertools.helpers.path.basename(path)
 
     f = method(path, mode, **kwargs) # opens the file
+    lf = None
 
-    underlying_file = None
-    if hasattr(f, 'writable'): underlying_file = f
+    # Check if the file was opened for writing
+    is_writable = None
+    if hasattr(f, 'writable'): is_writable = f.writable()
     else:
-        import zipfile
         if isinstance(f, zipfile.ZipFile):
-            underlying_file = f.fp
+            is_writable = f.fp.writable()
         else:
             raise NotImplementedError("File type '%s'" % type(f).__name__)
-    
-    if lock:
+
+    # Only lock a file if we plan to write to it. Reading doesn't require any
+    # locking.
+    if is_writable and lock:
+        if lock_file is None:
+            if isinstance(f, zipfile.ZipFile):
+                lf = f.fp
+            else:
+                lf = f
+        else: lf = builtins.open(lock_file, 'w')
+        
         if timeout is None: timeout = 30
         interval = 0.001
         for i in range(int(timeout / interval)):
-            if not is_file_locked(underlying_file): break
+            if not is_file_locked(lf): break
             time.sleep(interval)
         else:
-            raise TimeoutError("File cannot be accessed because it is locked by some other process: '%s'.\nKilling the other process should solve the issue, but in case of emergency (on Posix only), try 'python3 -c \"import fcntl; fcntl.fcntl(open('%s', 'w'), fcntl.LOCK_UN)\"'" % (path, path))
-
-        lockf(underlying_file, LOCK_EX=True)
-
-    try: yield f
-    finally: f.close()
+            raise TimeoutError("File cannot be accessed because it is locked by some other process: '%s'.\nKilling the other process should solve the issue, but in case of emergency (on Posix only), try 'python3 -c \"import fcntl; fcntl.fcntl(open('%s', 'w'), fcntl.LOCK_UN)\"'" % (lf.name, lf.name))
+        
+        lockf(lf, LOCK_EX=True)
+    
+    try:
+        yield f
+    finally:
+        f.close()
+        # Release the lock if it's on a different file
+        if lf is not None:
+            lf.close()
+            # If we created an empty file, delete it afterwards
+            if starsmashertools.helpers.path.getsize(lf.name) == 0:
+                starsmashertools.helpers.path.remove(lf.name)
+        
 
 
 # Check if the file at the given path is a MESA file

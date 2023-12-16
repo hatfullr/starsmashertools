@@ -76,26 +76,53 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
         """
         import starsmashertools.lib.binary
         import starsmashertools.helpers.midpoint
+
+        ret = None
         
-        children = self.get_children()
-        if children and isinstance(children[0], starsmashertools.lib.binary.Binary):
+        # Pull from the archive if we already calculated this
+        if 'get_plunge_time' in self.archive:
+            v = self.archive['get_plunge_time'].value
+            noutputs = v['noutputs']
+            # Recalculate if we have a different number of output files now
+            if len(self.get_outputfiles()) == noutputs:
+                ret = starsmashertools.lib.units.Unit(v['value'], v['units'])
+        
+        if ret is None:
+            children = self.get_children()
+            if not children or not isinstance(children[0], starsmashertools.lib.binary.Binary):
+                raise Exception("Cannot obtain the plunge time for a dynamical simulation that did not originate from a Binary simulation: '%s'" % self.directory)
+            
             # Check for presence of plunge-in
-            if self.get_output(-1)['mejecta'] < threshold:
-                if cli: return 'No plunge-in detected yet'
-                return None
+            with self.archive.nosave():
+                if self.get_output(-1)['mejecta'] >= threshold:
+                    m = starsmashertools.helpers.midpoint.Midpoint(self.get_output())
+                    m.set_criteria(
+                        lambda output: output['mejecta'] < threshold,
+                        lambda output: output['mejecta'] == threshold,
+                        lambda output: output['mejecta'] > threshold,
+                    )
+                    output = m.get()
+                    ret = output['t'] * self.units['t']
+
+                    # Save the result to the archive
+                    self.archive.add(
+                        'get_plunge_time',
+                        {
+                            'value' : float(ret),
+                            'units' : str(ret.label),
+                            'noutputs' : len(self.get_outputfiles()),
+                        },
+                        origin = None,
+                        mtime = starsmashertools.helpers.path.getmtime(output.path),
+                    )
+                    self.archive.save()
+
+        if cli:
+            if ret is None: return 'No plunge-in detected yet'
+            return str(output) + "\n" + str(ret.auto())
+        return ret
             
-            m = starsmashertools.helpers.midpoint.Midpoint(self.get_output())
-            m.set_criteria(
-                lambda output: output['mejecta'] < threshold,
-                lambda output: output['mejecta'] == threshold,
-                lambda output: output['mejecta'] > threshold,
-            )
-            output = m.get()
-            ret = output['t'] * self.units['t']
-            if cli: return str(output) + "\n" + str(ret.auto())
-            return ret
-            
-        raise Exception("Cannot obtain the plunge time for a dynamical simulation that did not originate from a Binary simulation")
+        
 
 
     #@starsmashertools.helpers.argumentenforcer.enforcetypes

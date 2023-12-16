@@ -133,21 +133,6 @@ class TestArchive(basetest.BaseTest):
         self.assertEqual(self.archive['test2'].value, -1)
         self.assertEqual(self.archive['test2'].mtime, 0)
         self.assertEqual(self.archive['test2'].origin, 'ff')
-        
-
-    def testPassword(self):
-        import time
-        self.archive = starsmashertools.lib.archive.Archive(
-            'test_password.dat',
-            password='1234',
-        )
-        self.archive.add('test', 0, 'filename', mtime = 5)
-        self.archive.save()
-        self.assertTrue(os.path.isfile(self.archive.filename))
-        print(self.archive.filename)
-        time.sleep(100)
-
-        #archive = starsmashertools.lib.archive.Archive(self.archive.filename)
 
 if __name__ == "__main__":
     unittest.main(failfast=True)

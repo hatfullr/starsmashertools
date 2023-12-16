@@ -20,6 +20,7 @@ class Simulation(object):
         import starsmashertools.lib.input
         import starsmashertools.lib.output
         import starsmashertools.helpers.path
+        import starsmashertools.lib.archive
         
         directory = starsmashertools.helpers.path.realpath(directory.strip())
         
@@ -41,6 +42,8 @@ class Simulation(object):
         self._searching_for_continuation = False
 
         self.reader = starsmashertools.lib.output.Reader(self)
+
+        self.archive = starsmashertools.lib.archive.SimulationArchive(self)
             
     def __hash__(self):
         return hash(self.directory)
