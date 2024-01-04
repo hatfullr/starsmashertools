@@ -773,7 +773,7 @@ class Reader(object):
                 strides=self._stride['header'],
             )
         except Exception as e:
-            raise Reader.CorruptedFileError("This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories. %s" % filename) from e
+            raise Reader.CorruptedFileError("This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories.") from e
 
         ntot = header['ntot'][0]
 
@@ -787,7 +787,7 @@ class Reader(object):
                 strides=8,
             )[0]
         except Exception as e:
-            raise Reader.CorruptedFileError("This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories. %s" % filename) from e
+            raise Reader.CorruptedFileError("This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories.") from e
 
         if ntot != ntot_check:
             raise Reader.CorruptedFileError(filename)
@@ -816,7 +816,7 @@ class Reader(object):
                 strides=self._stride['data'] + self._EOL_size,
             )
         except Exception as e:
-            raise Reader.CorruptedFileError("This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories. %s" % filename) from e
+            raise Reader.CorruptedFileError("This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories.") from e
         
         # Now organize the data into Pythonic structures
         new_data = {}

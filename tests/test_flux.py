@@ -21,6 +21,8 @@ colorbar_xbuffer = 0.005
 colorbar_width = 0.015
 axis_space = 0.075
 
+cmap = 'nipy_spectral'
+
 def read_flux(filename):
     with open(filename, 'r') as f:
         xmin, ymin, dx, dy, Nx, Ny = f.readline().strip().split()
@@ -99,7 +101,7 @@ class TestFlux(basetest.BaseTest):
         extent = [xmin, xmax, ymin, ymax]
 
         ax[0].set_title('result')
-        ax[1].set_title('expected')
+        ax[1].set_title('original')
         ax[2].set_title('difference')
         
         im0 = ax[0].imshow(
@@ -109,7 +111,9 @@ class TestFlux(basetest.BaseTest):
             aspect = 'auto',
             vmin = vmin,
             vmax = vmax,
+            cmap = cmap,
         )
+        print("result = %15.7E" % np.nansum(10**logresult))
 
         im1 = ax[1].imshow(
             logexpected,
@@ -118,7 +122,9 @@ class TestFlux(basetest.BaseTest):
             aspect = 'auto',
             vmin = vmin,
             vmax = vmax,
+            cmap = cmap,
         )
+        print("expected = %15.7E" % np.nansum(10**logexpected))
 
         p = np.log10(np.abs((result - expected)/expected))
         im2 = ax[2].imshow(
@@ -128,6 +134,7 @@ class TestFlux(basetest.BaseTest):
             aspect = 'auto',
             vmin = np.nanmin(p[np.isfinite(p)]),
             vmax = np.nanmax(p[np.isfinite(p)]),
+            cmap = cmap,
         )
 
         pos = ax[1].get_position()
@@ -164,6 +171,16 @@ class TestFlux(basetest.BaseTest):
         
         output = self.simulation.get_output()
 
+        uraddotcool = output['uraddotcool'] * float(self.simulation.units['uraddotcool'])
+        uraddotheat = output['uraddotheat'] * float(self.simulation.units['uraddotheat'])
+        m = output['am'] * float(self.simulation.units['am'])
+        Lcool = np.sum(np.abs(uraddotcool) * m) - np.sum(np.abs(uraddotheat) * m)
+        print("Lcool = %15.7E" % Lcool)
+        print("sum(|uraddotcool| * m) = %15.7E" % (np.sum(np.abs(uraddotcool) * m)))
+        print("sum(|uraddotheat| * m) = %15.7E" % (np.sum(np.abs(uraddotheat) * m)))
+        
+        
+
         expected, expected_xmin, expected_ymin, expected_dx, expected_dy = read_flux(
             output.path.replace('.sph', '.surf_br')
         )
@@ -186,12 +203,16 @@ class TestFlux(basetest.BaseTest):
         if np.any(result.flux < 0):
             raise Exception("Negative flux found")
 
-        e = None
-        try:
-            self.assertEqual(result.shape, expected.shape)
-            self.assertTrue(np.allclose(result.flux, expected, equal_nan=True))
-        except Exception as _e:
-            e = _e
+        print("sum(flux) = %15.7E" % np.nansum(result.flux))
+        print(
+            "dx, dy = %15.7E, %15.7E" % (
+            result.dx * float(self.simulation.units.length),
+            result.dy * float(self.simulation.units.length),
+            )
+        )
+        print("Lcool / (4 * dx * dy) = %15.7E" % (Lcool / (4 * (result.dx * result.dy) * float(self.simulation.units.length)**2)))
+        print("attenuation = %15.7E" % np.sum(result.attenuation))
+        print('unattenuated = %15.7E' % np.sum(result.unattenuated))
 
         if plot:
             expected_extent = [
@@ -201,6 +222,14 @@ class TestFlux(basetest.BaseTest):
                 expected_ymin + expected_dy * expected.shape[1],
             ]
             self.plot(result.flux, expected, result.extent, expected_extent)
+            
+        e = None
+        try:
+            self.assertEqual(result.shape, expected.shape)
+            self.assertEqual(result.resolution, expected.shape)
+            self.assertTrue(np.allclose(result.flux, expected, equal_nan=True))
+        except Exception as _e:
+            e = _e
 
         if e: raise(e)
 

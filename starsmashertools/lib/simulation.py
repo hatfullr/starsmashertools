@@ -501,8 +501,7 @@ class Simulation(object):
     def valid_directory(directory : str):
         import starsmashertools.helpers.path
         return starsmashertools.helpers.path.get_src(directory) is not None
-
-    # Keywords are passed to logfile.find() method
+    
     @api
     def get_logfiles(self, **kwargs):
         """

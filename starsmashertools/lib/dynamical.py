@@ -143,22 +143,23 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
         direction mv^2/2.
 
         We obtain the velocities by first writing the velocity in spherical
-        coordinates: \vec{v} = v_r\hat{r} + r\dot{\theta}\hat{\theta} + 
-        \dot{\phi}r\sin\phi\hat{\phi}. In this way, the velocity components are:
-        v_\theta = r\dot{\theta} and v_\phi = \dot{\phi}r\sin\phi. To find the
-        angular velocities \dot{\theta} and \dot{\phi}, we use their spherical
-        coordinate relations \cos\theta = z/r and \tan\phi = y/x.
-        Differentiating each with respect to time yields: \dot{\theta} = 
+        coordinates: \\vec{v} = v_r\\hat{r} + r\\dot{\\theta}\\hat{\\theta} + 
+        \\dot{\\phi}r\\sin\\phi\\hat{\\phi}. In this way, the velocity
+        components are: v_\\theta = r\\dot{\\theta} and 
+        v_\\phi = \\dot{\\phi}r\\sin\\phi. To find the angular velocities 
+        \\dot{\\theta} and \\dot{\\phi}, we use their spherical coordinate 
+        relations \\cos\\theta = z/r and \\tan\\phi = y/x. Differentiating each
+        with respect to time yields: \\dot{\\theta} = 
         (r'/r^2) [ (zx v_x + zy v_y) / r'^2 - v_z], where r' = sqrt(x^2 + y^2),
-        and \dot{\phi} = (x v_y - y v_x) / r'^2. Therefore,
+        and \\dot{\\phi} = (x v_y - y v_x) / r'^2. Therefore,
         
-        v_\theta = y/r [ (zx v_x + zy v_y) / r'^2 - v_z ]
-          v_\phi = r/r'^2 (x v_y - y v_x)
+        v_\\theta = y/r [ (zx v_x + zy v_y) / r'^2 - v_z ]
+          v_\\phi = r/r'^2 (x v_y - y v_x)
 
         The corresponding orbital energies of a particle are:
         
-        E_{orb,i,\theta} = m_i v_{\theta,i}^2 / 2
-          E_{orb,i,\phi} = m_i v_{\phi,i}^2 / 2
+        E_{orb,i,\\theta} = m_i v_{\\theta,i}^2 / 2
+          E_{orb,i,\\phi} = m_i v_{\\phi,i}^2 / 2
 
         Parameters
         ----------
@@ -181,13 +182,13 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
         Returns
         -------
         list
-            The total orbital energy E_{orb,\theta} summed over every particle.
+            The total orbital energy E_{orb,\\theta} summed over every particle.
             If `filter_unbound` is `True` then an output that has no bound
             particles has a value of 0.
 
         list
-            The total orbital energy E_{orb,\phi} summed over every particle. If
-            `filter_unbound` is `True` then an output that has no bound
+            The total orbital energy E_{orb,\\phi} summed over every particle.
+            If `filter_unbound` is `True` then an output that has no bound
             particles has a value of 0.
         """
         outputs = self.get_output(*args, **kwargs)

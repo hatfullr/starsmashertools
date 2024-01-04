@@ -66,7 +66,6 @@ class FluxFinder(object):
         self.contributing_particle_IDs = []
 
         self._contributors = None
-        self.result = None
 
     def check_outputs(self):
         """
@@ -150,15 +149,22 @@ class FluxFinder(object):
             
             units = self.output.simulation.units
             
-            m = self.output['am']
-            h = self.output['hp']
-            rho = self.output['rho'] * float(units['rho'])
-            u = self.output['u'] * float(units['u'])
-            uraddot_emerg = self.output['dEemergdt'] * float(units['dEemergdt'])
-            uraddot_diff = self.output['dEdiffdt'] * float(units['dEdiffdt'])
-            kappa = self.output['popacity'] * float(units['popacity'])
-            tau = self.output['tau']
-            temp = self.output['temperatures']
+            m = self.output['am'] # msun
+            h = self.output['hp'] # rsun
+            rho = self.output['rho'] * float(units['rho']) # cgs
+            u = self.output['u'] * float(units['u']) # cgs
+            uraddot_emerg = self.output['dEemergdt'] * float(units['dEemergdt']) # cgs
+            uraddot_diff = self.output['dEdiffdt'] * float(units['dEdiffdt']) # cgs
+            if self.output.simulation['ncooling'] == 2:
+                uraddotcool = self.output['uraddot'] * float(units['uraddot']) # cgs
+            elif self.output.simulation['ncooling'] == 3:
+                uraddotcool = self.output['uraddotcool'] * float(units['uraddotcool']) # cgs
+            else:
+                raise NotImplementedError("FluxFinder can only work for ncooling = 2 or 3, not ncooling = %d" % self.output.simulation['ncooling'])
+            
+            kappa = self.output['popacity'] * float(units['popacity']) # cgs
+            tau = self.output['tau'] # code units
+            temp = self.output['temperatures'] # cgs
             
             flux = np.zeros(m.shape)
 
@@ -169,59 +175,210 @@ class FluxFinder(object):
                 kappa < kappa_dust,
             )
             if np.any(idx):
-                kappa[idx] = kappa_dust
+                kappa[idx] = kappa_dust # cgs
 
+            self.flux_watch_idx = np.array([])
 
             idx = uraddot_emerg < uraddot_diff
             if np.any(idx):
-                rloc[idx] = 2 * h[idx]
-                rho[idx] = m[idx]*float(units.mass) / (rloc[idx]*float(units.length))**3
-                tau[idx] = rho[idx] * kappa[idx] * rloc[idx] * float(units.length)
-                flux_em = uraddot_emerg[idx] / (4 * np.pi * (rloc[idx]*float(units.length))**2)
-                flux[idx] = flux_em
+                #"""
+                # this particle is considered in "fluffy" approximation
+                rloc[idx]=2.*h[idx] # rsun
+                rho[idx]=m[idx]*float(units.mass)/(rloc[idx]*float(units.length))**3
+                tau[idx]=rho[idx]*kappa[idx]*rloc[idx]*float(units.length)#*4./3.
+                flux_em = uraddot_emerg[idx]/(4.*np.pi*(rloc[idx]*float(units.length))**2) # cgs
+                flux[idx]=flux_em
+                #print("Treat fluffy %d %f %f %f %f %f"%(i, kappa[i], temp[i], tau[i], flux[i], rloc[i]))          
+                #"""
+                
+                """
+                rloc[idx] = 2 * h[idx] # rsun
+                rho[idx] = m[idx]*float(units.mass) / (rloc[idx]*float(units.length))**3 # cgs
+                tau[idx] = rho[idx] * kappa[idx] * rloc[idx] * float(units.length) # cgs
+                flux_em = uraddot_emerg[idx] / (4 * np.pi * (rloc[idx]*float(units.length))**2) # cgs
+                flux[idx] = flux_em # cgs
+                """
             if np.any(~idx):
-                rloc[~idx] = (m[~idx]*float(units.mass) / (4/3.*np.pi * rho[~idx]))**(0.33333) / float(units.length)
-                tau[~idx] = rho[~idx] * kappa[~idx] * rloc[~idx] * float(units.length)
-                flux_em = uraddot_emerg[~idx]/(4 * np.pi * (rloc[~idx] * float(units.length))**2)
-                ad = 4 * 3.1415 * (rloc[~idx]*float(units.length))**2
-                
-                warnings.filterwarnings(action = 'ignore')
-                dd = c_speed / (kappa[~idx] * rho[~idx])
-                warnings.resetwarnings()
-                
-                tdiffloc = kappa[~idx] * rho[~idx] * (rloc[~idx] * float(units.length))**2 / c_speed
-                gradt = a_const * temp[~idx]**4 / (rloc[~idx] * float(units.length))
-                warnings.filterwarnings(action = 'ignore')
-                dedt = ad/3.*dd*gradt/(m[~idx] * float(units.mass))
-                warnings.resetwarnings()
-                
-                flux[~idx]=dedt*m[~idx]*float(units.mass)/(4 * np.pi * (rloc[~idx]*float(units.length))**2)
-                flux[~idx] = np.minimum(flux[~idx], flux_em)
-                
-            self.output['opacity'] = kappa
-            self.output['radius'] = rloc
-            self.output['rho'] = rho
-            self.output['tau'] = tau
-            self.output['flux'] = flux
+                #"""
+                # this particle is considered in "dense" approximation
+                rloc[~idx]=pow(m[~idx]*float(units.mass)/(4/3.*np.pi)/rho[~idx],0.33333)/float(units.length) # rsun
+                tau[~idx]=rho[~idx]*kappa[~idx]*rloc[~idx]*float(units.length)#*4./3. # cgs
+                ad      = 4.*np.pi*(rloc[~idx]*float(units.length))**2 # cgs
+                ad_cool = 2.*np.pi*(rloc[~idx]*float(units.length))**2 # cgs
+                flux_em = uraddot_emerg[~idx]/ad # cgs
+                dd=c_speed/kappa[~idx]/rho[~idx] # cgs
+                tdiffloc=kappa[~idx]*rho[~idx]*(rloc[~idx]*float(units.length))**2/c_speed
+                gradt=a_const*temp[~idx]**4/(rloc[~idx] * float(units.length)) # cgs
+                dedt=ad/3.*dd*gradt/(m[~idx] * float(units.mass)) # cgs
+                flux[~idx]=dedt*m[~idx]*float(units.mass)/ad # cgs
+                flux_cool=-uraddotcool[~idx]*m[~idx]*float(units.mass)/ad # cgs
+                ratio = -uraddotcool[~idx]/dedt*12.
 
+                idx_ratio = ratio <= 6
+                print(sum(idx_ratio), self.output['ntot'], self.output['ntot'] - sum(idx_ratio))
+                if np.any(idx_ratio): # all what is cooled is to goes through the outer hemisphere
+                    flux[~idx][idx_ratio] = -uraddotcool[~idx][idx_ratio] * m[~idx][idx_ratio] * float(units.mass) / ad_cool[idx_ratio] # cgs
+                if np.any(~idx_ratio): # the particle is getting cooled also to the back, but cools at max through the outer hemisphere
+                    flux[~idx][~idx_ratio]=dedt[~idx_ratio]*m[idx][~idx_ratio]*float(units.mass)/ad[~idx_ratio] # cgs
+                #"""
+                
+                """
+                rloc[~idx] = (m[~idx]*float(units.mass) / (4/3.*np.pi * rho[~idx]))**(0.33333) / float(units.length) # rsun
+                tau[~idx] = rho[~idx] * kappa[~idx] * rloc[~idx] * float(units.length) # cgs
+                flux_em = uraddot_emerg[~idx]/(4 * np.pi * (rloc[~idx] * float(units.length))**2) # cgs
+                ad = 4 * 3.1415 * (rloc[~idx]*float(units.length))**2 # cgs
+                
+                warnings.filterwarnings(action = 'ignore')
+                dd = c_speed / (kappa[~idx] * rho[~idx]) # cgs
+                warnings.resetwarnings()
+                
+                tdiffloc = kappa[~idx] * rho[~idx] * (rloc[~idx] * float(units.length))**2 / c_speed # cgs
+                gradt = a_const * temp[~idx]**4 / (rloc[~idx] * float(units.length)) # cgs
+                
+                warnings.filterwarnings(action = 'ignore')
+                dedt = ad/3.*dd*gradt/(m[~idx] * float(units.mass)) # cgs
+                warnings.resetwarnings()
+                
+                flux[~idx]=dedt*m[~idx]*float(units.mass)/(4 * np.pi * (rloc[~idx]*float(units.length))**2) # cgs
+                """
+                
+                flux[~idx] = np.minimum(flux[~idx], flux_em) # cgs
+                
+                
+                self.flux_watch_idx = np.arange(len(self.output['x']))[~idx]
+                
+            self.output['opacity'] = kappa # cgs
+            self.output['radius'] = rloc # rsun
+            self.output['rho'] = rho # cgs
+            self.output['tau'] = tau # cgs
+            #self.output['flux'] = np.abs(self.output['uraddotcool']) * float(self.output.simulation.units['uraddotcool']) * self.output['am'] * float(self.output.simulation.units['am']) / (4 * np.pi * (2*self.output['hp'] * float(self.output.simulation.units['hp']))**2) # cgs
+            self.output['flux'] = flux # cgs
+
+    def get_particle_flux(
+            self,
+            ID, # The particle we want the flux from
+            interacting_IDs,# The particles interacting on this (xpos, ypos) ray
+            xpos, # rsun
+            ypos, # rsun
+            zpos, # rsun
+    ):
+        import warnings
+
+        return self.output['flux'][ID]
+        
+        # These IDs might need their fluxes recalculated specifically for each
+        # ray
+        if ID in self.flux_watch_idx:
+            # We will convert to cgs at the end, because that is what
+            # StarSmasher does.
+            c_speed = 2.99792458e10 # cgs
+            a_const = 7.565767e-15 # cgs
+            
+            #crad_codeunits = 686.442313885692 # code units
+            #arad_codeunits = 6.723267115825734e-31 # code units
+            units = self.output.simulation.units
+            
+            Ti = self.output['temperatures'][ID] # cgs
+            rhoi = self.output['rho'][ID] # cgs
+            ui = self.output['u'][ID] * float(units['u']) # cgs
+            mi = self.output['am'][ID] * float(units['am']) # cgs
+            ri = self.output['radius'][ID] # rsun
+            kappai = self.output['opacity'][ID] # cgs
+
+            # Find the closest particle to the surface of particle i at our
+            # current location
+            others = interacting_IDs[interacting_IDs != ID]
+            xj = self.output['x'][others] # rsun
+            yj = self.output['y'][others] # rsun
+            zj = self.output['z'][others] # rsun
+            dx = xpos - xj # rsun
+            dy = ypos - yj # rsun
+            dz = zpos - zj # rsun
+            dr2 = dx * dx + dy * dy + dz * dz # rsun
+            
+            rj = self.output['radius'][others] # rsun
+
+            idx = dr2 < rj * rj # rsun
+            if np.any(idx):
+                # If there aren't any in idx, then there's no nearby particles
+                
+                nearest_other = np.argsort(dr2)[0]
+                nearest = others[nearest_other]
+                Tj = self.output['temperatures'][nearest]
+
+                # Note: this if statement has a significant effect
+                if Tj >= Ti: return 0. # For heating events, there is no cooling
+                
+                xi = self.output['x'][ID] # rsun
+                yi = self.output['y'][ID] # rsun
+                zi = self.output['z'][ID] # rsun
+
+                dxij = xi - xj[nearest_other] # rsun
+                dyij = yi - yj[nearest_other] # rsun
+                dzij = zi - zj[nearest_other] # rsun
+
+                drij = np.sqrt(dxij * dxij + dyij * dyij + dzij * dzij) # rsun
+
+                Uradi = a_const * Ti**4 # cgs
+                Uradj = a_const * Tj**4 # cgs
+                
+                # Similar to dense.f, but with an added negative sign, because
+                # dEdiffdt gets multiplied by a negative sign later, but we
+                # don't do that in this code, so we account for it here.
+                gradt = (Uradi - Uradj) / (drij * float(units.length)) # cgs
+
+                # Uncomment to get fluxes exactly the same as the originals
+                # (sanity check). You also need to comment out
+                # "if Tj >= Ti: return 0." above.
+                #gradt = a_const * Ti**4 / (ri * float(units.length)) # cgs
+            else:
+                return self.output['flux'][ID] # cgs
+                
+                
+            dEemergdt = self.output['dEemergdt'][ID] * float(units['dEemergdt']) # cgs
+            flux_em = dEemergdt/(4 * np.pi * (ri * float(units.length))**2) # cgs
+
+            ad = 4 * 3.1415 * (ri * float(units.length))**2 # cgs
+            warnings.filterwarnings(action = 'ignore')
+            dd = c_speed / (kappai * rhoi) # cgs
+            warnings.resetwarnings()
+            dedt = ad/3.*dd*gradt/mi # cgs
+
+            # This time the flux is being emitted on the ray toward the
+            # observer, so the area associated with the emission is the area of
+            # a single pixel on the image. This gives the "apparent" flux.
+            Fray = dedt * mi / (self.dx * self.dy * float(units.length)**2) # cgs
+
+            Fray = min(Fray, flux_em) # cgs
+            return Fray # cgs
+        
+        # If this isn't a particle to recalculate the temperature gradient for,
+        # just return the flux we already had
+        return self.output['flux'][ID] # cgs
+    
     def get_flux(
             self,
-            z : np.ndarray,
-            r2 : np.ndarray,
-            drprime2 : np.ndarray,
-            kapparho : np.ndarray,
-            flux : np.ndarray,
-            IDs : np.ndarray,
-            tau_ray_max : float | int,
+            IDs : np.ndarray, # These are the interacting IDs
+            drprime2 : np.ndarray, # rsun
+            xpos, # rsun
+            ypos, # rsun
+            z, # rsun
+            r2, # rsun
+            kapparho, # cgs
+            flux, # cgs
             flux_weighted_averages = [],
     ):
+        units = self.output.simulation.units
+        
         total_flux = 0.
         weighted_averages = [0.] * len(flux_weighted_averages)
-        
+        total_attenuation = 0.
+        total_unattenuated = 0.
+
         # Obtain the interacting particles' depths
-        dz = np.sqrt(r2 - drprime2)
-        front = z + dz
-        back = z - dz
+        dz = np.sqrt(r2 - drprime2) # rsun
+        front = z + dz # rsun
+        back = z - dz # rsun
         
         # Sort the particles by their fronts, in order of farthest-away
         # particles to closest wrt observer
@@ -234,15 +391,16 @@ class FluxFinder(object):
             for i in range(len(front) - 1):
                 # Get the "back side" of each particle. Note that the ray must
                 # start at the surface of particle i
-                _fronts[i + 1:] = front[idx_sorted[i]] # Surface of particle i
+                _fronts[i + 1:] = front[idx_sorted[i]] # Surface of particle i # rsun
                 _max = np.maximum(
                     back[idx_sorted[i+1:]], # Back-side of interacting particles
                     _fronts[i + 1:],        # Surface of particle i
-                )
+                ) # rsun
 
                 # Get the distances that the ray travels through the kernels of
                 # the interacting particles
-                ds = front[idx_sorted[i + 1:]] - _max
+                ds = front[idx_sorted[i + 1:]] - _max # rsun
+                ds *= float(units.length) # cgs
                 
                 # Obtain the total optical depth of the ray. We do a dot product
                 # here because each contribution to tau is kappa*rho*ds, and
@@ -256,15 +414,27 @@ class FluxFinder(object):
                 # (https://stackoverflow.com/a/75556529/4954083)
                 tau_ray = np.dot(kapparho[idx_sorted[i + 1:]], ds)
                 
-                if tau_ray <= tau_ray_max:
+                if tau_ray <= self.tau_ray_max:
                     if tau_ray < 0: raise Exception("Bad tau_ray")
                     exptau = np.exp(-tau_ray)
-                    f = flux[idx_sorted[i]] * exptau
-
+                    # The temperature gradient (if it has been calculated) is
+                    # incorrect. Send this particle off to correct its flux.
+                    particle_flux = self.get_particle_flux(
+                        IDs[idx_sorted[i]],
+                        IDs,
+                        xpos, # rsun
+                        ypos, # rsun
+                        front[idx_sorted[i]], # rsun
+                    ) # cgs
+                    f = particle_flux * exptau # cgs
+                    #f = flux[idx_sorted[i]] * exptau
+                    
+                    total_flux += f # cgs
+                    total_attenuation += particle_flux - f
+                    total_unattenuated += particle_flux
+                    
                     for _i, val in enumerate(flux_weighted_averages):
                         weighted_averages[_i] += val[idx_sorted[i]] * f
-                    
-                    total_flux += f
 
                     self._contributors[IDs[idx_sorted[i]]] = True
                     #cID = IDs[idx_sorted[i]]
@@ -274,11 +444,12 @@ class FluxFinder(object):
                     #if cID not in self.contributing_particle_IDs:
                     #    self.contributing_particle_IDs += [cID]
         
-        # Add the surface particle's flux
-        f = flux[idx_sorted[-1]]
+        # Add the surface particle's flux. The temperature gradient is correct
+        # here.
+        f = flux[idx_sorted[-1]] # cgs
         for _i, val in enumerate(flux_weighted_averages):
             weighted_averages[_i] += val[idx_sorted[-1]] * f
-        total_flux += f
+        total_flux += f # cgs
         self._contributors[IDs[idx_sorted[-1]]] = True
         #cID = IDs[idx_sorted[-1]]
         #self.contributing_particle_IDs = list(set(
@@ -287,8 +458,8 @@ class FluxFinder(object):
         #if cID not in self.contributing_particle_IDs:
         #    self.contributing_particle_IDs += [cID]
         
-        return total_flux, weighted_averages
-    
+        return total_flux, weighted_averages, total_attenuation, total_unattenuated
+
     @api
     def get(self):
         """
@@ -299,34 +470,35 @@ class FluxFinder(object):
         np.ndarray
             A 2D array of flux values 
         """
-        self.result = None
         self.prepare_output()
         
         flux = np.zeros(np.asarray(self.resolution) + 1)
+        attenuation = np.zeros(flux.shape)
+        unattenuated = np.zeros(flux.shape)
         
         xmin, xmax, ymin, ymax = self.extent
         
-        dx = (xmax - xmin) / self.resolution[0]
-        dy = (ymax - ymin) / self.resolution[1]
+        self.dx = (xmax - xmin) / self.resolution[0] # rsun
+        self.dy = (ymax - ymin) / self.resolution[1] # rsun
         
-        x = self.output['x']
-        y = self.output['y']
-        z = self.output['z']
-        rloc = self.output['radius']
-        pflux = self.output['flux']
-        tau = self.output['tau']
+        x = self.output['x'] # rsun
+        y = self.output['y'] # rsun
+        z = self.output['z'] # rsun
+        rloc = self.output['radius'] # rsun
+        pflux = self.output['flux'] # cgs
+        tau = self.output['tau'] # cgs
         
         i_array = np.arange(self.resolution[0])
         j_array = np.arange(self.resolution[1])
         
-        xlocs = xmin + dx * i_array
-        ylocs = ymin + dy * j_array
+        xlocs = xmin + self.dx * i_array # rsun
+        ylocs = ymin + self.dy * j_array # rsun
         
-        deltax2_array = (xlocs[:,None] - x)**2
+        deltax2_array = (xlocs[:,None] - x)**2 # rsun
         
-        rloc2 = rloc * rloc
+        rloc2 = rloc * rloc # rsun
 
-        kapparho = tau / rloc
+        kapparho = self.output['opacity'] * self.output['rho'] # cgs
 
         _IDs = np.arange(len(kapparho)) # Not the actual particle IDs
         IDs = self.output['ID'] # The actual particle IDs
@@ -343,29 +515,29 @@ class FluxFinder(object):
             if not np.any(interacting_x): continue
             
             interacting_IDs = _IDs[interacting_x]
-            y_interacting = y[interacting_x]
+            y_interacting = y[interacting_x] # rsun
             
-            deltax2 = deltax2_array[i][interacting_x]
+            deltax2 = deltax2_array[i][interacting_x] # rsun
             
-            deltay2_array = (ylocs[:,None] - y_interacting)**2
+            deltay2_array = (ylocs[:,None] - y_interacting)**2 # rsun
             
             for j, jj in enumerate(j_array):
-                drprime2 = deltax2 + deltay2_array[j]
+                drprime2 = deltax2 + deltay2_array[j] # rsun
                 
                 interacting_xy = drprime2 < rloc2[interacting_IDs]
                 if not np.any(interacting_xy): continue
 
-                drprime2 = drprime2[interacting_xy]
                 interacting = interacting_IDs[interacting_xy]
                 
-                flux[ii, jj], averages = self.get_flux(
-                    z[interacting],
-                    rloc2[interacting],
-                    drprime2,
-                    kapparho[interacting],
-                    pflux[interacting],
-                    IDs[interacting],
-                    self.tau_ray_max,
+                flux[ii, jj], averages, attenuation[ii, jj], unattenuated[ii,jj] = self.get_flux(
+                    _IDs[interacting],
+                    drprime2[interacting_xy], # rsun
+                    xlocs[ii], # rsun
+                    ylocs[jj], # rsun
+                    z[interacting], # rsun
+                    rloc2[interacting], # rsun
+                    kapparho[interacting], # cgs
+                    pflux[interacting], # cgs
                     flux_weighted_averages = [arr[interacting] for arr in self.flux_weighted_averages],
                 )
                 
@@ -383,8 +555,10 @@ class FluxFinder(object):
                 weighted_averages[i][~idx] = 0
 
         return FluxFinder.Result(
-            flux,
+            flux, # cgs
             weighted_averages,
+            attenuation,
+            unattenuated,
             fluxfinder = self,
         )
 
@@ -399,6 +573,8 @@ class FluxFinder(object):
                 self,
                 flux : np.ndarray,
                 weighted_averages : np.ndarray,
+                attenuation : np.ndarray,
+                unattenuated : np.ndarray,
                 fluxfinder = None,
                 output_file = None,
                 contributing_particle_IDs = None,
@@ -420,15 +596,24 @@ class FluxFinder(object):
 
             log_flux = np.log10(flux)
             log_weighted_averages = [np.log10(arr) for arr in weighted_averages]
-
+            log_attenuation = np.log10(attenuation)
+            log_unattenuated = np.log10(unattenuated)
+            
             super(FluxFinder.Result, self).__init__({
                 'output_file' : output_file,
                 'flux' : copy.deepcopy(flux),
                 'log_flux' : copy.deepcopy(log_flux),
+                'attenuation' : copy.deepcopy(attenuation),
+                'log_attenuation' : copy.deepcopy(log_attenuation),
+                'unattenuated' : copy.deepcopy(unattenuated),
+                'log_unattenuated' : copy.deepcopy(log_unattenuated),
                 'weighted_averages' : copy.deepcopy(weighted_averages),
                 'log_weighted_averages' : copy.deepcopy(log_weighted_averages),
                 'contributing_particle_IDs' : contributing_particle_IDs,
                 'extent' : extent,
+                'dx' : (extent[1] - extent[0]) / flux.shape[0],
+                'dy' : (extent[3] - extent[2]) / flux.shape[1],
+                'resolution' : flux.shape,
                 'tau_ray_max' : tau_ray_max,
                 'viewing_angle' : viewing_angle,
             })
