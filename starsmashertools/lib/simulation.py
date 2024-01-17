@@ -48,6 +48,15 @@ class Simulation(object):
     def __hash__(self):
         return hash(self.directory)
 
+    """
+    # For pickling
+    def __getstate__(self):
+        return {'directory' : self.directory}
+
+    def __setstate__(self, data):
+        self.__init__(data['directory'])
+    """
+    
     @api
     def __eq__(self, other):
         # Check if the basenames are the same, so that e.g. pdc.json
@@ -232,8 +241,8 @@ class Simulation(object):
     def teos(self):
         if self._teos is None and self['neos'] == 2:
             import starsmashertools.helpers.path
-            import starsmashertools.lib.teos
-            self._teos = starsmashertools.lib.teos.TEOS(
+            import starsmashertools.lib.table
+            self._teos = starsmashertools.lib.table.TEOS(
                 starsmashertools.helpers.path.realpath(
                     starsmashertools.helpers.path.join(
                         self.directory,
@@ -1054,8 +1063,123 @@ class Simulation(object):
         return starsmashertools.flux.fluxfinder.FluxFinder(outputs)
     """
 
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def get_energyfiles(
+            self,
+            skip_rows : int | type(None) = None,
+    ):
+        """
+        Get the :class:`~.lib.energyfile.EnergyFile` objects associated with
+        this simulation.
 
-            
+        Other Parameters
+        ----------------
+        skip_rows : int, None, default = None
+            Only read every Nth line of each energy file. If `None`, uses the 
+            default value in :func:`~.lib.energyfile.EnergyFile.__init__`.
+
+        Returns
+        -------
+        list
+            A list of :class:`~.lib.energyfile.EnergyFile` objects.
+        """
+        import starsmashertools.lib.energyfile
+        energyfiles = []
+        for logfile in self.get_logfiles():
+            energyfiles += [starsmashertools.lib.energyfile.EnergyFile(
+                logfile,
+                skip_rows = skip_rows,
+            )]
+        return energyfiles
+        
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def get_energy(
+            self,
+            sort : str | type(None) = None,
+            skip_rows : int | type(None) = None,
+    ):
+        """
+        Obtain all the simulation energies as a function of simulation time.
+        
+        Other Parameters
+        ----------------
+        sort : str, None, default = None
+            Sort the resulting dictionary by the given string key. Raises an 
+            error if that key doesn't exist.
+
+        skip_rows : int, None, default = None
+            Only read every Nth line of each energy file. If `None`, uses the 
+            default value in :func:`~.lib.energyfile.EnergyFile.__init__`.
+
+        Returns
+        -------
+        dict or None
+            A dictionary of NumPy arrays. If no energy files were found, returns
+            `None` instead.
+        """
+        energyfiles = self.get_energyfiles(skip_rows = skip_rows)
+        if not energyfiles: return None
+
+        expected_keys = energyfiles[0].keys()
+        from_different_simulation = []
+        for energyfile in energyfiles:
+            for key in energyfile.keys():
+                if key in expected_keys: continue
+                from_different_simulation += [energyfile]
+                break
+        if len(from_different_simulation) != 0:
+            raise Exception("The following energy files were detected as being from a different simulation: " + str(from_different_simulation))
+        
+        result = {key:[] for key in expected_keys}
+        for energyfile in energyfiles:
+            for key, val in energyfile.items():
+                result[key] += val.tolist()
+
+        for key, val in result.items():
+            result[key] = np.asarray(val)
+
+        if sort is not None:
+            if sort not in result.keys():
+                raise Exception("Cannot sort by key '%s' because it is not one of the keys in the dictionary. Possible keys are: " + ", ".join(["'%s'" % key for key in result.keys()]))
+            values = result[sort]
+            idx = np.argsort(values)
+            for key, val in result.items():
+                result[key] = val[idx]
+        
+        return result
+        
+
+    @cli('starsmashertools')
+    def plot_energy(self, cli : bool = False):
+        import matplotlib.pyplot as plt
+        import matplotlib
+
+        # Read all the energy*.sph files
+        #print("Obtaining the energies from the energy output files")
+        energies = self.get_energy(sort = 't')
+
+        #print("Creating the plot")
+        figsize = list(matplotlib.rcParams['figure.figsize'])
+        figsize[1] *= 2.
+        fig, ax = plt.subplots(figsize=figsize, nrows = len(energies.keys()) - 1, sharex=True)
+        tunit = (np.amax(energies['t']) * self.units.time).auto()
+        t = energies['t'] / float(tunit)
+        
+        ax[-1].set_xlabel("Time [%s]" % tunit.label)
+
+        keys = list(energies.keys())
+        keys.remove('t')
+        for a, key in zip(ax, keys):
+            val = energies[key]
+            a.plot(t, val * self.units.energy)
+            a.set_ylabel(key)
+
+        #print("Displaying the plot")
+        fig.align_ylabels(ax)
+        plt.show()
 
     
 

@@ -3,6 +3,8 @@ from starsmashertools.helpers.apidecorator import api
 import starsmashertools.helpers.argumentenforcer
 import starsmashertools.lib.output
 import starsmashertools.helpers.readonlydict
+import matplotlib.axes
+import pickle
 
 # Important note:
 #    I did try writing GPU code for this, but it turns out that serial CPU code
@@ -33,7 +35,7 @@ class FluxFinder(object):
     """
 
     required_keys = [
-        'x', 'y', 'z', 'radius', 'hp', 
+        'x', 'y', 'z', 'radius', 'hp',
         'tau', 'flux', 'ID',
     ]
     
@@ -48,14 +50,10 @@ class FluxFinder(object):
             include_in_rotation : list | tuple = [],
             extent : list | tuple | np.ndarray | type(None) = None,
             flux_weighted_averages : list | tuple = [],
+            verbose : bool = False,
     ):
         import copy
         
-        # Make copies of the outputs so that we can rotate them etc. without
-        # worrying about messing them up for other functions
-        self._original_output = copy.deepcopy(output)
-        self.output = self._original_output
-
         # Input parameters
         self.resolution = resolution
         self.tau_ray_max = tau_ray_max
@@ -63,9 +61,66 @@ class FluxFinder(object):
         self.include_in_rotation = include_in_rotation
         self.extent = extent
         self.flux_weighted_averages = flux_weighted_averages
+        self.verbose = verbose
+        
+        # Make copies of the outputs so that we can rotate them etc. without
+        # worrying about messing them up for other functions
+        self._original_output = copy.deepcopy(output)
+        self._output = None
+        self.output = output # Calls _initialize
+
+    @property
+    def output(self): return self._output
+
+    @output.setter
+    def output(self, value):
+        import copy
+        self._original_output = copy.deepcopy(value)
+        self._output = copy.deepcopy(self._original_output)
+        self._initialize()
+
+    # For pickling
+    def __getstate__(self):
+        return {
+            'output' : pickle.dumps(self._original_output),
+            'resolution' : self.resolution,
+            'tau_ray_max' : self.tau_ray_max,
+            'viewing_angle' : self.viewing_angle,
+            'include_in_rotation' : self.include_in_rotation,
+            'extent' : self.extent,
+            'flux_weighted_averages' : self.flux_weighted_averages,
+            'verbose' : self.verbose,
+        }
+    
+    def __setstate__(self, data):
+        import copy
+        self._original_output = pickle.loads(data['output'])
+        self.resolution = data['resolution']
+        self.tau_ray_max = data['tau_ray_max']
+        self.viewing_angle = data['viewing_angle']
+        self.include_in_rotation = data['include_in_rotation']
+        self.extent = data['extent']
+        self.flux_weighted_averages = data['flux_weighted_averages']
+        self.verbose = data['verbose']
+        self.output = copy.deepcopy(self._original_output)
+        
+    def print_progress(self, progress):
+        import starsmashertools.helpers.string
+        if not self.verbose: return
+        print(starsmashertools.helpers.string.get_progress_string(
+            progress * 100.,
+        ))
+    
+    def _initialize(self):
+        self._contributors = np.full(len(self.output['x']), False)
         self.contributing_particle_IDs = []
 
-        self._contributors = None
+        self._setup_units()
+        self.prepare_output()
+        self._setup_viewing_angle()
+        self._setup_extent()
+
+        self.progress = 0.
 
     def check_outputs(self):
         """
@@ -81,21 +136,50 @@ class FluxFinder(object):
                 return False
         return True
 
-    def prepare_output(self):
-        """
-        Perform all necessary transformations to the particle data in
-        preparation for :func:`~.get`.
-        """
-        import inspect
-        import copy
-        import starsmashertools.preferences
-        import warnings
+    def _setup_units(self):
+        units = self.output.simulation.units
+        self._flux_unit = float(units.flux)
+        self._temperature_unit = float(units.temperature)
+        self._opacity_unit = float(units.opacity)
+        self._c = float(units.c)
+        self._a = float(units.a)
+
+    def _setup_extent(self):
+        import numpy as np
+        if self.extent is not None and None not in self.extent: return
         
-        # Start with a clean copy of the data
-        self.output = copy.deepcopy(self._original_output)
+        x = self.output['x']
+        y = self.output['y']
+        r = self.output['radius']
+        xmin = np.nanmin(x - r)
+        xmax = np.nanmax(x + r)
+        ymin = np.nanmin(y - r)
+        ymax = np.nanmax(y + r)
 
-        self._contributors = np.full(len(self.output['x']), False)
+        """
+        center = np.array([0.5*(xmin + xmax), 0.5*(ymin + ymax)])
 
+        max_coord = max(abs(xmin), abs(xmax), abs(ymin), abs(ymax))
+        xmax = max_coord
+        ymax = max_coord
+        xmin = -max_coord
+        ymin = -max_coord
+        """
+
+        if self.extent is None: self.extent = [None]*4
+
+        # Overwrite only values that are None
+        new_extent = [xmin, xmax, ymin, ymax]
+        for i, (old, new) in enumerate(zip(self.extent, new_extent)):
+            if old is None: self.extent[i] = new
+
+        xmin, xmax, ymin, ymax = self.extent
+        
+        self.dx = (xmax - xmin) / self.resolution[0] # rsun
+        self.dy = (ymax - ymin) / self.resolution[1] # rsun
+
+    def _setup_viewing_angle(self):
+        import inspect
         # Rotate the particles
         # Check the default value of each one's rotate keys
         signature = inspect.signature(self.output.rotate)
@@ -108,26 +192,14 @@ class FluxFinder(object):
             zangle = -self.viewing_angle[2],
         )
 
-        # Set the domain
-        xmin = np.nanmin(self.output['x'] - 2 * self.output['hp'])
-        xmax = np.nanmax(self.output['x'] + 2 * self.output['hp'])
-        ymin = np.nanmin(self.output['y'] - 2 * self.output['hp'])
-        ymax = np.nanmax(self.output['y'] + 2 * self.output['hp'])
-
-        center = np.array([0.5*(xmin + xmax), 0.5*(ymin + ymax)])
-
-        max_coord = max(abs(xmin), abs(xmax), abs(ymin), abs(ymax))
-        xmax = max_coord
-        ymax = max_coord
-        xmin = -max_coord
-        ymin = -max_coord
-
-        extent = [xmin, xmax, ymin, ymax]
-        
-        if self.extent is None: self.extent = extent
-        else:
-            for i, (current, new) in enumerate(zip(self.extent, extent)):
-                if current is None: self.extent[i] = new
+    def prepare_output(self):
+        """
+        Perform all necessary transformations to the particle data in
+        preparation for :func:`~.get`.
+        """
+        import copy
+        import starsmashertools.preferences
+        import warnings
 
         if self.output.simulation['ncooling'] in [2, 3]:
             T_dust_min, T_dust = starsmashertools.preferences.get_default(
@@ -142,40 +214,47 @@ class FluxFinder(object):
                 'FluxFinder', 'tau particle cutoff',
                 throw_error = True,
             )
-            c_speed = 2.99792458e10
-            a_const = 7.565767e-15
             
             self.output.mask(self.output['tau'] >= tau_particle_cutoff)
             
-            units = self.output.simulation.units
+            T_dust_min /= self._temperature_unit # code units
+            T_dust /= self._temperature_unit # code units
+            kappa_dust /= self._opacity_unit # code units
             
             m = self.output['am'] # msun
             h = self.output['hp'] # rsun
-            rho = self.output['rho'] * float(units['rho']) # cgs
-            u = self.output['u'] * float(units['u']) # cgs
-            uraddot_emerg = self.output['dEemergdt'] * float(units['dEemergdt']) # cgs
-            uraddot_diff = self.output['dEdiffdt'] * float(units['dEdiffdt']) # cgs
+            rho = self.output['rho'] # code units
+            u = self.output['u'] # code units
+            uraddot_emerg = self.output['dEemergdt'] # code units
+            uraddot_diff = self.output['dEdiffdt'] # code units
             if self.output.simulation['ncooling'] == 2:
-                uraddotcool = self.output['uraddot'] * float(units['uraddot']) # cgs
+                uraddotcool = self.output['uraddot'] # code units
             elif self.output.simulation['ncooling'] == 3:
-                uraddotcool = self.output['uraddotcool'] * float(units['uraddotcool']) # cgs
+                uraddotcool = self.output['uraddotcool'] # code units
             else:
                 raise NotImplementedError("FluxFinder can only work for ncooling = 2 or 3, not ncooling = %d" % self.output.simulation['ncooling'])
             
-            kappa = self.output['popacity'] * float(units['popacity']) # cgs
-            tau = self.output['tau'] # code units
-            temp = self.output['temperatures'] # cgs
-            
+            temp = self.output['temperatures'] # code units
             flux = np.zeros(m.shape)
+            rloc = np.full(m.shape, np.nan)
 
-            rloc = np.full(tau.shape, np.nan)
+            # Set rlocs first
+            idx = uraddot_emerg < uraddot_diff
+            if np.any(idx):
+                rloc[idx] = 2. * h[idx]
+            rloc[~idx] = pow(m[~idx]/(4/3.*np.pi)/rho[~idx],0.33333) # code units
+
+            # tau = kappa*rho*ds, where ds = radius of particle
+            tau = self.output['tau']
+            kappa = self.output['popacity'] # code units
+            #kappa = tau / (rho * rloc)
 
             idx = np.logical_and(
                 np.logical_and(temp < T_dust, temp > T_dust_min),
                 kappa < kappa_dust,
             )
             if np.any(idx):
-                kappa[idx] = kappa_dust # cgs
+                kappa[idx] = kappa_dust # code units
 
             self.flux_watch_idx = np.array([])
 
@@ -183,76 +262,76 @@ class FluxFinder(object):
             if np.any(idx):
                 #"""
                 # this particle is considered in "fluffy" approximation
-                rloc[idx]=2.*h[idx] # rsun
-                rho[idx]=m[idx]*float(units.mass)/(rloc[idx]*float(units.length))**3
-                tau[idx]=rho[idx]*kappa[idx]*rloc[idx]*float(units.length)#*4./3.
-                flux_em = uraddot_emerg[idx]/(4.*np.pi*(rloc[idx]*float(units.length))**2) # cgs
+                #rloc[idx]=2.*h[idx] # rsun
+                rho[idx]=m[idx]/(4./3. * np.pi * rloc[idx]**3) # code units
+                tau[idx]=rho[idx]*kappa[idx]*rloc[idx] # code units
+                flux_em = uraddot_emerg[idx]/(4.*np.pi*rloc[idx]**2) # code units
                 flux[idx]=flux_em
                 #print("Treat fluffy %d %f %f %f %f %f"%(i, kappa[i], temp[i], tau[i], flux[i], rloc[i]))          
                 #"""
                 
                 """
                 rloc[idx] = 2 * h[idx] # rsun
-                rho[idx] = m[idx]*float(units.mass) / (rloc[idx]*float(units.length))**3 # cgs
-                tau[idx] = rho[idx] * kappa[idx] * rloc[idx] * float(units.length) # cgs
-                flux_em = uraddot_emerg[idx] / (4 * np.pi * (rloc[idx]*float(units.length))**2) # cgs
-                flux[idx] = flux_em # cgs
+                rho[idx] = m[idx] / rloc[idx]**3 # code units
+                tau[idx] = rho[idx] * kappa[idx] * rloc[idx] # code units
+                flux_em = uraddot_emerg[idx] / (4 * np.pi * rloc[idx]**2) # code units
+                flux[idx] = flux_em # code units
                 """
             if np.any(~idx):
                 #"""
                 # this particle is considered in "dense" approximation
-                rloc[~idx]=pow(m[~idx]*float(units.mass)/(4/3.*np.pi)/rho[~idx],0.33333)/float(units.length) # rsun
-                tau[~idx]=rho[~idx]*kappa[~idx]*rloc[~idx]*float(units.length)#*4./3. # cgs
-                ad      = 4.*np.pi*(rloc[~idx]*float(units.length))**2 # cgs
-                ad_cool = 2.*np.pi*(rloc[~idx]*float(units.length))**2 # cgs
-                flux_em = uraddot_emerg[~idx]/ad # cgs
-                dd=c_speed/kappa[~idx]/rho[~idx] # cgs
-                tdiffloc=kappa[~idx]*rho[~idx]*(rloc[~idx]*float(units.length))**2/c_speed
-                gradt=a_const*temp[~idx]**4/(rloc[~idx] * float(units.length)) # cgs
-                dedt=ad/3.*dd*gradt/(m[~idx] * float(units.mass)) # cgs
-                flux[~idx]=dedt*m[~idx]*float(units.mass)/ad # cgs
-                flux_cool=-uraddotcool[~idx]*m[~idx]*float(units.mass)/ad # cgs
-                ratio = -uraddotcool[~idx]/dedt*12.
+                #rloc[~idx]=pow(m[~idx]/(4/3.*np.pi)/rho[~idx],0.33333) # code units
+                tau[~idx]=rho[~idx]*kappa[~idx]*rloc[~idx] # code units
+                ad      = 4.*np.pi*rloc[~idx]**2 # code units
+                ad_cool = 2.*np.pi*rloc[~idx]**2 # code units
+                flux_em = uraddot_emerg[~idx]/ad # code units
+                dd=c_speed/kappa[~idx]/rho[~idx] # code units
+                tdiffloc=kappa[~idx]*rho[~idx]*rloc[~idx]**2/self._c # code units
+                gradt=self._a*temp[~idx]**4/rloc[~idx] # code units
+                dedt=ad/3.*dd*gradt/m[~idx] # code units
+                flux[~idx]=dedt*m[~idx]/ad # code units
+                flux_cool=-uraddotcool[~idx]*m[~idx]/ad # code units
+                ratio = -uraddotcool[~idx]/dedt*12. # code units
 
                 idx_ratio = ratio <= 6
-                print(sum(idx_ratio), self.output['ntot'], self.output['ntot'] - sum(idx_ratio))
+                #print(sum(idx_ratio), self.output['ntot'], self.output['ntot'] - sum(idx_ratio))
                 if np.any(idx_ratio): # all what is cooled is to goes through the outer hemisphere
-                    flux[~idx][idx_ratio] = -uraddotcool[~idx][idx_ratio] * m[~idx][idx_ratio] * float(units.mass) / ad_cool[idx_ratio] # cgs
+                    flux[~idx][idx_ratio] = -uraddotcool[~idx][idx_ratio] * m[~idx][idx_ratio] / ad_cool[idx_ratio] # code units
                 if np.any(~idx_ratio): # the particle is getting cooled also to the back, but cools at max through the outer hemisphere
-                    flux[~idx][~idx_ratio]=dedt[~idx_ratio]*m[idx][~idx_ratio]*float(units.mass)/ad[~idx_ratio] # cgs
+                    flux[~idx][~idx_ratio]=dedt[~idx_ratio]*m[idx][~idx_ratio]/ad[~idx_ratio] # code units
                 #"""
                 
                 """
-                rloc[~idx] = (m[~idx]*float(units.mass) / (4/3.*np.pi * rho[~idx]))**(0.33333) / float(units.length) # rsun
-                tau[~idx] = rho[~idx] * kappa[~idx] * rloc[~idx] * float(units.length) # cgs
-                flux_em = uraddot_emerg[~idx]/(4 * np.pi * (rloc[~idx] * float(units.length))**2) # cgs
-                ad = 4 * 3.1415 * (rloc[~idx]*float(units.length))**2 # cgs
+                rloc[~idx] = (m[~idx] / (4/3.*np.pi * rho[~idx]))**(0.33333) # rsun
+                tau[~idx] = rho[~idx] * kappa[~idx] * rloc[~idx] # code units
+                flux_em = uraddot_emerg[~idx]/(4 * np.pi * rloc[~idx]**2) # code units
+                ad = 4 * 3.1415 * rloc[~idx]**2 # code units
                 
                 warnings.filterwarnings(action = 'ignore')
-                dd = c_speed / (kappa[~idx] * rho[~idx]) # cgs
+                dd = self._c / (kappa[~idx] * rho[~idx]) # code units
                 warnings.resetwarnings()
                 
-                tdiffloc = kappa[~idx] * rho[~idx] * (rloc[~idx] * float(units.length))**2 / c_speed # cgs
-                gradt = a_const * temp[~idx]**4 / (rloc[~idx] * float(units.length)) # cgs
+                tdiffloc = kappa[~idx] * rho[~idx] * rloc[~idx]**2 / self._c # code units
+                gradt = self._a * temp[~idx]**4 / rloc[~idx] # code units
                 
                 warnings.filterwarnings(action = 'ignore')
-                dedt = ad/3.*dd*gradt/(m[~idx] * float(units.mass)) # cgs
+                dedt = ad/3.*dd*gradt/m[~idx] # code units
                 warnings.resetwarnings()
                 
-                flux[~idx]=dedt*m[~idx]*float(units.mass)/(4 * np.pi * (rloc[~idx]*float(units.length))**2) # cgs
+                flux[~idx]=dedt*m[~idx]/(4 * np.pi * rloc[~idx]**2) # code units
                 """
                 
-                flux[~idx] = np.minimum(flux[~idx], flux_em) # cgs
+                flux[~idx] = np.minimum(flux[~idx], flux_em) # code units
                 
                 
                 self.flux_watch_idx = np.arange(len(self.output['x']))[~idx]
                 
-            self.output['opacity'] = kappa # cgs
+            self.output['opacity'] = kappa # code units
             self.output['radius'] = rloc # rsun
-            self.output['rho'] = rho # cgs
-            self.output['tau'] = tau # cgs
-            #self.output['flux'] = np.abs(self.output['uraddotcool']) * float(self.output.simulation.units['uraddotcool']) * self.output['am'] * float(self.output.simulation.units['am']) / (4 * np.pi * (2*self.output['hp'] * float(self.output.simulation.units['hp']))**2) # cgs
-            self.output['flux'] = flux # cgs
+            self.output['rho'] = rho # code units
+            self.output['tau'] = tau # code units
+            #self.output['flux'] = np.abs(self.output['uraddotcool']) * self.output['am'] / (4 * np.pi * (2*self.output['hp'])**2) # code units
+            self.output['flux'] = flux # code units
 
     def get_particle_flux(
             self,
@@ -262,28 +341,22 @@ class FluxFinder(object):
             ypos, # rsun
             zpos, # rsun
     ):
-        import warnings
+        #import warnings
 
-        return self.output['flux'][ID]
-        
+        return self.output['flux'][ID] # code units
+        """
         # These IDs might need their fluxes recalculated specifically for each
         # ray
         if ID in self.flux_watch_idx:
             # We will convert to cgs at the end, because that is what
             # StarSmasher does.
-            c_speed = 2.99792458e10 # cgs
-            a_const = 7.565767e-15 # cgs
-            
-            #crad_codeunits = 686.442313885692 # code units
-            #arad_codeunits = 6.723267115825734e-31 # code units
-            units = self.output.simulation.units
-            
-            Ti = self.output['temperatures'][ID] # cgs
-            rhoi = self.output['rho'][ID] # cgs
-            ui = self.output['u'][ID] * float(units['u']) # cgs
-            mi = self.output['am'][ID] * float(units['am']) # cgs
+        
+            Ti = self.output['temperatures'][ID] # code units
+            rhoi = self.output['rho'][ID] # code units
+            ui = self.output['u'][ID] # code units
+            mi = self.output['am'][ID] # code units
             ri = self.output['radius'][ID] # rsun
-            kappai = self.output['opacity'][ID] # cgs
+            kappai = self.output['opacity'][ID] # code units
 
             # Find the closest particle to the surface of particle i at our
             # current location
@@ -319,43 +392,44 @@ class FluxFinder(object):
 
                 drij = np.sqrt(dxij * dxij + dyij * dyij + dzij * dzij) # rsun
 
-                Uradi = a_const * Ti**4 # cgs
-                Uradj = a_const * Tj**4 # cgs
+                Uradi = self._a * Ti**4 # code units
+                Uradj = self._a * Tj**4 # code units
                 
                 # Similar to dense.f, but with an added negative sign, because
                 # dEdiffdt gets multiplied by a negative sign later, but we
                 # don't do that in this code, so we account for it here.
-                gradt = (Uradi - Uradj) / (drij * float(units.length)) # cgs
+                gradt = (Uradi - Uradj) / drij # code units
 
                 # Uncomment to get fluxes exactly the same as the originals
                 # (sanity check). You also need to comment out
                 # "if Tj >= Ti: return 0." above.
-                #gradt = a_const * Ti**4 / (ri * float(units.length)) # cgs
+                #gradt = self._a * Ti**4 / ri # code units
             else:
-                return self.output['flux'][ID] # cgs
+                return self.output['flux'][ID] # code units
                 
                 
-            dEemergdt = self.output['dEemergdt'][ID] * float(units['dEemergdt']) # cgs
-            flux_em = dEemergdt/(4 * np.pi * (ri * float(units.length))**2) # cgs
+            dEemergdt = self.output['dEemergdt'][ID] # code units
+            flux_em = dEemergdt/(4 * np.pi * ri**2) # code units
 
-            ad = 4 * 3.1415 * (ri * float(units.length))**2 # cgs
+            ad = 4 * 3.1415 * ri**2 # code units
             warnings.filterwarnings(action = 'ignore')
-            dd = c_speed / (kappai * rhoi) # cgs
+            dd = c_speed / (kappai * rhoi) # code units
             warnings.resetwarnings()
-            dedt = ad/3.*dd*gradt/mi # cgs
+            dedt = ad/3.*dd*gradt/mi # code units
 
             # This time the flux is being emitted on the ray toward the
             # observer, so the area associated with the emission is the area of
             # a single pixel on the image. This gives the "apparent" flux.
-            Fray = dedt * mi / (self.dx * self.dy * float(units.length)**2) # cgs
+            Fray = dedt * mi / (self.dx * self.dy) # code units
 
-            Fray = min(Fray, flux_em) # cgs
-            return Fray # cgs
+            Fray = min(Fray, flux_em) # code units
+            return Fray # code units
         
         # If this isn't a particle to recalculate the temperature gradient for,
         # just return the flux we already had
-        return self.output['flux'][ID] # cgs
-    
+        return self.output['flux'][ID] # code units
+        """
+        
     def get_flux(
             self,
             IDs : np.ndarray, # These are the interacting IDs
@@ -364,12 +438,10 @@ class FluxFinder(object):
             ypos, # rsun
             z, # rsun
             r2, # rsun
-            kapparho, # cgs
-            flux, # cgs
+            kapparho, # code units
+            flux, # code units
             flux_weighted_averages = [],
     ):
-        units = self.output.simulation.units
-        
         total_flux = 0.
         weighted_averages = [0.] * len(flux_weighted_averages)
         total_attenuation = 0.
@@ -400,7 +472,6 @@ class FluxFinder(object):
                 # Get the distances that the ray travels through the kernels of
                 # the interacting particles
                 ds = front[idx_sorted[i + 1:]] - _max # rsun
-                ds *= float(units.length) # cgs
                 
                 # Obtain the total optical depth of the ray. We do a dot product
                 # here because each contribution to tau is kappa*rho*ds, and
@@ -425,80 +496,76 @@ class FluxFinder(object):
                         xpos, # rsun
                         ypos, # rsun
                         front[idx_sorted[i]], # rsun
-                    ) # cgs
+                    ) # code units
+                    particle_flux *= self._flux_units # cgs
                     f = particle_flux * exptau # cgs
                     #f = flux[idx_sorted[i]] * exptau
                     
                     total_flux += f # cgs
-                    total_attenuation += particle_flux - f
-                    total_unattenuated += particle_flux
+                    total_attenuation += particle_flux - f # cgs
+                    total_unattenuated += particle_flux # cgs
                     
                     for _i, val in enumerate(flux_weighted_averages):
-                        weighted_averages[_i] += val[idx_sorted[i]] * f
+                        weighted_averages[_i] += val[idx_sorted[i]] * f # cgs
 
                     self._contributors[IDs[idx_sorted[i]]] = True
-                    #cID = IDs[idx_sorted[i]]
-                    #self.contributing_particle_IDs = list(set(
-                    #    self.contributing_particle_IDs + [cID]
-                    #))
-                    #if cID not in self.contributing_particle_IDs:
-                    #    self.contributing_particle_IDs += [cID]
         
         # Add the surface particle's flux. The temperature gradient is correct
         # here.
-        f = flux[idx_sorted[-1]] # cgs
+        f = flux[idx_sorted[-1]] * self._flux_units # cgs
         for _i, val in enumerate(flux_weighted_averages):
-            weighted_averages[_i] += val[idx_sorted[-1]] * f
+            weighted_averages[_i] += val[idx_sorted[-1]] * f # cgs
         total_flux += f # cgs
         self._contributors[IDs[idx_sorted[-1]]] = True
-        #cID = IDs[idx_sorted[-1]]
-        #self.contributing_particle_IDs = list(set(
-        #    self.contributing_particle_IDs + [cID]
-        #))
-        #if cID not in self.contributing_particle_IDs:
-        #    self.contributing_particle_IDs += [cID]
         
-        return total_flux, weighted_averages, total_attenuation, total_unattenuated
+        return total_flux, weighted_averages, total_attenuation, total_unattenuated, IDs[idx_sorted[-1]]
 
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
-    def get(self):
+    def get(
+            self,
+            parallel : bool = False,
+    ):
         """
         Obtain the radiative flux using the current settings.
 
+        Other Parameters
+        ----------------
+        parallel : bool, default = False
+            If `True`, the computation is done in parallel on the CPU. The task
+            which would be computed at each pixel of the image is delegated to
+            multiple processes.
+
         Returns
         -------
-        np.ndarray
-            A 2D array of flux values 
+        :class:`~flux.fluxfinder.FluxFinder.Result`
+            The result.
         """
-        self.prepare_output()
-        
         flux = np.zeros(np.asarray(self.resolution) + 1)
         attenuation = np.zeros(flux.shape)
         unattenuated = np.zeros(flux.shape)
-        
-        xmin, xmax, ymin, ymax = self.extent
-        
-        self.dx = (xmax - xmin) / self.resolution[0] # rsun
-        self.dy = (ymax - ymin) / self.resolution[1] # rsun
-        
+        first_particle = np.full(flux.shape, -1, dtype = int)
+
         x = self.output['x'] # rsun
         y = self.output['y'] # rsun
         z = self.output['z'] # rsun
         rloc = self.output['radius'] # rsun
-        pflux = self.output['flux'] # cgs
-        tau = self.output['tau'] # cgs
+        pflux = np.zeros(self.output['ntot'])
+        if 'flux' in self.output.keys():
+            pflux = self.output['flux'] # code units
+        tau = self.output['tau'] # code units
         
         i_array = np.arange(self.resolution[0])
         j_array = np.arange(self.resolution[1])
         
-        xlocs = xmin + self.dx * i_array # rsun
-        ylocs = ymin + self.dy * j_array # rsun
+        xlocs = self.extent[0] + self.dx * i_array # rsun
+        ylocs = self.extent[2] + self.dy * j_array # rsun
         
         deltax2_array = (xlocs[:,None] - x)**2 # rsun
         
         rloc2 = rloc * rloc # rsun
 
-        kapparho = self.output['opacity'] * self.output['rho'] # cgs
+        kapparho = self.output['opacity'] * self.output['rho'] # code units
 
         _IDs = np.arange(len(kapparho)) # Not the actual particle IDs
         IDs = self.output['ID'] # The actual particle IDs
@@ -506,7 +573,13 @@ class FluxFinder(object):
         weighted_averages = []
         for key in self.flux_weighted_averages:
             weighted_averages += [np.full(flux.shape, np.nan)]
-        
+            
+        total = len(i_array) * len(j_array)
+        current = 0
+
+        indices = []
+        all_arguments = []
+        all_keywords = []
         for i, ii in enumerate(i_array):
             # Determine which particles will interact with the cells in this
             # column (x position)
@@ -518,7 +591,6 @@ class FluxFinder(object):
             y_interacting = y[interacting_x] # rsun
             
             deltax2 = deltax2_array[i][interacting_x] # rsun
-            
             deltay2_array = (ylocs[:,None] - y_interacting)**2 # rsun
             
             for j, jj in enumerate(j_array):
@@ -529,21 +601,56 @@ class FluxFinder(object):
 
                 interacting = interacting_IDs[interacting_xy]
                 
-                flux[ii, jj], averages, attenuation[ii, jj], unattenuated[ii,jj] = self.get_flux(
+                args = (
                     _IDs[interacting],
                     drprime2[interacting_xy], # rsun
                     xlocs[ii], # rsun
                     ylocs[jj], # rsun
                     z[interacting], # rsun
                     rloc2[interacting], # rsun
-                    kapparho[interacting], # cgs
-                    pflux[interacting], # cgs
-                    flux_weighted_averages = [arr[interacting] for arr in self.flux_weighted_averages],
+                    kapparho[interacting], # code units
+                    pflux[interacting], # code units
                 )
-                
+                kwargs = {
+                    'flux_weighted_averages' : [arr[interacting] for arr in self.flux_weighted_averages],
+                }
+
+                indices += [[ii, jj]]
+                all_arguments += [args]
+                all_keywords += [kwargs]
+
+
+        increment = 1. / float(len(all_arguments))
+        progress = 0.
+        self.print_progress(progress)
+        if not parallel:
+            for (ii, jj), args, kwargs in zip(indices, all_arguments, all_keywords):
+                flux[ii, jj], averages, attenuation[ii, jj], unattenuated[ii,jj], first_particle[ii,jj] = self.get_flux(*args, **kwargs)
+                for i, val in enumerate(averages):
+                    weighted_averages[i][ii, jj] = val
+                progress += increment
+                self.print_progress(progress)
+        else:
+            import starsmashertools.helpers.asynchronous
+            
+            parallel = starsmashertools.helpers.asynchronous.ParallelFunction(
+                self.get_flux,
+                args = all_arguments,
+                kwargs = all_keywords,
+                daemon = True,
+            )
+            
+            parallel.do(
+                0.25,
+                lambda parallel=parallel: self.print_progress(parallel.get_progress()),
+            )
+            outputs = parallel.get_output()
+            for index, result in zip(indices, outputs):
+                ii, jj = index
+                flux[ii, jj], averages, attenuation[ii, jj], unattenuated[ii,jj], first_particle[ii,jj] = result
                 for _i, val in enumerate(averages):
                     weighted_averages[_i][ii, jj] = val
-
+            
         # Store a list of all the contributing particles
         self.contributing_particle_IDs = np.where(self._contributors)[0]
         
@@ -554,11 +661,14 @@ class FluxFinder(object):
                 weighted_averages[i][idx] /= flux[idx]
                 weighted_averages[i][~idx] = 0
 
+        self.print_progress(1.)
+        
         return FluxFinder.Result(
             flux, # cgs
-            weighted_averages,
-            attenuation,
-            unattenuated,
+            weighted_averages, # cgs
+            attenuation, # cgs
+            unattenuated, # cgs
+            first_particle,
             fluxfinder = self,
         )
 
@@ -567,6 +677,15 @@ class FluxFinder(object):
 
 
     class Result(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
+        plot_keys = [
+            'flux',
+            'log_flux',
+            'attenuation',
+            'log_attenuation',
+            'unattenuated',
+            'log_unattenuated',
+        ]
+        
         class FileFormatError(Exception, object): pass
         
         def __init__(
@@ -575,6 +694,7 @@ class FluxFinder(object):
                 weighted_averages : np.ndarray,
                 attenuation : np.ndarray,
                 unattenuated : np.ndarray,
+                first_particle : np.ndarray,
                 fluxfinder = None,
                 output_file = None,
                 contributing_particle_IDs = None,
@@ -609,6 +729,7 @@ class FluxFinder(object):
                 'log_unattenuated' : copy.deepcopy(log_unattenuated),
                 'weighted_averages' : copy.deepcopy(weighted_averages),
                 'log_weighted_averages' : copy.deepcopy(log_weighted_averages),
+                'first_particle' : copy.deepcopy(first_particle),
                 'contributing_particle_IDs' : contributing_particle_IDs,
                 'extent' : extent,
                 'dx' : (extent[1] - extent[0]) / flux.shape[0],
@@ -629,6 +750,90 @@ class FluxFinder(object):
 
         @property
         def shape(self): return self.flux.shape
+
+        @staticmethod
+        def from_json(obj):
+            return FluxFinder.Result(
+                obj['flux'],
+                obj['weighted_averages'],
+                obj['attenuation'],
+                obj['unattenuated'],
+                obj['first_particle'],
+                fluxfinder = None,
+                output_file = obj['output_file'],
+                contributing_particle_IDs = obj['contributing_particle_IDs'],
+                extent = obj['extent'],
+                tau_ray_max = obj['tau_ray_max'],
+                viewing_angle = obj['viewing_angle'],
+            )
+
+        @starsmashertools.helpers.argumentenforcer.enforcetypes
+        @api
+        def plot(
+                self,
+                ax : matplotlib.axes.Axes,
+                which : str | np.ndarray = 'log_flux',
+                interpolation : str = 'none',
+                origin : str = 'lower',
+                extent : list | tuple | np.ndarray | type(None) = None,
+                **kwargs
+        ):
+            """
+            Use Matplotlib's ``imshow`` method on the given axes to create a
+            plot.
+            
+            Parameters
+            ----------
+            ax : matplotlib.axes.Axes
+                The Matplotlib axes to create the image on.
+            
+            Other Parameters
+            ----------------
+            which : str, np.ndarray, default = 'log_flux'
+                If a ``str`` type is given, it must be one of the keys in
+                :py:attr:`~fluxfinder.FluxFinder.Result.plot_keys`. If a
+                ``np.ndarray`` is given it must be a 2D array supported by the
+                ``imshow`` function.
+
+            interpolation : str, default = 'none'
+                Passed directly to ``imshow``. Use 'none' to minimize distortion
+                in the image.
+
+            origin : str, default = 'lower'
+                Determines the orientation of the image, which depends on how
+                data is stored in the flux array.
+
+            extent : list, tuple, np.ndarray, None, default = None
+                If `None` then ``Result['extent']`` will be used. Otherwise, it
+                should be a Matplotlib extent collection
+                (``[xmin, xmax, ymin, ymax]``, for example).
+
+            **kwargs
+                Other keyword arguments are passed directly to ``imshow``.
+
+            Returns
+            -------
+            matplotlib.image.AxesImage
+                The return value from ``imshow``.
+            """
+
+            starsmashertools.helpers.argumentenforcer.enforcevalues({
+                'which' : FluxFinder.Result.plot_keys,
+            })
+
+            if isinstance(which, str): data = self[which]
+            else: data = which
+
+            if extent is None: extent = self['extent']
+            
+            return ax.imshow(
+                data.T,
+                interpolation = interpolation,
+                origin = origin,
+                extent = extent,
+                **kwargs
+            )
+        
         
         @starsmashertools.helpers.argumentenforcer.enforcetypes
         @api
@@ -666,7 +871,18 @@ class FluxFinder(object):
             import starsmashertools.helpers.jsonfile
             import copy
 
+            if filename is None:
+                basename = starsmashertools.helpers.path.basename(
+                    self.output_file,
+                )
+                filename = starsmashertools.helpers.path.join(
+                    starsmashertools.helpers.path.getcwd(),
+                    basename + '.json',
+                )
 
+            starsmashertools.helpers.jsonfile.save(filename, self)
+
+            """
             if filename is None:
                 basename = starsmashertools.helpers.path.basename(
                     self.output_file,
@@ -721,6 +937,7 @@ class FluxFinder(object):
                         f.write((label + ': ' + data_format + '\n') % item)
                     f.write('Nx: %d\n' % flux.shape[0])
                     f.write('Ny: %d\n' % flux.shape[1])
+                    f.write(('tau_ray_max: ' + data_format + '\n') % self.tau_ray_max)
 
                     f.write('\n')
                     write_array(f, flux, data_format, 'Flux')
@@ -736,20 +953,22 @@ class FluxFinder(object):
 
                     f.write('\ncontributing_particle_IDs:\n')
 
-                    maxID = max(self.contributing_particle_IDs)
-                    length = len(str(maxID))
-                    fmt = ' %' + str(length) + 'd'
-                    i = 0
-                    for ID in self.contributing_particle_IDs:
-                        f.write(fmt % ID)
-                        i += 1
-                        if i == 12:
-                            f.write('\n')
-                            i = 0
+                    if self.contributing_particle_IDs.size > 0:
+                        maxID = max(self.contributing_particle_IDs)
+                        length = len(str(maxID))
+                        fmt = ' %' + str(length) + 'd'
+                        i = 0
+                        for ID in self.contributing_particle_IDs:
+                            f.write(fmt % ID)
+                            i += 1
+                            if i == 12:
+                                f.write('\n')
+                                i = 0
             except:
                 if starsmashertools.helpers.path.exists(filename):
                     starsmashertools.helpers.path.remove(filename)
                 raise
+            """
                 
         @staticmethod
         @starsmashertools.helpers.argumentenforcer.enforcetypes
@@ -760,7 +979,13 @@ class FluxFinder(object):
             import starsmashertools.helpers.path
             import starsmashertools.helpers.jsonfile
             import starsmashertools.helpers.string
+
+            obj = starsmashertools.helpers.jsonfile.load(filename)
+            return FluxFinder.Result.from_json(obj)
+        
+                
             
+            """
             if (filename.endswith('.json') or
                 filename.endswith('.json.gz') or
                 filename.endswith('.json.zip')):
@@ -794,6 +1019,7 @@ class FluxFinder(object):
             viewing_labels = ['xangle', 'yangle', 'zangle']
             extent = [None, None, None, None]
             viewing_angle = [None, None, None]
+            tau_ray_max = None
             with open(filename, 'r') as f:
                 try:
                     output_file = f.readline().strip()
@@ -883,3 +1109,4 @@ class FluxFinder(object):
                 tau_ray_max = tau_ray_max,
                 viewing_angle = viewing_angle,
             )
+            """

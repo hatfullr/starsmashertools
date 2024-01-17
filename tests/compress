@@ -36,6 +36,9 @@ def get_to_compress():
     if os.path.isfile(gitignore):
         gitignore_patterns = get_gitignore_patterns(gitignore)
 
+    #print(gitignore_patterns)
+    #quit()
+    
     # Only compress files that are in the directories of the current working
     # directory
     directories = []
@@ -48,7 +51,7 @@ def get_to_compress():
                 if fnmatch.fnmatch(name, pattern): break
             else: # Doesn't match any gitignore pattern
                 directories += [path]
-
+    
     # Find all the files to compress
     files = []
     for directory in directories:

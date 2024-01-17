@@ -72,3 +72,80 @@ def linear_interpolate(x, y, x0):
         _y1 = y[right]
         ret[i] = (_y0 * (_x1 - _x) + _y1 * (_x - _x0)) / (_x1 - _x0)
     return ret
+
+
+@api
+def rotate(
+        x : list | tuple | np.ndarray,
+        y : list | tuple | np.ndarray,
+        z : list | tuple | np.ndarray,
+        xangle : float | int | np.float_ | np.integer = 0,
+        yangle : float | int | np.float_ | np.integer = 0,
+        zangle : float | int | np.float_ | np.integer = 0,
+):
+    """
+    Rotate the given x,y,z points using an Euler rotation.
+
+    An Euler rotation can be understood as follows. Imagine the x, y, and z axes
+    as wooden dowels. First the z-axis dowel is rotated `zangle` degrees
+    clockwise, then the y-axis dowel is rotated `yangle` degrees clockwise, and 
+    finally the x-axis dowel is rotated `xangle` degrees clockwise.
+
+    Parameters
+    ----------
+    x : list, tuple, np.ndarray
+        The x components.
+    
+    y : list, tuple, np.ndarray
+        The y components.
+
+    z : list, tuple, np.ndarray
+        The z components.
+
+    xangle : float, int, np.float_, np.integer, default = 0
+        The x component of an Euler rotation in degrees.
+
+    yangle : float, int, np.float_, np.integer, default = 0
+        The y component of an Euler rotation in degrees.
+
+    zangle : float, int, np.float_, np.integer, default = 0
+        The z component of an Euler rotation in degrees. This can be thought of
+        as equivalent to azimuthal angle "phi".
+
+    Returns
+    -------
+    x, y, z
+        A copy of the x, y, z components which were given as inputs, rotated
+        by `xangle`, `yangle`, and `zangle`.
+    """
+    import copy
+    import numpy as np
+
+    x = copy.deepcopy(x)
+    y = copy.deepcopy(y)
+    z = copy.deepcopy(z)
+    
+    xanglerad = float(xangle) / 180. * np.pi
+    yanglerad = float(yangle) / 180. * np.pi
+    zanglerad = float(zangle) / 180. * np.pi
+
+    if zangle != 0: # Rotate about z
+        rold = np.sqrt(x * x + y * y)
+        phi = np.arctan2(y, x)
+        phi -= zanglerad
+        x = rold * np.cos(phi)
+        y = rold * np.sin(phi)
+    if yangle != 0: # Rotate about y
+        rold = np.sqrt(z * z + x * x)
+        phi = np.arctan2(z, x)
+        phi -= yanglerad
+        z = rold * np.sin(phi)
+        x = rold * np.cos(phi)
+    if xangle != 0: # Rotate about x
+        rold = np.sqrt(y * y + z * z)
+        phi = np.arctan2(z, y)
+        phi -= xanglerad
+        y = rold * np.cos(phi)
+        z = rold * np.sin(phi)
+
+    return x, y, z

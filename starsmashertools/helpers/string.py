@@ -2,6 +2,58 @@
 import re
 import starsmashertools.helpers.file
 import starsmashertools.helpers.argumentenforcer
+import numpy as np
+
+progress_printers = []
+
+@starsmashertools.helpers.argumentenforcer.enforcetypes
+def get_progress_string(
+        progress : float | np.float_,
+        fmt : str = 'progress = %5.1f%%',
+        console : bool = True,
+):
+    """
+    Obtain a progress metric, which varies from 0 to 100.
+
+    Parameters
+    ----------
+    progress : float, np.float_
+        The metric to include in the resulting string.
+
+    Other Parameters
+    ----------------
+    fmt : str, default = 'progress %4.2f%%'
+        The format to use when building the string.
+    
+    console : bool, default = True
+        If `True`, the resulting string will be formatted for console output in
+        such a way that if the result of this method was printed to the console
+        previously, that previous text will be overwritten.
+
+    Returns
+    -------
+    str
+        A string which is formatted using ``fmt`` and the provided ``progress``
+        value.
+    """
+    global progress_printers
+    import inspect
+    frame = inspect.currentframe().f_back
+    code = frame.f_code
+    
+    result = fmt % progress
+
+    # Only print the first progress line one time.
+    if console and code in progress_printers:
+        # \033[F moves up 1 line and goes to the beginning of the line
+        # Then we clear our previous message with ' '*len(fmt % 100.), which is
+        # the expected maximum string length.
+        # \r goes back to the beginning of the line
+        result = '\033[F' + ' '*len(fmt % 100.) + '\r' + result
+    else:
+        progress_printers += [code]
+    return result
+    
 
 @starsmashertools.helpers.argumentenforcer.enforcetypes
 def find_all_indices(

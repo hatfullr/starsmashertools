@@ -2,6 +2,7 @@ import numpy as np
 import starsmashertools.helpers.readonlydict
 import starsmashertools.helpers.argumentenforcer
 from starsmashertools.helpers.apidecorator import api
+import numpy as np
 
 
 
@@ -800,6 +801,9 @@ class Units(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
 
     @property
     def mass(self): return Unit(self.simulation['munit'], 'g')
+
+    @property
+    def temperature(self): return Unit(1., 'K')
         
     @property
     def time(self): return (self.length**3 / (gravconst * self.mass))**0.5
@@ -840,4 +844,20 @@ class Units(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
     @property
     def specificluminosity(self): return self.luminosity / self.mass
 
+    @property
+    def c(self): return 299792458 * 100 / self.length * self.time
+
+    @property
+    def planck(self): return 6.62607015e-27 / (self.energy * self.time)
+
+    @property
+    def planck_reduced(self): return self.planck / (2 * np.pi)
+
+    @property
+    def boltzmann(self): return 1.380649e-16 / self.energy * self.temperature
     
+    @property
+    def sigmaSB(self): return 2 * np.pi**5 * self.boltzmann**4 / (15 * self.c**2 * self.planck**3)
+    
+    @property
+    def a(self): return 4 * self.sigmaSB / self.c

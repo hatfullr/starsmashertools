@@ -219,7 +219,7 @@ def _get_variables_in_context_from_dict(name_list):
     return ret
 
 class ArgumentTypeError(TypeError, object):
-    __module__ = TypeError.__module__
+    #__module__ = TypeError.__module__
     def __init__(self, *args, given_name=None, given_type=None, expected_types=None, **kwargs):
 
         check = False
@@ -266,12 +266,17 @@ class ArgumentTypeError(TypeError, object):
         else:
             return "'%s.%s'" % (module, qualname)
 
+    #def __getstate__(self):
+    #    return self.__dict__
+    #def __setstate__(self, obj):
+    #    self.__dict__.update(obj)
+
 
 
 
         
 class ArgumentValueError(ValueError, object):
-    __module__ = ValueError.__module__
+    #__module__ = ValueError.__module__
     def __init__(self, *args, given_name=None, given_value=None, expected_values=None, **kwargs):
         if not args and None not in [given_name, given_value, expected_values]:
             if not hasattr(expected_values, '__iter__') or isinstance(expected_values, str):
@@ -292,8 +297,8 @@ class ArgumentValueError(ValueError, object):
             ),)
         super(ArgumentValueError, self).__init__(*args, **kwargs)
 
-    def __getstate__(self, *args, **kwargs):
-        return self.__dict__
+    #def __getstate__(self, *args, **kwargs):
+    #    return self.__dict__
     #def __setstate__(self, *args, **kwargs):
     #    return super(ArgumentValueError, self).__setstate__(*args, **kwargs)
     #def __getnewargs__(self, *args, **kwargs):

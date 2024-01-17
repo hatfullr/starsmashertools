@@ -10,6 +10,7 @@ import starsmashertools.helpers.asynchronous
 import collections
 import mmap
 import copy as _copy
+import itertools
 
 class Output(dict, object):
     """
@@ -43,6 +44,7 @@ class Output(dict, object):
             mode='raw',
     ):
         import starsmashertools.helpers.path
+        
         if mode not in Output.modes:
             s = starsmashertools.helpers.string.list_to_string(Output.modes, join='or')
             raise ValueError("Keyword argument 'mode' must be one of %s, not '%s'" % (s, str(mode)))
@@ -61,6 +63,30 @@ class Output(dict, object):
         self._mask = None
         self._header = None
         self.data = None
+
+        self._original_data = None
+
+    #"""
+    # Used when pickling
+    def __getstate__(self):
+        return {
+            'path' : self.path,
+            'simulation' : self.simulation.directory,
+            'mode' : self.mode,
+            'mask' : self._mask,
+        }
+    
+    # Used when pickling
+    def __setstate__(self, data):
+        import starsmashertools
+        self.__init__(
+            data['path'],
+            starsmashertools.get_simulation(data['simulation']),
+            mode = data['mode'],
+        )
+        if data['mask'] is not None:
+            self.mask(data['mask'])
+    #"""
     
     def __str__(self):
         import starsmashertools.helpers.path
@@ -70,22 +96,25 @@ class Output(dict, object):
     def __repr__(self): return str(self)
 
     @api
+    #@profile
     def __getitem__(self, item):
-        if item in self._cache.keys(): return self.from_cache(item)
-        if item not in self.keys(ensure_read=False):
+        if item in self.keys(ensure_read=False):
+            if item in self._cache.keys():
+                return self.from_cache(item)
+        else:
             self._ensure_read()
         ret = super(Output, self).__getitem__(item)
 
-        if isinstance(ret, np.ndarray):
+        #if isinstance(ret, np.ndarray):
             # Try to mask the output data if we have a mask
-            if self._mask is not None:
-                if not isinstance(self._mask, np.ndarray):
-                    raise TypeError("Property 'Output._mask' must be of type 'np.ndarray', not '%s'" % type(self._mask).__name__)
-                try:
-                    ret = ret[self._mask]
-                except IndexError as e:
-                    if 'boolean index did not match indexed array' in str(e):
-                        pass
+            #if self._mask is not None:
+            #    if not isinstance(self._mask, np.ndarray):
+            #        raise TypeError("Property 'Output._mask' must be of type 'np.ndarray', not '%s'" % type(self._mask).__name__)
+            #    try:
+            #        ret = ret[self._mask]
+            #    except IndexError as e:
+            #        if 'boolean index did not match indexed array' in str(e):
+            #            pass
         
         if self.mode == 'cgs':
             if item in self.simulation.units.keys():
@@ -124,16 +153,24 @@ class Output(dict, object):
         if not self._isRead['header']:
             self.read(return_headers=True, return_data=False)
         return self._header
+
+    @property
+    def is_masked(self): return self._mask is not None
         
     @api
     def keys(self, *args, **kwargs):
         if 'ensure_read' in kwargs.keys():
             if kwargs.pop('ensure_read'): self._ensure_read()
         else: self._ensure_read()
-        ret = super(Output, self).keys(*args, **kwargs)
-        obj = {key:None for key in ret}
-        for key in self._cache.keys(): obj[key] = None
-        return obj.keys()
+        return itertools.chain(
+            super(Output, self).keys(*args, **kwargs),
+            self._cache.keys(),
+        )
+        #ret = super(Output, self).keys(*args, **kwargs)
+        #all_keys = list(ret) + list(self._cache.keys())
+        #obj = {key:None for key in all_keys}
+        #for key in self._cache.keys(): obj[key] = None
+        #return obj.keys()
     
     @api
     def values(self, *args, **kwargs):
@@ -159,13 +196,14 @@ class Output(dict, object):
     
     @api
     def copy_from(self, obj):
-        self._mask = obj._mask
+        import copy
+        self._mask = copy.deepcopy(obj._mask)
         
         for key in self._isRead.keys():
             self._isRead[key] = True
         
         for key, val in obj.items():
-            self[key] = val
+            self[key] = copy.deepcopy(val)
     
     def read(self, return_headers=True, return_data=True, **kwargs):
         if self._isRead['header']: return_headers = False
@@ -215,28 +253,44 @@ class Output(dict, object):
         if read_data: self._isRead['data'] = True
         
     @api
+    #@profile
     def from_cache(self, key):
         if key in self._cache.keys():
             if callable(self._cache[key]):
                 self._cache[key] = self._cache[key](self)
-        ret = self._cache[key]
-        if self._mask is not None:
-            if not isinstance(self._mask, np.ndarray):
-                raise TypeError("Property 'Output._mask' must be of type 'np.ndarray', not '%s'" % type(self._mask).__name__)
-            try:
-                ret = ret[self._mask]
-            except IndexError as e:
-                if 'boolean index did not match indexed array' in str(e):
-                    pass
-        return ret
+        return self._cache[key]
+        #ret = self._cache[key]
+        #if self.is_masked:
+        #    if not isinstance(self._mask, np.ndarray):
+        #        raise TypeError("Property 'Output._mask' must be of type 'np.ndarray', not '%s'" % type(self._mask).__name__)
+        #    try:
+        #        ret = ret[self._mask]
+        #    except IndexError as e:
+        #        if 'boolean index did not match indexed array' in str(e):
+        #            pass
+        #return ret
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def mask(self, mask : np.ndarray | list | tuple):
+        import copy
+        
+        if self.is_masked:
+            raise Exception("Cannot apply more than 1 mask to an Output object")
+        
         if not isinstance(mask, np.ndarray):
             mask = np.asarray(mask)
         if mask.dtype.type == np.bool_ and len(mask) != self['ntot']:
             raise Exception("The given mask does not contain particle IDs but its length (%d) != the number of particles (%d) in the output file '%s'" % (len(mask), self['ntot'], str(self.path)))
+
+        self._original_data = {}
+        for key, val in self.items():
+            self._original_data[key] = copy.deepcopy(val)
+
+        for key, val in self.items():
+            if isinstance(val, np.ndarray):
+                self[key] = val[mask]
+        
         self._mask = mask
 
     @api
@@ -246,6 +300,10 @@ class Output(dict, object):
         # masked so that we don't have to recalculate them, but doing so would
         # be difficult. So we just make it simple and clear the cache.
         self._clear_cache()
+
+        for key, val in self._original_data.items():
+            self[key] = val
+        self._original_data = None
 
     @api
     def get_file_creation_time(self):
@@ -289,34 +347,16 @@ class Output(dict, object):
             The z component of an Euler rotation in degrees. This can be thought
             of as equivalent to azimuthal angle "phi".
         """
-        
-        xanglerad = float(xangle) / 180. * np.pi
-        yanglerad = float(yangle) / 180. * np.pi
-        zanglerad = float(zangle) / 180. * np.pi
+        import starsmashertools.math
         
         for xkey, ykey, zkey in keys:
             x, y, z = self[xkey], self[ykey], self[zkey]
-            
-            if zangle != 0: # Rotate about z
-                rold = np.sqrt(x * x + y * y)
-                phi = np.arctan2(y, x)
-                phi -= zanglerad
-                x = rold * np.cos(phi)
-                y = rold * np.sin(phi)
-            if yangle != 0: # Rotate about y
-                rold = np.sqrt(z * z + x * x)
-                phi = np.arctan2(z, x)
-                phi -= yanglerad
-                z = rold * np.sin(phi)
-                x = rold * np.cos(phi)
-            if xangle != 0: # Rotate about x
-                rold = np.sqrt(y * y + z * z)
-                phi = np.arctan2(z, y)
-                phi -= xanglerad
-                y = rold * np.cos(phi)
-                z = rold * np.sin(phi)
-
-            self[xkey], self[ykey], self[zkey] = x, y, z
+            self[xkey], self[ykey], self[zkey] = starsmashertools.math.rotate(
+                x, y, z,
+                xangle = xangle,
+                yangle = yangle,
+                zangle = zangle,
+            )
         
     @api
     def get_flux_finder(self, *args, **kwargs):
@@ -566,7 +606,7 @@ class OutputIterator(object):
             if self.asynchronous:
                 if self._process is not None and self._process.is_alive(): self._process.join()
                 self._process = starsmashertools.helpers.asynchronous.Process(
-                    target=self.flush,
+                    target = self.flush,
                     daemon=True,
                 )
                 self._process.start()

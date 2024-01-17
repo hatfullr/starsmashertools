@@ -95,14 +95,17 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
             # Check for presence of plunge-in
             with self.archive.nosave():
                 if self.get_output(-1)['mejecta'] >= threshold:
-                    m = starsmashertools.helpers.midpoint.Midpoint(self.get_output())
-                    m.set_criteria(
-                        lambda output: output['mejecta'] < threshold,
-                        lambda output: output['mejecta'] == threshold,
-                        lambda output: output['mejecta'] > threshold,
-                    )
-                    output = m.get()
-                    ret = output['t'] * self.units['t']
+                    try:
+                        m = starsmashertools.helpers.midpoint.Midpoint(self.get_output())
+                        m.set_criteria(
+                            lambda output: output['mejecta'] < threshold,
+                            lambda output: output['mejecta'] == threshold,
+                            lambda output: output['mejecta'] > threshold,
+                        )
+                        output = m.get()
+                        ret = output['t'] * self.units['t']
+                    except starsmashertools.helpers.argumentenforcer.ArgumentTypeError as e:
+                        raise Exception("You are likely missing output files") from e
 
                     # Save the result to the archive
                     self.archive.add(

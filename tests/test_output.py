@@ -35,8 +35,30 @@ class TestOutput(basetest.BaseTest):
                         self.assertTrue(val, output[key])
 
 
-                    
-            
+    def testMask(self):
+        import copy
+        output = self.simulation.get_output(0)
+        ntot = output['ntot']
+        mask = np.full(ntot, False, dtype=bool)
+        idx = int(0.5*ntot)
+        mask[:idx] = True
+
+        orig_output = copy.deepcopy(output)
+        output.mask(mask)
+
+        for key, val in orig_output.items():
+            if isinstance(val, np.ndarray):
+                self.assertTrue(np.array_equal(val[:idx], output[key]))
+            else:
+                self.assertAlmostEqual(val, output[key])
+
+        output.unmask()
+
+        for key, val in orig_output.items():
+            if isinstance(val, np.ndarray):
+                self.assertTrue(np.array_equal(val, output[key]))
+            else:
+                self.assertAlmostEqual(val, output[key])
 
 if __name__ == "__main__":
     unittest.main(failfast=True)
