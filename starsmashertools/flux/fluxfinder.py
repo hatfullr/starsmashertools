@@ -762,7 +762,7 @@ class FluxFinder(object):
             if obj['output'] is not None and obj['simulation'] is not None:
                 simulation = starsmashertools.get_simulation(obj['simulation'])
                 output = starsmashertools.lib.output.Output(
-                    output,
+                    obj['output'],
                     simulation,
                 )
             
