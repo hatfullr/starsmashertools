@@ -942,8 +942,11 @@ class FluxFinder(object):
             
             Returns
             -------
-            np.ndarray
-                A NumPy array of particle indices.
+            list
+                The particle indices which are contributing at each `x` and `y`.
+                If `x` and `y` are iterables, each element of this list will be
+                a list of particle indices corresponding to each element in `x`
+                and `y`.
             """
                 
             # Check for errors
@@ -1008,5 +1011,6 @@ class FluxFinder(object):
                     idx = drprime2 < r2
                     if not np.any(idx): continue
                     result += [[IDs[idx]]]
-
-            return np.asarray(result, dtype=int)
+            
+            if len(result) == 1: return result[0]
+            return result
