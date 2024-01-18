@@ -280,6 +280,9 @@ class IcoFluxFinder(starsmashertools.flux.fluxfinder.FluxFinder, object):
             diff = new - orig
             absolute = np.abs(diff)
             absrel = np.abs(diff / orig)
+            diff = diff[np.isfinite(diff)]
+            absolute = absolute[np.isfinite(absolute)]
+            absrel = absrel[np.isfinite(absrel)]
             if isinstance(new, np.ndarray):
                 idxmin = np.nanargmin(absolute)
                 idxmax = np.nanargmax(absolute)
