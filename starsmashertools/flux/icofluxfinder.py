@@ -119,7 +119,7 @@ class IcoFluxFinder(starsmashertools.flux.fluxfinder.FluxFinder, object):
             result[idx3] = self.tab_qtau[i]
         if np.any(idx4):
             i = (tau[idx4] * 100.).astype(int) - 1
-            result[idx4] = tau[idx4] * self.tab_qtau[i]/(i / 100.)
+            result[idx4] = tau[idx4] * self.tab_qtau[i]/((i + 1) / 100.)
         return result
 
     def _set_radii(self):
