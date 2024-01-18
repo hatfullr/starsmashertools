@@ -696,7 +696,7 @@ class FluxFinder(object):
                 unattenuated : np.ndarray,
                 first_particle : np.ndarray,
                 fluxfinder = None,
-                output_file = None,
+                output : starsmashertools.lib.output.Output | type(None) = None,
                 contributing_particle_IDs = None,
                 extent = None,
                 tau_ray_max = None,
@@ -706,7 +706,8 @@ class FluxFinder(object):
             import warnings
 
             if fluxfinder is not None:
-                output_file = copy.deepcopy(fluxfinder.output.path)
+                #output_file = copy.deepcopy(fluxfinder.output.path)
+                output = copy.deepcopy(fluxfinder.output)
                 contributing_particle_IDs = copy.deepcopy(fluxfinder.contributing_particle_IDs)
                 extent = copy.deepcopy(fluxfinder.extent)
                 tau_ray_max = copy.deepcopy(fluxfinder.tau_ray_max)
@@ -720,7 +721,8 @@ class FluxFinder(object):
             log_unattenuated = np.log10(unattenuated)
             
             super(FluxFinder.Result, self).__init__({
-                'output_file' : output_file,
+                'output' : output,
+                'simulation' : output.simulation.directory if output is not None else None,
                 'flux' : copy.deepcopy(flux),
                 'log_flux' : copy.deepcopy(log_flux),
                 'attenuation' : copy.deepcopy(attenuation),
@@ -753,6 +755,17 @@ class FluxFinder(object):
 
         @staticmethod
         def from_json(obj):
+            import starsmashertools.lib.output
+            import starsmashertools
+            
+            output = None
+            if obj['output'] is not None and obj['simulation'] is not None:
+                simulation = starsmashertools.get_simulation(obj['simulation'])
+                output = starsmashertools.lib.output.Output(
+                    output,
+                    simulation,
+                )
+            
             return FluxFinder.Result(
                 obj['flux'],
                 obj['weighted_averages'],
@@ -760,7 +773,7 @@ class FluxFinder(object):
                 obj['unattenuated'],
                 obj['first_particle'],
                 fluxfinder = None,
-                output_file = obj['output_file'],
+                output = output,
                 contributing_particle_IDs = obj['contributing_particle_IDs'],
                 extent = obj['extent'],
                 tau_ray_max = obj['tau_ray_max'],
@@ -880,95 +893,13 @@ class FluxFinder(object):
                     basename + '.json',
                 )
 
-            starsmashertools.helpers.jsonfile.save(filename, self)
-
-            """
-            if filename is None:
-                basename = starsmashertools.helpers.path.basename(
-                    self.output_file,
-                )
-                filename = starsmashertools.helpers.path.join(
-                    starsmashertools.helpers.path.getcwd(),
-                    basename + '.json',
-                )
-
-            if (filename.endswith('.json') or
-                filename.endswith('.json.gz') or
-                filename.endswith('.json.zip')):
-                obj = {}
-                for key, val in self.items():
-                    obj[key] = val
-                obj['log'] = log
-                starsmashertools.helpers.jsonfile.save(filename, obj)
-                return
-
-            def write_array(f, array, fmt, name):
-                f.write('%s\n' % name)
-                f.write(('vmin: '+data_format+'\n') % get_vmin(array))
-                f.write(('vmax: '+data_format+'\n') % get_vmax(array))
-                total_fmt = ' '.join([fmt]*array.shape[0])+'\n'
-                for i, row in enumerate(array):
-                    f.write(total_fmt % tuple(row))
-
-            def get_vmin(array):
-                idx = np.isfinite(array)
-                if not np.any(idx): return -float('inf')
-                return np.nanmin(array[idx])
-
-            def get_vmax(array):
-                idx = np.isfinite(array)
-                if not np.any(idx): return float('inf')
-                return np.nanmax(array[idx])
-
-            flux = self.log_flux if log else self.flux
-            weighted_averages = self.log_weighted_averages if log else self.weighted_averages
-
-            # Otherwise write a human-readable file
-            labels = ['xmin','xmax','ymin','ymax']
-            viewing_labels = ['xangle', 'yangle', 'zangle']
-            try:
-                with open(filename, 'w') as f:
-                    f.write(self.output_file + '\n')
-                    f.write('log: ' + str(log) + '\n')
-                    for item, label in zip(self.viewing_angle, viewing_labels):
-                        f.write((label + ': ' + data_format + '\n') % item)
-
-                    for item, label in zip(self.extent, labels):
-                        f.write((label + ': ' + data_format + '\n') % item)
-                    f.write('Nx: %d\n' % flux.shape[0])
-                    f.write('Ny: %d\n' % flux.shape[1])
-                    f.write(('tau_ray_max: ' + data_format + '\n') % self.tau_ray_max)
-
-                    f.write('\n')
-                    write_array(f, flux, data_format, 'Flux')
-
-                    for i, weighted_average in enumerate(weighted_averages):
-                        f.write('\n')
-                        write_array(
-                            f,
-                            weighted_average,
-                            data_format,
-                            'Weighted Average %d' % i,
-                        )
-
-                    f.write('\ncontributing_particle_IDs:\n')
-
-                    if self.contributing_particle_IDs.size > 0:
-                        maxID = max(self.contributing_particle_IDs)
-                        length = len(str(maxID))
-                        fmt = ' %' + str(length) + 'd'
-                        i = 0
-                        for ID in self.contributing_particle_IDs:
-                            f.write(fmt % ID)
-                            i += 1
-                            if i == 12:
-                                f.write('\n')
-                                i = 0
-            except:
-                if starsmashertools.helpers.path.exists(filename):
-                    starsmashertools.helpers.path.remove(filename)
-                raise
-            """
+            obj = {}
+            for key, val in self.items():
+                if isinstance(val, starsmashertools.lib.output.Output):
+                    obj[key] = val.path
+                else: obj[key] = val
+                
+            starsmashertools.helpers.jsonfile.save(filename, obj)
                 
         @staticmethod
         @starsmashertools.helpers.argumentenforcer.enforcetypes
@@ -982,131 +913,100 @@ class FluxFinder(object):
 
             obj = starsmashertools.helpers.jsonfile.load(filename)
             return FluxFinder.Result.from_json(obj)
-        
-                
-            
+
+        @starsmashertools.helpers.argumentenforcer.enforcetypes
+        @api
+        def get_particles(
+                self,
+                x : float | int | np.float_ | np.integer | tuple | list | np.ndarray,
+                y : float | int | np.float_ | np.integer | tuple | list | np.ndarray,
+        ):
             """
-            if (filename.endswith('.json') or
-                filename.endswith('.json.gz') or
-                filename.endswith('.json.zip')):
-                obj = starsmashertools.helpers.jsonfile.load(filename)
-                return FluxFinder.Result(
-                    obj['flux'],
-                    obj['weighted_averages'],
-                    output_file = obj['output_file'],
-                    contributing_particle_IDs = obj['contributing_particle_IDs'],
-                    extent = obj['extent'],
-                    tau_ray_max = obj['tau_ray_max'],
-                    viewing_angle = obj['viewing_angle'],
-                )
+            Obtain a list of particles who are considered as "contributing" on
+            the given (x, y) position(s) in the image. A particle is
+            "contributing" if a ray extended from the image into the screen
+            enters its kernel. These particles make up the entirety of the flux
+            at the given image positions or pixel indices.
 
-            def read_array(f, Nx, Ny, log):
-                name = f.readline().strip()
-                vmin = starsmashertools.helpers.string.parse(
-                    f.readline().split(':')[-1].strip(),
-                )
-                vmax = starsmashertools.helpers.string.parse(
-                    f.readline().split(':')[-1].strip(),
-                )
-                data = np.empty((Nx, Ny), dtype=object)
-                for i in range(Ny):
-                    data[i] = f.readline().strip().split()
-                data = data.astype(float)
-                if log: data = 10.**data
-                return data, vmin, vmax, name
+            Parameters
+            ----------
+            x : float, int, np.float_, np.integer, tuple, list, np.ndarray
+                Float types are physical x positions on the image and integer 
+                types are pixel indices. If a tuple, list, or np.ndarray is
+                given it must have the same shape as parameter `y`.
 
-            labels = ['xmin','xmax','ymin','ymax']
-            viewing_labels = ['xangle', 'yangle', 'zangle']
-            extent = [None, None, None, None]
-            viewing_angle = [None, None, None]
-            tau_ray_max = None
-            with open(filename, 'r') as f:
-                try:
-                    output_file = f.readline().strip()
-                    log = starsmashertools.helpers.string.parse(
-                        f.readline().split('log:')[-1].strip(),
-                    )
-                    for i, label in enumerate(viewing_labels):
-                        line = f.readline().split(label + ':')[-1].strip()
-                        viewing_angle[i] = starsmashertools.helpers.string.parse(line)
-                    
-                    for i, label in enumerate(labels):
-                        line = f.readline().split(label + ':')[-1].strip()
-                        extent[i] = starsmashertools.helpers.string.parse(line)
-                    Nx = starsmashertools.helpers.string.parse(
-                        f.readline().split('Nx:')[-1].strip(),
-                    )
-                    Ny = starsmashertools.helpers.string.parse(
-                        f.readline().split('Ny:')[-1].strip(),
-                    )
-                except Exception as e:
-                    raise FluxFinder.Result.FileFormatError(filename) from e
-
-                newline = f.readline().strip() # newline
-                if newline:
-                    raise FluxFinder.Result.FileFormatError(filename)
-
-                # flux array
-                flux,vmin,vmax,name = read_array(f, Nx, Ny, log)
-
-                weighted_averages = {}
-                start = f.tell()
-                while True:
-                    start = f.tell()
-                    try:
-                        newline = f.readline()
-                        if newline.strip():
-                            raise FluxFinder.Result.FileFormatError(filename)
-                        data,vmin,vmax,name = read_array(f, Nx, Ny, log)
-                        if 'Weighted Average' not in name:
-                            raise FluxFinder.Result.FileFormatError(filename)
-                        number = starsmashertools.helpers.string.parse(
-                            name.split('Weighted Average')[-1].strip(),
-                        )
-                        weighted_averages[number] = data
-                    except Exception as e:
-                        if isinstance(e, FluxFinder.Result.FileFormatError):
-                            raise(e)
-                        break
-
-                # Finally, read the contributing particles
-                f.seek(start)
-                newline = f.readline().strip()
-                if newline:
-                    raise FluxFinder.Result.FileFormatError(filename)
-
-                try:
-                    f.readline().split('contributing_particle_IDs:')
-                except Exception as e:
-                    raise FluxFinder.Result.FileFormatError(filename) from e
-
-                contributing_particle_IDs = []
-                for line in f:
-                    contributing_particle_IDs += line.strip().split()
-                contributing_particle_IDs = np.array(
-                    contributing_particle_IDs,
-                    dtype = object,
-                ).astype(int).tolist()
-                
-
-            # Now that the file has been read we just need to sort the weighted
-            # averages (if there are any)
-
-            IDs = list(weighted_averages.keys())
-            order = np.argsort(IDs)
-            wa = []
-            for ID in order:
-                wa += [weighted_averages[ID]]
-            weighted_averages = wa
+            y : float, int, np.float_, np.integer, tuple, list, np.ndarray
+                Float types are physical y positions on the image and integer 
+                types are pixel indices. If a tuple, list, or np.ndarray is
+                given it must have the same shape as parameter `x`.
             
-            return FluxFinder.Result(
-                flux,
-                weighted_averages,
-                fluxfinder = None,
-                output_file = output_file,
-                contributing_particle_IDs = contributing_particle_IDs,
-                extent = extent,
-                tau_ray_max = tau_ray_max,
-                viewing_angle = viewing_angle,
-            )
+            Returns
+            -------
+            np.ndarray
+                A NumPy array of particle indices.
             """
+                
+            # Check for errors
+            x_is_iter = isinstance(x, (list, tuple, np.ndarray))
+            y_is_iter = isinstance(y, (list, tuple, np.ndarray))
+
+            if x_is_iter and not y_is_iter: y = [y]*len(x)
+            if not x_is_iter and y_is_iter: x = [x]*len(y)
+            if not x_is_iter and not y_is_iter:
+                x = [x]
+                y = [y]
+            
+            if isinstance(x, np.ndarray) and len(x.shape) > 1:
+                raise ValueError("Argument 'x' must be one-dimensional if it is of type np.ndarray, but its shape is %s" % str(x.shape))
+            elif isinstance(x, (list, tuple)):
+                for _x in x:
+                    if not hasattr(_x, '__iter__'): continue
+                    raise Exception("Argument 'x' is an iterable of iterables, which is not supported")
+
+            if isinstance(y, np.ndarray) and len(y.shape) > 1:
+                raise ValueError("Argument 'y' must be one-dimensional if it is of type np.ndarray, but its shape is %s" % str(x.shape))
+            elif isinstance(y, (list, tuple)):
+                for _y in y:
+                    if not hasattr(_y, '__iter__'): continue
+                    raise Exception("Argument 'y' is an iterable of iterables, which is not supported")
+            
+            if len(x) != len(y):
+                raise ValueError("Arguments 'x' and 'y' must have the same lengths: %d != %d" % (len(x), len(y)))
+                
+            floats = []
+            ints = []
+            for i, (_x, _y) in enumerate(zip(x, y)):
+                if not isinstance(_x, type(_y)):
+                    raise TypeError("Each element of arguments 'x' and 'y' must be the same type as each other, but elements %d have types '%s' and '%s'" % (i, type(_x).__name__, type(_y).__name__))
+
+                if isinstance(_x, (float, np.float_)):
+                    floats += [[_x, _y]]
+                elif isinstance(_x, (int, np.integer)):
+                    ints += [[_x, _y]]
+                else:
+                    raise TypeError("Unsupported type '%s' in input arrays at element %d" % (type(_x).__name__, i))
+
+            floats = np.asarray(floats, dtype=float)
+            ints = np.asarray(ints, dtype=int)
+
+            # Convert the integers to floats
+            xmin, xmax, ymin, ymax = self['extent']
+
+            xypos = np.full((len(floats) + len(ints), 2), np.nan)
+            xypos[:len(floats)] = floats
+            xypos[len(floats):][:,0] = xmin + self['dx'] * ints
+            xypos[len(floats):][:,1] = ymin + self['dy'] * ints
+
+            result = []
+            
+            IDs = self['contributing_particle_IDs']
+            with starsmashertools.mask(self['output'], IDs) as masked:
+                xy = np.column_stack((masked['x'], masked['y']))
+                r2 = masked['radius']**2
+                for p in enumerate(xypos):
+                    drprime2 = np.sum((xy - p)**2, axis=-1)
+                    idx = drprime2 < r2
+                    if not np.any(idx): continue
+                    result += [[IDs[idx]]]
+
+            return np.asarray(result, dtype=int)
