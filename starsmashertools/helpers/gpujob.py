@@ -252,7 +252,7 @@ try:
 
 
 # Catch this pesky exception which likes to pop up in random places
-except (numba.cuda.cudadrv.driver.CudaAPIError, numba.cuda.cudadrv.error.CudaSupportError) as e:
+except Exception as e:# (numba.cuda.cudadrv.driver.CudaAPIError, numba.cuda.cudadrv.error.CudaSupportError) as e:
     if ('Call to cuInit results in UNKNOWN_CUDA_ERROR (804)' in str(e) or
         '[804] Call to cuInit results in UNKNOWN_CUDA_ERROR' in str(e)):
         raise RuntimeError("This error is known to happen for computers that have been put in 'suspend' mode some time after a restart. You can try logging out and logging back in again or restarting your system.") from e

@@ -50,7 +50,7 @@ class IcoFluxFinder(starsmashertools.flux.fluxfinder.FluxFinder, object):
             np.sin(self._theta) * np.sin(self._phi),
             np.cos(self._theta),
         ))
-
+        
         xrot, yrot, zrot = starsmashertools.math.rotate(
             self._unit_vertices[:,0],
             self._unit_vertices[:,1],
@@ -65,12 +65,13 @@ class IcoFluxFinder(starsmashertools.flux.fluxfinder.FluxFinder, object):
 
     def _initialize_qtau(self):
         import starsmashertools.helpers.path
+        import starsmashertools.helpers.file
         src = starsmashertools.helpers.path.get_src(self.output.simulation.directory)
         filename = starsmashertools.helpers.path.join(src, 'cooling', 'qtau.f')
-
+        
         listening = False
         content = []
-        with open(filename, 'r') as f:
+        with starsmashertools.helpers.file.open(filename, 'r') as f:
             for line in f:
                 if line.strip().startswith('data tab_qtau'):
                     listening = True
@@ -365,8 +366,6 @@ class IcoFluxFinder(starsmashertools.flux.fluxfinder.FluxFinder, object):
     def get_closest_angle(
             self,
             xyz : np.ndarray,
-            y : float | np.float_,
-            z : float | np.float_,
             ID : int | np.integer,
     ):
         vertex, idx_closest = self.get_closest_vertex(xyz, ID)

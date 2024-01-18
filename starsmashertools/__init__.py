@@ -6,6 +6,7 @@ import contextlib
 import os
 import importlib.metadata as metadata
 import importlib.util as util
+import starsmashertools.mpl # Runs code in mpl/__init__.py
 
 __version__ = metadata.version('starsmashertools')
 

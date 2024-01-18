@@ -23,6 +23,8 @@ if __name__ == '__main__':
     for script in code.values():
         exec(script)
 
+    if not os.path.isfile(zipname): quit()
+        
     filenames = []
     with zipfile.ZipFile(
             zipname,

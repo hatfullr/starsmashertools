@@ -21,39 +21,6 @@ angles = np.array([
 ])
 
 
-def rotate(x, y, z, xangle=0, yangle=0, zangle=0):
-    import copy
-    x = copy.deepcopy(x)
-    y = copy.deepcopy(y)
-    z = copy.deepcopy(z)
-    
-    # Euler rotation
-    xanglerad = float(xangle) / 180. * np.pi
-    yanglerad = float(yangle) / 180. * np.pi
-    zanglerad = float(zangle) / 180. * np.pi
-
-    if zangle != 0: # Rotate about z
-        rold = np.sqrt(x * x + y * y)
-        phi = np.arctan2(y, x)
-        phi -= zanglerad
-        x = rold * np.cos(phi)
-        y = rold * np.sin(phi)
-    if yangle != 0: # Rotate about y
-        rold = np.sqrt(z * z + x * x)
-        phi = np.arctan2(z, x)
-        phi -= yanglerad
-        z = rold * np.sin(phi)
-        x = rold * np.cos(phi)
-    if xangle != 0: # Rotate about x
-        rold = np.sqrt(y * y + z * z)
-        phi = np.arctan2(z, y)
-        phi -= xanglerad
-        y = rold * np.cos(phi)
-        z = rold * np.sin(phi)
-
-    return x, y, z
-
-
 def fix_axis_rotation(ax):
     def update(*args, **kwargs):
         if ax.azim < -360: ax.azim += 360
@@ -137,6 +104,7 @@ def draw_circle_on_sphere(ax, p:float, a:float, v:float, **kwargs):
 
 class TestIcoFluxFinder(basetest.BaseTest):
     def setUp(self):
+        import copy
         directory = os.path.join(
             starsmashertools.SOURCE_DIRECTORY,
             'tests',
@@ -144,149 +112,208 @@ class TestIcoFluxFinder(basetest.BaseTest):
         )
         self.simulation = starsmashertools.get_simulation(directory)
 
+        self.output = copy.deepcopy(self.simulation.get_output())
+        # Make a unit sphere
+        self.output['x'] = np.zeros(1)
+        self.output['y'] = np.zeros(1)
+        self.output['z'] = np.zeros(1)
+        self.output['hp'] = np.ones(1) * 0.5
+        radius = 2 * self.output['hp'][0]
+        self.output['am'] = np.ones(1)
+        self.output['u'] = np.ones(1)
+        self.output['rho'] = self.output['am'] / (4./3. * np.pi * (2 * self.output['hp'])**3)
+        self.output['tau'] = np.ones(1) * 1.e30
+        self.output['popacity'] = np.ones(1)
+
+        for key, val in self.output.items():
+            if isinstance(val, np.ndarray):
+                if key not in ['x','y','z','hp','am','u','rho','tau','popacity']:
+                    self.output[key] = np.zeros(1)
+        
+        self.output['ntot'] = 1
+
     def testAngles(self):
         # Making sure the angles we get from the log0.sph file are correct
         fluxfinder = starsmashertools.flux.icofluxfinder.IcoFluxFinder(
-            self.simulation.get_output(),
+            self.output,
         )
         
         for i, (t, p) in enumerate(zip(fluxfinder._theta, fluxfinder._phi)):
             self.assertAlmostEqual(t, angles[i][0])
             self.assertAlmostEqual(p, angles[i][1])
 
+    def testUnitVertices(self):
+        fluxfinder = starsmashertools.flux.icofluxfinder.IcoFluxFinder(
+            self.output,
+        )
+
+        expected_vertices = np.column_stack((
+            fluxfinder.output['radius'] * np.sin(angles[:,0]) * np.cos(angles[:,1]),
+            fluxfinder.output['radius'] * np.sin(angles[:,0]) * np.sin(angles[:,1]),
+            fluxfinder.output['radius'] * np.cos(angles[:,0]),
+        ))
+        
+        for expected, vertex in zip(expected_vertices, fluxfinder._unit_vertices):
+            self.assertAlmostEqual(expected[0], vertex[0], msg = "Vertex mismatch on x-axis: (%g, %g, %g) != (%g, %g, %g)" % (*expected, *vertex))
+            self.assertAlmostEqual(expected[1], vertex[1], msg = "Vertex mismatch on y-axis: (%g, %g, %g) != (%g, %g, %g)" % (*expected, *vertex))
+            self.assertAlmostEqual(expected[2], vertex[2], msg = "Vertex mismatch on z-axis: (%g, %g, %g) != (%g, %g, %g)" % (*expected, *vertex))
+        
+
     def testGetClosestAngle(self):
         import copy
+        import starsmashertools.math
         
         fluxfinder = starsmashertools.flux.icofluxfinder.IcoFluxFinder(
-            self.simulation.get_output(),
+            self.output,
         )
         
-        # Make a unit sphere
-        fluxfinder.output['x'] = np.array([0.])
-        fluxfinder.output['y'] = np.array([0.])
-        fluxfinder.output['z'] = np.array([0.])
-        fluxfinder.output['hp'] = np.array([0.5])
-        radius = 2 * fluxfinder.output['hp'][0]
-        vertices = radius * fluxfinder._unit_vertices
+        vertices = fluxfinder.output['radius'] * fluxfinder._unit_vertices
 
+        """
+        xyz = np.column_stack((
+            fluxfinder.output['radius'] * np.sin(angles[:,0]) * np.cos(angles[:,1]),
+            fluxfinder.output['radius'] * np.sin(angles[:,0]) * np.sin(angles[:,1]),
+            fluxfinder.output['radius'] * np.cos(angles[:,0]),
+        ))
+        
         # Test all the known angles
         for i, (t, p) in enumerate(angles):
-            x = radius * np.sin(t) * np.cos(p)
-            y = radius * np.sin(t) * np.sin(p)
-            z = radius * np.cos(t)
-            
-            theta, phi = fluxfinder.get_closest_angle(x, y, z, 0)
-            self.assertAlmostEqual(theta, t)
-            self.assertAlmostEqual(phi, p)
+            theta, phi = fluxfinder.get_closest_angle(xyz[i], 0)
+            self.assertAlmostEqual(theta, t, msg="theta problem: closest angle to (%g, %g) was found as not that angle, but rather (%g, %g)" % (t, p, theta, phi))
+            self.assertAlmostEqual(phi, p, msg="phi problem: closest angle to (%g, %g) was found as not that angle, but rather (%g, %g)" % (t, p, theta, phi))
+        """
 
-        orig_vertices = copy.deepcopy(vertices)
-
-        # Find the maximum displacement we can try
-        mindr2 = np.inf
-        for _t, _p in angles:
-            tp = np.array([_t, _p])
-            diff2 = np.sum((angles - tp)**2, axis=-1)
-            mindr2 = min(
-                mindr2,
-                np.amin(diff2[diff2 != 0]),
-            )
-            
-
-        mindist = np.sqrt(mindr2)
+        Ntry = 50
         eps = 1.e-7
         
-        # Try a ring around each vertex
-        Ntry = 50
-        min_disp = 1 # In degrees
-        max_disp = 0.5 * mindist * 180 / np.pi # In degrees
+        # Get the minimum angular displacement each vertex has from each other
+        # vertex
+        min_angular_separation = np.inf
+        v = vertices[0]
+        v_norm = v #/ np.sqrt(np.sum(v**2, axis=-1))
+        for vertex in vertices[1:]:
+            #norm = vertex / np.sqrt(np.sum(vertex**2, axis=-1))
+            #costheta = np.dot(v_norm, norm)
+            costheta = np.dot(v, vertex)
+            theta = np.arccos(costheta)
+            min_angular_separation = min(min_angular_separation, theta)
+
+        min_angular_separation -= eps
+            
+        # For each vertex, we will walk along the surface of the sphere to test
+        # if the closest angle always corresponds to that vertex. We stay within
+        # a maximum angular displacement of half the minimum angular
+        # displacement between any two vertices.
+
+        thetas = np.linspace(eps, 0.5 * min_angular_separation, Ntry)
+        phis = np.linspace(0., 2*np.pi, Ntry + 1)[:-1]
         
-        dtheta = max_disp / 180. * np.pi
-        dphis = np.linspace(min_disp, max_disp, Ntry) / 180. * np.pi
-
-        orig_vertices = copy.deepcopy(fluxfinder._unit_vertices)
-
-        _xyz_orig = radius * np.column_stack((
-            np.sin(dtheta) * np.cos(dphis),
-            np.sin(dtheta) * np.sin(dphis),
-            np.full(len(dphis), np.cos(dtheta)),
-        ))
-
+        trial_positions = []
+        for theta in thetas:
+            sintheta = np.sin(theta)
+            costheta = np.cos(theta)
+            for phi in phis:
+                trial_positions += [[
+                    sintheta * np.cos(phi),
+                    sintheta * np.sin(phi),
+                    costheta,
+                ]]
+        trial_positions = np.asarray(trial_positions)
+        trial_positions *= fluxfinder.output['radius']
+        
         import matplotlib.pyplot as plt
         fig = plt.figure()
-        ax = plt.axes(projection='3d')
+        ax = plt.axes(projection='3d', computed_zorder=False)
         ax.set_aspect('equal')
+
+        ax.set_xlabel('x')
+        ax.set_ylabel('y')
+        ax.set_zlabel('z')
         
         fix_axis_rotation(ax)
 
-        # Make a ring around each angle
+        plot_vertices(
+            ax,
+            fluxfinder.output['radius'] * fluxfinder._unit_vertices,
+            color = 'b',
+            label = 'unit vertices',
+            zorder = 0,
+        )
+        
         for i, (_t, _p) in enumerate(angles):
-            _x, _y, _z = rotate(
-                _xyz_orig[:,0],
-                _xyz_orig[:,1],
-                _xyz_orig[:,2],
-                xangle = 0.,
-                yangle = _t / np.pi * 180.,
-                zangle = _p / np.pi * 180.,
-            )
-
-            _xyz = np.column_stack((_x,_y,_z))
-
-            """
-            rotx, roty, rotz = rotate(
-                copy.deepcopy(orig_vertices[:,0]),
-                copy.deepcopy(orig_vertices[:,1]),
-                copy.deepcopy(orig_vertices[:,2]),
-                xangle = 0.,
-                yangle = _t / np.pi * 180.,
-                zangle = _p / np.pi * 180.,
-            )
-
-            fluxfinder._theta = np.arccos(rotz)
-            fluxfinder._phi = np.arctan2(roty, rotx)
-            fluxfinder._unit_vertices = np.column_stack((
-                np.sin(fluxfinder._theta) * np.cos(fluxfinder._phi),
-                np.sin(fluxfinder._theta) * np.sin(fluxfinder._phi),
-                np.cos(fluxfinder._theta),
+            attempt = fluxfinder.output['radius'] * np.column_stack((
+                np.sin(_t) * np.cos(_p),
+                np.sin(_t) * np.sin(_p),
+                np.cos(_t),
             ))
-            """
-
-            thet = np.arccos(_z / radius)
-            ph = np.arctan2(_y, _x)
             
-            for _x, _y, _z in _xyz:
-                theta, phi = fluxfinder.get_closest_angle(_x, _y, _z, 0)
-
-                diff2 = (thet - theta)**2 + (ph - phi)**2
-                if diff2 > eps * eps:
-                    message = "diff > eps: theta = %g, eps = %g" % (theta, eps)
+            _trial_x, _trial_y, _trial_z = starsmashertools.math.rotate_spherical(
+                copy.deepcopy(trial_positions[:,0]),
+                copy.deepcopy(trial_positions[:,1]),
+                copy.deepcopy(trial_positions[:,2]),
+                theta = _t / np.pi * 180,
+                phi = _p / np.pi * 180,
+            )
+            
+            _trial_positions = np.column_stack((_trial_x, _trial_y, _trial_z))
+            
+            for p in _trial_positions:
+                theta, phi = fluxfinder.get_closest_angle(p, 0)
+                diff = np.sqrt((theta - _t)**2 + (phi - _p)**2)
+                if diff > eps:
+                    message = "diff > 2*eps: diff = %g, eps = %g, closest = (%g, %g), position = (%g, %g)" % (diff, eps, theta, phi, _t, _p)
+                    #print(xyzfound, p)
                     print(message)
+
+                    unit_vertices = fluxfinder.output['radius'] * fluxfinder._unit_vertices
+                    other_vertices = unit_vertices[:i].tolist() + unit_vertices[i+1:].tolist()
+                    other_vertices = np.asarray(other_vertices)
                     
-                    idx = np.logical_and(
-                        fluxfinder._theta == theta,
-                        fluxfinder._phi == phi,
+                    ax.scatter(
+                        attempt[:,0], attempt[:,1], attempt[:,2],
+                        color = 'm',
+                        label = 'testing vertex',
+                        zorder = 1000,
                     )
-                    
+
+                    ax.scatter(
+                        fluxfinder.output['radius'] * np.sin(theta) * np.cos(phi),
+                        fluxfinder.output['radius'] * np.sin(theta) * np.sin(phi),
+                        fluxfinder.output['radius'] * np.cos(theta),
+                        color = (0., 1., 0.),
+                        label = 'found closest angle',
+                        zorder = 100000,
+                    )
+
                     plot_vertices(
                         ax,
-                        radius * fluxfinder._unit_vertices[~idx],
-                        color='b',
-                    )
-                    plot_vertices(
-                        ax,
-                        radius * fluxfinder._unit_vertices[idx],
-                        color='g',
-                        label = 'closest',
-                    )
-                    
-                    plot_vertices(
-                        ax,
-                        np.array([_x, _y, _z]),
+                        p,
                         color='r',
-                        label = 'position',
+                        label = 'test position',
+                        zorder=900,
                     )
+                    
+                    ax.scatter(
+                        _trial_positions[:,0],
+                        _trial_positions[:,1],
+                        _trial_positions[:,2],
+                        color='k',
+                        s=0.01,
+                    )
+                    
+                    circle = draw_circle_on_sphere(
+                        ax, 0., 0., 0.5 * min_angular_separation,
+                        color='k', lw=0.5,
+                    )[0]
+                    cx, cy, cz = circle.get_data_3d()
 
-                    draw_circle_on_sphere(ax, 0., 0., dtheta, color='k', lw=0.5)
-
+                    cx, cy, cz = starsmashertools.math.rotate_spherical(
+                        cx, cy, cz,
+                        theta = _t / np.pi * 180,
+                        phi = _p / np.pi * 180,
+                    )
+                    circle.set_data_3d(cx, cy, cz)
+                    
                     ax.legend()
 
                     plt.show()

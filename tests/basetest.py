@@ -4,7 +4,10 @@ def isArchiveExtracted():
     import os
     import zipfile
 
-    with zipfile.ZipFile('archive.zip', mode='r') as zfile:
+    filename = 'archive.zip'
+    if not os.path.isfile(filename): return True
+
+    with zipfile.ZipFile(filename, mode='r') as zfile:
         for zinfo in zfile.infolist():
             directory = os.path.dirname(zinfo.filename)
             if not directory: continue

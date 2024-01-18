@@ -84,7 +84,7 @@ def rotate(
         zangle : float | int | np.float_ | np.integer = 0,
 ):
     """
-    Rotate the given x,y,z points using an Euler rotation.
+    Rotate the given ``x``, ``y``, and ``z`` points using an Euler rotation.
 
     An Euler rotation can be understood as follows. Imagine the x, y, and z axes
     as wooden dowels. First the z-axis dowel is rotated `zangle` degrees
@@ -109,14 +109,13 @@ def rotate(
         The y component of an Euler rotation in degrees.
 
     zangle : float, int, np.float_, np.integer, default = 0
-        The z component of an Euler rotation in degrees. This can be thought of
-        as equivalent to azimuthal angle "phi".
-
+        The z component of an Euler rotation in degrees.
+    
     Returns
     -------
     x, y, z
         A copy of the x, y, z components which were given as inputs, rotated
-        by `xangle`, `yangle`, and `zangle`.
+        by ``xangle``, ``yangle``, and ``zangle``.
     """
     import copy
     import numpy as np
@@ -149,3 +148,57 @@ def rotate(
         z = rold * np.sin(phi)
 
     return x, y, z
+
+
+def rotate_spherical(
+        *args,
+        theta : float | int | np.float_ | np.integer = 0,
+        phi : float | int | np.float_ | np.integer = 0,
+):
+    """
+    Uses :func:`~.rotate` twice to perform a correct spherical coordinates
+    rotation.
+    
+    Parameters
+    ----------
+    *args
+        Positional arguments are passed directly to :func:`~.rotate`.
+
+    theta : float, int, np.float_, np.integer, default = 0
+        The polar angle in degrees.
+
+    phi : float, int, np.float_, np.integer, default = 0
+        The azimuthal angle in degrees.
+    
+    Returns
+    -------
+    args
+        A rotated version of the given positional arguments.
+    """
+    
+    if phi == 0:
+        return rotate(
+            *args,
+            xangle = 0.,
+            yangle = theta,
+            zangle = 0.,
+        )
+    if theta == 0:
+        return rotate(
+            *args,
+            xangle = 0.,
+            yangle = 0.,
+            zangle = -phi,
+        )
+    
+    return rotate(
+        *rotate(
+            *args,
+            xangle = 0.,
+            yangle = theta,
+            zangle = 0.,
+        ),
+        xangle = 0.,
+        yangle = 0.,
+        zangle = -phi,
+    )
