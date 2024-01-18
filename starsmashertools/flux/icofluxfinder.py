@@ -123,30 +123,24 @@ class IcoFluxFinder(starsmashertools.flux.fluxfinder.FluxFinder, object):
         return result
 
     def _set_radii(self):
-        # In StarSmasher, the cooling code uses exclusively radius "rout",
-        # including when nearby particles are searched for. Thus we must also
-        # use exclusively "rout"
+        m = self.output['am'] # msun
+        rho = self.output['rho'] # code units
 
-        """
-        idx = np.logical_and(
-            self.output['u'] != 0,
-            self.output['dEemergdt'] < self.output['dEdiffdt'],
-        )
-
-        self.output['radius'] = 2 * self.output['hp']
-        
-        if np.any(~idx):
-            m = self.output['am'][~idx]
-            rho = self.output['rho'][~idx]
-            self.output['radius'][~idx] = (0.75 * m / (np.pi * rho))**(0.3333333333333333) # code units
-        """
-        
-        #"""
         if self.output.simulation['cooling_type'] == 0: # Fluffy
             self.output['radius'] = 2. * self.output['hp'] # code units
+
+            idx = np.logical_and(
+                self.output['u'] != 0,
+                self.output['dEemergdt'] >= self.output['dEdiffdt'],
+            )
+
+            self.output['radius'] = 2 * self.output['hp']
+            
+            if np.any(idx):
+                self.output['radius'][idx] = (0.75 * m[idx] / (np.pi * rho[idx]))**(0.3333333333333333) # code units
+                # tau and everything else gets updated later
+            
         elif self.output.simulation['cooling_type'] == 1: # Dense
-            m = self.output['am'] # msun
-            rho = self.output['rho'] # code units
             self.output['radius'] = (0.75 * m / (np.pi * rho))**(0.3333333333333333) # code units
         else: raise NotImplementedError
         #"""
@@ -215,6 +209,28 @@ class IcoFluxFinder(starsmashertools.flux.fluxfinder.FluxFinder, object):
         
         self.output['popacity'][idx] = kappa_dust
 
+
+    def _update_cooling_quantities(self):
+        # Only update the particles whose opacities or radii have been changed
+        idx = np.logical_and(
+            self.output['uraddot'] != 0,
+            np.logical_or(
+                self.output['popacity'] != self._original_output['popacity'],
+                np.logical_and(
+                    self.output['u'] != 0,
+                    self.output['dEemergdt'] >= self.output['dEdiffdt'],
+                ),
+            ),
+        )
+
+        if not np.any(idx): return
+        
+        m = self.output['am'][idx]
+        u = self.output['u'][idx]
+        rho = self.output['rho'][idx]
+        rout = self.output['radius'][idx]
+        T = self.output['temperatures'][idx]
+        
         tdiff = self.output['popacity'][idx] * rho * rout**2 / self._c
         self.output['dEmaxdiffdt'][idx] = u * m / tdiff # code units
         self.output['tau'][idx] = rho * self.output['popacity'][idx] * rout
@@ -295,6 +311,7 @@ class IcoFluxFinder(starsmashertools.flux.fluxfinder.FluxFinder, object):
 
         self._set_radii()
         self._set_opacities()
+        self._update_cooling_quantities()
         
         tau_particle_cutoff = starsmashertools.preferences.get_default(
             'FluxFinder', 'tau particle cutoff',
@@ -317,7 +334,7 @@ class IcoFluxFinder(starsmashertools.flux.fluxfinder.FluxFinder, object):
             dEemergdt == 0,
             dEmaxdiffdt == 0,
         )
-
+        
         uses_emerg = np.logical_and(
             ~nothing,
             dEemergdt < dEdiffdt,

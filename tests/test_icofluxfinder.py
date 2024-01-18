@@ -124,12 +124,15 @@ class TestIcoFluxFinder(basetest.BaseTest):
         self.output['rho'] = self.output['am'] / (4./3. * np.pi * (2 * self.output['hp'])**3)
         self.output['tau'] = np.ones(1) * 1.e30
         self.output['popacity'] = np.ones(1)
-
+        
         for key, val in self.output.items():
             if isinstance(val, np.ndarray):
                 if key not in ['x','y','z','hp','am','u','rho','tau','popacity']:
                     self.output[key] = np.zeros(1)
-        
+
+        self.output['dEdiffdt'] = np.zeros(1)
+        self.output['uraddot'] = np.zeros(1)
+                    
         self.output['ntot'] = 1
 
     def testAngles(self):
