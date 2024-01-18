@@ -198,7 +198,8 @@ class IcoFluxFinder(starsmashertools.flux.fluxfinder.FluxFinder, object):
         # Do nothing if there's nothing to worry about
         if not np.any(idx): return
 
-        print("Some opacities may be adjusted according to the dust temperature range and dust opacities specified in starsmashertools.preferences. This will change values of dEemergdt, dEdiffdt, and dEmaxdiffdt, but will not affect the output files on the hard drive.")
+        if self.verbose:
+            print("Some opacities may be adjusted according to the dust temperature range and dust opacities specified in starsmashertools.preferences. This will change values of dEemergdt, dEdiffdt, and dEmaxdiffdt, but will not affect the output files on the hard drive.")
 
         # Make adjustments to everything
         m = self.output['am'][idx]
@@ -261,6 +262,8 @@ class IcoFluxFinder(starsmashertools.flux.fluxfinder.FluxFinder, object):
                 continue
             different += [key]
 
+        if not self.verbose: return
+        
         if len(different) > 0:
             print()
             print("Remained the same: ", same)
@@ -270,7 +273,7 @@ class IcoFluxFinder(starsmashertools.flux.fluxfinder.FluxFinder, object):
             print("abs.rel. difference = |difference / original|")
         else:
             print("All quantities remained the same")
-
+        
         warnings.filterwarnings(action = 'ignore')
         for key in different:
             print()
