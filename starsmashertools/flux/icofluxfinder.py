@@ -492,9 +492,6 @@ class IcoFluxFinder(starsmashertools.flux.fluxfinder.FluxFinder, object):
             xyzpos, # rsun
             uses_emerg,
             uses_maxdiff,
-            #dEemergdt, # code units
-            #dEdiffdt, # code units
-            #dEmaxdiffdt, # code units
     ):
         areas = self.output['surface area']
         Ai = areas[ID]
@@ -512,10 +509,13 @@ class IcoFluxFinder(starsmashertools.flux.fluxfinder.FluxFinder, object):
             xyzpos,
         )
 
-        if ID in [96852, 97848]:
-            print(ID, dEdiffdt, Ai, self._invNrays)
-            print()
-            quit()
+        xy = xyzpos[:2]
+        dr = np.sqrt(np.sum((xy - np.array([-21.6, -24]))**2))
+        if dr < min(self.dx, self.dy):
+            if ID in [96852, 97848]:
+                print(ID, dEdiffdt, Ai, self._invNrays)
+                print()
+                quit()
 
         Aray = Ai * self._invNrays # code units
         return dEdiffdt / Aray # code units
