@@ -420,13 +420,6 @@ class IcoFluxFinder(starsmashertools.flux.fluxfinder.FluxFinder, object):
         kappai = self.output['opacity'][ID] # code units
         rhoi = self.output['rho'][ID] # code units
         ui = self.output['u'][ID] # code units
-
-        if ID in [96852, 97848]:
-            xy = xyzpos[:2]
-            dr = np.sqrt(np.sum((xy - np.array([-21.6, -24]))**2))
-            if dr < min(self.dx, self.dy):
-                print(Ti, kappai, rhoi, ui, self._a, self._c)
-                quit()
         
         Ti4 = Ti**4
         warnings.filterwarnings(action = 'ignore')
@@ -453,7 +446,14 @@ class IcoFluxFinder(starsmashertools.flux.fluxfinder.FluxFinder, object):
                 # simple temperature comparison to the closest particle
                 closest = np.argmin(dr2[idx])
                 Tj = self.output['temperatures'][js][idx][closest] # code units
-                if Tj >= Ti: return 0. # Heating event
+                if Tj >= Ti:
+                    if ID in [96852, 97848]:
+                        xy = xyzpos[:2]
+                        dr = np.sqrt(np.sum((xy - np.array([-21.6, -24]))**2))
+                        if dr < min(self.dx, self.dy):
+                            print("HEATING")
+                            quit()
+                    return 0. # Heating event
             
             # The diffusion radiation per cooling ray (if C_s = 1 only 1 time)
             return betai * self.output['dEmaxdiffdt'][ID] * self._invNrays
@@ -469,7 +469,14 @@ class IcoFluxFinder(starsmashertools.flux.fluxfinder.FluxFinder, object):
                 j = interacting_IDs[idx][closest]
                 Tj = self.output['temperatures'][j] # code units
                 
-                if Tj >= Ti: return 0. # Heating event
+                if Tj >= Ti:
+                    if ID in [96852, 97848]:
+                        xy = xyzpos[:2]
+                        dr = np.sqrt(np.sum((xy - np.array([-21.6, -24]))**2))
+                        if dr < min(self.dx, self.dy):
+                            print("HEATING")
+                            quit()
+                    return 0. # Heating event
                 
                 Uradj = self._a * Tj**4 # code units
                 deltar = np.sqrt(dr2[closest]) # code units
