@@ -458,7 +458,7 @@ class IcoFluxFinder(starsmashertools.flux.fluxfinder.FluxFinder, object):
         elif self._cooling_types[ID] == 1: # Dense cooling
             Uradi = self._a * Ti4 # code units
             Uradj = 0.
-            ri = r[ID] # code units
+            ri = self.output['radius'][ID] # code units
             deltar = ri
             
             if idx is not None and np.any(idx): # overlapping kernels exist
