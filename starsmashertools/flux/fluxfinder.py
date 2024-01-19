@@ -1011,11 +1011,11 @@ class FluxFinder(object):
             with starsmashertools.mask(self['output'], IDs) as masked:
                 xy = np.column_stack((masked['x'], masked['y']))
                 r2 = masked['radius']**2
-                for p in enumerate(xypos):
-                    drprime2 = np.sum((xy - p)**2, axis=-1)
+                for p in xypos:
+                    drprime2 = np.sum((xy - p)**2, axis=1)
                     idx = drprime2 < r2
                     if not np.any(idx): continue
-                    result += [[IDs[idx]]]
+                    result += [IDs[idx]]
             
             if len(result) == 1: return result[0]
             return result
