@@ -463,13 +463,12 @@ class IcoFluxFinder(starsmashertools.flux.fluxfinder.FluxFinder, object):
             
             if idx is not None and np.any(idx): # overlapping kernels exist
                 closest = np.argmin(dr2[idx])
-                j = interacting_IDs[idx][closest]
-                Tj = self.output['temperatures'][j] # code units
+                Tj = self.output['temperatures'][js][idx][closest] # code units
                 
                 if Tj >= Ti: return 0. # Heating event
                 
                 Uradj = self._a * Tj**4 # code units
-                deltar = np.sqrt(dr2[closest]) # code units
+                deltar = np.sqrt(dr2[idx][closest]) # code units
             
             gradUrad = (Uradj - Uradi) / deltar # code units
             
