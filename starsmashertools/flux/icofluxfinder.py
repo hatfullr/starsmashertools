@@ -347,20 +347,29 @@ class IcoFluxFinder(starsmashertools.flux.fluxfinder.FluxFinder, object):
         
         uses_emerg = np.logical_and(
             ~nothing,
-            dEemergdt < dEdiffdt,
+            np.logical_and(
+                dEemergdt > 0,
+                dEemergdt < dEdiffdt,
+            ),
         )
         uses_diff = np.logical_and(
             ~nothing,
             np.logical_and(
-                dEdiffdt < dEemergdt,
-                dEdiffdt < dEmaxdiffdt,
+                dEdiffdt > 0,
+                np.logical_and(
+                    dEdiffdt < dEemergdt,
+                    dEdiffdt < dEmaxdiffdt,
+                ),
             ),
         )
         uses_maxdiff = np.logical_and(
             ~nothing,
             np.logical_and(
-                dEmaxdiffdt < dEemergdt,
-                dEmaxdiffdt == dEdiffdt,
+                dEmaxdiffdt > 0,
+                np.logical_and(
+                    dEmaxdiffdt < dEemergdt,
+                    dEmaxdiffdt == dEdiffdt,
+                ),
             ),
         )
         
