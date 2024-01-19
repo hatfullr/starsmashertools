@@ -420,6 +420,10 @@ class IcoFluxFinder(starsmashertools.flux.fluxfinder.FluxFinder, object):
         kappai = self.output['opacity'][ID] # code units
         rhoi = self.output['rho'][ID] # code units
         ui = self.output['u'][ID] # code units
+
+        if ID in [96852, 97848]:
+            print(Ti, kappai, rhoi, ui, self._a, self._c)
+            quit()
         
         Ti4 = Ti**4
         warnings.filterwarnings(action = 'ignore')
