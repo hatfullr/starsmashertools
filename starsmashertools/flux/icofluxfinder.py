@@ -531,6 +531,8 @@ class IcoFluxFinder(starsmashertools.flux.fluxfinder.FluxFinder, object):
         # sure that our calculations are correct here.
 
         xyzpos = np.array([xpos, ypos, np.nan])
+
+        contributors = []
         
         total_flux = 0.
         weighted_averages = [0.] * len(flux_weighted_averages)
@@ -540,13 +542,10 @@ class IcoFluxFinder(starsmashertools.flux.fluxfinder.FluxFinder, object):
         dzs = np.sqrt(r2 - drprime2)
         fronts = z + dzs
         backs = z - dzs
-
+        
         interacting_uses_emerg = self._uses_emerg[IDs]
         interacting_uses_maxdiff = self._uses_maxdiff[IDs]
-        #interacting_dEemergdt = self.output['dEemergdt'][IDs] # code units
-        #interacting_dEdiffdt = self.output['dEdiffdt'][IDs] # code units
-        #interacting_dEmaxdiffdt = self.output['dEmaxdiffdt'][IDs] # code units
-
+        
         idx_sorted = np.argsort(fronts)
 
         if len(fronts) > 1:
@@ -577,9 +576,6 @@ class IcoFluxFinder(starsmashertools.flux.fluxfinder.FluxFinder, object):
                         xyzpos, # rsun
                         interacting_uses_emerg[index],
                         interacting_uses_maxdiff[index],
-                        #interacting_dEemergdt[index],
-                        #interacting_dEdiffdt[index],
-                        #interacting_dEmaxdiffdt[index],
                     ) # code units
                     particle_flux *= self._flux_unit # cgs
                     f = particle_flux * exptau # cgs
@@ -591,8 +587,8 @@ class IcoFluxFinder(starsmashertools.flux.fluxfinder.FluxFinder, object):
                     for j, val in enumerate(flux_weighted_averages):
                         weighted_averages[j] += val[index] * f # cgs
 
-                    self._contributors[IDs[index]] = True
-
+                    contributors += [IDs[index]]
+        
         # Add the surface particle's flux. The temperature gradient is correct
         # here.
         index = idx_sorted[-1]
@@ -603,9 +599,6 @@ class IcoFluxFinder(starsmashertools.flux.fluxfinder.FluxFinder, object):
             xyzpos,
             interacting_uses_emerg[index],
             interacting_uses_maxdiff[index],
-            #interacting_dEemergdt[index],
-            #interacting_dEdiffdt[index],
-            #interacting_dEmaxdiffdt[index],
         ) # code units
         particle_flux *= self._flux_unit # cgs
         f = particle_flux # cgs
@@ -613,10 +606,10 @@ class IcoFluxFinder(starsmashertools.flux.fluxfinder.FluxFinder, object):
         for j, val in enumerate(flux_weighted_averages):
             weighted_averages[j] += val[index] * f # cgs
         total_flux += f # cgs
-        self._contributors[IDs[index]] = True
+        contributors += [IDs[index]]
         
-        return total_flux, weighted_averages, total_attenuation, total_unattenuated, IDs[index]
-            
+        return total_flux, weighted_averages, total_attenuation, total_unattenuated, IDs[index], np.asarray(contributors, dtype=int)
+    
         
         
 

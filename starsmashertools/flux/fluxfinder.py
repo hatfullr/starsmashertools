@@ -447,6 +447,8 @@ class FluxFinder(object):
         total_attenuation = 0.
         total_unattenuated = 0.
 
+        contributors = []
+
         # Obtain the interacting particles' depths
         dz = np.sqrt(r2 - drprime2) # rsun
         front = z + dz # rsun
@@ -508,7 +510,7 @@ class FluxFinder(object):
                     for _i, val in enumerate(flux_weighted_averages):
                         weighted_averages[_i] += val[idx_sorted[i]] * f # cgs
 
-                    self._contributors[IDs[idx_sorted[i]]] = True
+                    contributors += [IDs[idx_sorted[i]]]
         
         # Add the surface particle's flux. The temperature gradient is correct
         # here.
@@ -516,9 +518,9 @@ class FluxFinder(object):
         for _i, val in enumerate(flux_weighted_averages):
             weighted_averages[_i] += val[idx_sorted[-1]] * f # cgs
         total_flux += f # cgs
-        self._contributors[IDs[idx_sorted[-1]]] = True
+        contributors += [IDs[idx_sorted[-1]]]
         
-        return total_flux, weighted_averages, total_attenuation, total_unattenuated, IDs[idx_sorted[-1]]
+        return total_flux, weighted_averages, total_attenuation, total_unattenuated, IDs[idx_sorted[-1]], np.asarray(contributors, dtype=int)
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
@@ -625,9 +627,10 @@ class FluxFinder(object):
         self.print_progress(progress)
         if not parallel:
             for (ii, jj), args, kwargs in zip(indices, all_arguments, all_keywords):
-                flux[ii, jj], averages, attenuation[ii, jj], unattenuated[ii,jj], first_particle[ii,jj] = self.get_flux(*args, **kwargs)
+                flux[ii, jj], averages, attenuation[ii, jj], unattenuated[ii,jj], first_particle[ii,jj], contributors = self.get_flux(*args, **kwargs)
                 for i, val in enumerate(averages):
                     weighted_averages[i][ii, jj] = val
+                self._contributors[contributors] = True
                 progress += increment
                 self.print_progress(progress)
         else:
@@ -647,13 +650,15 @@ class FluxFinder(object):
             outputs = parallel.get_output()
             for index, result in zip(indices, outputs):
                 ii, jj = index
-                flux[ii, jj], averages, attenuation[ii, jj], unattenuated[ii,jj], first_particle[ii,jj] = result
+                flux[ii, jj], averages, attenuation[ii, jj], unattenuated[ii,jj], first_particle[ii,jj], contributors = result
                 for _i, val in enumerate(averages):
                     weighted_averages[_i][ii, jj] = val
+                
+                self._contributors[contributors] = True
             
         # Store a list of all the contributing particles
         self.contributing_particle_IDs = np.where(self._contributors)[0]
-        
+
         # Complete the weighted averages
         idx = np.logical_and(flux > 0, np.isfinite(flux))
         if np.any(idx):
