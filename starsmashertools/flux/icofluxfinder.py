@@ -464,7 +464,6 @@ class IcoFluxFinder(starsmashertools.flux.fluxfinder.FluxFinder, object):
             if idx is not None and np.any(idx): # overlapping kernels exist
                 closest = np.argmin(dr2[idx])
                 Tj = self.output['temperatures'][js][idx][closest] # code units
-                
                 if Tj >= Ti: return 0. # Heating event
                 
                 Uradj = self._a * Tj**4 # code units
@@ -511,14 +510,6 @@ class IcoFluxFinder(starsmashertools.flux.fluxfinder.FluxFinder, object):
             interacting_IDs,
             xyzpos,
         )
-
-        xy = xyzpos[:2]
-        dr = np.sqrt(np.sum((xy - np.array([-21.6, -24]))**2))
-        if dr < min(self.dx, self.dy):
-            if ID in [96852, 97848]:
-                print(ID, dEdiffdt, Ai, self._invNrays)
-                print()
-                quit()
 
         Aray = Ai * self._invNrays # code units
         return dEdiffdt / Aray # code units
