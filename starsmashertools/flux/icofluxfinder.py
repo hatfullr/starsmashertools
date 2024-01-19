@@ -340,10 +340,15 @@ class IcoFluxFinder(starsmashertools.flux.fluxfinder.FluxFinder, object):
         dEmaxdiffdt = self.output['dEmaxdiffdt'] # code units
         dEdiffdt = self.output['dEdiffdt'] # code units
 
-        nothing = np.logical_and(
-            dEemergdt == 0,
-            dEmaxdiffdt == 0,
-        )
+        uraddotcool = self.output['uraddot']
+        if self.output.simulation['ncooling'] == 3: # Heating enabled
+            uraddotcool = self.output['uraddotcool']
+        
+        nothing = uraddotcool == 0
+        #nothing = np.logical_and(
+        #    dEemergdt == 0,
+        #    dEmaxdiffdt == 0,
+        #)
         
         uses_emerg = np.logical_and(
             ~nothing,
