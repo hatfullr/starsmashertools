@@ -422,8 +422,11 @@ class IcoFluxFinder(starsmashertools.flux.fluxfinder.FluxFinder, object):
         ui = self.output['u'][ID] # code units
 
         if ID in [96852, 97848]:
-            print(Ti, kappai, rhoi, ui, self._a, self._c)
-            quit()
+            xy = xyzpos[:2]
+            dr = np.sqrt(np.sum((xy - np.array([-21.6, -24]))**2))
+            if dr < min(self.dx, self.dy):
+                print(Ti, kappai, rhoi, ui, self._a, self._c)
+                quit()
         
         Ti4 = Ti**4
         warnings.filterwarnings(action = 'ignore')
