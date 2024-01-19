@@ -370,6 +370,22 @@ class IcoFluxFinder(starsmashertools.flux.fluxfinder.FluxFinder, object):
         Nnothing = np.sum(nothing)
         
         if Nemerg + Ndiff + Nmaxdiff + Nnothing != self.output['ntot']:
+            print(np.column_stack((
+                self.output['dEemergdt'][uses_emerg],
+                self.output['dEdiffdt'][uses_emerg],
+                self.output['dEmaxdiffdt'][uses_emerg],
+            )))
+            print(np.column_stack((
+                self.output['dEemergdt'][uses_diff],
+                self.output['dEdiffdt'][uses_diff],
+                self.output['dEmaxdiffdt'][uses_diff],
+            )))
+            print(np.column_stack((
+                self.output['dEemergdt'][uses_maxdiff],
+                self.output['dEdiffdt'][uses_maxdiff],
+                self.output['dEmaxdiffdt'][uses_maxdiff],
+            )))
+
             raise Exception("Improper detection of which particles use dEemergdt, dEdiffdt, and dEmaxdiffdt. %d %d %d %d %d %d" % (Nemerg, Ndiff, Nmaxdiff, Nnothing, Nemerg + Ndiff + Nmaxdiff + Nnothing, self.output['ntot']))
 
         if (np.any(np.logical_and(uses_emerg, uses_diff)) or
@@ -384,7 +400,6 @@ class IcoFluxFinder(starsmashertools.flux.fluxfinder.FluxFinder, object):
             raise Exception("Improper detection of which particles use dEemergdt, dEdiffdt, and dEmaxdiffdt. Detected particles that use more than 1")
         
         self._uses_emerg = uses_emerg
-        self._uses_diff = uses_diff
         self._uses_maxdiff = uses_maxdiff
 
         self._Nrays = len(self._unit_vertices)
