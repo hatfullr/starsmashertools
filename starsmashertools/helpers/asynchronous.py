@@ -128,23 +128,24 @@ class ParallelFunction(object):
 
     def func(self, input_queue, output_queue, error_queue, error_queue_lock):
         import sys
-        try:
-            while not input_queue.empty():
-                index, args, kwargs = input_queue.get()
+        
+        while not input_queue.empty():
+            index, args, kwargs = input_queue.get()
+            try:
                 output_queue.put([index, self._target(*args, **kwargs)])
-        except Exception as e:
-            # Print the first exception only one time. This will show where the
-            # original exception came from.
-            with error_queue_lock:
-                if error_queue.qsize() == 0:
-                    import starsmashertools.helpers.stacktrace
-                    print(starsmashertools.helpers.stacktrace.format_exc(
-                        exception = e,
-                        for_raise = True,
-                    ))
-                    print(type(e).__qualname__ + ": " + str(e))
-                    error_queue.put(e)
-            sys.exit(1)
+            except Exception as e:
+                # Print the first exception only one time. This will show where
+                # the original exception came from.
+                with error_queue_lock:
+                    if error_queue.qsize() == 0:
+                        import starsmashertools.helpers.stacktrace
+                        print(starsmashertools.helpers.stacktrace.format_exc(
+                            exception = e,
+                            for_raise = True,
+                        ))
+                        print(type(e).__qualname__ + ": " + str(e))
+                        error_queue.put([e, index, args, kwargs])
+                sys.exit(1)
     
     def get_progress(self):
         inputs = self._input_queue.qsize()
@@ -191,6 +192,15 @@ class ParallelFunction(object):
         """
         self._do += [[interval, method, args, kwargs]]
 
+    def process_error(self, from_queue):
+        import contextlib, sys
+        error, index, args, kwargs = from_queue
+        self.terminate()
+        print("ParallelFunction encountered an error at index %d.\nArguments = %s\nKeywords = %s" % (index, str(args), str(kwargs)))
+        with contextlib.suppress(Exception):
+            raise(error)
+        sys.exit(1)
+
     def get_output(self, sort : bool = True):
         """
         Obtain all outputs and identifiers of the target function specified in 
@@ -219,20 +229,13 @@ class ParallelFunction(object):
             input positional and keyword arguments).
         """
         import time
-        import sys
-
-        if not sort:
-            def onError(error):
-                print("I am here")
-                self.terminate()
-                raise(error)
-                sys.exit(1)
         
+        if not sort:
             return ParallelFunction.ResultIterator(
                 self._output_queue,
                 self._expected_outputs,
                 error_queue = self._error_queue,
-                onError = onError,
+                onError = self.process_error,
                 onFinished = self.terminate,
                 do_every = self._do,
             )
@@ -242,8 +245,7 @@ class ParallelFunction(object):
             t0 = time.time()
             while self._output_queue.qsize() < self._expected_outputs:
                 if not self._error_queue.empty():
-                    self.terminate()
-                    sys.exit(1)
+                    self.process_error(self._error_queue.get())
 
                 t1 = time.time()
                 deltaTime = t1 - t0
