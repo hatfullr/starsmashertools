@@ -1,5 +1,5 @@
 import multiprocessing
-import multiprocessing.queues
+import multiprocessing.queue
 import typing
 
 max_processes = multiprocessing.cpu_count()
@@ -191,48 +191,137 @@ class ParallelFunction(object):
         """
         self._do += [[interval, method, args, kwargs]]
 
-    def get_output(self):
+    def get_output(self, sort : bool = True):
         """
         Obtain all outputs and identifiers of the target function specified in 
-        :func:`~.__init__`. Blocks until all processes have finished.
+        :func:`~.__init__`. Blocks until all processes have finished. If you
+        want the results to be sorted then this will return a list of results.
+        Otherwise, this returns an iterator which blocks on every iteration
+        until a result is ready to be given. Thus, when `sort` is False you
+        should loop over the iterator even if you don't plan to use the returned
+        values.
+
+        Parameters
+        ----------
+        sort : bool, default = True
+            If `False`, return an iterator that is not sorted. Otherwise, obtain
+            all results and put them in a list which is sorted by the same order
+            as the arguments and keywords given in
+            :func:`~.ParallelFunction.__init__`.
         
         Returns
         -------
-        list
-            A list of results from the target function specified in
-            :func:`~.__init__` in the same order as the input positional and 
-            keyword arguments.
+        iterator or list
+            If `sort` is False, returns an iterator which blocks on every 
+            iteration until a value from the processes is ready to be returned.
+            Otherwise, returns a list of all the returned values only after all
+            processes have finished, sorted by their indices (same order as the
+            input positional and keyword arguments).
         """
         import time
         import sys
 
-        # Block until all processes have finished
-        timers = [0.] * len(self._do)
-        t0 = time.time()
-        Ndone = 0
-        while self._output_queue.qsize() < self._expected_outputs:
-            if not self._error_queue.empty():
+        if not sort:
+            def onError(error):
                 self.terminate()
                 sys.exit(1)
+        
+            return ParallelFunction.ResultIterator(
+                self._output_queue,
+                self._expected_outputs,
+                error_queue = self._error_queue,
+                onError = onError,
+                onFinished = self.terminate,
+                do_every = self._do,
+            )
+        else:
+            # Block until all processes have finished
+            timers = [0.] * len(self._do)
+            t0 = time.time()
+            while self._output_queue.qsize() < self._expected_outputs:
+                if not self._error_queue.empty():
+                    self.terminate()
+                    sys.exit(1)
+
+                t1 = time.time()
+                deltaTime = t1 - t0
+                t0 = t1
+                for i, d in enumerate(self._do):
+                    timers[i] += deltaTime
+                    if timers[i] >= d[0]:
+                        timers[i] -= d[0] # Maintain remainder
+                        d[1](*d[2], **d[3])
+                time.sleep(1.e-4)
+
+            self.terminate()
+
+            outputs = []
+            indices = []
+            for i in range(self._output_queue.qsize()):
+                index, output = self._output_queue.get()
+                outputs += [output]
+                indices += [index]
+
+            # Return sorted by input indices
+            return [x for _, x in sorted(zip(indices, outputs))]
+
+    class ResultIterator(object):
+        def __init__(
+                self,
+                queue : multiprocessing.queue.Queue,
+                expected_length : int,
+                error_queue : multiprocessing.queue.Queue | type(None) = None,
+                onError : typing.Callable | type(None) = None,
+                onFinished : typing.Callable | type(None) = None,
+                do_every : list | tuple = [],
+        ):
+            self.queue = queue
+            self.expected_length = expected_length
+            self.error_queue = error_queue
+            self.onError = onError
+            self.do_every = do_every
+            self.onFinished = onFinished
+
+            self._iteration = 0
+            self._timers = [0.] * len(self.do_every)
+            self._t0 = None
             
-            t1 = time.time()
-            deltaTime = t1 - t0
-            t0 = t1
-            for i, d in enumerate(self._do):
-                timers[i] += deltaTime
-                if timers[i] >= d[0]:
-                    timers[i] -= d[0] # Maintain remainder
-                    d[1](*d[2], **d[3])
-            time.sleep(1.e-4)
+        def __iter__(self): return self
+
+        def __next__(self):
+            import time
+
+            if self._iteration >= self.expected_length:
+                self.stop()
+
+            if self._iteration == 0:
+                self._t0 = time.time()
+            
+            # Block until we have a member in the queue to get. Check the error
+            # queue for any errors that need raised.
+            while self.queue.qsize() == 0:
+                if (self.error_queue is not None and
+                    not self.error_queue.empty()):
+                    if self.onError is not None:
+                        self.onError(self.error_queue.get())
+                        self.stop()
+
+                t1 = time.time()
+                deltaTime = t1 - self._t0
+                self._t0 = t1
+                for i, d in enumerate(self.do_every):
+                    self._timers[i] += deltaTime
+                    if self._timers[i] >= d[0]:
+                        self._timers[i] -= d[0] # Maintain remainder
+                        d[1](*d[2], **d[3])
+            
+            self._iteration += 1
+            return self.queue.get()
+
+        def stop(self):
+            if self.onFinished is not None:
+                self.onFinished()
+            raise StopIteration
+                
         
-        self.terminate()
-        
-        outputs = []
-        indices = []
-        for i in range(self._output_queue.qsize()):
-            index, output = self._output_queue.get()
-            outputs += [output]
-            indices += [index]
-        
-        # Return sorted by input indices
-        return [x for _, x in sorted(zip(indices, outputs))]
+            

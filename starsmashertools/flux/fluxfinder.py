@@ -52,6 +52,7 @@ class FluxFinder(object):
             flux_weighted_averages : list | tuple = [],
             verbose : bool = False,
     ):
+        raise NotImplementedError("Do not use this class")
         import copy
         
         # Input parameters
@@ -112,12 +113,13 @@ class FluxFinder(object):
         ))
     
     def _initialize(self):
+        self._radiation_map = np.zeros((self.resolution[0], self.resolution[1], 3))
         self._contributors = np.full(len(self.output['x']), False)
         self.contributing_particle_IDs = []
 
         self._setup_units()
-        self.prepare_output()
         self._setup_viewing_angle()
+        self.prepare_output()
         self._setup_extent()
 
         self.progress = 0.
@@ -622,15 +624,34 @@ class FluxFinder(object):
                 all_keywords += [kwargs]
 
 
+        def handle_result(ii, jj, result):
+            flux[ii, jj] = result[0]
+            averages = result[1]
+            attenuation[ii, jj] = result[2]
+            unattenuated[ii,jj] = result[3]
+            first_particle[ii,jj] = result[4]
+            contributors = result[5]
+            if len(result) > 5 and flux[ii, jj] > 0 and np.isfinite(flux[ii, jj]):
+                self._radiation_map[ii, jj] = result[6] / flux[ii, jj]
+            
+            if flux[ii, jj] > unattenuated[ii, jj]:
+                raise Exception("Found flux larger than unattenuated flux on pixel (%d, %d) located at x,y = (%g, %g): %g > %g" % (
+                    ii, jj,
+                    self.extent[0] + ii * self.dx,
+                    self.extent[2] + jj * self.dy,
+                    flux[ii,jj],
+                    unattenuated[ii,jj],
+                ))
+            for i, val in enumerate(averages):
+                weighted_averages[i][ii, jj] = val
+            self._contributors[contributors] = True
+                
         increment = 1. / float(len(all_arguments))
         progress = 0.
         self.print_progress(progress)
         if not parallel:
             for (ii, jj), args, kwargs in zip(indices, all_arguments, all_keywords):
-                flux[ii, jj], averages, attenuation[ii, jj], unattenuated[ii,jj], first_particle[ii,jj], contributors = self.get_flux(*args, **kwargs)
-                for i, val in enumerate(averages):
-                    weighted_averages[i][ii, jj] = val
-                self._contributors[contributors] = True
+                handle_result(ii, jj, self.get_flux(*args, **kwargs))
                 progress += increment
                 self.print_progress(progress)
         else:
@@ -650,11 +671,7 @@ class FluxFinder(object):
             outputs = parallel.get_output()
             for index, result in zip(indices, outputs):
                 ii, jj = index
-                flux[ii, jj], averages, attenuation[ii, jj], unattenuated[ii,jj], first_particle[ii,jj], contributors = result
-                for _i, val in enumerate(averages):
-                    weighted_averages[_i][ii, jj] = val
-                
-                self._contributors[contributors] = True
+                handle_result(ii, jj, result)
             
         # Store a list of all the contributing particles
         self.contributing_particle_IDs = np.where(self._contributors)[0]
@@ -689,6 +706,7 @@ class FluxFinder(object):
             'log_attenuation',
             'unattenuated',
             'log_unattenuated',
+            'radiation_map',
         ]
         
         class FileFormatError(Exception, object): pass
@@ -696,6 +714,7 @@ class FluxFinder(object):
         def __init__(
                 self,
                 flux : np.ndarray,
+                properties : dict = {}, # Other properties to save
                 weighted_averages : np.ndarray,
                 attenuation : np.ndarray,
                 unattenuated : np.ndarray,
@@ -706,10 +725,13 @@ class FluxFinder(object):
                 extent = None,
                 tau_ray_max = None,
                 viewing_angle = None,
+                radiation_map = None,
+                fluxfinder_type = None,
         ):
+            raise NotImplementedError("Do not use this class")
             import copy
             import warnings
-
+            
             if fluxfinder is not None:
                 #output_file = copy.deepcopy(fluxfinder.output.path)
                 output = copy.deepcopy(fluxfinder.output)
@@ -717,7 +739,9 @@ class FluxFinder(object):
                 extent = copy.deepcopy(fluxfinder.extent)
                 tau_ray_max = copy.deepcopy(fluxfinder.tau_ray_max)
                 viewing_angle = copy.deepcopy(fluxfinder.viewing_angle)
-                
+                radiation_map = copy.deepcopy(fluxfinder._radiation_map)
+                fluxfinder_type = type(fluxfinder).__name__
+
             warnings.filterwarnings(action='ignore')
 
             log_flux = np.log10(flux)
@@ -726,6 +750,7 @@ class FluxFinder(object):
             log_unattenuated = np.log10(unattenuated)
             
             super(FluxFinder.Result, self).__init__({
+                'fluxfinder_type' : fluxfinder_type,
                 'output' : output,
                 'simulation' : output.simulation.directory if output is not None else None,
                 'flux' : copy.deepcopy(flux),
@@ -734,6 +759,7 @@ class FluxFinder(object):
                 'log_attenuation' : copy.deepcopy(log_attenuation),
                 'unattenuated' : copy.deepcopy(unattenuated),
                 'log_unattenuated' : copy.deepcopy(log_unattenuated),
+                'radiation_map' : copy.deepcopy(radiation_map),
                 'weighted_averages' : copy.deepcopy(weighted_averages),
                 'log_weighted_averages' : copy.deepcopy(log_weighted_averages),
                 'first_particle' : copy.deepcopy(first_particle),
@@ -755,6 +781,71 @@ class FluxFinder(object):
                     return self[attr]
             return super(FluxFinder.Result, self).__getattribute__(attr)
 
+        def __str__(self):
+            import starsmashertools.helpers.string
+            import starsmashertools.helpers.path
+            Lobs = 4 * self['dx'] * self['dy'] * np.sum(self['flux']) * float(self.output.simulation.units.length)**2
+            nonzeroflux = self['flux'][self['flux'] != 0]
+            finitelogflux = self['log_flux'][np.isfinite(self['log_flux'])]
+
+            def array_quantities(array, name, units, zeros=False):
+                import warnings
+                _sum = np.sum(array)
+                if not zeros:
+                    idx = array != 0
+                    if np.any(idx):
+                        _min = np.amin(array[idx])
+                        _max = np.amax(array[idx])
+                        _mean = np.mean(array[idx])
+                    else:
+                        _min, _max, _mean = 0, 0, 0
+                else:
+                    _min = np.amin(array)
+                    _max = np.amax(array)
+                    _mean = np.mean(array)
+                fmt = ["   {name:>15s} = {sum:15.7E} {units}, log10 = {logsum:15.7E}"]
+                fmt += ["      {:>15s} = {{min:15.7E}} {{units}}, log10 = {{logmin:15.7E}}".format("min")]
+                fmt += ["      {:>15s} = {{max:15.7E}} {{units}}, log10 = {{logmax:15.7E}}".format("max")]
+                fmt += ["      {:>15s} = {{mean:15.7E}} {{units}}, log10 = {{logmean:15.7E}}".format("mean")]
+                fmt = "\n".join(fmt)
+                warnings.filterwarnings(action = 'ignore')
+                ret = fmt.format(
+                    name = name,
+                    sum = _sum,
+                    units = units,
+                    logsum = np.log10(_sum),
+                    min = _min,
+                    max = _max,
+                    mean = _mean,
+                    logmin = np.log10(_min),
+                    logmax = np.log10(_max),
+                    logmean = np.log10(_mean),
+                )
+                warnings.resetwarnings()
+                return ret
+            
+            
+            simulation = None
+            if self['simulation'] is not None:
+                simulation = starsmashertools.helpers.string.shorten(
+                    starsmashertools.helpers.path.basename(self['simulation']),
+                    50,
+                )
+            string = [type(self).__qualname__ + ": "+str(self['output'])+" from "+simulation]
+            string += ["   resolution = (%d, %d)" % tuple(self['resolution'])]
+            string += ["   viewing angle = (%g, %g, %g) degrees" % tuple(self['viewing_angle'])]
+            string += ["   tau_ray_max = %g" % self['tau_ray_max']]
+            string += ["   xmin, xmax, dx = %15.7E %15.7E %15.7E Rsun" % tuple(self['extent'][:2] + [self['dx']])]
+            string += ["   ymin, ymax, dy = %15.7E %15.7E %15.7E Rsun" % tuple(self['extent'][2:] + [self['dy']])]
+            if self['contributing_particle_IDs'] is not None:
+                string += ["   N contributing particles = %d" % len(self['contributing_particle_IDs'])]
+
+            string += [array_quantities(self['flux'],"flux","erg/s/cm^2")]
+            string += [array_quantities(self['attenuation'],"attenuation","erg/s/cm^2")]
+            string += [array_quantities(self['unattenuated'],"unattenuated","erg/s/cm^2")]
+            string += ["   Lobs = 4 dx dy flux = %15.7E Lsun, log10 = %15.7E" % (Lobs / 3.846e33, np.log10(Lobs / 3.846e33))]
+            return "\n".join(string)
+
         @property
         def shape(self): return self.flux.shape
 
@@ -767,11 +858,13 @@ class FluxFinder(object):
             if obj['output'] is not None and obj['simulation'] is not None:
                 simulation = starsmashertools.get_simulation(obj['simulation'])
                 output = starsmashertools.lib.output.Output(
-                    obj['output'],
+                    obj['output']['path'],
                     simulation,
                 )
+                for key, val in obj['output']['content'].items():
+                    output[key] = val
             
-            return FluxFinder.Result(
+            ret = FluxFinder.Result(
                 obj['flux'],
                 obj['weighted_averages'],
                 obj['attenuation'],
@@ -783,7 +876,10 @@ class FluxFinder(object):
                 extent = obj['extent'],
                 tau_ray_max = obj['tau_ray_max'],
                 viewing_angle = obj['viewing_angle'],
+                radiation_map = obj.get('radiation_map', None),
+                fluxfinder_type = obj.get('fluxfinder_type', None),
             )
+            return ret
 
         @starsmashertools.helpers.argumentenforcer.enforcetypes
         @api
@@ -845,7 +941,7 @@ class FluxFinder(object):
             if extent is None: extent = self['extent']
             
             return ax.imshow(
-                data.T,
+                np.swapaxes(data, 0, 1),
                 interpolation = interpolation,
                 origin = origin,
                 extent = extent,
@@ -901,9 +997,13 @@ class FluxFinder(object):
             obj = {}
             for key, val in self.items():
                 if isinstance(val, starsmashertools.lib.output.Output):
-                    obj[key] = val.path
+                    obj[key] = {
+                        'path' : val.path,
+                        'content' : {k:v for k, v in val.items()},
+                    }
                 else: obj[key] = val
-                
+
+            obj['starsmashertools version'] = starsmashertools.__version__
             starsmashertools.helpers.jsonfile.save(filename, obj)
                 
         @staticmethod
@@ -914,9 +1014,12 @@ class FluxFinder(object):
         ):
             import starsmashertools.helpers.path
             import starsmashertools.helpers.jsonfile
-            import starsmashertools.helpers.string
+            import warnings
 
             obj = starsmashertools.helpers.jsonfile.load(filename)
+            if obj['starsmashertools version'] != starsmashertools.__version__:
+                warnings.warn("File was created with a different starsmashertools version %s" % obj['starsmashertools version'])
+            
             return FluxFinder.Result.from_json(obj)
 
         @starsmashertools.helpers.argumentenforcer.enforcetypes
@@ -951,7 +1054,9 @@ class FluxFinder(object):
                 The particle indices which are contributing at each `x` and `y`.
                 If `x` and `y` are iterables, each element of this list will be
                 a list of particle indices corresponding to each element in `x`
-                and `y`.
+                and `y`. The IDs are sorted in order from closest to the surface
+                to farthest away (into the screen), where the number used to
+                sort is the position at the surface of each particle's kernel.
             """
                 
             # Check for errors
@@ -997,6 +1102,9 @@ class FluxFinder(object):
             floats = np.asarray(floats, dtype=float)
             ints = np.asarray(ints, dtype=int)
 
+            IDs = self['contributing_particle_IDs']
+            if len(IDs) == 0: return []
+
             # Convert the integers to floats
             xmin, xmax, ymin, ymax = self['extent']
 
@@ -1007,15 +1115,20 @@ class FluxFinder(object):
 
             result = []
             
-            IDs = self['contributing_particle_IDs']
-            with starsmashertools.mask(self['output'], IDs) as masked:
-                xy = np.column_stack((masked['x'], masked['y']))
-                r2 = masked['radius']**2
-                for p in xypos:
-                    drprime2 = np.sum((xy - p)**2, axis=1)
-                    idx = drprime2 < r2
-                    if not np.any(idx): continue
-                    result += [IDs[idx]]
+            xy = np.column_stack((
+                self['output']['x'][IDs],
+                self['output']['y'][IDs],
+            ))
+            z = self['output']['z'][IDs]
+            r2 = self['output']['radius'][IDs]**2
+            for p in xypos:
+                drprime2 = np.sum((xy - p)**2, axis=1)
+                idx = drprime2 < r2
+                if not np.any(idx): continue
+                dz2 = self['output']['radius'][IDs][idx]**2 - drprime2[idx]
+                dz = np.sqrt(dz2)
+                sort_idx = np.argsort(z[idx] + dz)
+                result += [IDs[idx][sort_idx]]
             
             if len(result) == 1: return result[0]
             return result

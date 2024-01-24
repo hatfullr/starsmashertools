@@ -2,6 +2,8 @@ import starsmashertools.flux.fluxfinder
 import numpy as np
 import warnings
 
+#use_natasha = False
+use_natasha = True
 
 class IcoFluxFinder(starsmashertools.flux.fluxfinder.FluxFinder, object):
     """
@@ -16,7 +18,7 @@ class IcoFluxFinder(starsmashertools.flux.fluxfinder.FluxFinder, object):
             raise Exception("IcoFluxFinder can only be used for simulations with ncooling == 2 or 3, not '%d'" % self.output.simulation['ncooling'])
 
         self.tab_qtau = None
-
+    
     def _setup_angles(self):
         import starsmashertools.helpers.string
         import copy
@@ -126,32 +128,64 @@ class IcoFluxFinder(starsmashertools.flux.fluxfinder.FluxFinder, object):
         # Particles individually decide on what cooling type they have. Zero is
         # fluffy and 1 is dense. Make sure this is run before _set_radii, etc.
 
-        if self.output.simulation['cooling_type'] == 1: # Dense
+        self._cooling_types = np.zeros(self.output['ntot'], dtype=int)
+
+        if use_natasha:
             self._cooling_types = np.ones(self.output['ntot'], dtype=int)
-        elif self.output.simulation['cooling_type'] == 0: # Fluffy
-            self._cooling_types = np.zeros(self.output['ntot'], dtype=int)
-            idx = np.logical_and(
-                self.output['u'] != 0,
-                self.output['dEemergdt'] >= self.output['dEdiffdt'],
-            )
-            if np.any(idx):
-                self._cooling_types[idx] = 1
+            do_fluffy = 0
+            if do_fluffy == 1:
+                fluffy = np.logical_and(
+                    self.output['u'] != 0,
+                    self.output['dEemergdt'] < self.output['dEdiffdt'],
+                )
+                self._cooling_types[fluffy] = 0
         else:
-            raise NotImplementedError
-        
+            if self.output.simulation['cooling_type'] == 0: # Fluffy
+                self._cooling_types = np.zeros(self.output['ntot'], dtype=int)
+            elif self.output.simulation['cooling_type'] == 1: # Dense
+                self._cooling_types = np.ones(self.output['ntot'], dtype=int)
+            else:
+                raise NotImplementedError
+       
 
     def _set_radii(self):
-        m = self.output['am'] # msun
-        rho = self.output['rho'] # code units
+        self.output['radius'] = np.full(self.output['hp'].shape, np.nan)
 
-        self.output['radius'] = 2 * self.output['hp']
+        if use_natasha:
+            # Natasha's code does not check if the simulation is fluffy or not, so
+            # we must also not check that now.
+            fluffy = self._cooling_types == 0
+            dense = self._cooling_types == 1
+            
+            if np.any(fluffy):
+                self.output['radius'][fluffy] = 2 * self.output['hp'][fluffy] # code units
+                self.output['rho'][fluffy] = self.output['am'][fluffy]/self.output['radius'][fluffy]**3
+            if np.any(dense):
+                m = self.output['am'][dense] # msun
+                rho = self.output['rho'][dense] # code units
+                self.output['radius'][dense] = (0.75 * m / (np.pi * rho))**(0.3333333333333333) # code units
+                
+        else: # Not using Natasha's methods
+            if self.output.simulation['cooling_type'] == 0: # Fluffy
+                self.output['radius'] = 2 * self.output['hp']
+            elif self.output.simulation['cooling_type'] == 1: # Dense
+                m = self.output['am'] # msun
+                rho = self.output['rho'] # code units
+                self.output['radius'] = (0.75 * m / (np.pi * rho))**(0.3333333333333333) # code units
+            else: raise NotImplementedError
+            
+        
+        if self.output.simulation['cooling_type'] == 0: # Fluffy
+            expected_radii = 2 * self.output['hp']
+        elif self.output.simulation['cooling_type'] == 1: # Dense
+            expected_radii = (0.75 * self.output['am'] / (np.pi * self.output['rho']))**(0.3333333333333333) # code units
+        else:
+            raise NotImplementedError
 
-        dense = self._cooling_types == 1
-        if np.any(dense):
-            self.output['radius'][dense] = (0.75 * m[dense] / (np.pi * rho[dense]))**(0.3333333333333333) # code units
-
+        self._radii_changed = self.output['radius'] != expected_radii
+        
         self.output['surface area'] = 4 * np.pi * self.output['radius']**2 # code units
-
+        
         # The optical depths don't need to be updated because those were
         # calculated using this same radius we obtained above.
 
@@ -160,20 +194,10 @@ class IcoFluxFinder(starsmashertools.flux.fluxfinder.FluxFinder, object):
 
         # Because the density isn't changed, we also don't need to change the
         # temperature or opacity.
-                    
-    def _set_opacities(self):
-        # Opacity depends on density and temperature. Thus, if we change the
-        # opacity then we need to change the temperature, since we trust the
-        # density values from StarSmasher.
-        
-        # Modifying the opacities necessarily means modifying the optical
-        # depths, too, which means we also have to modify dEemergdt
+
+    def _get_dust_particles(self):
         import starsmashertools.preferences
-        import starsmashertools.lib.table
-        import copy
-        import starsmashertools.helpers.asynchronous
-        import warnings
-        
+
         T_dust_min, T_dust = starsmashertools.preferences.get_default(
             'FluxFinder', 'dust temperature range',
             throw_error = True,
@@ -189,67 +213,79 @@ class IcoFluxFinder(starsmashertools.flux.fluxfinder.FluxFinder, object):
         
         T = self.output['temperatures']
         
-        idx = np.logical_and(
+        return np.logical_and(
             self.output['u'] != 0,
             np.logical_and(
                 np.logical_and(
                     T < T_dust,
                     T > T_dust_min,
                 ),
-                self.output['popacity'] < kappa_dust, # code units
+                self.output['opacity'] < kappa_dust, # code units
             ),
         )
+                    
+    def _set_opacities(self):
+        # Opacity depends on density and temperature. Thus, if we change the
+        # opacity then we need to change the temperature, since we trust the
+        # density values from StarSmasher.
+        
+        # Modifying the opacities necessarily means modifying the optical
+        # depths, too, which means we also have to modify dEemergdt
+        import copy
+        import starsmashertools.helpers.asynchronous
+
+        self.output['opacity'] = self.output['popacity']
+        
+        idx = self._get_dust_particles()
         
         # Do nothing if there's nothing to worry about
         if not np.any(idx): return
-
+        
         if self.verbose:
             print("Some opacities may be adjusted according to the dust temperature range and dust opacities specified in starsmashertools.preferences. This will change values of dEemergdt, dEdiffdt, and dEmaxdiffdt, but will not affect the output files on the hard drive.")
-
-        # Make adjustments to everything
-        m = self.output['am'][idx]
-        u = self.output['u'][idx]
-        rho = self.output['rho'][idx]
-        rout = self.output['radius'][idx]
-        T = T[idx]
         
-        self.output['popacity'][idx] = kappa_dust
+        self.output['opacity'][idx] = kappa_dust
+
 
 
     def _update_cooling_quantities(self):
         # Only update the particles whose opacities or radii have been changed
-        idx = np.logical_and(
-            self.output['uraddot'] != 0,
-            np.logical_or(
-                self.output['popacity'] != self._original_output['popacity'],
-                self._cooling_types == 1,
-            ),
+        fluffy = self._cooling_types == 0
+        dense = self._cooling_types == 1
+        kappa_changed = self._get_dust_particles()
+
+        changed = np.logical_or(
+            self._radii_changed,
+            kappa_changed,
         )
-
-        if not np.any(idx): return
         
-        m = self.output['am'][idx]
-        u = self.output['u'][idx]
-        rho = self.output['rho'][idx]
-        rout = self.output['radius'][idx]
-        T = self.output['temperatures'][idx]
-        
-        tdiff = self.output['popacity'][idx] * rho * rout**2 / self._c
-        self.output['dEmaxdiffdt'][idx] = u * m / tdiff # code units
-        self.output['tau'][idx] = rho * self.output['popacity'][idx] * rout
-        A = 4 * np.pi * rout**2
+        if not np.any(changed): return
 
-        fluffy = self._cooling_types[idx] == 0
-        dense = self._cooling_types[idx] == 1
+        fluffy = np.logical_and(fluffy, changed)
+        dense = np.logical_and(dense, changed)
+        neither = np.logical_and(
+            changed,
+            np.logical_and(~fluffy, ~dense),
+        )
+        if np.any(neither): raise Exception("This should never happen")
+
+        if use_natasha:
+            if np.any(fluffy):
+                self.output['rho'][fluffy] = self.output['am'][fluffy]/self.output['radius'][fluffy]**3
+            self.output['tau'][changed] = self.output['rho'][changed] * self.output['opacity'][changed] * self.output['radius'][changed] * 4./3.
+        
+        #"""
+        tdiff = self.output['opacity'][changed] * self.output['rho'][changed] * self.output['radius'][changed]**2 / self._c # code units
+        self.output['dEmaxdiffdt'][changed] = self.output['u'][changed] * self.output['am'][changed] / tdiff # code units
+        
+        A = self.output['surface area'][changed]
+        
+        Urad = self._a * self.output['temperatures']**4 # code units
         if np.any(fluffy):
-            beta = self._a * T[fluffy]**4 / (rho[fluffy] * u[fluffy])
-            Urad = 0.75 * beta * u[fluffy] * m[fluffy] / (np.pi * rout[fluffy]**3)
-            Q = self._qtau(self.output['tau'][idx][fluffy])
-            self.output['dEemergdt'][idx][fluffy] = 0.5 * A[fluffy] * self._c * Urad * Q
-        if np.any(dense):
-            Urad = self._a * T[dense]**4
-            Q = self._qtau(self.output['tau'][idx][dense])
-            self.output['dEemergdt'][idx][dense] = 0.5 * A[dense] * self._c * Urad * Q
+            Urad[fluffy] *= 0.75 * self.output['rho'][fluffy] * self.output['am'][fluffy] / (np.pi * self.output['radius'][fluffy]**3) # code units
+        
+        self.output['dEemergdt'][changed] = 0.5 * A * self._c * Urad[changed] * self._qtau(self.output['tau'][changed])
+        #"""
         
         # Print all adjustments that were made
         same = []
@@ -282,16 +318,29 @@ class IcoFluxFinder(starsmashertools.flux.fluxfinder.FluxFinder, object):
             print()
             orig = self._original_output[key]
             new = self.output[key]
-            print("'%s' changed" % key)
             diff = new - orig
+
+            if isinstance(diff, np.ndarray):
+                idx_keep = np.logical_and(
+                    np.isfinite(diff),
+                    diff != 0,
+                )
+                if not np.any(idx_keep): continue
+                diff = diff[idx_keep]
+                new = new[idx_keep]
+                orig = orig[idx_keep]
+            elif diff == 0: continue
+            
+            print("'%s' changed" % key)
             absolute = np.abs(diff)
             absrel = np.abs(diff / orig)
-            diff = diff[np.isfinite(diff)]
+            
             absolute = absolute[np.isfinite(absolute)]
             absrel = absrel[np.isfinite(absrel)]
             if isinstance(new, np.ndarray):
                 idxmin = np.nanargmin(absolute)
                 idxmax = np.nanargmax(absolute)
+                print("  N changed = %d / %d" % (len(diff), self.output['ntot']))
                 print("  min difference = %15.7E" % diff[idxmin])
                 print("  max difference = %15.7E" % diff[idxmax])
                 print("  avg difference = %15.7E" % np.nanmean(diff))
@@ -318,9 +367,9 @@ class IcoFluxFinder(starsmashertools.flux.fluxfinder.FluxFinder, object):
         self._setup_angles()
         self._initialize_qtau()
 
+        self._set_opacities()
         self._set_cooling_types()
         self._set_radii()
-        self._set_opacities()
         self._update_cooling_quantities()
         
         tau_particle_cutoff = starsmashertools.preferences.get_default(
@@ -333,7 +382,7 @@ class IcoFluxFinder(starsmashertools.flux.fluxfinder.FluxFinder, object):
         self.output.mask(idx)
         self.output['ntot'] -= np.sum(~idx)
 
-        self.output['opacity'] = self.output['popacity'] # code units
+        #self.output['opacity'] = self.output['popacity'] # code units
 
         # These are TOTAL values (over all rays)
         dEemergdt = self.output['dEemergdt'] # code units
@@ -439,7 +488,7 @@ class IcoFluxFinder(starsmashertools.flux.fluxfinder.FluxFinder, object):
         return vertices[idx], idx
 
     #@profile
-    def get_dEdiffdt(
+    def get_Fdiff(
             self,
             ID,
             interacting_IDs,
@@ -449,67 +498,78 @@ class IcoFluxFinder(starsmashertools.flux.fluxfinder.FluxFinder, object):
         kappai = self.output['opacity'][ID] # code units
         rhoi = self.output['rho'][ID] # code units
         ui = self.output['u'][ID] # code units
-        
         Ti4 = Ti**4
+
         warnings.filterwarnings(action = 'ignore')
         betai = self._a * Ti4 / (rhoi * ui) # code units
         warnings.resetwarnings()
-
-        js = interacting_IDs[np.logical_and(
-            self.output['u'][interacting_IDs] != 0,
-            interacting_IDs != ID,
-        )]
-
+        
         # The other interacting particles will necessarily be the ones we need
         # to check to obtain the temperature gradient.
         vertex, vertex_index = self.get_closest_vertex(xyzpos, ID)
-        
-        if len(js) == 0: # Handle case if there's no other interacting particles
-            idx = None
-        else:
-            dr2 = np.sum((vertex - self.output['xyz'][js])**2, axis=-1)
-            idx = dr2 < self.output['radius'][js]**2
+        #vertex = xyzpos
 
+        js = interacting_IDs[interacting_IDs != ID]
+        
+        if len(js) > 0: # Handle case if there's no other interacting particles
+            dr2 = np.sum((vertex - self.output['xyz'][js])**2, axis=-1)
+
+        Ai = self.output['surface area'][ID]
+        
         if self._cooling_types[ID] == 0: # Fluffy cooling
-            if idx is not None and np.any(idx): # overlapping kernels exist
-                # simple temperature comparison to the closest particle
-                closest = np.argmin(dr2[idx])
-                Tj = self.output['temperatures'][js][idx][closest] # code units
-                if Tj >= Ti: return 0. # Heating event
+            if len(js) > 0:
+                idx = dr2 < self.output['radius'][js]**2
+                if np.any(idx): # overlapping kernels exist
+                    # simple temperature comparison to the closest particle
+                    j = js[idx][np.argmin(dr2[idx])]
+                    Tj = self.output['temperatures'][j] # code units
+                    if Tj >= Ti: return 0. # Heating event
             
             # The diffusion radiation per cooling ray (if C_s = 1 only 1 time)
-            return betai * self.output['dEmaxdiffdt'][ID] * self._invNrays
+            # Total dEdiffdt for this particle is beta * dEmaxdiffdt. Thus the
+            # dEdiffdt that cools through our ray is the total divided by the
+            # number of cooling rays.
+            return betai * self.output['dEmaxdiffdt'][ID] / Ai
         
         elif self._cooling_types[ID] == 1: # Dense cooling
+            rloc_i = self.output['radius'][ID] # code units (checked)
             Uradi = self._a * Ti4 # code units
             Uradj = 0.
-            ri = self.output['radius'][ID] # code units
-            deltar = ri
-            
-            if idx is not None and np.any(idx): # overlapping kernels exist
-                closest = np.argmin(dr2[idx])
-                Tj = self.output['temperatures'][js][idx][closest] # code units
-                if Tj >= Ti: return 0. # Heating event
+            #Ai = 4 * np.pi * rloc_i**2 # code units (checked)
+            deltar = rloc_i # code units
+             
+            if len(js) > 0:
+                rloc_js = self.output['radius'][js] # code units (checked)
+                idx = dr2 < rloc_js**2
                 
-                Uradj = self._a * Tj**4 # code units
-                deltar = np.sqrt(dr2[idx][closest]) # code units
-            
+                if np.any(idx): # overlapping kernels exist
+                    j = js[idx][np.argmin(dr2[idx])]
+                    Tj = self.output['temperatures'][j] # code units
+                    if Tj >= Ti: return 0. # Heating event
+
+                    # Cooling event
+                    Uradj = self._a * Tj**4 # code units
+                    dr2ij = np.sum((self.output['xyz'][ID] - self.output['xyz'][j])**2,axis=-1)
+                    deltar = np.sqrt(np.amin(dr2ij))
+                    
             gradUrad = (Uradj - Uradi) / deltar # code units
             
             # The diffusion radiation on a single cooling ray
             D = self._c / (kappai * rhoi) # code units
-            dEdiffdt = -(4 * np.pi * ri**2) * D / 3 * self._invNrays * gradUrad # code units
+            dEdiffdt = -Ai * D / 3 * self._invNrays * gradUrad # code units
             
             # Sanity check
             epsilon = np.finfo(float).eps
             if (dEdiffdt - (betai * self.output['dEmaxdiffdt'][ID] * self._invNrays) > epsilon and
                 dEdiffdt * self._Nrays > 1):
                 raise Exception("Too high dEdiffdt: %15.7E, %15.7E\nCheck quantities: %157.E, %15.7E, %15.7E, %d" % (dEdiffdt, self.output['dEmaxdiffdt'][ID] * self._invNrays, betai, betai*self.output['dEmaxdiffdt'][ID] * self._invNrays, epsilon, self._Nrays))
-
-            return dEdiffdt
+            
+            return dEdiffdt / (Ai * self._invNrays)
             
         else:
             raise NotImplementedError("cooling_type '%d' is not implemented" % self._cooling_type[ID])
+
+        raise Exception("This should never happen")
 
     #@profile
     def get_particle_flux(
@@ -520,24 +580,16 @@ class IcoFluxFinder(starsmashertools.flux.fluxfinder.FluxFinder, object):
             uses_emerg,
             uses_maxdiff,
     ):
-        areas = self.output['surface area']
-        Ai = areas[ID]
-        
-        #Ai = self.output['surface area'][ID] # code units
-        if uses_emerg:
-            return self.output['dEemergdt'][ID] / Ai # code units
-        if uses_maxdiff:
-            return self.output['dEmaxdiffdt'][ID] / Ai # code units
+        Ai = self.output['surface area'][ID]
+        Aray = Ai * self._invNrays
         
         # We need to recalculate dEdiffdt in this case
-        dEdiffdt = self.get_dEdiffdt(
-            ID,
-            interacting_IDs,
-            xyzpos,
-        )
-
-        Aray = Ai * self._invNrays # code units
-        return dEdiffdt / Aray # code units
+        Femerg = self.output['dEemergdt'][ID] / Ai
+        if uses_emerg: return Femerg, 'dEemergdt'
+        Fmaxdiff = self.output['dEmaxdiffdt'][ID] / Ai
+        if uses_maxdiff: return Fmaxdiff, 'dEmaxdiffdt'
+        Fdiff = self.get_Fdiff(ID, interacting_IDs, xyzpos)
+        return Fdiff, 'dEdiffdt'
         
     #@profile
     def get_flux(
@@ -555,6 +607,9 @@ class IcoFluxFinder(starsmashertools.flux.fluxfinder.FluxFinder, object):
         # We can probably get rid of this function, but I want to make totally
         # sure that our calculations are correct here.
 
+        # Get the current indices
+        ipos = int((xpos - self.extent[0]) / self.dx)
+        jpos = int((ypos - self.extent[2]) / self.dy)
         xyzpos = np.array([xpos, ypos, np.nan])
 
         contributors = []
@@ -572,6 +627,8 @@ class IcoFluxFinder(starsmashertools.flux.fluxfinder.FluxFinder, object):
         interacting_uses_maxdiff = self._uses_maxdiff[IDs]
         
         idx_sorted = np.argsort(fronts)
+
+        rad_sig = np.zeros(3)
 
         if len(fronts) > 1:
             _fronts = np.full(len(fronts), np.nan)
@@ -595,15 +652,24 @@ class IcoFluxFinder(starsmashertools.flux.fluxfinder.FluxFinder, object):
                     # The temperature gradient (if it has been calculated) is
                     # incorrect. Send this particle off to correct its flux.
                     xyzpos[2] = fronts[index]
-                    particle_flux = self.get_particle_flux(
-                        IDs[idx_sorted[i]],
+                    particle_flux, kind = self.get_particle_flux(
+                        IDs[index],
                         IDs,
                         xyzpos, # rsun
                         interacting_uses_emerg[index],
                         interacting_uses_maxdiff[index],
                     ) # code units
+                    if particle_flux < 0 or not np.isfinite(particle_flux):
+                        raise Exception("Bad flux")
                     particle_flux *= self._flux_unit # cgs
                     f = particle_flux * exptau # cgs
+
+                    if f > particle_flux:
+                        raise Exception("Bad attenuation")
+                    
+                    if kind == 'dEemergdt': rad_sig[0] += f
+                    elif kind == 'dEdiffdt': rad_sig[1] += f
+                    elif kind == 'dEmaxdiffdt': rad_sig[2] += f
                     
                     total_flux += f # cgs
                     total_attenuation += particle_flux - f # cgs
@@ -618,22 +684,32 @@ class IcoFluxFinder(starsmashertools.flux.fluxfinder.FluxFinder, object):
         # here.
         index = idx_sorted[-1]
         xyzpos[2] = fronts[index]
-        particle_flux = self.get_particle_flux(
+        particle_flux, kind = self.get_particle_flux(
             IDs[index],
             IDs,
             xyzpos,
             interacting_uses_emerg[index],
             interacting_uses_maxdiff[index],
         ) # code units
+        if particle_flux < 0 or not np.isfinite(particle_flux):
+            raise Exception("Bad flux")
         particle_flux *= self._flux_unit # cgs
         f = particle_flux # cgs
+
+        if kind == 'dEemergdt': rad_sig[0] += f
+        elif kind == 'dEdiffdt': rad_sig[1] += f
+        elif kind == 'dEmaxdiffdt': rad_sig[2] += f
         
         for j, val in enumerate(flux_weighted_averages):
             weighted_averages[j] += val[index] * f # cgs
         total_flux += f # cgs
+        total_unattenuated += f
         contributors += [IDs[index]]
+
+        if len(list(set(contributors))) != len(contributors):
+            raise Exception("Found multiple of the same contributors")
         
-        return total_flux, weighted_averages, total_attenuation, total_unattenuated, IDs[index], np.asarray(contributors, dtype=int)
+        return total_flux, weighted_averages, total_attenuation, total_unattenuated, IDs[index], np.asarray(contributors, dtype=int), rad_sig
     
         
         

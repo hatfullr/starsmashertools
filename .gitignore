@@ -3,7 +3,7 @@
 **/*#
 *~
 *#
-flux_test_space/
+**/flux_test_space/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
