@@ -714,7 +714,7 @@ class FluxFinder(object):
         def __init__(
                 self,
                 flux : np.ndarray,
-                properties : dict = {}, # Other properties to save
+                #properties : dict = {}, # Other properties to save
                 weighted_averages : np.ndarray,
                 attenuation : np.ndarray,
                 unattenuated : np.ndarray,

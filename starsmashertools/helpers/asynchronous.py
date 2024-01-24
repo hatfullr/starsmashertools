@@ -1,5 +1,5 @@
 import multiprocessing
-import multiprocessing.queue
+import multiprocessing.queues
 import typing
 
 max_processes = multiprocessing.cpu_count()
@@ -268,9 +268,9 @@ class ParallelFunction(object):
     class ResultIterator(object):
         def __init__(
                 self,
-                queue : multiprocessing.queue.Queue,
+                queue : multiprocessing.queues.Queue,
                 expected_length : int,
-                error_queue : multiprocessing.queue.Queue | type(None) = None,
+                error_queue : multiprocessing.queues.Queue | type(None) = None,
                 onError : typing.Callable | type(None) = None,
                 onFinished : typing.Callable | type(None) = None,
                 do_every : list | tuple = [],
