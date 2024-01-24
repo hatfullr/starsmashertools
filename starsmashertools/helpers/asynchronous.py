@@ -223,7 +223,9 @@ class ParallelFunction(object):
 
         if not sort:
             def onError(error):
+                print("I am here")
                 self.terminate()
+                raise(error)
                 sys.exit(1)
         
             return ParallelFunction.ResultIterator(
