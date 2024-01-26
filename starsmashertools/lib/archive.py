@@ -368,9 +368,7 @@ class Archive(dict, object):
         import starsmashertools.helpers.file
         import starsmashertools.helpers.path
         
-        data = {}
-        for key, val in self.items():
-            data[key] = val._to_json()
+        data = {key: val._to_json() for key, val in self.items()}
         
         # Convert the data to a readable JSON format which supports
         # serialization of many types
