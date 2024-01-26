@@ -206,10 +206,7 @@ class Archive(dict, object):
         raise NotImplementedError
     def __deepcopy__(self, *args, **kwargs):
         raise NotImplementedError
-            
-    def __str__(self, *args, **kwargs):
-        return 'Archive(%s)' % self._dict.__str__(*args, **kwargs)
-
+    
     def __repr__(self):
         import starsmashertools.helpers.string
         path = starsmashertools.helpers.string.shorten(
