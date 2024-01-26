@@ -367,8 +367,6 @@ class Archive(dict, object):
         import starsmashertools.helpers.jsonfile
         import starsmashertools.helpers.file
         import starsmashertools.helpers.path
-        import time
-        import os
         
         data = {}
         for key, val in self.items():
