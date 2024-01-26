@@ -219,7 +219,28 @@ class Archive(dict, object):
     @property
     def _dataname(self):
         import starsmashertools.helpers.path
-        return starsmashertools.helpers.path.basename(self.filename) + '.json'
+        import starsmashertools.helpers.file
+        import zipfile
+
+        if not starsmashertools.helpers.path.isfile(self.filename):
+            return starsmashertools.helpers.path.basename(self.filename)
+        
+        # If the file already exists, check the file for a member which
+        # looks like a file name. It should end with ".zip", ".json", or
+        # ".gz"
+        with starsmashertools.helpers.file.open(
+                self.filename, 'r', method = zipfile.ZipFile,
+                compression = zipfile.ZIP_DEFLATED,
+                compresslevel = 9
+        ) as zfile:
+            all_names = zfile.namelist()
+            for name in all_names:
+                if (not name.endswith('.zip') and
+                    not name.endswith('.gz') and
+                    not name.endswith('.json')): continue
+                # Found a match. Assume this is our data name
+                return name
+        raise Exception("Failed to find an appropriate name in the zipped archive for which the data is stored. Expected to find a name which ends with '.zip', '.json', or '.gz', but received names: %s" % str(all_names))
 
     @contextlib.contextmanager
     def nosave(self):
