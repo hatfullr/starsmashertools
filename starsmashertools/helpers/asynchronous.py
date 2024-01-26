@@ -148,10 +148,8 @@ class ParallelFunction(object):
                 sys.exit(1)
     
     def get_progress(self):
-        inputs = self._input_queue.qsize()
-        outputs = self._output_queue.qsize()
-        if inputs + outputs > 0:
-            return outputs / float(inputs + outputs)
+        if self._expected_outputs > 0:
+            return (self._expected_outputs - self._input_queue.qsize()) / float(self._expected_outputs)
         return 0.
     
     def start(self):
