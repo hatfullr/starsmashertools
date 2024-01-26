@@ -1,5 +1,6 @@
 import starsmashertools.helpers.argumentenforcer
 import contextlib
+import builtins
 
 fortran_comment_characters = ['c','C','!','*']
 
@@ -39,7 +40,6 @@ def lockf(f, LOCK_EX = False, LOCK_NB = False, LOCK_UN = False):
 
     # Have to be in write mode
     if not f.writable():
-        import builtins
         with builtins.open(f.name, 'r+') as f2:
             lockf(f2)
             return
@@ -62,12 +62,10 @@ def is_file_locked(f):
         return True
     return False
 
-
 @contextlib.contextmanager
 def open(path, mode, lock = True, lock_file = None, timeout = None, method = None, **kwargs):
     import starsmashertools.helpers.path
     import time
-    import builtins
     import zipfile
 
     if method is None: method = builtins.open
@@ -97,13 +95,14 @@ def open(path, mode, lock = True, lock_file = None, timeout = None, method = Non
             else:
                 lf = f
         else: lf = builtins.open(lock_file, 'w')
-        
+
         if timeout is None: timeout = 30
         interval = 0.001
         for i in range(int(timeout / interval)):
             if not is_file_locked(lf): break
             time.sleep(interval)
         else:
+            lf.close()
             raise TimeoutError("File cannot be accessed because it is locked by some other process: '%s'.\nKilling the other process should solve the issue, but in case of emergency (on Posix only), try 'python3 -c \"import fcntl; fcntl.fcntl(open('%s', 'w'), fcntl.LOCK_UN)\"'" % (lf.name, lf.name))
         
         lockf(lf, LOCK_EX=True)
