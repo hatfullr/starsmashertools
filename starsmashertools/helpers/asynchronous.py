@@ -1,6 +1,7 @@
 import multiprocessing
 import multiprocessing.queues
 import typing
+import threading
 
 max_processes = multiprocessing.cpu_count()
 semaphore = multiprocessing.Semaphore(max_processes)
@@ -327,3 +328,85 @@ class ParallelFunction(object):
                 
         
             
+class Ticker(threading.Thread):
+    """
+    A helpful class that performs some action on time intervals.
+    """
+    def __init__(
+            self,
+            interval : int | float,
+            target : typing.Callable | type(None) = None,
+            args : list | tuple = (),
+            kwargs : dict = {},
+            delay : int | float = 0,
+            limit : int | float | type(None) = None,
+            after_delay : typing.Callable | type(None) = None,
+            after_delay_args : list | tuple = (),
+            after_delay_kwargs : dict = {},
+    ):
+        self.interval = interval
+        self.target = target
+        self.args = args
+        self.kwargs = kwargs
+        self.delay = delay
+        self.limit = limit
+        self.after_delay = after_delay
+        self.after_delay_args = after_delay_args
+        self.after_delay_kwargs = after_delay_kwargs
+        self._stopEvent = threading.Event()
+        super(Ticker, self).__init__()
+        self.daemon = True
+        self._cycle = None
+        self.ran = False
+    
+    def cancel(self):
+        self._stopEvent.set()
+        self.join(timeout = 0)
+
+    def cycle(
+            self,
+            length : int,
+            args : list | tuple | type(None) = None,
+            kwargs : list | tuple | dict = {},
+    ):
+        if self.target is None:
+            raise Exception("Cannot create a cycle when 'target' is None")
+        
+        if args is not None:
+            if len(args) > 1 and all([isinstance(a, (list, tuple)) for a in args]):
+                if len(args) != length:
+                    raise ValueError("Argument 'args' must have the same length as 'length' when multiple argument lists are given")
+            else:
+                args = [args]*length
+        if isinstance(kwargs, dict): kwargs = [kwargs]*length
+        self._cycle = [[self.target, a, k] for a,k in zip(args, kwargs)]
+
+    def run(self):
+        import time
+        self.ran = False
+        self._stopEvent.wait(max(self.delay - self.interval, 0))
+
+        timer = 0.
+        t0 = time.time()
+        iteration = 0
+        first = True
+        while not self._stopEvent.wait(self.interval):
+            if first:
+                if self.after_delay is not None:
+                    self.after_delay(*self.after_delay_args, **self.after_delay_kwargs)
+                first = False
+                self.ran = True
+            if self.limit is not None:
+                timer += time.time() - t0
+                t0 = time.time()
+                if timer > self.limit: break
+            
+            if self.target is None: continue
+            if self._cycle:
+                target, args, kwargs = self._cycle[iteration]
+                target(*args, **kwargs)
+                iteration += 1
+                if iteration >= len(self._cycle): iteration = 0
+            else:
+                self.target(*self.args, **self.kwargs)
+        

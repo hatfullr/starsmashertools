@@ -335,17 +335,25 @@ class Archive(dict, object):
         import starsmashertools.helpers.jsonfile
         import starsmashertools.helpers.file
         import starsmashertools.helpers.path
+        import starsmashertools.helpers.string
 
         if starsmashertools.helpers.path.exists(self.filename):
             if starsmashertools.helpers.path.getsize(self.filename) == 0:
                 starsmashertools.helpers.path.remove(self.filename)
+
+        message = "Loading '%s'" % starsmashertools.helpers.string.shorten(
+            self.filename,
+            50,
+            where = 'left',
+        )
+        with starsmashertools.helpers.string.loading_message(message,delay=5):
+            with starsmashertools.helpers.file.open(
+                    self.filename, 'r', method = zipfile.ZipFile,
+                    timeout = timeout, compression = zipfile.ZIP_DEFLATED,
+                    compresslevel = 9
+            ) as zfile:
+                data = zfile.read(self._dataname)
         
-        with starsmashertools.helpers.file.open(
-                self.filename, 'r', method = zipfile.ZipFile,
-                timeout = timeout, compression = zipfile.ZIP_DEFLATED,
-                compresslevel = 9
-        ) as zfile:
-            data = zfile.read(self._dataname)
         data = starsmashertools.helpers.jsonfile.load_bytes(data)
         with self.nosave():
             self.clear()
