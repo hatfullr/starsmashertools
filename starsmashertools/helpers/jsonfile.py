@@ -41,38 +41,60 @@ serialization_methods = {
         lambda obj: np.asarray(obj), # From JSON
     ]},
 }
-
-
-
+# This is used for speedier type checking in the Encoder and Decoder
+serializable_types = tuple(serialization_methods.keys())
+encoding_methods, decoding_methods = {}, {}
+for vals in serialization_methods.values():
+    name = vals['name']
+    encoding_methods[name], decoding_methods[name] = vals['conversions']
 
 
 
 # These do the magic of encoding the types defined in the serialization_methods dict
 
+class Conversion:
+    @staticmethod
+    def decode(obj : dict):
+        name = obj['starsmashertools conversion name']
+        return decoding_methods[obj['starsmashertools conversion name']](obj['value'])
+
+    @staticmethod
+    def encode(obj):
+        m = serialization_methods[type(obj)]
+        return encoding_methods[m['name']](obj)
+    
+    @staticmethod
+    def isConversion(obj : dict):
+        if len(obj.keys()) != 2: return False
+        name = obj.get('starsmashertools conversion name', None)
+        return name is not None
+        
+
 class Encoder(json.JSONEncoder):
     def default(self, obj):
-        _types = serialization_methods.keys()
-        if isinstance(obj, tuple(_types)):
-            m = serialization_methods[type(obj)]
-            method = m['conversions'][0]
-            if method is None: ret = obj
-            ret = method(obj)
-            return {'starsmashertools conversion name' : m['name'], 'value' : ret}
+        if isinstance(obj, serializable_types):
+            return Conversion.encode(obj)
+            #m = serialization_methods[type(obj)]
+            #ret = m['conversions'][0](obj)
+            #return {'starsmashertools conversion name' : m['name'], 'value' : ret}
         return super(Encoder, self).default(obj)
+
 class Decoder(json.JSONDecoder):
     def __init__(self, *args, **kwargs):
         kwargs['object_hook'] = self.object_hook
         super(Decoder, self).__init__(*args, **kwargs)
-        
+    
     def object_hook(self, obj):
-        if isinstance(obj, dict):
-            name = obj.get('starsmashertools conversion name', None)
-            if name is None: return obj
-            for _type, vals in serialization_methods.items():
-                if vals['name'] == name:
-                    method = vals['conversions'][1]
-                    if method is None: return obj
-                    return method(obj['value'])
+        if isinstance(obj, dict) and Conversion.isConversion(obj):
+            return Conversion.decode(obj)
+            #if 'starsmashertools conversion name' not in obj.keys(): return obj
+            #name = obj['starsmashertools conversion name']
+            #if name is None: return obj
+            #for vals in serialization_methods.values():
+            #    if vals['name'] == name:
+            #        method = vals['conversions'][1]
+            #        if method is None: return obj
+            #        return method(obj['value'])
         return obj
 
 def save_bytes(obj, encoder=Encoder):
