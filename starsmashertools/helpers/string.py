@@ -23,28 +23,28 @@ def loading_message(
             print(message, flush=True)
             yield None
         finally: pass
-    
-    def print_message(message, extra, extra_length):
-        message = '\r\033[K\r' + message + extra
-        print(message, flush=True, end='')
-        
-    maxlen = max([len(s) for s in suffixes])
-    ticker = starsmashertools.helpers.asynchronous.Ticker(
-        interval,
-        target = print_message,
-        delay = delay,
-    )
-    ticker.cycle(
-        len(suffixes),
-        args = [(message, s, maxlen) for s in suffixes],
-    )
-    ticker.start()
+    else:
+        def print_message(message, extra, extra_length):
+            message = '\r\033[K\r' + message + extra
+            print(message, flush=True, end='')
 
-    try:
-        yield None
-    finally:
-        ticker.cancel()
-        if ticker.ran: print("Done")
+        maxlen = max([len(s) for s in suffixes])
+        ticker = starsmashertools.helpers.asynchronous.Ticker(
+            interval,
+            target = print_message,
+            delay = delay,
+        )
+        ticker.cycle(
+            len(suffixes),
+            args = [(message, s, maxlen) for s in suffixes],
+        )
+        ticker.start()
+
+        try:
+            yield None
+        finally:
+            ticker.cancel()
+            if ticker.ran: print("Done")
 
 @starsmashertools.helpers.argumentenforcer.enforcetypes
 def get_progress_string(
