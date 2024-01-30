@@ -74,9 +74,6 @@ class Encoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, serializable_types):
             return Conversion.encode(obj)
-            #m = serialization_methods[type(obj)]
-            #ret = m['conversions'][0](obj)
-            #return {'starsmashertools conversion name' : m['name'], 'value' : ret}
         return super(Encoder, self).default(obj)
 
 class Decoder(json.JSONDecoder):
@@ -87,14 +84,6 @@ class Decoder(json.JSONDecoder):
     def object_hook(self, obj):
         if isinstance(obj, dict) and Conversion.isConversion(obj):
             return Conversion.decode(obj)
-            #if 'starsmashertools conversion name' not in obj.keys(): return obj
-            #name = obj['starsmashertools conversion name']
-            #if name is None: return obj
-            #for vals in serialization_methods.values():
-            #    if vals['name'] == name:
-            #        method = vals['conversions'][1]
-            #        if method is None: return obj
-            #        return method(obj['value'])
         return obj
 
 def save_bytes(obj, encoder=Encoder):
