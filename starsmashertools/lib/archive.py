@@ -327,7 +327,11 @@ class Archive(dict, object):
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
-    def load(self, timeout : int | float | type(None) = None):
+    def load(
+            self,
+            timeout : int | float | type(None) = None,
+            verbose : bool = True,
+    ):
         """
         Load this archive from its filename.
         """
@@ -341,18 +345,23 @@ class Archive(dict, object):
             if starsmashertools.helpers.path.getsize(self.filename) == 0:
                 starsmashertools.helpers.path.remove(self.filename)
 
-        message = "Loading '%s'" % starsmashertools.helpers.string.shorten(
-            self.filename,
-            50,
-            where = 'left',
-        )
-        with starsmashertools.helpers.string.loading_message(message,delay=5):
+        def do(*args, **kwargs):
             with starsmashertools.helpers.file.open(
-                    self.filename, 'r', method = zipfile.ZipFile,
-                    timeout = timeout, compression = zipfile.ZIP_DEFLATED,
-                    compresslevel = 9
+                self.filename, 'r', method = zipfile.ZipFile,
+                timeout = timeout, compression = zipfile.ZIP_DEFLATED,
+                compresslevel = 9
             ) as zfile:
-                data = zfile.read(self._dataname)
+                return zfile.read(self._dataname)
+                
+        if verbose:
+            message = "Loading '%s'" % starsmashertools.helpers.string.shorten(
+                self.filename,
+                50,
+                where = 'left',
+            )
+            with starsmashertools.helpers.string.loading_message(message,delay=5):
+                data = do()
+        else: data = do()
         
         data = starsmashertools.helpers.jsonfile.load_bytes(data)
         with self.nosave():
