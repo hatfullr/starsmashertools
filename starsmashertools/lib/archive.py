@@ -153,6 +153,7 @@ class Archive(dict, object):
             load : bool = True,
             replacement_flags : list | tuple | type(None) = None,
             auto_save : bool = True,
+            verbose : bool = True,
     ):
         """
         Constructor for :class:`~.Archive`.
@@ -183,6 +184,9 @@ class Archive(dict, object):
             system whenever they are edited. If `False`, it is the user's
             responsibility to call :func:`~.save` to save the contents.
             
+        verbose : bool, default = True
+            If `False`, messages are suppressed. Otherwise messages are
+            printed to the standard output.
         """
         import starsmashertools.helpers.path
         import starsmashertools.preferences
@@ -196,6 +200,7 @@ class Archive(dict, object):
         self.filename = filename
         self.replacement_flags = replacement_flags
         self.auto_save = auto_save
+        self.verbose = verbose
 
         super(Archive, self).__init__()
 
@@ -330,10 +335,22 @@ class Archive(dict, object):
     def load(
             self,
             timeout : int | float | type(None) = None,
-            verbose : bool = True,
+            verbose : bool | type(None) = None,
     ):
         """
         Load this archive from its filename.
+
+        Parameters
+        ----------
+        timeout : int, float, None, default = None
+            How long to wait for other processes to finish reading/writing the
+            archive file before raising a ``TimeoutError``. If `None` no error
+            will be raised and the archive will be loaded whenever the file next
+            becomes available.
+        
+        verbose : bool, None, default = None
+            Overrides the :py:attr:`~.verbose` option in :py:func:`~.__init__`.
+            If `None` then :py:attr:`~.verbose` is used instead.
         """
         import zipfile
         import starsmashertools.helpers.jsonfile
@@ -341,6 +358,8 @@ class Archive(dict, object):
         import starsmashertools.helpers.path
         import starsmashertools.helpers.string
 
+        if verbose is None: verbose = self.verbose
+        
         if starsmashertools.helpers.path.exists(self.filename):
             if starsmashertools.helpers.path.getsize(self.filename) == 0:
                 starsmashertools.helpers.path.remove(self.filename)
@@ -371,16 +390,35 @@ class Archive(dict, object):
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
-    def save(self, timeout : int | float | type(None) = None):
+    def save(
+            self,
+            timeout : int | float | type(None) = None,
+            verbose : bool | type(None) = None,
+    ):
         """
         Overwrite the archive file with the current data wait for `timeout` 
         seconds before raising a TimeoutError if the file is locked by some
         other process.
+
+        Parameters
+        ----------
+        timeout : int, float, None, default = None
+            How long to wait for other processes to finish reading/writing the
+            archive file before raising a ``TimeoutError``. If `None` no error
+            will be raised and the archive will be loaded whenever the file next
+            becomes available.
+        
+        verbose : bool, None, default = None
+            Overrides the :py:attr:`~.verbose` option in :py:func:`~.__init__`.
+            If `None` then :py:attr:`~.verbose` is used instead.
         """
         import zipfile
         import starsmashertools.helpers.jsonfile
         import starsmashertools.helpers.file
         import starsmashertools.helpers.path
+        import starsmashertools.helpers.string
+
+        if verbose is None: verbose = self.verbose
         
         data = {key: val._to_json() for key, val in self.items()}
         
@@ -394,14 +432,25 @@ class Archive(dict, object):
         # the actual zipfile
         dataname = self._dataname
 
-        with starsmashertools.helpers.file.open(
-                self.filename, 'w', method = zipfile.ZipFile,
-                timeout = timeout,
-                compression = zipfile.ZIP_DEFLATED,
-                compresslevel = 9,
-                lock = True,
-        ) as zfile:
-            zfile.writestr(dataname, datastr)
+        def do(*args, **kwargs):
+            with starsmashertools.helpers.file.open(
+                    self.filename, 'w', method = zipfile.ZipFile,
+                    timeout = timeout,
+                    compression = zipfile.ZIP_DEFLATED,
+                    compresslevel = 9,
+                    lock = True,
+            ) as zfile:
+                zfile.writestr(dataname, datastr)
+
+        if verbose:
+            message = "Saving '%s'" % starsmashertools.helpers.string.shorten(
+                self.filename,
+                50,
+                where = 'left',
+            )
+            with starsmashertools.helpers.string.loading_message(message,delay=5):
+                do()
+        else: do()
     
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
