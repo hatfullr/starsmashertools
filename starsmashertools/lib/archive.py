@@ -199,8 +199,6 @@ class Archive(dict, object):
 
         super(Archive, self).__init__()
 
-        self._written_keys = []
-
         if load and starsmashertools.helpers.path.isfile(self.filename):
             self.load()
     
@@ -374,12 +372,8 @@ class Archive(dict, object):
         import starsmashertools.helpers.jsonfile
         import starsmashertools.helpers.file
         import starsmashertools.helpers.path
-
-        data = {}
-        for key, val in self.items():
-            if key in self._written_keys: continue
-            data[key] = val._to_json()
-        #data = {key: val._to_json() for key, val in self.items()}
+        
+        data = {key: val._to_json() for key, val in self.items()}
         
         # Convert the data to a readable JSON format which supports
         # serialization of many types
@@ -398,13 +392,7 @@ class Archive(dict, object):
                 compresslevel = 9,
                 lock = True,
         ) as zfile:
-            if dataname not in zfile.namelist():
-                zfile.writestr(dataname, datastr)
-            else: # Append to pre-existing data
-                with zfile.open(dataname, 'w+', force_zip64=True) as f:
-                    starsmashertools.helpers.jsonfile.append(f, data)
-        
-        self._written_keys += list(data.keys())
+            zfile.writestr(dataname, datastr)
     
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes

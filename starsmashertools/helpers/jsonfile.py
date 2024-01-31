@@ -144,30 +144,3 @@ def load(filename, decoder=Decoder):
 
 def load_bytes(content, decoder=Decoder):
     return json.loads(content.decode('utf-8'), cls=decoder)
-
-
-def append(
-        f, # An opened file object
-        obj : dict,
-        encoder = Encoder,
-):
-    # We need a way to save new data to an old file without reading in the old
-    # file (memory concerns). Thus, we need
-    import starsmashertools.helpers.file
-    import zipfile
-
-    if isinstance(f, zipfile.ZipFile):
-        raise ValueError("Cannot append to zip files. Instead, use the ZipFile.open method and then append")
-    
-    string = save_bytes(obj, encoder = encoder)
-    phrase1 = '{'.encode('utf-8')
-    phrase2 = '}'.encode('utf-8')
-    index1 = string.find(phrase1) + len(phrase1)
-    index2 = string.rfind(phrase2)
-    string = ','.encode('utf-8') + string[index1:index2] + '}'.encode('utf-8')
-    
-    index = -len("}".encode('utf-8')) - 1
-
-    f.seek(index, 2)
-    f.write(string)
-        
