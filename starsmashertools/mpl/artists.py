@@ -1,6 +1,7 @@
 # Additional Matplotlib Artists for easier plotting
 import matplotlib.collections
 import starsmashertools.mpl.colorbar
+import numpy as np
 
 
 class ColoredPlot(matplotlib.collections.LineCollection, object):
@@ -18,6 +19,10 @@ class ColoredPlot(matplotlib.collections.LineCollection, object):
 
         if isinstance(colors, str) and not hasattr(colors, "__iter__"):
             kwargs['colors'] = colors
+
+        #if isinstance(colors, np.ndarray):
+        #    self.colors = np.repeat(colors, 2)
+            #self.colors = np.asarray(list(zip(colors[:-1], colors[1:])))
         
         super(ColoredPlot, self).__init__(
             segments,
@@ -48,3 +53,12 @@ class ColoredPlot(matplotlib.collections.LineCollection, object):
                 xy += [_xy]
         return np.asarray(xy)
         
+    def get_colors(self):
+        import numpy as np
+        segments = self.get_segments()
+        c = self.get_array()
+        colors = []
+        for i, segment in enumerate(segments):
+            for _xy in segment:
+                colors += [c[i]]
+        return np.asarray(colors)
