@@ -93,7 +93,6 @@ class Decoder(json.JSONDecoder):
     
     def object_hook(self, obj):
         if isinstance(obj, dict) and Conversion.isConversion(obj):
-            print("Converting", obj)
             return Conversion.decode(obj)
         return obj
 
