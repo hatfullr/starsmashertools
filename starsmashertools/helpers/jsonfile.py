@@ -3,6 +3,7 @@ import gzip
 import zipfile
 import numpy as np
 import starsmashertools.helpers.path
+import starsmashertools.lib.units
 
 # Add your own serialization methods here to convert to/from JSON format.
 serialization_methods = {
@@ -40,6 +41,11 @@ serialization_methods = {
         lambda obj: obj.tolist(),    # To JSON
         lambda obj: np.asarray(obj), # From JSON
     ]},
+
+    starsmashertools.lib.units.Unit : {'name' : 'starsmashertools.lib.units.Unit', 'conversions' : [
+        lambda obj: [float(obj), str(obj.label)], # To JSON
+        lambda obj: starsmashertools.lib.units.Unit(obj[0], obj[1]), # From JSON
+    ]},
 }
 # This is used for speedier type checking in the Encoder and Decoder
 serializable_types = tuple(serialization_methods.keys())
@@ -56,12 +62,16 @@ class Conversion:
     @staticmethod
     def decode(obj : dict):
         name = obj['starsmashertools conversion name']
-        return decoding_methods[obj['starsmashertools conversion name']](obj['value'])
+        return decoding_methods[name](obj['value'])
 
     @staticmethod
     def encode(obj):
         m = serialization_methods[type(obj)]
-        return encoding_methods[m['name']](obj)
+        name = m['name']
+        return {
+            'starsmashertools conversion name' : name,
+            'value' : encoding_methods[name](obj),
+        }
     
     @staticmethod
     def isConversion(obj : dict):
@@ -83,6 +93,7 @@ class Decoder(json.JSONDecoder):
     
     def object_hook(self, obj):
         if isinstance(obj, dict) and Conversion.isConversion(obj):
+            print("Converting", obj)
             return Conversion.decode(obj)
         return obj
 
@@ -122,7 +133,7 @@ def save(filename, obj, encoder=Encoder):
 
 def load(filename, decoder=Decoder):
     import starsmashertools.helpers.file
-
+    
     if filename.endswith('.gz'):
         with gzip.open(filename, 'r') as f:
             content = f.read()
