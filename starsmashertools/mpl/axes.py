@@ -10,7 +10,7 @@ import starsmashertools.helpers.argumentenforcer
 
 @starsmashertools.helpers.argumentenforcer.enforcetypes
 def colorbar(
-        axes : matplotlib.axes._axes.Axes | np.ndarray,
+        axes : matplotlib.axes._axes.Axes | np.ndarray | list | tuple,
         padding : int | float = 0.01,
         width : float = 0.05,
         orientation : str = 'vertical',
@@ -22,8 +22,8 @@ def colorbar(
         'location' : ['right', 'left', 'top', 'bottom'],
     })
 
-    if isinstance(axes, matplotlib.axes._axes.Axes):
-        axes = np.array(axes, dtype=matplotlib.axes._axes.Axes)
+    if not isinstance(axes, np.ndarray):
+        axes = np.asarray(axes, dtype=matplotlib.axes._axes.Axes)
 
     fig = axes.flatten()[0].get_figure()
     cax = fig.add_axes([0,0,0,0])
