@@ -366,9 +366,9 @@ class Archive(dict, object):
 
         def do(*args, **kwargs):
             with starsmashertools.helpers.file.open(
-                self.filename, 'r', method = zipfile.ZipFile,
-                timeout = timeout, compression = zipfile.ZIP_DEFLATED,
-                compresslevel = 9
+                    self.filename, 'r', method = zipfile.ZipFile,
+                    timeout = timeout, compression = zipfile.ZIP_DEFLATED,
+                    compresslevel = 9
             ) as zfile:
                 return zfile.read(self._dataname)
                 

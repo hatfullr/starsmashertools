@@ -74,7 +74,10 @@ def open(path, mode, lock = True, lock_file = None, timeout = None, method = Non
 
     basename = starsmashertools.helpers.path.basename(path)
 
-    f = method(path, mode, **kwargs) # opens the file
+    try:
+        f = method(path, mode, **kwargs) # opens the file
+    except zipfile.BadZipFile as e:
+        raise Exception("Failed to read zip file, likely because it is corrupt. Please delete the file and try again: '%s'" % path) from e
     lf = None
 
     # Check if the file was opened for writing
