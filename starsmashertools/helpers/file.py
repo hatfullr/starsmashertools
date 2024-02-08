@@ -1,127 +1,70 @@
 import starsmashertools.helpers.argumentenforcer
 import contextlib
 import builtins
+import numpy as np
+import typing
 
 fortran_comment_characters = ['c','C','!','*']
 
 downloaded_files = []
 
-"""
-def get_file(path, mode):
-    import starsmashertools.helpers.path
-    import starsmashertools.helpers.ssh
-    import tempfile
-    
-    path = starsmashertools.helpers.path.realpath(path)
-    if starsmashertools.helpers.ssh.isRemote(path):
-        # Shucks. We'll have to copy the contents to the local machine
-        address, filepath = starsmashertools.helpers.ssh.split_address(path)
-        basename = starsmashertools.helpers.path.basename(path)
-        contents = starsmashertools.helpers.ssh.run(
-            address,
-            "cat %s" % filepath,
-            text = not (basename[:3] == "out" and basename[-4:] == ".sph"),
-        )
-        _mode = 'w+'
-        if 'b' in mode: _mode += 'b'
-        tfile = tempfile.NamedTemporaryFile(mode=_mode, delete=False)
-        tfile.write(contents)
-        tfile.close()
+class FileModeError(Exception, object): pass
 
-        print("Downloaded '%s' as '%s'" % (path, tfile.name))
-        downloaded_files += [tfile.name]
-        return tfile.name
-    return path
-"""
-
-# Handle all our file-locking needs
-def lockf(f, LOCK_EX = False, LOCK_NB = False, LOCK_UN = False):
-    import fcntl
-
-    # Have to be in write mode
-    if not f.writable():
-        with builtins.open(f.name, 'r+') as f2:
-            lockf(f2)
-            return
+# This works even with using multiprocessing.
+class Lock(object):
+    def __init__(self, path):
+        import starsmashertools.helpers.path
+        import os
         
-    if True not in [LOCK_EX, LOCK_NB, LOCK_UN]: return
-    if LOCK_EX and LOCK_NB: flags = fcntl.LOCK_EX | fcntl.LOCK_NB
-    elif LOCK_EX: flags = fcntl.LOCK_EX
-    elif LOCK_UN: flags = fcntl.LOCK_UN
+        self.path = starsmashertools.helpers.path.realpath(path) + '.lock'
+
+        pid_str = str(os.getpid())
+
+        while True:
+            try:
+                with builtins.open(self.path, 'x') as f:
+                    f.write(pid_str)
+            except FileExistsError as e: continue
+            break
+        self.locked = True
     
-    fcntl.lockf(f, flags)
+    def unlock(self):
+        import starsmashertools.helpers.path
+        starsmashertools.helpers.path.remove(self.path)
+        self.locked = False
 
-def is_file_locked(f):
-    try:
-        # Try to lock the file. If it is currently locked, throw BlockingIOError
-        lockf(f, LOCK_EX = True, LOCK_NB = True)
-        # In case we just locked the file, unlock it
-        lockf(f, LOCK_UN = True)
-    except BlockingIOError:
-        # The file is currently locked
-        return True
-    return False
-
+@starsmashertools.helpers.argumentenforcer.enforcetypes
 @contextlib.contextmanager
-def open(path, mode, lock = True, lock_file = None, timeout = None, method = None, **kwargs):
+def open(
+        path : str,
+        mode : str,
+        lock : bool = True,
+        lock_file : str | type(None) = None,
+        method : typing.Callable | type(None) = None,
+        **kwargs
+):
     import starsmashertools.helpers.path
-    import time
     import zipfile
+    import os
 
     if method is None: method = builtins.open
-
-    #path = get_file(path, mode)
-
-    basename = starsmashertools.helpers.path.basename(path)
-
-    try:
-        f = method(path, mode, **kwargs) # opens the file
-    except zipfile.BadZipFile as e:
-        raise Exception("Failed to read zip file, likely because it is corrupt. Please delete the file and try again: '%s'" % path) from e
-    lf = None
-
-    # Check if the file was opened for writing
-    is_writable = None
-    if hasattr(f, 'writable'): is_writable = f.writable()
-    else:
-        if isinstance(f, zipfile.ZipFile):
-            is_writable = f.fp.writable()
-        else:
-            raise NotImplementedError("File type '%s'" % type(f).__name__)
-
-    # Only lock a file if we plan to write to it. Reading doesn't require any
-    # locking.
-    if is_writable and lock:
-        if lock_file is None:
-            if isinstance(f, zipfile.ZipFile):
-                lf = f.fp
-            else:
-                lf = f
-        else: lf = builtins.open(lock_file, 'w')
-
-        if timeout is None: timeout = 30
-        interval = 0.001
-        for i in range(int(timeout / interval)):
-            if not is_file_locked(lf): break
-            time.sleep(interval)
-        else:
-            lf.close()
-            raise TimeoutError("File cannot be accessed because it is locked by some other process: '%s'.\nKilling the other process should solve the issue, but in case of emergency (on Posix only), try 'python3 -c \"import fcntl; fcntl.fcntl(open('%s', 'w'), fcntl.LOCK_UN)\"'" % (lf.name, lf.name))
-        
-        lockf(lf, LOCK_EX=True)
     
+    if (not starsmashertools.helpers.path.isfile(path) and
+        mode not in ['w', 'a', 'w+', 'r+', 'wb', 'wb+', 'rb+', 'ab']):
+        #print("error raised")
+        raise FileNotFoundError(path)
+    
+    if lock:
+        #print("New lock")
+        _lock = Lock(path)
+    
+    f = method(path, mode, **kwargs)
     try:
         yield f
     finally:
         f.close()
-        # Release the lock if it's on a different file
-        if lf is not None:
-            lf.close()
-            # If we created an empty file, delete it afterwards
-            if starsmashertools.helpers.path.getsize(lf.name) == 0:
-                starsmashertools.helpers.path.remove(lf.name)
-        
-
+        if lock:
+            _lock.unlock()
 
 # Check if the file at the given path is a MESA file
 def isMESA(path):

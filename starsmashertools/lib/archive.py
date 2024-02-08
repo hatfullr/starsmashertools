@@ -334,7 +334,6 @@ class Archive(dict, object):
     @api
     def load(
             self,
-            timeout : int | float | type(None) = None,
             verbose : bool | type(None) = None,
     ):
         """
@@ -342,12 +341,6 @@ class Archive(dict, object):
 
         Parameters
         ----------
-        timeout : int, float, None, default = None
-            How long to wait for other processes to finish reading/writing the
-            archive file before raising a ``TimeoutError``. If `None` no error
-            will be raised and the archive will be loaded whenever the file next
-            becomes available.
-        
         verbose : bool, None, default = None
             Overrides the :py:attr:`~.verbose` option in :py:func:`~.__init__`.
             If `None` then :py:attr:`~.verbose` is used instead.
@@ -357,7 +350,6 @@ class Archive(dict, object):
         import starsmashertools.helpers.file
         import starsmashertools.helpers.path
         import starsmashertools.helpers.string
-
         if verbose is None: verbose = self.verbose
         
         if starsmashertools.helpers.path.exists(self.filename):
@@ -365,12 +357,16 @@ class Archive(dict, object):
                 starsmashertools.helpers.path.remove(self.filename)
 
         def do(*args, **kwargs):
+            dataname = self._dataname
             with starsmashertools.helpers.file.open(
                     self.filename, 'r', method = zipfile.ZipFile,
-                    timeout = timeout, compression = zipfile.ZIP_DEFLATED,
-                    compresslevel = 9
+                    compression = zipfile.ZIP_DEFLATED,
+                    compresslevel = 9, lock=True,
             ) as zfile:
-                return zfile.read(self._dataname)
+                content = zfile.read(dataname)
+
+            return content
+            
                 
         if verbose:
             message = "Loading '%s'" % starsmashertools.helpers.string.shorten(
@@ -392,22 +388,13 @@ class Archive(dict, object):
     @api
     def save(
             self,
-            timeout : int | float | type(None) = None,
             verbose : bool | type(None) = None,
     ):
         """
-        Overwrite the archive file with the current data wait for `timeout` 
-        seconds before raising a TimeoutError if the file is locked by some
-        other process.
+        Overwrite the archive file with the current data.
 
         Parameters
         ----------
-        timeout : int, float, None, default = None
-            How long to wait for other processes to finish reading/writing the
-            archive file before raising a ``TimeoutError``. If `None` no error
-            will be raised and the archive will be loaded whenever the file next
-            becomes available.
-        
         verbose : bool, None, default = None
             Overrides the :py:attr:`~.verbose` option in :py:func:`~.__init__`.
             If `None` then :py:attr:`~.verbose` is used instead.
@@ -417,7 +404,6 @@ class Archive(dict, object):
         import starsmashertools.helpers.file
         import starsmashertools.helpers.path
         import starsmashertools.helpers.string
-
         if verbose is None: verbose = self.verbose
         
         data = {key: val._to_json() for key, val in self.items()}
@@ -435,7 +421,6 @@ class Archive(dict, object):
         def do(*args, **kwargs):
             with starsmashertools.helpers.file.open(
                     self.filename, 'w', method = zipfile.ZipFile,
-                    timeout = timeout,
                     compression = zipfile.ZIP_DEFLATED,
                     compresslevel = 9,
                     lock = True,
