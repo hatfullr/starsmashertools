@@ -216,12 +216,12 @@ class Output(dict, object):
         read_data = return_data
         
         # Check if the archive already has the header
-        identifier = self.simulation.archive.get_identifier(self)
-        if identifier in self.simulation.archive:
-            archived_value = self.simulation.archive[identifier]
-            self._header = archived_value.value.get('header', None)
-            read_header = False
-            self._isRead['header'] = True
+        #identifier = self.simulation.archive.get_identifier(self)
+        #if identifier in self.simulation.archive:
+        #    archived_value = self.simulation.archive[identifier]
+        #    self._header = archived_value.value.get('header', None)
+        #    read_header = False
+        #    self._isRead['header'] = True
 
         if read_header or read_data:
             obj = self.simulation.reader.read(
@@ -243,7 +243,7 @@ class Output(dict, object):
                 self[key] = val
 
             # Save the header to the simulation archive
-            self.simulation.archive.add_output(self, {'header' : self._header})
+            #self.simulation.archive.add_output(self, {'header' : self._header})
         
         if self.data is not None:
             for key, val in self.data.items():
@@ -631,7 +631,7 @@ class OutputIterator(object):
         raise StopIteration
 
     def flush(self):
-        self.simulation.archive.save()
+        #self.simulation.archive.save()
         for m in self.onFlush:
             r = m()
             if isinstance(r, str) and r == 'break':
