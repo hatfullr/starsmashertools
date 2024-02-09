@@ -428,7 +428,45 @@ class Output(dict, object):
             zmax = starsmashertools.lib.units.Unit(np.amax(z + radii), units.length.label),
         )
 
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def get_formatted_string(
+            self,
+            format_sheet : str | type(None) = None,
+    ):
+        """
+        Convert an output file to a (mostly) human-readable string format. 
+        This will only display the values in the header of the output file and 
+        it uses one of the format sheets located in the ``format_sheets`` 
+        directory.
 
+        Parameters
+        ----------
+        output : :class:`starsmashertools.lib.output.Output`
+            The output file to convert to a string.
+
+        Other Parameters
+        ----------------
+        format_sheet : str, None, default = None
+            The format sheet to use when converting. If `None`, the default 
+            sheet specified in :py:mod:`~.preferences` is used.
+
+        Returns
+        -------
+        str
+            The formatted string.
+        """
+        import starsmashertools.helpers.formatter
+        import starsmashertools.preferences
+        if format_sheet is None:
+            format_sheet = starsmashertools.preferences.get_default(
+                'Output',
+                'string format sheet',
+                throw_error = True,
+            )
+        return starsmashertools.helpers.formatter.Formatter(
+            format_sheet,
+        ).format_output(self)
 
 
 

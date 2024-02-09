@@ -1,0 +1,68 @@
+# Comments begin with '#' and are ignored.
+#
+# Formats are declared on each line below. The values which will be written to a
+# string come from the keys of a starsmashertools.lib.output.Output object in
+# alphabetical order, using only keys in the output's header.
+#
+# The sequence you give the values is preserved. First, your sequence is added
+# to the string. Then, any names which have not yet been added are added in
+# alphabetical order. The total width of your output will be detected and the
+# values that get added will fill that width.
+#
+# A value is written as "(x,y) name options":
+#     (x,y) : The cursor position relative to the top-left
+#      name : The name of the variable which will be accessed as output[name].
+#   options : Various options such as choice of units and more.
+#
+# Options:
+#    You may specify options for individual values by writing the name of the
+#    option followed by "=", separated by commas. For example:
+#
+#       (0, 0) t unit = day, format = int
+#
+#    This will print the time in units of days and the int format will be used.
+#
+#         unit : See starsmashertools.lib.units.Unit.
+#       format : Apply either the default format specified below, or your own
+#                format (must be a 'new' Python formatting string)
+#    show_name : True or False (default = True). If True, print the name of the
+#                value followed by ' = ' before printing the rest.
+
+# Add names here to omit them from the resulting string.
+omit = []
+
+# The default widths of each string formatter. Left of the '_' must be a name of
+# a Python builtin type, and right of the '_' must say 'width'. Give as a list
+# where the first element is the "major" width and the second the "minor" width.
+# For example, "15.7E" would be written as [15, 7].
+default_width = [15, None]
+float_width = [15, 7]
+bool_width = [15, None]
+int_width = [15, None]
+
+# Default formatters. The left-side of each '=' must be the name of a Python
+# builtin type, such that `getattr(builtins, string)` doesn't return an
+# AttributeError. Left of the '_' must be the name of a Python builtin type and
+# right of the '_' must say 'format'.
+# Use 'W' for major width and 'w' for minor width.
+float_format = {:W.wE}
+bool_format = {!s:>W}
+int_format = {:>Wd}
+
+( 0, 0) ntot
+(30, 0) nnopt
+(60, 0) nrelax
+( 0, 1) nout
+(30, 1) nit
+(60, 1) ngr
+( 0, 2) ncooling
+(30, 2) erad
+
+( 0, 3) t unit = day
+(35, 3) dt unit = day
+(70, 3) dtout
+( 0, 4) tf unit = day
+(35, 4) trelax
+(70, 4) tjumpahead
+
+

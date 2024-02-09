@@ -848,9 +848,11 @@ class Simulation(object):
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
+    @cli('starsmashertools')
     def get_output_at_time(
             self,
             time : int | float | starsmashertools.lib.units.Unit,
+            cli : bool = False,
     ):
         """
         Return the `starsmashertools.lib.output.Output` object of this
@@ -871,6 +873,8 @@ class Simulation(object):
             The Output object closest to the given time.
         """
         import starsmashertools.helpers.midpoint
+        import starsmashertools.helpers.string
+        
         if not isinstance(time, starsmashertools.lib.units.Unit):
             time *= self.units['t']
             #time = float(time.convert(self.units['t'].label))
@@ -891,7 +895,11 @@ class Simulation(object):
             lambda output: output['t'] * conversion == time,
             lambda output: output['t'] * conversion > time,
         )
-        return m.get()
+
+        ret = m.get()
+        if cli:
+            return ret.get_formatted_string('cli')
+        return ret
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api

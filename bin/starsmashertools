@@ -57,9 +57,37 @@ def get_function_names(functions):
 
 
 def call_function(function):
+    import inspect
+    import starsmashertools.bintools.cli
+    import typing
+    import collections
+    
     args = exposed_programs[function]['args']
     kwargs = exposed_programs[function]['kwargs']
-    result = function(simulation, *args, **kwargs)
+    try:
+        result = function(simulation, *args, **kwargs)
+    except TypeError as e:
+        if not ('missing' in str(e) and 'required positional argument' in str(e)):
+            raise(e)
+        # Ask the user for inputs
+        signature = inspect.signature(function)
+        parameters = collections.OrderedDict()
+        for i, (name, parameter) in enumerate(signature.parameters.items()):
+            if name in ['self', 'cli']: continue
+            parameters[name] = parameter
+        if not parameters: raise(e)
+
+        cli = starsmashertools.bintools.cli.CLI.instance
+        type_hints = typing.get_type_hints(function)
+
+        args = list(args)
+        for name, parameter in parameters.items():
+            args += [cli.inputmanager.get(type_hints[name], prompt="Enter a value for parameter '%s': " % name)]
+        args = tuple(args)
+
+        # Try again
+        result = function(simulation, *args, **kwargs)
+        
     if isinstance(result, (list, tuple)):
         for i, r in enumerate(result):
             if isinstance(r, starsmashertools.lib.simulation.Simulation):

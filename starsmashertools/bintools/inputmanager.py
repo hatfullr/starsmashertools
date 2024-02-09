@@ -17,12 +17,25 @@ class InputManager(object):
         self.prompt = prompt
         self.input = None
 
-    def parse(self, string, types):
+    def parse(self, string, _types):
+        import starsmashertools.lib.units
+        import types
         string = string.strip()
-        if not isinstance(types, (list, tuple)):
-            types = [types]
+        if not isinstance(_types, (list, tuple)):
+            _types = [_types]
+
+        # Separate union types
+        new_types = []
+        for i, t in enumerate(_types):
+            if not isinstance(t, types.UnionType):
+                new_types += [t]
+                continue
+            for a in t.__args__:
+                if a not in new_types:
+                    new_types += [a]
+        _types = new_types
         
-        for _type in types:
+        for _type in _types:
             if _type is bool:
                 if string in ['true', 'false']:
                     return True if string == 'true' else False
@@ -30,13 +43,14 @@ class InputManager(object):
                 try:
                     return _type(string)
                 except:
+                    if _type is starsmashertools.lib.units.Unit: raise
                     pass
         
-        if len(types) == 1: type_string = "'%s'" % types[0].__name__
-        elif len(types) == 2: type_string = "'%s' or '%s'" % tuple([t.__name__ for t in types])
-        elif len(types) > 2:
-            type_string = ", ".join(["'%s'" % t.__name__ for t in types[:-2]])
-            type_string += ", '%s' or '%s'" % (types[-2].__name__, types[-1].__name__)
+        if len(_types) == 1: type_string = "'%s'" % _types[0].__name__
+        elif len(_types) == 2: type_string = "'%s' or '%s'" % tuple([t.__name__ for t in _types])
+        elif len(_types) > 2:
+            type_string = ", ".join(["'%s'" % t.__name__ for t in _types[:-2]])
+            type_string += ", '%s' or '%s'" % (_types[-2].__name__, _types[-1].__name__)
         else:
             raise Exception("The list of input types must have a length greater than 0")
         raise InputManager.InvalidInputError("Input must be of type " + type_string)

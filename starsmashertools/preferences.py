@@ -123,6 +123,7 @@ defaults = {
 
             # Add your own functions here
         },
+        'string format sheet' : 'cli.format',
     },
     'PDCFile' : {
         'filename' : 'pdc.json.gz',
@@ -139,6 +140,11 @@ defaults = {
     },
     'Archive' : {
         'replacement flags' : (REPLACE_OLD, REPLACE_NEQ,),
+    },
+    'FormatSheet' : {
+        # Directory paths to additional format sheets
+        'directories' : [
+        ],
     },
 }
 

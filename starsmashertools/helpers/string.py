@@ -4,8 +4,10 @@ import starsmashertools.helpers.file
 import starsmashertools.helpers.argumentenforcer
 import numpy as np
 import contextlib
+import starsmashertools.lib.output
 
 progress_printers = []
+
 
 @contextlib.contextmanager
 @starsmashertools.helpers.argumentenforcer.enforcetypes

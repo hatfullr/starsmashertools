@@ -9,7 +9,22 @@ import numpy as np
 class Unit(object):
     exception_message = "Operation '%s' is disallowed on 'Unit' type objects. Please convert to 'float' first using, e.g., 'float(unit)'."
     @api
-    def __init__(self, value, label, base=['cm', 'g', 's']):
+    def __init__(self, *args, base=['cm', 'g', 's']):
+        import starsmashertools.helpers.argumentenforcer
+        if len(args) == 1 and isinstance(args[0], str):
+            import starsmashertools.helpers.string
+            # Convert string to Unit
+            string = args[0]
+            string = string.replace('Unit', '').replace('(','').replace(')','')
+            try:
+                value, label = string.split(',')
+                value = starsmashertools.helpers.string.parse(value.strip())
+                label = label.strip().replace('"','').replace("'",'')
+            except Exception as e:
+                raise ValueError("Invalid str to Unit conversion: '%s'" % string) from e
+        elif len(args) == 2:
+            value, label = args
+        
         starsmashertools.helpers.argumentenforcer.enforcetypes({
             'value' : [float, int],
             'label' : [str, Unit.Label],
