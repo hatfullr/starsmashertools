@@ -27,7 +27,6 @@ setuptools.setup(
         os.path.join('bin','starsmashertools'),
         os.path.join('bin','starsmasherplot'),
         os.path.join('bin','starsmasherdir'),
-        os.path.join('bin','outtotxt'),
         os.path.join('bin','timing'),
     ],
     python_requires='>=3',

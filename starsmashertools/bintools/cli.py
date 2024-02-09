@@ -326,7 +326,10 @@ class CLI(object):
                 CLI.scroll((0, lines - height))
             
         signal.signal(signal.SIGWINCH, on_resize)
-        curses.wrapper(main)
+        try:
+            curses.wrapper(main)
+        except KeyboardInterrupt:
+            quit()
 
     @staticmethod
     def scroll(offset, refresh=True):
