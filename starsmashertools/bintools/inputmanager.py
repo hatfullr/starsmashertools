@@ -20,6 +20,9 @@ class InputManager(object):
     def parse(self, string, _types):
         import starsmashertools.lib.units
         import types
+        import starsmashertools.helpers.string
+        import starsmashertools.preferences
+        
         string = string.strip()
         if not isinstance(_types, (list, tuple)):
             _types = [_types]
@@ -43,8 +46,16 @@ class InputManager(object):
                 try:
                     return _type(string)
                 except:
-                    if _type is starsmashertools.lib.units.Unit: raise
-                    pass
+                    if _type is starsmashertools.lib.units.Unit:
+                        all_labels = starsmashertools.lib.units.get_all_labels()
+                        label_str = starsmashertools.helpers.string.list_to_string(
+                            all_labels,
+                            join = 'or',
+                        )
+                        raise InputManager.InvalidInputError("Input of type 'Unit' must have syntax 'Unit(value, label)', where 'label' is %s. To add more units, edit '%s'" % (label_str, starsmashertools.preferences.__file__))
+
+        if None in _types: # Accept any generic input
+            return starsmashertools.helpers.string.parse(string)
         
         if len(_types) == 1: type_string = "'%s'" % _types[0].__name__
         elif len(_types) == 2: type_string = "'%s' or '%s'" % tuple([t.__name__ for t in _types])

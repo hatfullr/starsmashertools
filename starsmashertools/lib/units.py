@@ -5,6 +5,25 @@ from starsmashertools.helpers.apidecorator import api
 import numpy as np
 
 
+def get_all_labels():
+    import starsmashertools.preferences
+    conversions = starsmashertools.preferences.get_default(
+        'Units', 'unit conversions',
+        throw_error=True,
+    )
+    labels = []
+    for conversion in conversions:
+        for key, val in conversion.items():
+            if isinstance(val, str):
+                if val not in labels: labels += [val]
+            elif isinstance(val, (list, tuple)):
+                for l, v in val:
+                    if l in labels: continue
+                    labels += [l]
+            else:
+                raise NotImplementedError("Unrecognized type in 'unit conversions' in preferences.py: '%s'" % type(val).__name__)
+    return labels
+
 
 class Unit(object):
     exception_message = "Operation '%s' is disallowed on 'Unit' type objects. Please convert to 'float' first using, e.g., 'float(unit)'."
