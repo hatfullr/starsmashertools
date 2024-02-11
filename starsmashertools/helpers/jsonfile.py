@@ -99,7 +99,7 @@ class Decoder(json.JSONDecoder):
 def save_bytes(obj, encoder=Encoder):
     return json.dumps(obj, indent=4, cls=encoder).encode('utf-8')
 
-def save(filename, obj, encoder=Encoder):
+def save(filename, obj, encoder=Encoder, zname = 'data'):
     import starsmashertools.helpers.file
 
     try:
@@ -110,8 +110,10 @@ def save(filename, obj, encoder=Encoder):
 
         elif filename.endswith('.zip'):
             content = save_bytes(obj, encoder=encoder)
-            zname = starsmashertools.helpers.path.basename(filename).replace(".zip","")
-            with zipfile.ZipFile(filename, mode='w', compression=zipfile.ZIP_DEFLATED, compresslevel=9) as f:
+            with zipfile.ZipFile(
+                    filename, mode='w',
+                    compression=zipfile.ZIP_DEFLATED, compresslevel=9
+            ) as f:
                 f.writestr(zname, content)
 
         else:
@@ -130,7 +132,7 @@ def save(filename, obj, encoder=Encoder):
             e = TypeError(str(e) + message)
         raise(e)
 
-def load(filename, decoder=Decoder):
+def load(filename, decoder=Decoder, zname = None):
     import starsmashertools.helpers.file
     
     if filename.endswith('.gz'):
@@ -139,9 +141,16 @@ def load(filename, decoder=Decoder):
         return load_bytes(content, decoder=decoder)
 
     elif filename.endswith('.zip'):
-        zname = starsmashertools.helpers.path.basename(filename).replace(".zip","")
-        with zipfile.ZipFile(filename, 'r', compression=zipfile.ZIP_DEFLATED, compresslevel=9) as f:
-            content = f.read(zname)
+        with zipfile.ZipFile(
+                filename, 'r', compression=zipfile.ZIP_DEFLATED,
+                compresslevel=9
+        ) as f:
+            namelist = f.namelist()
+            if not namelist:
+                content = None
+            else:
+                if zname is None: zname = namelist[0]
+                content = f.read(zname)
         return load_bytes(content, decoder=decoder)
     else:
         try:
