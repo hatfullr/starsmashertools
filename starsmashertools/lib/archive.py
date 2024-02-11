@@ -357,13 +357,15 @@ class Archive(dict, object):
                 starsmashertools.helpers.path.remove(self.filename)
 
         def do(*args, **kwargs):
-            dataname = self._dataname
             with starsmashertools.helpers.file.open(
                     self.filename, 'r', method = zipfile.ZipFile,
                     compression = zipfile.ZIP_DEFLATED,
                     compresslevel = 9, lock=True,
             ) as zfile:
-                content = zfile.read(dataname)
+                namelist = zfile.namelist()
+                if not namelist:
+                    raise Exception("Failed to load archive file because it did not save correctly. Please delete it and try again: '%s'" % self.filename)
+                content = zfile.read(namelist[0])
 
             return content
             
@@ -412,12 +414,6 @@ class Archive(dict, object):
         # serialization of many types
         datastr = starsmashertools.helpers.jsonfile.save_bytes(data)
 
-        # There's a chance that the process could be killed before we actually
-        # successfully write the zip file, which would corrupt the whole file.
-        # So instead we save to a temporary file, which we then use to overwrite
-        # the actual zipfile
-        dataname = self._dataname
-
         def do(*args, **kwargs):
             with starsmashertools.helpers.file.open(
                     self.filename, 'w', method = zipfile.ZipFile,
@@ -425,7 +421,7 @@ class Archive(dict, object):
                     compresslevel = 9,
                     lock = True,
             ) as zfile:
-                zfile.writestr(dataname, datastr)
+                zfile.writestr('archive', datastr)
 
         if verbose:
             message = "Saving '%s'" % starsmashertools.helpers.string.shorten(
