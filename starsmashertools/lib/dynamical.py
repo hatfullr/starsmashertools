@@ -44,30 +44,39 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
         if not starsmashertools.helpers.path.isfile(filename):
             raise FileNotFoundError(filename)
         return filename
-
+    
     @api
     @cli('starsmashertools')
     def get_relaxations(self, cli : bool = False, **kwargs):
         return self.get_children(**kwargs)[0].get_children(cli=cli, **kwargs)
 
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     @cli('starsmashertools')
     def get_plunge_time(
             self,
-            threshold : int | float = 0.005,
+            threshold_frac : int | float | type(None) = None,
+            threshold : int | float | type(None) = 0.05,
             cli : bool = False,
     ):
         """
         Obtain the plunge-in time for a dynamical simulation which originated
         from a binary simulation. The plunge time here is defined as the time at
-        which the simulation exceeds a given threshold on total ejected mass.
+        which some amount of mass from the secondary star has entered a distance
+        from the primary equal to the primary's original SPH radius (from
+        relaxation).
 
         Parameters
         ----------
-        threshold : int, float, default = 0.005
-            The ejected mass threshold in simulation units (default solar
-            masses).
+        threshold_frac : int, float, None, default = None
+            The fraction of the secondary's total starting mass that must be
+            within the secondary's initial radius to identify the plunge-in
+            event.
 
+        threshold : int, float, None, default = 0.05
+            The mass in solar masses of the secondary star which must be within
+            the primary's starting radius in order to detect a plunge-in event.
+        
         Returns
         -------
         :class:`~.lib.units.Unit` or `None`
@@ -76,31 +85,109 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
         """
         import starsmashertools.lib.binary
         import starsmashertools.helpers.midpoint
+        import starsmashertools.math
+        import numpy as np
+        import starsmashertools.helpers.path
+
+        if threshold_frac is None and threshold is None:
+            raise ValueError("Cannot specify both keywords 'threshold_frac' and 'threshold' as 'None'. You must give at least one.")
+        if None not in [threshold_frac, threshold]:
+            raise ValueError("At least one of keywords 'threshold_frac' or 'threshold' must be 'None': 'threshold_frac' = %g, 'threshold' = %g" % (threshold_frac, threshold))
+
+        if threshold_frac is not None:
+            if threshold_frac <= 0 or threshold_frac > 1:
+                raise ValueError("Keyword 'threshold_frac' must be within range (0, 1], not '%g'" % threshold_frac)
 
         ret = None
         
         # Pull from the archive if we already calculated this
         if 'get_plunge_time' in self.archive:
             v = self.archive['get_plunge_time'].value
-            noutputs = v['noutputs']
-            # Recalculate if we have a different number of output files now
-            if len(self.get_outputfiles()) == noutputs:
+            output_path = v.get('output path', None)
+            # Don't recalculate if:
+            #    we have the same number of output files
+            #    the threshold value is the same as previous
+            #    the output file we found previously still exists
+            if (
+                    (
+                        v.get('threshold', None) == threshold and
+                        v.get('threshold_frac', None) == threshold_frac
+                    ) and
+                    len(self.get_outputfiles()) == v.get('noutputs', None) and
+                    (
+                        output_path is not None and
+                        starsmashertools.helpers.path.isfile(output_path)
+                    )
+            ):
                 ret = starsmashertools.lib.units.Unit(v['value'], v['units'])
+                output = get_output(get_outputfiles().index(output_path))
         
         if ret is None:
             children = self.get_children()
             if not children or not isinstance(children[0], starsmashertools.lib.binary.Binary):
                 raise Exception("Cannot obtain the plunge time for a dynamical simulation that did not originate from a Binary simulation: '%s'" % self.directory)
+            binary = children[0]
+            primary, secondary = binary.get_children()
+
+            primary_IDs = binary.get_primary_IDs()
+            secondary_IDs = binary.get_secondary_IDs()
+
+            bout0 = binary.get_output(0)
+            if binary.isPrimaryPointMass():
+                RSPH = 2 * bout0['hp'][primary_IDs][0]
+            else:
+                o = primary.get_output(-1)
+                RSPH = np.amax(o['r'] + 2 * o['hp'])
+                
+            RSPH2 = RSPH**2
+
+            if threshold_frac is not None:
+                if binary.isSecondaryPointMass():
+                    M2 = bout0['am'][secondary_IDs][0]
+                else:
+                    o = secondary.get_output(-1)
+                    M2 = np.sum(o['am'])
+                threshold = M2 * threshold_frac
+
+            def get_mwithin(output):
+                if binary.isPrimaryPointMass():
+                    com = np.asarray([
+                        output['x'][primary_IDs],
+                        output['y'][primary_IDs],
+                        output['z'][primary_IDs],
+                    ])
+                else:
+                    with starsmashertools.mask(output, primary_IDs):
+                        bound = ~output['unbound']
+                        if bound.any():
+                            xcom1, ycom1, zcom1 = starsmashertools.math.center_of_mass(
+                                output['am'][bound],
+                                output['x'][bound],
+                                output['y'][bound],
+                                output['z'][bound],
+                            )
+                        else: return 0.
+                    com = np.asarray([xcom1, ycom1, zcom1])
+                if binary.isSecondaryPointMass():
+                    dist2 = sum((com - output['xyz'][secondary_IDs])**2)
+                    if dist2 <= RSPH2: return output['am'][secondary_IDs]
+                else:
+                    with starsmashertools.mask(output, secondary_IDs):
+                        dist2 = np.sum((com - output['xyz'])**2, axis=-1)
+                        within = dist2 <= RSPH2
+                        if within.any(): return np.sum(output['am'][within])
+                return 0.
+            
             
             # Check for presence of plunge-in
             with self.archive.nosave():
-                if self.get_output(-1)['mejecta'] >= threshold:
+                if get_mwithin(self.get_output(-1)) >= threshold:
                     try:
                         m = starsmashertools.helpers.midpoint.Midpoint(self.get_output())
                         m.set_criteria(
-                            lambda output: output['mejecta'] < threshold,
-                            lambda output: output['mejecta'] == threshold,
-                            lambda output: output['mejecta'] > threshold,
+                            lambda output: get_mwithin(output) < threshold,
+                            lambda output: get_mwithin(output) == threshold,
+                            lambda output: get_mwithin(output) > threshold,
                         )
                         output = m.get()
                         ret = output['t'] * self.units['t']
@@ -114,6 +201,9 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
                             'value' : float(ret),
                             'units' : str(ret.label),
                             'noutputs' : len(self.get_outputfiles()),
+                            'threshold' : threshold,
+                            'threshold_frac' : threshold_frac,
+                            'output file' : output.path,
                         },
                         origin = None,
                         mtime = starsmashertools.helpers.path.getmtime(output.path),
