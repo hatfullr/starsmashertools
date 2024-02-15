@@ -19,7 +19,7 @@ class InputManager(object):
 
     def parse(self, string, _types):
         import starsmashertools.lib.units
-        import types
+        import types, typing
         import starsmashertools.helpers.string
         import starsmashertools.preferences
         
@@ -30,7 +30,8 @@ class InputManager(object):
         # Separate union types
         new_types = []
         for i, t in enumerate(_types):
-            if not isinstance(t, types.UnionType):
+            if not (isinstance(t, types.UnionType) or
+                    typing.get_origin(t) is typing.Union):
                 new_types += [t]
                 continue
             for a in t.__args__:
@@ -39,6 +40,8 @@ class InputManager(object):
         _types = new_types
         
         for _type in _types:
+            if _type is types.NoneType:
+                if string == 'None': return None
             if _type is bool:
                 if string in ['true', 'false']:
                     return True if string == 'true' else False
@@ -56,14 +59,13 @@ class InputManager(object):
 
         if None in _types: # Accept any generic input
             return starsmashertools.helpers.string.parse(string)
-        
-        if len(_types) == 1: type_string = "'%s'" % _types[0].__name__
-        elif len(_types) == 2: type_string = "'%s' or '%s'" % tuple([t.__name__ for t in _types])
-        elif len(_types) > 2:
-            type_string = ", ".join(["'%s'" % t.__name__ for t in _types[:-2]])
-            type_string += ", '%s' or '%s'" % (_types[-2].__name__, _types[-1].__name__)
-        else:
+
+        if len(_types) <= 0:
             raise Exception("The list of input types must have a length greater than 0")
+        type_string = starsmashertools.helpers.string.list_to_string(
+            [t.__name__ for t in _types],
+            join = 'or',
+        )
         raise InputManager.InvalidInputError("Input must be of type " + type_string)
 
     def reset(self):
@@ -93,7 +95,14 @@ class InputManager(object):
         starsmashertools.bintools.cli.CLI.stdscr.clrtobot()
 
     
-    def get(self, _type, prompt=None, halt=False, **kwargs):
+    def get(
+            self,
+            _type,
+            prompt = None,
+            halt = False,
+            error_on_empty = True,
+            **kwargs
+    ):
         if prompt is None: prompt = self.prompt
         
         starsmashertools.bintools.cli.CLI.refresh()
@@ -117,7 +126,9 @@ class InputManager(object):
         
             try:
                 if len(self.input) == 0:
-                    raise InputManager.InvalidInputError(repr(self.input))
+                    if error_on_empty:
+                        raise InputManager.InvalidInputError(repr(self.input))
+                    else: return None
                 return self.parse(self.input, _type)
             except InputManager.InvalidInputError as error:
                 self.reset()

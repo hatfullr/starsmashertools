@@ -92,14 +92,23 @@ def get_user_inputs(function, args, kwargs):
     # Obtain positionals
     args = list(args) # For editing
     for name in needed_positionals:
-        args += [cli.inputmanager.get(types[name], prompt="Enter a value for parameter '%s': " % name)]
+        args += [cli.inputmanager.get(
+            types[name],
+            prompt="Enter a value for parameter '%s': " % name,
+        )]
 
     # Obtain keywords
     for name in needed_keywords:
         default = signature.parameters[name].default
         if isinstance(default, str): d = "'%s'" % default
         else: d = str(default)
-        kwargs[name] = cli.inputmanager.get(types[name], prompt="Enter a value for keyword '%s' (default = %s): " % (name, d))
+        _input = cli.inputmanager.get(
+            types[name],
+            prompt="Enter a value for keyword '%s' (default = %s): " % (name,d),
+            error_on_empty = False,
+        )
+        if _input is None: kwargs[name] = default
+        else: kwargs[name] = _input
     
     return tuple(args), kwargs
     
