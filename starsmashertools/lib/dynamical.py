@@ -170,7 +170,6 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
                     com = np.asarray([xcom1, ycom1, zcom1])
                 if binary.isSecondaryPointMass():
                     dist2 = np.sum((com - output['xyz'][secondary_IDs])**2)
-                    print(dist2, RSPH2)
                     if dist2 <= RSPH2: return output['am'][secondary_IDs]
                 else:
                     with starsmashertools.mask(output, secondary_IDs):
