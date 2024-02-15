@@ -194,6 +194,10 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
                     except starsmashertools.helpers.argumentenforcer.ArgumentTypeError as e:
                         raise Exception("You are likely missing output files") from e
 
+                    # Clear out this spot in the archive if we need to
+                    # recalculate it
+                    if 'get_plunge_time' in self.archive:
+                        self.archive.remove('get_plunge_time')
                     # Save the result to the archive
                     self.archive.add(
                         'get_plunge_time',
