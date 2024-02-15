@@ -181,6 +181,7 @@ def list_to_string(
 def parse(string : str):
     _string = string.strip().lower()
     # Try to parse in order of ascending data complexity
+    if _string == 'None': return None
     if _string.lower() in ['true', 'false', 't', 'f']:
         if _string.lower() in ['true', 't']: return True
         return False
