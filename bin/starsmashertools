@@ -71,7 +71,7 @@ def get_user_inputs(function, args, kwargs):
     needed_keywords = []
     for name, parameter in signature.parameters.items():
         # Skip things we don't want the user to edit
-        if name in ['self', 'cli']: continue
+        if name in ['self', 'cli', 'kwargs']: continue
         if parameter.default == inspect._empty: # Positional argument
             if i_pos >= len(args): needed_positionals += [name]
             i_pos += 1

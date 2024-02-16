@@ -4,7 +4,7 @@ directory (default). To check the location of your stylelib, use
 matplotlib.get_configdir(). To use a style, you simply do:
 
 import matplotlib.pyplot as plt
-plt.style.use('supermongo')
+plt.style.use('starsmashertools')
 
 For more information, see https://matplotlib.org/stable/tutorials/introductory/customizing.html
 

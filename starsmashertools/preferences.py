@@ -146,6 +146,15 @@ defaults = {
         'directories' : [
         ],
     },
+    'Figure' : {
+        'stylesheet directories' : [
+            # The starsmashertools default directory
+            '{SOURCE_DIRECTORY}/starsmashertools/mpl/stylesheets',
+            
+            # Add paths to directories below which contain *.mplstyle files for
+            # use with Matplotlib.
+        ],
+    },
 }
 
 

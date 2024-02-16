@@ -1160,19 +1160,28 @@ class Simulation(object):
         return result
         
 
+    @api
     @cli('starsmashertools')
-    def plot_energy(self, cli : bool = False):
+    def plot_energy(
+            self,
+            cli : bool = False,
+            scale : list | tuple | np.ndarray = (1., 1.5),
+            **kwargs
+    ):
+        import starsmashertools.mpl.figure
         import matplotlib.pyplot as plt
         import matplotlib
-
+        
         # Read all the energy*.sph files
-        #print("Obtaining the energies from the energy output files")
         energies = self.get_energy(sort = 't')
 
-        #print("Creating the plot")
-        figsize = list(matplotlib.rcParams['figure.figsize'])
-        figsize[1] *= 2.
-        fig, ax = plt.subplots(figsize=figsize, nrows = len(energies.keys()) - 1, sharex=True)
+        kwargs['sharex'] = kwargs.get('sharex', True)
+        kwargs['nrows'] = len(energies.keys()) - 1
+        fig, ax = starsmashertools.mpl.figure.subplots(
+            scale = scale,
+            **kwargs
+        )
+        
         tunit = (np.amax(energies['t']) * self.units.time).auto()
         t = energies['t'] / float(tunit)
         
@@ -1185,9 +1194,10 @@ class Simulation(object):
             a.plot(t, val * self.units.energy)
             a.set_ylabel(key)
 
-        #print("Displaying the plot")
         fig.align_ylabels(ax)
-        plt.show()
+
+        if cli: fig.show()
+        return fig
 
     
 
