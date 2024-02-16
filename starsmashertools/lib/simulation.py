@@ -1169,8 +1169,6 @@ class Simulation(object):
             **kwargs
     ):
         import starsmashertools.mpl.figure
-        import matplotlib.pyplot as plt
-        import matplotlib
         
         # Read all the energy*.sph files
         energies = self.get_energy(sort = 't')
