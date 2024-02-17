@@ -1271,7 +1271,6 @@ class Simulation(object):
             )
             
             if cli: fig.show()
-            import matplotlib.pyplot as plt
             return ani
 
 

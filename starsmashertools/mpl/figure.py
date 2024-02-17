@@ -87,7 +87,7 @@ class Figure(matplotlib.figure.Figure, object):
         being used. """
         import starsmashertools.bintools.cli
 
-        plt.figure(self) # Focus this figure
+        plt.figure(num = self.number) # Focus this figure
 
         if starsmashertools.bintools.cli.CLI.instance is not None:
             # Using the CLI
@@ -97,11 +97,12 @@ class Figure(matplotlib.figure.Figure, object):
             plt.pause(0.001)
             return ret
         # Not using the CLI
-        return plt.show(*args, **kwargs)
+        return super(Figure, self).show(*args, **kwargs)
+        #return plt.show(*args, **kwargs)
 
     def savefig(self, *args, **kwargs):
-        plt.figure(self)
-        return plt.savefig(*args, **kwargs)
+        plt.figure(num = self.number) # Focus this figure
+        return super(Figure, self).savefig(*args, **kwargs) #plt.savefig(*args, **kwargs)
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     def save(
