@@ -32,11 +32,11 @@ class Simulation(object):
         
         if not Simulation.valid_directory(directory):
             raise Simulation.InvalidDirectoryError(directory)
-
+        
         super(Simulation, self).__init__()
-
+        
         self.directory = directory
-
+        
         self.input = starsmashertools.lib.input.Input(self.directory)
         self._children = None
         self._units = None

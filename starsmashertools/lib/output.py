@@ -791,7 +791,7 @@ class ParticleIterator(OutputIterator, object):
         positions = [header_stride + EOL_size + data_stride * ID for ID in IDs]
         
         _buffer = bytearray(len(IDs) * data_stride)
-        with starsmashertools.helpers.file.open(filename, 'rb') as f:
+        with starsmashertools.helpers.file.open(filename, 'rb', lock = False) as f:
             buffer = mmap.mmap(f.fileno(),0,access=mmap.ACCESS_READ)
         # Grab the headers so we can record the times
         try:
@@ -987,7 +987,7 @@ class Reader(object):
 
         filesize = starsmashertools.helpers.path.getsize(filename)
         
-        with starsmashertools.helpers.file.open(filename, 'rb') as f:
+        with starsmashertools.helpers.file.open(filename, 'rb', lock = False) as f:
             # This speeds up reading significantly.
             buffer = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
         
@@ -1021,7 +1021,7 @@ class Reader(object):
         
         # Read the output.f file
         subroutine_text = ""
-        with starsmashertools.helpers.file.open(writerfile, 'r') as f:
+        with starsmashertools.helpers.file.open(writerfile, 'r', lock = False) as f:
             for line in f:
                 if len(line.strip()) == 0 or line[0] in starsmashertools.helpers.file.fortran_comment_characters:
                     continue
@@ -1050,7 +1050,7 @@ class Reader(object):
                 # On 'include' lines, we find the file that is being included
                 dname = starsmashertools.helpers.path.dirname(writerfile)
                 fname = starsmashertools.helpers.path.join(dname, ls.replace('include','').replace('"','').replace("'", '').strip())
-                with starsmashertools.helpers.file.open(fname, 'r') as f:
+                with starsmashertools.helpers.file.open(fname, 'r', lock = False) as f:
                     for key, val in starsmashertools.helpers.string.get_fortran_variable_types(f.read(), data_types).items():
                         if key not in vtypes.keys(): vtypes[key] = val
                         else: vtypes[key] += val
