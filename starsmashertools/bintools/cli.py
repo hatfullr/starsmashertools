@@ -389,4 +389,3 @@ class CLI(object):
         self.simulations.remove(simulation)
 
 
-    

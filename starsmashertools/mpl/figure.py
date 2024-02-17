@@ -37,14 +37,14 @@ class Figure(matplotlib.figure.Figure, object):
     ):
         """
         Initializer. Review the Matplotlib documentation for 
-        :py:func:`matplotlib.pyplot.subplots` for details which are not
-        documented here.
+        ``matplotlib.pyplot.subplots`` for details which are not documented 
+        here.
         
         Other Parameters
         ----------------
         *args
            Other positional arguments are passed directly to 
-           :py:class:`matplotlib.figure.Figure`.
+           ``matplotlib.figure.Figure``.
 
         scale : list | tuple | np.ndarray, default = (1., 1.)
            A 2-element iterable which scales the figure size. Values cannot be
@@ -52,11 +52,12 @@ class Figure(matplotlib.figure.Figure, object):
 
         **kwargs
            Other keyword arguments are passed directly to 
-           :py:class:`matplotlib.figure.Figure`.
+           ``matplotlib.figure.Figure``.
         """
 
         scale = np.asarray(scale)
-        if (scale < 0).any():
+        idx = scale < 0
+        if idx.any():
             raise ValueError("Keyword argument 'scale' cannot have negative values: " + str(scale))
         
         super(Figure, self).__init__(
@@ -108,12 +109,11 @@ class Figure(matplotlib.figure.Figure, object):
             path : str = 'figure.sstfig',
             extra : dict = {},
     ):
-        import pickle
-        import base64
         import json
         import starsmashertools.helpers.file
+        import starsmashertools.helpers.pickler
         data = {
-            'figure' : base64.b64encode(pickle.dumps(self)),
+            'figure' : starsmashertools.helpers.pickler.pickle_object(self),
         }
         for key, val in extra.items(): data[key] = val
         
@@ -125,14 +125,13 @@ class Figure(matplotlib.figure.Figure, object):
     def load(
             path : str = 'figure.sstfig',
     ):
-        import pickle
-        import base64
         import json
         import starsmashertools.helpers.file
+        import starsmashertools.helpers.pickler
 
         with starsmashertools.helpers.file.open(path, 'r') as f:
             data = json.load(f)
-        figure = pickle.loads(base64.b64decode(data['figure']))
+        figure = starsmashertools.helpers.pickler.unpickle_object(data['figure'])
         extra = {}
         for key, val in data.items():
             if key == 'figure': continue

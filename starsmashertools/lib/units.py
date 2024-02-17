@@ -861,6 +861,12 @@ class Units(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
     def acceleration(self): return self.velocity / self.time
 
     @property
+    def force(self): return self.acceleration * self.mass
+
+    @property
+    def pressure(self): return self.force / self.area
+
+    @property
     def density(self): return self.mass / self.volume
 
     @property

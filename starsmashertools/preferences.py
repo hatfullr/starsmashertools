@@ -40,8 +40,9 @@ defaults = {
         # You must give a value in centimeters
         'get_simulation_continued_from position threshold' : 0.01 * 6.9599e10,
     },
+
     
-    # 
+    
     # Note that currently the setting of values 'gram', 'sec', 'cm', and
     # 'kelvin' in src/starsmasher.h is not supported. We expect all these values
     # to equal 1.d0 for now.
@@ -89,18 +90,46 @@ defaults = {
             ['erg/g', 'cm*g/s*s'], # Don't remove this
         ],
     },
+
+
+    
     'Dynamical' : {
         'original initial restartrad' : 'restartrad.sph.orig',
     },
+
+
+
+    # Used in the Input class, which holds info about StarSmasher input
+    # parameters.
     'Input' : {
         'src init filename' : 'init.f',
     },
+
+
+
+    # Used in both the CLI and API to handle user requests.
+    'IO' : {
+        'Lock' : {
+            # If None, the file IO will never timeout. Otherwise, give in units
+            # of seconds.
+            'timeout' : float('inf'),
+        },
+    },
+
+
+    
     'LogFile' : {
         'file pattern' : 'log*.sph',
     },
+
+
+    
     'OutputIterator' : {
         'max buffer size' : 100,
     },
+
+
+    
     'Output' : {
         # These are cached quantities that the Output objects will be
         # aware of at initialization. Each entry must be a function
@@ -125,12 +154,15 @@ defaults = {
         },
         'string format sheet' : 'cli.format',
     },
-    'PDCFile' : {
-        'filename' : 'pdc.json.gz',
-    },
+
+
+    
     'GPUJob' : {
         'threadsperblock' : 512,
     },
+
+
+    
     'FluxFinder' : {
         # The following options only apply for ncooling=2 or 3
         # Opacities within this temperature range will be set to 'dust opacity'
@@ -138,14 +170,23 @@ defaults = {
         'dust opacity' : 1.0,
         'tau particle cutoff' : 1.e-5,
     },
+
+    
+    
     'Archive' : {
         'replacement flags' : (REPLACE_OLD, REPLACE_NEQ,),
     },
+
+
+    
     'FormatSheet' : {
         # Directory paths to additional format sheets
         'directories' : [
         ],
     },
+
+
+    
     'Figure' : {
         'stylesheet directories' : [
             # The starsmashertools default directory

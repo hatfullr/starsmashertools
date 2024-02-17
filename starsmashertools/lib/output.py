@@ -12,6 +12,12 @@ import mmap
 import copy as _copy
 import itertools
 
+try:
+    import matplotlib.axes
+    has_matplotlib = True
+except ImportError:
+    has_matplotlib = False
+
 class Output(dict, object):
     """
     A container for StarSmasher binary output data, usually appearing as
@@ -468,9 +474,72 @@ class Output(dict, object):
             format_sheet,
         ).format_output(self)
 
+    if has_matplotlib:
+        @starsmashertools.helpers.argumentenforcer.enforcetypes
+        def plot(
+                self,
+                ax : matplotlib.axes.Axes,
+                x : str = 'x',
+                y : str = 'y',
+                rasterized : bool = True,
+                s : float | int = 1,
+                marker = '.',
+                color = 'k',
+                linewidth = 0.,
+                **kwargs
+        ):
+            """
+            Create a scatter plot on the given Matplotlib axes showing the
+            particle values.
+            
+            Parameters
+            ----------
+            ax : matplotlib.axes.Axes
+                The axis to make the plot on.
 
+            x : str, default = 'x'
+                The output file key to plot on the x-axis.
 
+            y : str, default = 'y'
+                The output file key to plot on the y-axis.
 
+            Other Parameters
+            ----------------
+            rasterized : bool, default = True
+                Creates a non-vector image if `True`. Vector images typically 
+                take up a lot of memory when there are many objects on a plot,
+                causing the plot to be slow to respond and use.
+
+            s : float, int, default = 1
+                The size of the points. A good value is 1.
+
+            marker : default = '.'
+                The Matplotlib marker to use.
+
+            color : default = 'k'
+                The color to make the scatter plot.
+
+            linewidth : default = 0.
+                The linewidth of the scatter plot. Suggested value is 0.
+
+            kwargs
+                Other keyword parameters are passed directly to
+                ``matplotlib.axes.Axes.scatter``.
+            
+            Returns
+            -------
+            The same return value as ``matplotlib.axes.Axes.scatter``.
+            """
+            kwargs['s'] = s
+            kwargs['marker'] = marker
+            kwargs['rasterized'] = rasterized
+            kwargs['color'] = color
+            kwargs['linewidth'] = linewidth
+
+            xdata = self[x]
+            ydata = self[y]
+
+            return ax.scatter(xdata, ydata, **kwargs)
 
 
 
@@ -660,7 +729,7 @@ class OutputIterator(object):
         else:
             self.stop()
     
-    def next(self, *args, **kwargs): return self.__next__(self, *args, **kwargs)
+    def next(self, *args, **kwargs): return self.__next__(*args, **kwargs)
 
     def stop(self):
         self.simulation.archive.auto_save = self._simulation_auto_save

@@ -7,6 +7,12 @@ from starsmashertools.helpers.apidecorator import api
 from starsmashertools.helpers.clidecorator import cli
 import numpy as np
 
+try:
+    import matplotlib
+    has_matplotlib = True
+except ImportError:
+    has_matplotlib = False
+
 class Simulation(object):
     ############################################################################
     # private attributes
@@ -1160,44 +1166,112 @@ class Simulation(object):
         return result
         
 
-    @api
-    @cli('starsmashertools')
-    def plot_energy(
-            self,
-            cli : bool = False,
-            scale : list | tuple | np.ndarray = (1., 1.5),
-            **kwargs
-    ):
-        import starsmashertools.mpl.figure
-        
-        # Read all the energy*.sph files
-        energies = self.get_energy(sort = 't')
 
-        kwargs['sharex'] = kwargs.get('sharex', True)
-        kwargs['nrows'] = len(energies.keys()) - 1
-        fig, ax = starsmashertools.mpl.figure.subplots(
-            scale = scale,
-            **kwargs
-        )
-        
-        tunit = (np.amax(energies['t']) * self.units.time).auto()
-        t = energies['t'] / float(tunit)
-        
-        ax[-1].set_xlabel("Time [%s]" % tunit.label)
+    if has_matplotlib:
+        @api
+        @cli('starsmashertools')
+        def plot_energy(
+                self,
+                cli : bool = False,
+                scale : list | tuple | np.ndarray = (1., 1.5),
+                **kwargs
+        ):
+            import starsmashertools.mpl.figure
 
-        keys = list(energies.keys())
-        keys.remove('t')
-        for a, key in zip(ax, keys):
-            val = energies[key]
-            a.plot(t, val * self.units.energy)
-            a.set_ylabel(key)
+            # Read all the energy*.sph files
+            energies = self.get_energy(sort = 't')
 
-        fig.align_ylabels(ax)
+            kwargs['sharex'] = kwargs.get('sharex', True)
+            kwargs['nrows'] = len(energies.keys()) - 1
+            fig, ax = starsmashertools.mpl.figure.subplots(
+                scale = scale,
+                **kwargs
+            )
 
-        if cli: fig.show()
-        return fig
+            tunit = (np.amax(energies['t']) * self.units.time).auto()
+            t = energies['t'] / float(tunit)
 
-    
+            ax[-1].set_xlabel("Time [%s]" % tunit.label)
 
+            keys = list(energies.keys())
+            keys.remove('t')
+            for a, key in zip(ax, keys):
+                val = energies[key]
+                a.plot(t, val * self.units.energy)
+                a.set_ylabel(key)
+
+            fig.align_ylabels(ax)
+
+            if cli: fig.show()
+            return fig
+
+        @api
+        @cli('starsmashertools')
+        def plot_animation(
+                self,
+                x : str = 'x',
+                y : str = 'y',
+                logx : bool = False,
+                logy : bool = False,
+                cli : bool = False,
+        ):
+            import starsmashertools.mpl.figure
+            import matplotlib.animation
+            import starsmashertools.helpers.string
+            import starsmashertools.mpl.animation
+            import matplotlib.text
+            import copy
+
+            fig, ax = starsmashertools.mpl.figure.subplots()
+            if x in ['x','y','z'] and y in ['x','y','z']:
+                ax.set_aspect('equal')
+
+            xlabel = copy.deepcopy(x)
+            ylabel = copy.deepcopy(y)
+
+            if logx: xlabel = 'log '+xlabel
+            if logy: ylabel = 'log '+ylabel
+                
+            ax.set_xlabel(xlabel)
+            ax.set_ylabel(ylabel)
+                
+            artists = []
+            output = self.get_output(0)
+            total = len(self.get_outputfiles())
+            
+            artist = output.plot(ax, x=x, y=y)
+            label = fig.text(
+                0.01, 0.01,
+                '',
+                ha = 'left',
+                va = 'bottom',
+            )
+            time_label = fig.text(
+                0.01, 0.99,
+                '',
+                ha = 'left',
+                va = 'top',
+            )
+            # determine the appropriate unit to use
+            tunit = (self.get_output(-1).header['t'] * self.units['t']).auto().label
+            def update(i):
+                output = self.get_output(min(max(i, 0), total - 1))
+                _x = output[x]
+                _y = output[y]
+                if logx: _x = np.log10(_x)
+                if logy: _y = np.log10(_y)
+                artist.set_offsets(np.column_stack((_x, _y)))
+                label.set_text(str(output))
+                time = (output['t'] * self.units['t']).convert(tunit)
+                time_label.set_text('t = %10g %s' % (time.value, tunit))
+
+            update(0)
+            ani = starsmashertools.mpl.animation.Player(
+                fig, update, maxi=total,
+            )
+            
+            if cli: fig.show()
+            import matplotlib.pyplot as plt
+            return ani
 
 

@@ -19,16 +19,37 @@ def loading_message(
 ):
     import starsmashertools.helpers.asynchronous
     import sys
+    import starsmashertools.bintools.cli
 
-    if not sys.stdout.isatty():
+    isCLI = starsmashertools.bintools.cli.CLI.instance is not None
+
+    if not sys.stdout.isatty(): # Output is not going to the terminal at all
         try:
             print(message, flush=True)
             yield None
         finally: pass
     else:
         def print_message(message, extra, extra_length):
-            message = '\r\033[K\r' + message + extra
-            print(message, flush=True, end='')
+            if isCLI:
+                starsmashertools.bintools.cli.CLI.move(
+                    starsmashertools.bintools.cli.CLI.get_height() - 1,
+                    0
+                )
+                starsmashertools.bintools.cli.CLI.write(
+                    ' '*(starsmashertools.bintools.cli.CLI.get_width() - 1),
+                    flush = True,
+                    end = '',
+                )
+                starsmashertools.bintools.cli.CLI.move(
+                    starsmashertools.bintools.cli.CLI.get_height() - 1,
+                    0
+                )
+                starsmashertools.bintools.cli.CLI.write(
+                    message + extra,
+                    flush = True,
+                    end = '',
+                )
+            else: print('\r\033[K\r' + message + extra, flush = True, end = '')
 
         maxlen = max([len(s) for s in suffixes])
         ticker = starsmashertools.helpers.asynchronous.Ticker(
@@ -46,7 +67,9 @@ def loading_message(
             yield None
         finally:
             ticker.cancel()
-            if ticker.ran: print("Done")
+            if ticker.ran:
+                if isCLI: starsmashertools.bintools.cli.CLI.write("Done")
+                else: print("Done")
 
 @starsmashertools.helpers.argumentenforcer.enforcetypes
 def get_progress_string(

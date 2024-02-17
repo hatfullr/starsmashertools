@@ -55,12 +55,18 @@ def get_function_names(functions):
         else: names += [function.__qualname__]
     return names
 
+"""
 def get_user_inputs(function, args, kwargs):
     import inspect
-    import starsmashertools.bintools.cli
     import typing
     import collections
     import time # debugging
+
+    return starsmashertools.bintools.cli.CLI.inputmanager.get_function(
+        function,
+        args,
+        kwargs,
+    )
     
     # Ask the user for inputs
     signature = inspect.signature(function)
@@ -111,13 +117,18 @@ def get_user_inputs(function, args, kwargs):
         else: kwargs[name] = _input
     
     return tuple(args), kwargs
-    
+"""
 
 def call_function(function):
     args = exposed_programs[function]['args']
     kwargs = exposed_programs[function]['kwargs']
 
-    args, kwargs = get_user_inputs(function, args, kwargs)    
+    args, kwargs = starsmashertools.bintools.cli.CLI.instance.inputmanager.get_function(
+        function,
+        args,
+        kwargs,
+    )
+    #args, kwargs = get_user_inputs(function, args, kwargs)    
     result = function(simulation, *args, **kwargs)
         
     if isinstance(result, (list, tuple)):

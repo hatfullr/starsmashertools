@@ -43,7 +43,29 @@ test4test9
         for i, line in enumerate(f):
             if line:
                 self.assertEqual(expected[len(expected) - i - 1], line)
-        
+
+
+    def test_lock(self):
+        import time
+        path = os.path.realpath(os.path.join('data', 'testfile'))
+
+        # When we open the file, we should create a corresponding *.lock
+        # file.
+        t0 = time.time()
+        with starsmashertools.helpers.file.open(
+                path, 'r',
+                timeout = 1.,
+        ) as f:
+            lock = starsmashertools.helpers.file.Lock.get(path)
+            self.assertTrue(lock.locked)
+            
+            t0 = time.time()
+            with starsmashertools.helpers.file.open(
+                    path, 'r',
+                    timeout = 1.e-3,
+            ) as f2:
+                pass
+            self.assertAlmostEqual(time.time() - t0, 1.e-3, places=3)
         
 if __name__ == "__main__":
     unittest.main(failfast=True)

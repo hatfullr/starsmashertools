@@ -12,26 +12,98 @@ class FileModeError(Exception, object): pass
 
 # This works even with using multiprocessing.
 class Lock(object):
-    def __init__(self, path):
-        import starsmashertools.helpers.path
+    instances = []
+    def __init__(self, path, pid = None):
         import os
+        import starsmashertools.helpers.path
         
-        self.path = starsmashertools.helpers.path.realpath(path) + '.lock'
+        self.timeout = None
+        if path.endswith('.lock'):
+            raise Exception("Cannot lock a lock file: '%s'" % path)
+        self.path = starsmashertools.helpers.path.realpath(path)
+        self.lockfile = self.path + '.lock'
+        
+        if pid is None: pid = os.getpid()
+        self.pid = pid
+        Lock.instances += [self]
 
-        pid_str = str(os.getpid())
+    @property
+    def locked(self):
+        import starsmashertools.helpers.path
+        return starsmashertools.helpers.path.isfile(self.lockfile)
 
-        while True:
-            try:
-                with builtins.open(self.path, 'x') as f:
-                    f.write(pid_str)
-            except FileExistsError as e: continue
-            break
-        self.locked = True
+    @property
+    def isLocker(self):
+        # Returns True if this Lock's process ID (pid) is the same as
+        # what is written in the lock file
+        if not self.locked: return False
+        return self.pid == self.get_current_pid()
+
+    @staticmethod
+    def unlock_all(*args, **kwargs):
+        for instance in Lock.instances:
+            instance.unlock()
+
+    def get_current_pid(self):
+        import starsmashertools.helpers.path
+        
+        if not starsmashertools.helpers.path.isfile(self.lockfile):
+            return None
+        with builtins.open(self.lockfile, 'r') as f:
+            content = f.read()
+        return int(content.strip())
+    
+    def lock(self, timeout = None):
+        import time
+        import copy
+        import starsmashertools.preferences
+
+        if timeout is None:
+            # Check the preferences
+            pref = starsmashertools.preferences.get_default(
+                'IO', 'Lock', throw_error = False,
+            )
+            if pref is None: timeout = float('inf')
+            else: timeout = pref.get('timeout', float('inf'))
+        
+        self.timeout = timeout
+        
+        # Wait for the given file to become available
+        timer = 0.
+        t0 = time.time()
+        while timer < self.timeout:
+            if not self.locked:
+                with builtins.open(self.lockfile, 'x') as f:
+                    f.write(str(self.pid))
+                break
+            t1 = time.time()
+            timer += t1 - t0
+            t0 = copy.deepcopy(t1)
     
     def unlock(self):
         import starsmashertools.helpers.path
-        starsmashertools.helpers.path.remove(self.path)
-        self.locked = False
+        if not self.locked: return
+        if starsmashertools.helpers.path.isfile(self.lockfile):
+            if self.isLocker:
+                starsmashertools.helpers.path.remove(self.lockfile)
+        self.timeout = None
+    
+    @staticmethod
+    def get(path):
+        import starsmashertools.helpers.file
+        import starsmashertools.helpers.path
+        import os
+        
+        ret = Lock(path)
+        pid = ret.get_current_pid()
+        if pid is None: pid = os.getpid()
+        ret.pid = pid
+        return ret
+            
+
+# Catch all interrupts and unlock all the files before exiting
+starsmashertools.on_quit += [Lock.unlock_all]
+        
 
 @starsmashertools.helpers.argumentenforcer.enforcetypes
 @contextlib.contextmanager
@@ -39,8 +111,8 @@ def open(
         path : str,
         mode : str,
         lock : bool = True,
-        lock_file : str | type(None) = None,
         method : typing.Callable | type(None) = None,
+        timeout : int | float | np.generic | type(None) = None,
         **kwargs
 ):
     import starsmashertools.helpers.path
@@ -51,20 +123,18 @@ def open(
     
     if (not starsmashertools.helpers.path.isfile(path) and
         mode not in ['w', 'a', 'w+', 'r+', 'wb', 'wb+', 'rb+', 'ab']):
-        #print("error raised")
         raise FileNotFoundError(path)
     
     if lock:
-        #print("New lock")
         _lock = Lock(path)
+        _lock.lock(timeout = timeout)
     
     f = method(path, mode, **kwargs)
     try:
         yield f
     finally:
         f.close()
-        if lock:
-            _lock.unlock()
+        if lock: _lock.unlock()
 
 # Check if the file at the given path is a MESA file
 def isMESA(path):
