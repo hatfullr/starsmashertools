@@ -55,70 +55,6 @@ def get_function_names(functions):
         else: names += [function.__qualname__]
     return names
 
-"""
-def get_user_inputs(function, args, kwargs):
-    import inspect
-    import typing
-    import collections
-    import time # debugging
-
-    return starsmashertools.bintools.cli.CLI.inputmanager.get_function(
-        function,
-        args,
-        kwargs,
-    )
-    
-    # Ask the user for inputs
-    signature = inspect.signature(function)
-
-    # Get the argument names that we need to ask input for
-    i_pos = 0
-    needed_positionals = []
-    needed_keywords = []
-    for name, parameter in signature.parameters.items():
-        # Skip things we don't want the user to edit
-        if name in ['self', 'cli', 'kwargs']: continue
-        if parameter.default == inspect._empty: # Positional argument
-            if i_pos >= len(args): needed_positionals += [name]
-            i_pos += 1
-        else: # Keyword argument
-            # All keywords should be given to the user to edit
-            needed_keywords += [name]
-
-    cli = starsmashertools.bintools.cli.CLI.instance
-    type_hints = typing.get_type_hints(function)
-
-    types = {}
-    for name in needed_positionals + needed_keywords:
-        if name in type_hints.keys():
-            types[name] = type_hints[name]
-        else: # Any type is permitted, I guess
-            types[name] = None
-    
-    # Obtain positionals
-    args = list(args) # For editing
-    for name in needed_positionals:
-        args += [cli.inputmanager.get(
-            types[name],
-            prompt="Enter a value for parameter '%s': " % name,
-        )]
-
-    # Obtain keywords
-    for name in needed_keywords:
-        default = signature.parameters[name].default
-        if isinstance(default, str): d = "'%s'" % default
-        else: d = str(default)
-        _input = cli.inputmanager.get(
-            types[name],
-            prompt="Enter a value for keyword '%s' (default = %s): " % (name,d),
-            error_on_empty = False,
-        )
-        if _input is None: kwargs[name] = default
-        else: kwargs[name] = _input
-    
-    return tuple(args), kwargs
-"""
-
 def call_function(function):
     args = exposed_programs[function]['args']
     kwargs = exposed_programs[function]['kwargs']
@@ -128,7 +64,6 @@ def call_function(function):
         args,
         kwargs,
     )
-    #args, kwargs = get_user_inputs(function, args, kwargs)    
     result = function(simulation, *args, **kwargs)
         
     if isinstance(result, (list, tuple)):
