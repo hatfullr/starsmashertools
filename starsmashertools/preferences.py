@@ -3,6 +3,83 @@ import numpy as np
 from starsmashertools.lib.archive import REPLACE_OLD, REPLACE_NEQ
 
 defaults = {
+# ------------------------------------------------------------------------------
+    'Archive' : {
+        'replacement flags' : (REPLACE_OLD, REPLACE_NEQ,),
+    },
+# ------------------------------------------------------------------------------
+    'Dynamical' : {
+        'original initial restartrad' : 'restartrad.sph.orig',
+    },
+# ------------------------------------------------------------------------------
+    'Figure' : {
+        'stylesheet directories' : [
+            # The starsmashertools default directory
+            '{SOURCE_DIRECTORY}/starsmashertools/mpl/stylesheets',
+            
+            # Add paths to directories below which contain *.mplstyle files for
+            # use with Matplotlib.
+        ],
+    },
+# ------------------------------------------------------------------------------
+'FormatSheet' : {
+        # Directory paths to additional format sheets
+        'directories' : [
+        ],
+    },
+# ------------------------------------------------------------------------------
+    'GPUJob' : {
+        'threadsperblock' : 512,
+    },
+# ------------------------------------------------------------------------------
+    # Used in the Input class, which holds info about StarSmasher input
+    # parameters.
+    'Input' : {
+        'src init filename' : 'init.f',
+    },
+# ------------------------------------------------------------------------------
+    # Used in both the CLI and API to handle user requests.
+    'IO' : {
+        'Lock' : {
+            # If None, the file IO will never timeout. Otherwise, give in units
+            # of seconds.
+            'timeout' : float('inf'),
+        },
+    },
+# ------------------------------------------------------------------------------
+    'LogFile' : {
+        'file pattern' : 'log*.sph',
+    },
+# ------------------------------------------------------------------------------
+    'Output' : {
+        # These are cached quantities that the Output objects will be
+        # aware of at initialization. Each entry must be a function
+        # that accepts only an Output object as argument.
+        # To specify your own units edit the 'units' object in
+        # 'Simulation' above.
+        'cache' : {
+            'ID' : lambda obj: np.arange(obj['ntot']),
+            'xyz': lambda obj: np.column_stack((obj['x'], obj['y'], obj['z'])),
+            'r2' : lambda obj: np.sum(obj['xyz']**2, axis=-1),
+            'r' : lambda obj: np.sqrt(obj['r2']),
+            'v2' : lambda obj: np.sum(np.column_stack((obj['vx'], obj['vy'], obj['vz']))**2, axis=-1),
+            'vdot' : lambda obj: np.sum(np.column_stack((obj['vxdot'], obj['vydot'], obj['vzdot']))**2, axis=-1),
+            'v' : lambda obj: np.sqrt(obj['v2']),
+            'ekin' : lambda obj: 0.5 * obj['v2'],
+            'etot' : lambda obj: obj['ekin'] + obj['grpot'] + obj['u'],
+            'unbound' : lambda obj: obj['etot'] >= 0,
+            'angular momentum' : lambda obj: obj['am'] * np.sqrt(obj['r2'] * obj['v2']),
+            'mejecta' : lambda obj: np.sum(obj['am'][obj['unbound']]) if np.any(obj['unbound']) else 0.,
+
+            # Add your own functions here
+        },
+        'string format sheet' : 'cli.format',
+    },
+# ------------------------------------------------------------------------------
+    'OutputIterator' : {
+        'max buffer size' : 100,
+    },
+# ------------------------------------------------------------------------------
     'Simulation' : {
         'search directory' : '~/data/',
         # Used to identify the directories which contain the StarSmasher source
@@ -40,9 +117,7 @@ defaults = {
         # You must give a value in centimeters
         'get_simulation_continued_from position threshold' : 0.01 * 6.9599e10,
     },
-
-    
-    
+# ------------------------------------------------------------------------------
     # Note that currently the setting of values 'gram', 'sec', 'cm', and
     # 'kelvin' in src/starsmasher.h is not supported. We expect all these values
     # to equal 1.d0 for now.
@@ -90,112 +165,7 @@ defaults = {
             ['erg/g', 'cm*g/s*s'], # Don't remove this
         ],
     },
-
-
-    
-    'Dynamical' : {
-        'original initial restartrad' : 'restartrad.sph.orig',
-    },
-
-
-
-    # Used in the Input class, which holds info about StarSmasher input
-    # parameters.
-    'Input' : {
-        'src init filename' : 'init.f',
-    },
-
-
-
-    # Used in both the CLI and API to handle user requests.
-    'IO' : {
-        'Lock' : {
-            # If None, the file IO will never timeout. Otherwise, give in units
-            # of seconds.
-            'timeout' : float('inf'),
-        },
-    },
-
-
-    
-    'LogFile' : {
-        'file pattern' : 'log*.sph',
-    },
-
-
-    
-    'OutputIterator' : {
-        'max buffer size' : 100,
-    },
-
-
-    
-    'Output' : {
-        # These are cached quantities that the Output objects will be
-        # aware of at initialization. Each entry must be a function
-        # that accepts only an Output object as argument.
-        # To specify your own units edit the 'units' object in
-        # 'Simulation' above.
-        'cache' : {
-            'ID' : lambda obj: np.arange(obj['ntot']),
-            'xyz': lambda obj: np.column_stack((obj['x'], obj['y'], obj['z'])),
-            'r2' : lambda obj: np.sum(obj['xyz']**2, axis=-1),
-            'r' : lambda obj: np.sqrt(obj['r2']),
-            'v2' : lambda obj: np.sum(np.column_stack((obj['vx'], obj['vy'], obj['vz']))**2, axis=-1),
-            'vdot' : lambda obj: np.sum(np.column_stack((obj['vxdot'], obj['vydot'], obj['vzdot']))**2, axis=-1),
-            'v' : lambda obj: np.sqrt(obj['v2']),
-            'ekin' : lambda obj: 0.5 * obj['v2'],
-            'etot' : lambda obj: obj['ekin'] + obj['grpot'] + obj['u'],
-            'unbound' : lambda obj: obj['etot'] >= 0,
-            'angular momentum' : lambda obj: obj['am'] * np.sqrt(obj['r2'] * obj['v2']),
-            'mejecta' : lambda obj: np.sum(obj['am'][obj['unbound']]) if np.any(obj['unbound']) else 0.,
-
-            # Add your own functions here
-        },
-        'string format sheet' : 'cli.format',
-    },
-
-
-    
-    'GPUJob' : {
-        'threadsperblock' : 512,
-    },
-
-
-    
-    'FluxFinder' : {
-        # The following options only apply for ncooling=2 or 3
-        # Opacities within this temperature range will be set to 'dust opacity'
-        'dust temperature range' : [100., 1000.],
-        'dust opacity' : 1.0,
-        'tau particle cutoff' : 1.e-5,
-    },
-
-    
-    
-    'Archive' : {
-        'replacement flags' : (REPLACE_OLD, REPLACE_NEQ,),
-    },
-
-
-    
-    'FormatSheet' : {
-        # Directory paths to additional format sheets
-        'directories' : [
-        ],
-    },
-
-
-    
-    'Figure' : {
-        'stylesheet directories' : [
-            # The starsmashertools default directory
-            '{SOURCE_DIRECTORY}/starsmashertools/mpl/stylesheets',
-            
-            # Add paths to directories below which contain *.mplstyle files for
-            # use with Matplotlib.
-        ],
-    },
+# ------------------------------------------------------------------------------
 }
 
 
