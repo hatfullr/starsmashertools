@@ -261,7 +261,7 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
-    @cli('starsmashertools', which='both')
+    @cli('starsmashertools')#, which='both')
     def get_RLOF(
             self,
             which : str = 'primary',
@@ -310,6 +310,8 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
 
         import starsmashertools.helpers.path
         import starsmashertools.helpers.midpoint
+        import starsmashertools.helpers.string
+        import os
         
         starsmashertools.helpers.argumentenforcer.enforcevalues({
             'which' : ['primary', 'secondary', 'both'],
@@ -342,59 +344,101 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
             fRLOF2 = self.get_fRLOF(output2)[1]
             if fRLOF2 > threshold: output2 = outputs[max(0, index2 - 1)]
         
-        if which == 'primary': return output1
-        if which == 'secondary': return output2
+        
         if cli:
             # Give some additional fRLOF values in the vicinity of the found output files
-            window = 3
+            import starsmashertools.preferences
+            window = starsmashertools.preferences.get_default(
+                'CLI', 'Binary', throw_error = True,
+            )['get_RLOF']['output window']
+            
             outputs = self.get_output()
 
-            outputs1 = []
-            outputs2 = []
-            results1 = [[], []]
-            results2 = [[], []]
+            # Get all the output files we will be using
+            all_outputs = []
+            tops = [None, None]
+            bottoms = [None, None]
+            if which in ['primary', 'both']:
+                idx = outputs.index(output1)
+                if idx + window/2 >= len(outputs):
+                    tops[0] = len(outputs)
+                    bottoms[0] = max(tops[0] - window - 1, 0)
+                elif idx - window/2 < 0:
+                    bottoms[0] = 0
+                    tops[0] = min(window + 1, len(outputs))
+                all_outputs += outputs[bottoms[0]:tops[0]]
+            if which in ['secondary', 'both']:
+                idx = outputs.index(output2)
+                if idx + window/2 >= len(outputs):
+                    tops[1] = len(outputs)
+                    bottoms[1] = max(tops[1] - window - 1, 0)
+                elif idx - window/2 < 0:
+                    bottoms[1] = 0
+                    tops[1] = min(window*2 + 1, len(outputs))
+                all_outputs += outputs[bottoms[1]:tops[1]]
+            all_outputs = list(set(all_outputs))
+            fRLOFs = {'primary':{}, 'secondary':{}}
+            for o in all_outputs:
+                primary, secondary = self.get_fRLOF(o)
+                fRLOFs['primary'][o] = primary
+                fRLOFs['secondary'][o] = secondary
             
-            if output1 is not None:
-                idx1 = outputs.index(output1)
-                bottom1 = max(idx1 - window, 0)
-                top1 = min(idx1 + window, len(outputs) - 1)
-                outputs1 = outputs[bottom1:top1 + 1]
-                results1[0] = outputs1
-                
-            if output2 is not None:
-                idx2 = outputs.index(output2)
-                bottom2 = max(idx2 - window, 0)
-                top2 = min(idx2 + window, len(outputs) - 1)
-                outputs2 = outputs[bottom2:top2 + 1]
-                results2[0] = outputs2
-
-            all_outputs = outputs1 + outputs2
-            results = {}
-            for output in all_outputs:
-                results[output] = self.get_fRLOF(output)
-                
-            for output in outputs1:
-                results1[1] += [results[output][0]]
-            for output in outputs2:
-                results2[1] += [results[output][1]]
+            widths = [15, 13]
+            header_fmt = '{name:>%d}' % (sum(widths) + 1)
+            fmt = '{name:>%ds}{pick:1s}{value:%d.%df}' % tuple([widths[0], widths[1], 7])
+            strings = [
+                [header_fmt.format(name='Primary')],
+                [header_fmt.format(name='Secondary')],
+            ]
             
-            string = []
-            for i, result in enumerate([results1, results2]):
-                outputs, fRLOFs = result
-                if not outputs:
-                    string += ["Star %d: None (point mass)" % (i+1)]
-                else:
-                    string += ["Star %d:" % (i+1)]
-                    for o, fRLOF in zip(outputs, fRLOFs):
-                        string += [
-                            "   %15s  fRLOF = %11.7f" % (
-                                starsmashertools.helpers.path.basename(o.path),
-                                fRLOF,
-                            )]
-                        
-            return "\n".join(string)
+            if which in ['primary', 'both']:
+                idx = outputs.index(output1)
+                for o in outputs[bottoms[0]:tops[0]]:
+                    name = starsmashertools.helpers.string.shorten(
+                        os.path.basename(o.path),
+                        widths[0],
+                        where = 'left',
+                    )
+                    strings[0] += [fmt.format(
+                        name=name,
+                        value=fRLOFs['primary'][o],
+                        pick='*' if o == output1 else '',
+                    )]
+            if which in ['secondary', 'both']:
+                idx = outputs.index(output2)
+                for o in outputs[bottoms[1]:tops[1]]:
+                    name = starsmashertools.helpers.string.shorten(
+                        os.path.basename(o.path),
+                        widths[0],
+                        where = 'left',
+                    )
+                    strings[1] += [fmt.format(
+                        name=name,
+                        value=fRLOFs['secondary'][o],
+                        pick='*' if o == output2 else '',
+                    )]
+            
+            if which == 'primary':
+                return '\n'.join(strings[0])
+            if which == 'secondary':
+                return '\n'.join(strings[1])
+            if which == 'both':
+                # Normalize the lengths
+                length = max(len(strings[0]), len(strings[1]))
+                for i in range(length):
+                    if i >= len(strings[0]): strings[0] += [""]
+                    if i >= len(strings[1]): strings[1] += [""]
+                string = ""
+                for i in range(length):
+                    string += strings[0][i] + strings[1][i] + '\n'
+                return string
+            raise NotImplementedError("Bad which value '%s'" % str(which))
+        
+        if which == 'primary': return output1
+        if which == 'secondary': return output2
         return output1, output2
-
+        
+        
     @api
     @cli('starsmashertools')
     def get_primary_mass(self, cli : bool = False):

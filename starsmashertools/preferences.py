@@ -8,6 +8,14 @@ defaults = {
         'replacement flags' : (REPLACE_OLD, REPLACE_NEQ,),
     },
 # ------------------------------------------------------------------------------
+    'CLI' : {
+        'Binary' : {
+            'get_RLOF' : {
+                'output window' : 6,
+            },
+        },
+    },
+# ------------------------------------------------------------------------------
     'Dynamical' : {
         'original initial restartrad' : 'restartrad.sph.orig',
     },

@@ -199,7 +199,9 @@ class InputManager(object):
                 if i_pos >= len(args): needed_positionals += [name]
                 i_pos += 1
             else: # Keyword argument
-                # All keywords should be given to the user to edit
+                # All keywords should be given to the user to edit, except for
+                # those which were specified in the cli function decorator
+                if name in kwargs.keys(): continue
                 needed_keywords += [name]
 
         cli = starsmashertools.bintools.cli.CLI.instance
