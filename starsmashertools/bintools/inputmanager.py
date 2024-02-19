@@ -308,7 +308,10 @@ class Session(object):
                 if isinstance(param_type_hints, type):
                     param_type_hints = param_type_hints.__name__
                 else:
-                    param_type_hints = [t.__name__ for t in param_type_hints]
+                    if isinstance(param_type_hints, types.UnionType):
+                        param_type_hints = [t.__name__ for t in param_type_hints.__args__]
+                    else:
+                        param_type_hints = [t.__name__ for t in param_type_hints]
                 if parameter.default == inspect._empty: # Positional argument
                     positional[name] = {
                         'type hints' : param_type_hints,
