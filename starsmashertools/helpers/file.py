@@ -3,6 +3,7 @@ import contextlib
 import builtins
 import numpy as np
 import typing
+import atexit
 
 fortran_comment_characters = ['c','C','!','*']
 
@@ -73,9 +74,12 @@ class Lock(object):
         t0 = time.time()
         while timer < self.timeout:
             if not self.locked:
-                with builtins.open(self.lockfile, 'x') as f:
-                    f.write(str(self.pid))
-                break
+                try:
+                    with builtins.open(self.lockfile, 'x') as f:
+                        f.write(str(self.pid))
+                    break
+                except FileExistsError: pass
+
             t1 = time.time()
             timer += t1 - t0
             t0 = copy.deepcopy(t1)
@@ -102,7 +106,7 @@ class Lock(object):
             
 
 # Catch all interrupts and unlock all the files before exiting
-starsmashertools.on_quit += [Lock.unlock_all]
+atexit.register(Lock.unlock_all)
         
 
 @starsmashertools.helpers.argumentenforcer.enforcetypes

@@ -1,6 +1,4 @@
 # Add functions here to perform actions just before the program exits.
-on_quit = []
-
 import starsmashertools.lib.output
 import starsmashertools.helpers.argumentenforcer
 from starsmashertools.helpers.apidecorator import api
@@ -19,15 +17,6 @@ if __file__.endswith(os.path.join('starsmashertools', 'starsmashertools','__init
 else:
     SOURCE_DIRECTORY = os.path.dirname(os.path.dirname(util.find_spec('starsmashertools').origin))
 
-
-def _process_quit(*args, **kwargs):
-    for function in on_quit:
-        try:
-            function(*args, **kwargs)
-        except Exception as e:
-            print(e)
-
-signal.signal(signal.SIGINT, _process_quit)
 
 # If our current version mis-matches the installed version, show a warning
 def _check_version():
