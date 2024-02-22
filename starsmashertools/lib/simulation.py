@@ -27,6 +27,7 @@ class Simulation(object):
         import starsmashertools.lib.output
         import starsmashertools.helpers.path
         import starsmashertools.lib.archive
+        import starsmashertools.helpers.asynchronous
         
         directory = starsmashertools.helpers.path.realpath(directory.strip())
         
@@ -49,7 +50,9 @@ class Simulation(object):
 
         self.reader = starsmashertools.lib.output.Reader(self)
 
-        self.archive = starsmashertools.lib.archive.SimulationArchive(self)
+        if starsmashertools.helpers.asynchronous.is_main_process():
+            self.archive = starsmashertools.lib.archive.SimulationArchive(self)
+        else: self.archive = None
             
     def __hash__(self):
         return hash(self.directory)
@@ -582,13 +585,10 @@ class Simulation(object):
         list
             A list of the child simulations.
         """
-        import starsmashertools.helpers.asynchronous
-        
         if self._children is None:
 
-            if starsmashertools.helpers.asynchronous.is_main_process():
-                # Get the children from the hint files
-                self._children = self._load_children_from_hint_files()
+            # Get the children from the hint files
+            self._children = self._load_children_from_hint_files()
             
             # If loading the children didn't work, or we are doing multiple
             # processes
@@ -602,11 +602,10 @@ class Simulation(object):
                 
                 # Now save the children (only if we aren't doing multiple
                 # processes)
-                if starsmashertools.helpers.asynchronous.is_main_process():
-                    self._save_children_to_hint_file(
-                        self._children,
-                        verbose=verbose,
-                    )
+                self._save_children_to_hint_file(
+                    self._children,
+                    verbose=verbose,
+                )
 
         if cli:
             string = []

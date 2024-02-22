@@ -701,9 +701,10 @@ class OutputIterator(object):
     
     def __next__(self):
         if self._simulation_auto_save is None:
-            import copy
-            self._simulation_auto_save = copy.deepcopy(self.simulation.archive.auto_save)
-            self.simulation.archive.auto_save = False
+            if self.simulation.archive is not None:
+                import copy
+                self._simulation_auto_save = copy.deepcopy(self.simulation.archive.auto_save)
+                self.simulation.archive.auto_save = False
         if len(self.filenames) == 0: self.stop()
         
         self._buffer_index += 1
@@ -732,7 +733,8 @@ class OutputIterator(object):
     def next(self, *args, **kwargs): return self.__next__(*args, **kwargs)
 
     def stop(self):
-        self.simulation.archive.auto_save = self._simulation_auto_save
+        if self.simulation.archive is not None:
+            self.simulation.archive.auto_save = self._simulation_auto_save
         # Ensure that we do the flush methods whenever we stop iterating
         self.flush()
         raise StopIteration

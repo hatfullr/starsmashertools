@@ -98,121 +98,76 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
             if threshold_frac <= 0 or threshold_frac > 1:
                 raise ValueError("Keyword 'threshold_frac' must be within range (0, 1], not '%g'" % threshold_frac)
 
-        ret = None
-        
-        # Pull from the archive if we already calculated this
-        if 'get_plunge_time' in self.archive:
-            v = self.archive['get_plunge_time'].value
-            output_path = v.get('output path', None)
-            # Don't recalculate if:
-            #    we have the same number of output files
-            #    the threshold value is the same as previous
-            #    the output file we found previously still exists
-            if (
-                    (
-                        v.get('threshold', None) == threshold and
-                        v.get('threshold_frac', None) == threshold_frac
-                    ) and
-                    len(self.get_outputfiles()) == v.get('noutputs', None) and
-                    (
-                        output_path is not None and
-                        starsmashertools.helpers.path.isfile(output_path)
-                    )
-            ):
-                ret = starsmashertools.lib.units.Unit(v['value'], v['units'])
-                output = get_output(get_outputfiles().index(output_path))
-        
-        if ret is None:
-            children = self.get_children()
-            if not children or not isinstance(children[0], starsmashertools.lib.binary.Binary):
-                raise Exception("Cannot obtain the plunge time for a dynamical simulation that did not originate from a Binary simulation: '%s'" % self.directory)
-            binary = children[0]
-            primary, secondary = binary.get_children()
+        children = self.get_children()
+        if not children or not isinstance(children[0], starsmashertools.lib.binary.Binary):
+            raise Exception("Cannot obtain the plunge time for a dynamical simulation that did not originate from a Binary simulation: '%s'" % self.directory)
+        binary = children[0]
+        primary, secondary = binary.get_children()
 
-            primary_IDs = binary.get_primary_IDs()
-            secondary_IDs = binary.get_secondary_IDs()
+        primary_IDs = binary.get_primary_IDs()
+        secondary_IDs = binary.get_secondary_IDs()
 
-            bout0 = binary.get_output(0)
-            if binary.isPrimaryPointMass():
-                RSPH = 2 * bout0['hp'][primary_IDs][0]
+        bout0 = binary.get_output(0)
+        if binary.isPrimaryPointMass():
+            RSPH = 2 * bout0['hp'][primary_IDs][0]
+        else:
+            o = primary.get_output(-1)
+            RSPH = np.amax(o['r'] + 2 * o['hp'])
+
+        RSPH2 = RSPH**2
+
+        if threshold_frac is not None:
+            if binary.isSecondaryPointMass():
+                M2 = bout0['am'][secondary_IDs][0]
             else:
-                o = primary.get_output(-1)
-                RSPH = np.amax(o['r'] + 2 * o['hp'])
-                
-            RSPH2 = RSPH**2
+                o = secondary.get_output(-1)
+                M2 = np.sum(o['am'])
+            threshold = M2 * threshold_frac
 
-            if threshold_frac is not None:
-                if binary.isSecondaryPointMass():
-                    M2 = bout0['am'][secondary_IDs][0]
-                else:
-                    o = secondary.get_output(-1)
-                    M2 = np.sum(o['am'])
-                threshold = M2 * threshold_frac
-
-            def get_mwithin(output):
-                if binary.isPrimaryPointMass():
-                    com = np.asarray([
-                        output['x'][primary_IDs],
-                        output['y'][primary_IDs],
-                        output['z'][primary_IDs],
-                    ])
-                else:
-                    with starsmashertools.mask(output, primary_IDs):
-                        bound = ~output['unbound']
-                        if bound.any():
-                            xcom1, ycom1, zcom1 = starsmashertools.math.center_of_mass(
-                                output['am'][bound],
-                                output['x'][bound],
-                                output['y'][bound],
-                                output['z'][bound],
-                            )
-                        else: return 0.
-                    com = np.asarray([xcom1, ycom1, zcom1])
-                if binary.isSecondaryPointMass():
-                    dist2 = np.sum((com - output['xyz'][secondary_IDs])**2)
-                    if dist2 <= RSPH2: return output['am'][secondary_IDs]
-                else:
-                    with starsmashertools.mask(output, secondary_IDs):
-                        dist2 = np.sum((com - output['xyz'])**2, axis=-1)
-                        within = dist2 <= RSPH2
-                        if within.any(): return np.sum(output['am'][within])
-                return 0.
-            
-            
-            # Check for presence of plunge-in
-            with self.archive.nosave():
-                if get_mwithin(self.get_output(-1)) >= threshold:
-                    try:
-                        m = starsmashertools.helpers.midpoint.Midpoint(self.get_output())
-                        m.set_criteria(
-                            lambda output: get_mwithin(output) < threshold,
-                            lambda output: get_mwithin(output) == threshold,
-                            lambda output: get_mwithin(output) > threshold,
+        def get_mwithin(output):
+            if binary.isPrimaryPointMass():
+                com = np.asarray([
+                    output['x'][primary_IDs],
+                    output['y'][primary_IDs],
+                    output['z'][primary_IDs],
+                ])
+            else:
+                with starsmashertools.mask(output, primary_IDs):
+                    bound = ~output['unbound']
+                    if bound.any():
+                        xcom1, ycom1, zcom1 = starsmashertools.math.center_of_mass(
+                            output['am'][bound],
+                            output['x'][bound],
+                            output['y'][bound],
+                            output['z'][bound],
                         )
-                        output = m.get()
-                        ret = output['t'] * self.units['t']
-                    except starsmashertools.helpers.argumentenforcer.ArgumentTypeError as e:
-                        raise Exception("You are likely missing output files") from e
+                    else: return 0.
+                com = np.asarray([xcom1, ycom1, zcom1])
+            if binary.isSecondaryPointMass():
+                dist2 = np.sum((com - output['xyz'][secondary_IDs])**2)
+                if dist2 <= RSPH2: return output['am'][secondary_IDs]
+            else:
+                with starsmashertools.mask(output, secondary_IDs):
+                    dist2 = np.sum((com - output['xyz'])**2, axis=-1)
+                    within = dist2 <= RSPH2
+                    if within.any(): return np.sum(output['am'][within])
+            return 0.
 
-                    # Clear out this spot in the archive if we need to
-                    # recalculate it
-                    if 'get_plunge_time' in self.archive:
-                        self.archive.remove('get_plunge_time')
-                    # Save the result to the archive
-                    self.archive.add(
-                        'get_plunge_time',
-                        {
-                            'value' : float(ret),
-                            'units' : str(ret.label),
-                            'noutputs' : len(self.get_outputfiles()),
-                            'threshold' : threshold,
-                            'threshold_frac' : threshold_frac,
-                            'output file' : output.path,
-                        },
-                        origin = None,
-                        mtime = starsmashertools.helpers.path.getmtime(output.path),
-                    )
-                    self.archive.save()
+
+        # Check for presence of plunge-in
+        ret = None
+        if get_mwithin(self.get_output(-1)) >= threshold:
+            try:
+                m = starsmashertools.helpers.midpoint.Midpoint(self.get_output())
+                m.set_criteria(
+                    lambda output: get_mwithin(output) < threshold,
+                    lambda output: get_mwithin(output) == threshold,
+                    lambda output: get_mwithin(output) > threshold,
+                )
+                output = m.get()
+                ret = output['t'] * self.units['t']
+            except starsmashertools.helpers.argumentenforcer.ArgumentTypeError as e:
+                raise Exception("You are likely missing output files") from e
 
         if cli:
             if ret is None: return 'No plunge-in detected yet'
