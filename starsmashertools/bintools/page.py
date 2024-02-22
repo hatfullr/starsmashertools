@@ -724,10 +724,10 @@ class MultiPage(Page, object):
         self._on_no_connection()
 
     def show_content(self, *args, **kwargs):
-        height, width = starsmashertools.bintools.cli.CLI.get_height_and_width()
-        content = self.contents_per_page[self.pagenumber]
-        content = self.get_page_header() + content + self.get_page_footer()
-        self.cli.write(content, flush=True)
+        if self.contents_per_page:
+            content = self.contents_per_page[self.pagenumber]
+            content = self.get_page_header() + content + self.get_page_footer()
+            self.cli.write(content, flush=True)
 
     def get_page_header(self):
         height, width = starsmashertools.bintools.cli.CLI.get_height_and_width()
