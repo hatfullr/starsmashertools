@@ -147,7 +147,7 @@ class Archive(dict, object):
 
     class ReadOnlyError(Exception, object):
         def __init__(self, filename):
-            message = "Cannot modify readonly archive: %s" % str(self))
+            message = "Cannot modify readonly archive: %s" % str(self)
             super(Archive.ReadOnlyError, self).__init__(message)
     class CorruptFileError(Exception, object): pass
     class MissingIdentifierError(Exception, object): pass
