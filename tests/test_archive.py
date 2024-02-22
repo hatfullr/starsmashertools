@@ -149,6 +149,15 @@ class TestArchive(basetest.BaseTest):
         self.assertEqual(self.archive['test2'].mtime, 0)
         self.assertEqual(self.archive['test2'].origin, 'ff')
 
+    def testReadOnly(self):
+        import starsmashertools.lib.archive
+        self.archive.readonly = True
+        self.archive.auto_save = False
+
+        with self.assertRaises(starsmashertools.lib.archive.Archive.ReadOnlyError):
+            self.archive.save()
+        
+
     #"""
     def testParallel(self):
         import multiprocessing
