@@ -111,13 +111,12 @@ class InputManager(object):
 
         starsmashertools.bintools.cli.CLI.stdscr.clrtobot()
 
-    
     def get(
             self,
             _type,
-            prompt = None,
-            halt = False,
-            error_on_empty = True,
+            prompt : str | type(None) = None,
+            halt : bool = False,
+            error_on_empty : bool = True,
             **kwargs
     ):
         if prompt is None: prompt = self.prompt
@@ -129,7 +128,7 @@ class InputManager(object):
             self.input = input(prompt)
             sys.stdout.flush()
             curses.reset_prog_mode()
-        
+
             # Write to output file if needed
             filename = starsmashertools.bintools.cli.CLI.instance.args['output']
             if filename is not None:
@@ -140,7 +139,7 @@ class InputManager(object):
                 content = starsmashertools.bintools.Style.clean(content)
                 with open(filename, mode) as f:
                     f.write(content)
-        
+
             try:
                 if len(self.input) == 0:
                     if error_on_empty:

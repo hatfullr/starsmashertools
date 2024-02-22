@@ -71,7 +71,7 @@ def call_function(function):
             if isinstance(r, starsmashertools.lib.simulation.Simulation):
                 result[i] = r.directory
     elif isinstance(result, starsmashertools.lib.simulation.Simulation):
-        result = result.directory        
+        result = result.directory
         
     return str(result)
 #return ""

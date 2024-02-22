@@ -1,0 +1,163 @@
+#!/usr/bin/env python3
+
+"""
+Use this program to work with archives created by starsmashertools.
+"""
+
+import starsmashertools.bintools.cli
+import starsmashertools.bintools
+import collections
+import os
+
+newline = starsmashertools.bintools.Style.get('characters', 'newline')
+
+################################################################################
+################################## Back end ####################################
+################################################################################
+def get_archive(filename):
+    # Returns the archive and either a string message of failure, or None on
+    # success.
+    import starsmashertools.lib.archive
+    import os
+    
+    archive = starsmashertools.lib.archive.Archive(
+        filename,
+        load = False,
+        auto_save = False,
+        readonly = True,
+    )
+
+    return archive, None
+
+def show_keys(archive):
+    if not archive.loaded: archive.load()
+    return "\n".join(sorted(archive.keys()))
+
+
+def show_value(archive):
+    import json
+    
+    if not archive.loaded: archive.load()
+
+    def get(key):
+        return archive[key].value
+        
+    args, kwargs = starsmashertools.bintools.cli.CLI.instance.inputmanager.get_function(
+        get,
+        [],
+        {},
+    )
+
+    def dict_to_string(d):
+        for k, v in d.items():
+            if isinstance(v, dict):
+                dict_to_string(v)
+            else:
+                d[k] = str(v)
+        return d
+
+    # Format the output using json
+    ret = dict_to_string(get(*args, **kwargs))
+    return json.dumps(ret, indent=4)
+    
+
+def show_raw_value(archive):
+    import starsmashertools.helpers.jsonfile
+    if not archive.loaded: archive.load()
+
+    def get(key):
+        return archive[key]
+        
+    args, kwargs = starsmashertools.bintools.cli.CLI.instance.inputmanager.get_function(
+        get,
+        [],
+        {},
+    )
+
+    ret = get(*args, **kwargs)
+    stuff = starsmashertools.helpers.jsonfile.save_bytes(ret.value).decode('utf-8')
+    header = ['origin: ' + str(ret.origin)]
+    header += ['mtime: ' + str(ret.mtime)]
+    header = newline.join(header)
+    
+    return header + newline + stuff
+
+
+################################################################################
+################################# Front end ####################################
+################################################################################
+cli = starsmashertools.bintools.cli.CLI(
+    'ssarchive',
+    "Work with Archive files created by starsmashertools.",
+    require_valid_directory = False,
+)
+
+cli.parser.add_argument(
+    'filename',
+    type=str,
+    help='The Archive to use',
+)
+
+archive, success = get_archive(cli.args['filename'])
+
+header = starsmashertools.bintools.Style.bold("Main Menu") + newline + newline+\
+    ("File = %s" % os.path.realpath(archive.filename)) + newline + newline +\
+    'Choose an option' + newline
+
+
+
+lookup = collections.OrderedDict()
+lookup['show keys'] = {
+    'args' : (
+        [],
+        lambda archive=archive: show_keys(archive),
+    ),
+    'kwargs' : {
+        'kind' : starsmashertools.bintools.page.MultiPage,
+        '_quit' : True,
+    },
+}
+
+lookup['show value'] = {
+    'args' : (
+        [],
+        lambda archive=archive: show_value(archive),
+    ),
+    'kwargs' : {
+        'kind' : starsmashertools.bintools.page.MultiPage,
+        '_quit' : True,
+    },
+}
+
+lookup['show raw value'] = {
+    'args' : (
+        [],
+        lambda archive=archive: show_raw_value(archive),
+    ),
+    'kwargs' : {
+        'kind' : starsmashertools.bintools.page.MultiPage,
+        '_quit' : True,
+    },
+}
+
+
+mainmenu = cli.add_list(
+    [int, str],
+    items = lookup.keys(),
+    bullet = '%5d)',
+    header = header,
+    footer = newline,
+)
+
+
+for i, (name, obj) in enumerate(lookup.items()):
+    obj['kwargs']['back'] = obj['kwargs'].get('back', mainmenu)
+    page = cli.add_page(
+        *obj['args'],
+        **obj['kwargs'],
+    )
+    obj['kwargs']['back'].connect(page, [i, name])
+
+cli.set_mainmenu(mainmenu)
+
+cli.run()

@@ -25,6 +25,7 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     scripts=[
         os.path.join('bin','starsmashertools'),
+        os.path.join('bin','ssarchive'),
         os.path.join('bin','starsmasherdir'),
         os.path.join('bin','timing'),
     ],

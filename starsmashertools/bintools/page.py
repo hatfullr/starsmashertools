@@ -71,14 +71,13 @@ class Page(object):
             quit()
         return False
 
-    def get_content(
-            self,
-            skip : bool | type(None) = None,
-            back : bool | type(None) = None,
-            _quit : bool | type(None) = None,
-            simulation_controls : bool | type(None) = None,
-            **kwargs
-    ):
+    def get_header(self):
+        return copy.deepcopy(self.header)
+
+    def get_footer(self):
+        return copy.deepcopy(self.footer)
+
+    def get_content(self):
         self.fire_events('get_content')
         
         if callable(self.contents): content = self.contents()
@@ -86,20 +85,22 @@ class Page(object):
         
         content = newline.join([" "*self.indent + c for c in content.split(newline)])
         
-        header = copy.copy(self.header)
-        footer = copy.copy(self.footer)
+        header = self.get_header()
+        footer = self.get_footer()
         if header is None: header = starsmashertools.bintools.Style.get('formatting', 'header')
         if footer is None: footer = starsmashertools.bintools.Style.get('formatting', 'footer')
         
         if header: content = header + content
         if footer: content += footer
 
-        content = newline.join([" "+c for c in content.split(newline)])
-        
-        self.cli.write(content, flush=True)
-        
-        if skip: return
-        
+        return newline.join([" "+c for c in content.split(newline)])
+
+    def get_content_options(
+            self,
+            back : bool | type(None) = None,
+            _quit : bool | type(None) = None,
+            simulation_controls : bool | type(None) = None,
+    ):
         content = []
         if simulation_controls is None:
             if self.simulation_controls:
@@ -118,36 +119,46 @@ class Page(object):
                 content += ["q) quit"]
         elif _quit:
             content += ["q) quit"]
-            
-        self.on_event_end('get_content')
+        return newline.join(content)
         
-        return content
 
     # Keywords go to the input manager
     # Override this method in children, but also call this method from children
     # None in keywords means use the page's default
-    def show(
-            self,
-            **kwargs
-    ):
-        content = self.get_content(**kwargs)
-        if content:
-            content = newline.join(content)
-            self.cli.write(content, flush=True)
-            self.cli.page = self
+    def show(self, **kwargs):
+        self.cli.page = self
         
+        self.show_content()
+        self.show_content_options(**kwargs)
+        
+        if not self.show_prompt(**kwargs): return
+        self._on_no_connection()
+
+    def show_content(self):
+        content = self.get_content()
+        if content:
+            self.cli.write(content, flush=True)
+            self.on_event_end('get_content')
+
+    def show_content_options(self, **kwargs):
+        options = self.get_content_options(**kwargs)
+        if options:
+            self.cli.write(options, flush=True)
+            self.on_event_end('get_content_options')
+
+    def show_prompt(self, **kwargs):
         if self.inputmanager is not None and self.inputtypes:
             self._prompt_kwargs = kwargs
             self.prompt()
             if self.process_input(self.input):
                 if self.callback is not None: self.callback(self.input)
-                return
+                return False
             if self.callback is not None: self.callback(self.input)
         
         if not self._back_asprompt and self._back is not None:
             self.back()
-            return
-        self._on_no_connection()
+            return False
+        return True
 
     def _on_no_connection(self):
         self.cli.reset()
@@ -605,3 +616,165 @@ class Table(Page, object):
         self.contents = newline.join(contents)
         
         super(Table, self).show(*args, **kwargs)
+
+
+
+
+
+
+
+
+
+
+class MultiPage(Page, object):
+    """
+    Splits the content of a single page into multiple pages with navigation.
+    This is useful for a Page which contains too much information to fit on the
+    screen.
+    """
+    def __init__(self, *args, **kwargs):
+        super(MultiPage, self).__init__(*args, **kwargs)
+        self.contents_per_page = []
+        self.pagenumber = 0
+        self._forward = True
+        self._listen_to_enter = True
+        self._past_initial_input = False
+
+    def reverse(self):
+        self._forward = False
+        self.pagenumber = max(self.pagenumber - 1, 0)
+        if self.pagenumber == 0:
+            self._forward = True
+            if self._past_initial_input:
+                self._listen_to_enter = False
+        
+    def advance(self):
+        self._forward = True
+        self.pagenumber = min(self.pagenumber + 1, len(self.contents_per_page) - 1)
+        if self.pagenumber == len(self.contents_per_page) - 1:
+            self._forward = False
+            if self._past_initial_input:
+                self._listen_to_enter = False
+
+    def go_to_start(self):
+        self._forward = True
+        self.pagenumber = 0
+        self._listen_to_enter = True
+
+    def go_to_end(self):
+        self._forward = False
+        self.pagenumber = len(self.contents_per_page) - 1
+        self._listen_to_enter = True
+
+    def prompt(self, **kwargs):
+        kwargs['error_on_empty'] = False
+        return super(MultiPage, self).prompt(**kwargs)
+    
+    def process_input(self, _input):
+        if _input in self.triggers.keys():
+            self.triggers[_input]()
+            return True
+        if _input == '.':
+            self._listen_to_enter = True
+            self._forward = True
+            self.advance()
+            return False
+        if _input == ',':
+            self._listen_to_enter = True
+            self._forward = False
+            self.reverse()
+            return False
+        if _input is None or (isinstance(_input, str) and _input.strip() == ''):
+            if self._listen_to_enter:
+                if self._forward: self.advance()
+                else: self.reverse()
+            return False
+        if _input == 'a':
+            self.go_to_start()
+            return False
+        if _input == 'e':
+            self.go_to_end()
+            return False
+        if self.simulation_controls and _input in ['s', 'simulations']:
+            self.show_simulation_controls()
+            return True
+        if self._back is not None and _input in ['b', 'back']:
+            self.back()
+            return True
+        if self._quit and _input in ['q', 'quit']:
+            quit()
+        return False
+    
+    def show(self, **kwargs):
+        self.cli.page = self
+        
+        if not self.contents_per_page: self.split_content_to_pages(**kwargs)
+
+        self.cli.clear()
+        self.show_content()
+        self.show_content_options(**kwargs)
+
+        while self.show_prompt(**kwargs):
+            self._past_initial_input = True
+            self.cli.clear()
+            self.show_content()
+            self.show_content_options(**kwargs)
+            
+        #if not self.show_prompt(**kwargs): return
+        self._on_no_connection()
+
+    def show_content(self, *args, **kwargs):
+        height, width = starsmashertools.bintools.cli.CLI.get_height_and_width()
+        content = self.contents_per_page[self.pagenumber]
+        content = self.get_page_header() + content
+        self.cli.write(content, flush=True)
+
+    def get_page_header(self):
+        height, width = starsmashertools.bintools.cli.CLI.get_height_and_width()
+        return newline.join([
+            '{pagenumber:<4d} / {total:<4d}  ,) previous {f1:7s}  .) next {f2:7s}  a) start  e) end',
+            '┌' + '─' * (width-3) + '┐',
+        ]).format(
+            pagenumber = self.pagenumber + 1,
+            f1 = '[enter]' if (self._listen_to_enter and not self._forward) else '',
+            f2 = '[enter]' if (self._listen_to_enter and self._forward) else '',
+            total = len(self.contents_per_page),
+        )
+
+    def split_content_to_pages(self, **kwargs):
+        import textwrap
+        import itertools
+        
+        height, width = starsmashertools.bintools.cli.CLI.get_height_and_width()
+        
+        # Obtain all the content
+        content = self.get_content()
+        self.on_event_end('get_content')
+        content_options = self.get_content_options(**kwargs)
+        self.on_event_end('get_content_options')
+        
+        allowed_height = height - len(content_options.split(newline)) - 5
+        allowed_width = width - 3
+        
+        
+        footer = '└' + '─' * (allowed_width) + '┘'
+
+        wrapper = textwrap.TextWrapper(width = allowed_width)
+        content = [wrapper.wrap(i) for i in content.split(newline) if i != '']
+        content = list(itertools.chain.from_iterable(content))
+        
+        for i, line in enumerate(content):
+            if i == 0:
+                self.contents_per_page = [[]]
+            if i > 0 and i%allowed_height == 0:
+                self.contents_per_page[-1] += [footer]
+                self.contents_per_page += [[]]
+            missing_width = (allowed_width) - len(line)
+            self.contents_per_page[-1] += ['│' + line + ' '*missing_width + '│']
+
+        if self.contents_per_page[-1][-1] != footer:
+            self.contents_per_page[-1] += [footer]
+        
+        for i in range(len(self.contents_per_page)):
+            self.contents_per_page[i] = newline.join(self.contents_per_page[i])
+

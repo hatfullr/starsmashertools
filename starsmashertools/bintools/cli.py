@@ -265,8 +265,14 @@ class CLI(object):
         for connection in keys:
             self.remove_page(connection)
         
-    def add_page(self, inputtypes, contents, **kwargs):
-        return self._add_page(starsmashertools.bintools.page.Page(self, inputtypes, contents, **kwargs))
+    def add_page(
+            self,
+            inputtypes,
+            contents,
+            kind : type = starsmashertools.bintools.page.Page,
+            **kwargs
+    ):
+        return self._add_page(kind(self, inputtypes, contents, **kwargs))
 
     def add_confirmation_page(self, **kwargs):
         return self._add_page(starsmashertools.bintools.page.ConfirmationPage(self, **kwargs))

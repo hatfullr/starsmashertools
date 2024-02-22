@@ -219,6 +219,8 @@ class Archive(dict, object):
         
         super(Archive, self).__init__()
 
+        self.loaded = False
+        
         if load and starsmashertools.helpers.path.isfile(self.filename):
             self.load()
 
@@ -386,6 +388,8 @@ class Archive(dict, object):
             self.clear()
             for identifier, val in data.items():
                 self[identifier] = ArchiveValue._from_json(identifier, val)
+        
+        self.loaded = True
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
