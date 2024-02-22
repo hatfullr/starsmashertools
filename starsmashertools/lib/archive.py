@@ -144,6 +144,13 @@ class Archive(dict, object):
             archive.save()
 
     """
+
+    class ReadOnlyError(Exception, object):
+        def __init__(self, filename):
+            message = "Cannot modify readonly archive: %s" % str(self))
+            super(Archive.ReadOnlyError, self).__init__(message)
+    class CorruptFileError(Exception, object): pass
+    class MissingIdentifierError(Exception, object): pass
     
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
@@ -153,6 +160,7 @@ class Archive(dict, object):
             load : bool = True,
             replacement_flags : list | tuple | type(None) = None,
             auto_save : bool = True,
+            readonly : bool = False,
             verbose : bool = True,
     ):
         """
@@ -163,6 +171,8 @@ class Archive(dict, object):
         filename : str
             The name of the file to use as the archive.
 
+        Other Parameters
+        ----------------
         load : bool, default = True
             If `False` then the archive will not be loaded on initialization,
             so it must be loaded manually using :func:`~.load`.
@@ -183,6 +193,10 @@ class Archive(dict, object):
             If `True`, values will automatically be written to the file on the
             system whenever they are edited. If `False`, it is the user's
             responsibility to call :func:`~.save` to save the contents.
+
+        readonly : bool, default = False
+            If `True`, a :py:class:`~.Archive.ReadOnlyError` is raised whenever
+            :py:func:`~.Archive.save` is called on this object.
             
         verbose : bool, default = True
             If `False`, messages are suppressed. Otherwise messages are
@@ -200,12 +214,22 @@ class Archive(dict, object):
         self.filename = filename
         self.replacement_flags = replacement_flags
         self.auto_save = auto_save
+        self.readonly = readonly
         self.verbose = verbose
-
+        
         super(Archive, self).__init__()
 
         if load and starsmashertools.helpers.path.isfile(self.filename):
             self.load()
+
+    def __repr__(self):
+        import starsmashertools.helpers.string
+        name = starsmashertools.helpers.string.shorten(
+            self.filename,
+            25,
+            where = 'left',
+        )
+        return 'Archive(%s)' % name
     
     def __copy__(self, *args, **kwargs):
         raise NotImplementedError
@@ -341,7 +365,7 @@ class Archive(dict, object):
             ) as zfile:
                 namelist = zfile.namelist()
                 if not namelist:
-                    raise Exception("Failed to load archive file because it did not save correctly. Please delete it and try again: '%s'" % self.filename)
+                    raise Archive.CorruptFileError("Failed to load archive file because it did not save correctly. Please delete it and try again: '%s'" % self.filename)
                 content = zfile.read(namelist[0])
 
             return content
@@ -378,6 +402,7 @@ class Archive(dict, object):
             Overrides the :py:attr:`~.verbose` option in :py:func:`~.__init__`.
             If `None` then :py:attr:`~.verbose` is used instead.
         """
+        if self.readonly: raise Archive.ReadOnlyError(self.filename)
         import zipfile
         import starsmashertools.helpers.jsonfile
         import starsmashertools.helpers.file
@@ -429,7 +454,6 @@ class Archive(dict, object):
         **kwargs
             Keyword arguments are passed directly to :class:`ArchiveValue`.
         """
-        
         value = ArchiveValue(*args, **kwargs)
         self[value.identifier] = value
             
@@ -437,7 +461,7 @@ class Archive(dict, object):
     @api
     def remove(self, identifier : str):
         if identifier not in self.keys():
-            raise KeyError("No identifier '%s' found in Archive '%s'" % (identifier, self.filename))
+            raise Archive.MissingIdentifierError("No identifier '%s' found in Archive '%s'" % (identifier, self.filename))
         del self[identifier]
 
 
