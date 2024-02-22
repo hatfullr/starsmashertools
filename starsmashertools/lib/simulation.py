@@ -549,7 +549,11 @@ class Simulation(object):
     
     @api
     @cli('starsmashertools')
-    def get_children(self, verbose : bool = False, cli : bool = False):
+    def get_children(
+            self,
+            verbose : bool = False,
+            cli : bool = False,
+    ):
         """
         Return a list of `starsmashertools.lib.simulation.Simulation` objects
         that were used to create this simulation. For example, if this
@@ -578,11 +582,16 @@ class Simulation(object):
         list
             A list of the child simulations.
         """
+        import starsmashertools.helpers.asynchronous
+        
         if self._children is None:
-            # Get the children from the hint files
-            self._children = self._load_children_from_hint_files()
+
+            if starsmashertools.helpers.asynchronous.is_main_process():
+                # Get the children from the hint files
+                self._children = self._load_children_from_hint_files()
             
-            # If loading the children didn't work
+            # If loading the children didn't work, or we are doing multiple
+            # processes
             if self._children is None:
                 if verbose: print("Searching for child simulations for the first time for '%s'" % self.directory)
                 
@@ -591,11 +600,13 @@ class Simulation(object):
                 if self._children is None:
                     raise Exception("Children found was 'None'. If you want to specify that a Simulation has no children, then its get_children() method should return empty list '[]', not 'None'.")
                 
-                # Now save the children
-                self._save_children_to_hint_file(
-                    self._children,
-                    verbose=verbose,
-                )
+                # Now save the children (only if we aren't doing multiple
+                # processes)
+                if starsmashertools.helpers.asynchronous.is_main_process():
+                    self._save_children_to_hint_file(
+                        self._children,
+                        verbose=verbose,
+                    )
 
         if cli:
             string = []
