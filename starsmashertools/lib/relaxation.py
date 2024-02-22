@@ -58,7 +58,7 @@ class Relaxation(starsmashertools.lib.simulation.Simulation, object):
             initfile = self._get_sphinit_filename()
             #initfile = starsmashertools.helpers.path.join(self.directory, 'sph.init')
             if starsmashertools.helpers.path.isfile(initfile):
-                with starsmashertools.helpers.file.open(initfile, 'r') as f:
+                with starsmashertools.helpers.file.open(initfile, 'r', lock = False) as f:
                     f.readline()
                     line = f.readline()
 
@@ -177,7 +177,7 @@ class Relaxation(starsmashertools.lib.simulation.Simulation, object):
 
         def _initialize(self):
             obj = {}
-            with starsmashertools.helpers.file.open(self.path, 'r') as f:
+            with starsmashertools.helpers.file.open(self.path, 'r', lock = False) as f:
                 f.readline() # numbers
                 obj = {key:val for key, val in zip(f.readline().strip().split(), f.readline().strip().split())}
                 f.readline() # newline

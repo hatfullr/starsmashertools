@@ -50,7 +50,7 @@ class LogFile(object):
         self._last_iteration = None
         self._iteration_content_length = None
 
-        with starsmashertools.helpers.file.open(self.path, 'rb') as f:
+        with starsmashertools.helpers.file.open(self.path, 'rb', lock = False) as f:
             try:
                 self._buffer = mmap.mmap(f.fileno(), 0, flags=mmap.MAP_POPULATE, access=mmap.ACCESS_READ)
             except:

@@ -168,7 +168,7 @@ class Simulation(object):
         src = starsmashertools.helpers.path.get_src(self.directory)
         initfile = starsmashertools.helpers.path.join(src, 'init.f')
         last_open_line = None
-        with starsmashertools.helpers.file.open(initfile, 'r') as f:
+        with starsmashertools.helpers.file.open(initfile, 'r', lock = False) as f:
             for line in f:
                 ls = line.strip()
                 if ls.startswith('open('): last_open_line = line

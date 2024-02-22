@@ -83,7 +83,7 @@ class FormatSheet(object):
 
         lines = []
         try:
-            with starsmashertools.helpers.file.open(self.path, 'r') as f:
+            with starsmashertools.helpers.file.open(self.path, 'r', lock = False) as f:
                 for line in f:
                     ls = line.strip()
                     if not ls: continue # empty line

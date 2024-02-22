@@ -64,7 +64,7 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
 
     def _get_namelist_names(self, path_or_lines):
         if isinstance(path_or_lines, str):
-            with starsmashertools.helpers.file.open(path_or_lines, 'r') as f:
+            with starsmashertools.helpers.file.open(path_or_lines, 'r', lock = False) as f:
                 path_or_lines = f.read().split('\n')
         ret = []
         for line in path_or_lines:
@@ -79,7 +79,7 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
     ):
         if init_file is None: init_file = self.get_init_file()
         
-        with starsmashertools.helpers.file.open(init_file, 'r') as f:
+        with starsmashertools.helpers.file.open(init_file, 'r', lock = False) as f:
             lines = f.read().split('\n')
 
         lines = self._isolate_get_input_subroutine(lines)
@@ -112,7 +112,7 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
     ):
         namelist_name, filename = self.get_namelist_name(init_file = init_file)
 
-        with starsmashertools.helpers.file.open(filename, 'r') as f:
+        with starsmashertools.helpers.file.open(filename, 'r', lock = False) as f:
             lines = f.read().split('\n')
 
         for i, line in enumerate(lines):
@@ -162,7 +162,7 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
         """
         if init_file is None: init_file = self.get_init_file()
 
-        with starsmashertools.helpers.file.open(init_file, 'r') as f:
+        with starsmashertools.helpers.file.open(init_file, 'r', lock = False) as f:
             lines = f.read().split('\n')
 
         lines = self._isolate_get_input_subroutine(lines)
@@ -192,7 +192,7 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
         obj = {}
         
         # Read the init.f file to obtain default values
-        with starsmashertools.helpers.file.open(init_file, 'r') as f:
+        with starsmashertools.helpers.file.open(init_file, 'r', lock = False) as f:
             lines = f.read().split("\n")
 
         # Get the namelist variable names
@@ -253,7 +253,7 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
                 self.get_input_filename(init_file = init_file),
             )
 
-        with starsmashertools.helpers.file.open(filename, 'r') as f:
+        with starsmashertools.helpers.file.open(filename, 'r', lock = False) as f:
             lines = f.read().split("\n")
 
         obj = copy.deepcopy(defaults)

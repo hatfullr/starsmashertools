@@ -42,7 +42,7 @@ class TEOS(Table, object):
         import starsmashertools.helpers.file
         import starsmashertools.helpers.string
         
-        with starsmashertools.helpers.file.open(filename, 'r') as f:
+        with starsmashertools.helpers.file.open(filename, 'r', lock = False) as f:
             # Read the X, Y, Z, abar, and zbar properties
             for i in range(5):
                 value, key = f.readline().strip().split('=')
@@ -133,7 +133,7 @@ class OpacityTable(Table, object):
         import starsmashertools.helpers.file
         data = []
         logT = []
-        with starsmashertools.helpers.file.open(filename, 'r') as f:
+        with starsmashertools.helpers.file.open(filename, 'r', lock = False) as f:
             line = f.readline().strip()
             logR = line.replace('logT,logR', '').split()
             for line in f:

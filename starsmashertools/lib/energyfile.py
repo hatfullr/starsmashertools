@@ -57,7 +57,7 @@ class EnergyFile(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
             if descriptor is None:
                 raise Exception("Failed to find the energy file descriptor in the StarSmasher source code.")
 
-            with starsmashertools.helpers.file.open(self.path, 'r') as f:
+            with starsmashertools.helpers.file.open(self.path, 'r', lock = False) as f:
                 ncolumns = len(f.readline().strip().split())
 
             possible = []
@@ -85,7 +85,7 @@ class EnergyFile(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
             data[name] = []
         
         keys = data.keys()
-        with starsmashertools.helpers.file.open(self.path, 'r') as f:
+        with starsmashertools.helpers.file.open(self.path, 'r', lock = False) as f:
             lines = f.readlines()
         
         lines = lines[::self.skip_rows]
@@ -144,7 +144,7 @@ class EnergyFile(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
         import starsmashertools.helpers.file
         import re
 
-        with starsmashertools.helpers.file.open(filename, 'r') as f:
+        with starsmashertools.helpers.file.open(filename, 'r', lock = False) as f:
             content = f.read()
 
         content = EnergyFile.normalize_file_content(content)
@@ -170,7 +170,7 @@ class EnergyFile(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
         import re
 
         #print(filename)
-        with starsmashertools.helpers.file.open(filename, 'r') as f:
+        with starsmashertools.helpers.file.open(filename, 'r', lock = False) as f:
             content = f.read()
 
         # Fix up the content so that it is easily parseable
