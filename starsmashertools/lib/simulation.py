@@ -109,7 +109,7 @@ class Simulation(object):
 
         fname = fname[0]
         
-        with starsmashertools.helpers.file.open(fname, 'r') as f:
+        with starsmashertools.helpers.file.open(fname, 'r', lock = False) as f:
             for line in f:
                 line = line.strip()
                 if not line: continue
@@ -151,7 +151,7 @@ class Simulation(object):
             hint_filename,
         )
         towrite = "\n".join([child if isinstance(child, str) else child.directory for child in children])
-        with starsmashertools.helpers.file.open(fname, 'w') as f:
+        with starsmashertools.helpers.file.open(fname, 'w', lock = False) as f:
             f.write(towrite)
     
     def _get_compression_filename(self):
