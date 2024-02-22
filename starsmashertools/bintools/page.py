@@ -726,7 +726,7 @@ class MultiPage(Page, object):
     def show_content(self, *args, **kwargs):
         height, width = starsmashertools.bintools.cli.CLI.get_height_and_width()
         content = self.contents_per_page[self.pagenumber]
-        content = self.get_page_header() + content
+        content = self.get_page_header() + content + self.get_page_footer()
         self.cli.write(content, flush=True)
 
     def get_page_header(self):
@@ -740,6 +740,10 @@ class MultiPage(Page, object):
             f2 = '[enter]' if (self._listen_to_enter and self._forward) else '',
             total = len(self.contents_per_page),
         )
+    
+    def get_page_footer(self):
+        height, width = starsmashertools.bintools.cli.CLI.get_height_and_width()
+        return '└' + '─' * (width - 3) + '┘'
 
     def split_content_to_pages(self, **kwargs):
         import textwrap
@@ -755,9 +759,6 @@ class MultiPage(Page, object):
         
         allowed_height = height - len(content_options.split(newline)) - 5
         allowed_width = width - 3
-        
-        
-        footer = '└' + '─' * (allowed_width) + '┘'
 
         wrapper = textwrap.TextWrapper(width = allowed_width)
         content = [wrapper.wrap(i) for i in content.split(newline) if i != '']
@@ -767,14 +768,16 @@ class MultiPage(Page, object):
             if i == 0:
                 self.contents_per_page = [[]]
             if i > 0 and i%allowed_height == 0:
-                self.contents_per_page[-1] += [footer]
                 self.contents_per_page += [[]]
-            missing_width = (allowed_width) - len(line)
+            missing_width = allowed_width - len(line)
             self.contents_per_page[-1] += ['│' + line + ' '*missing_width + '│']
 
-        if self.contents_per_page[-1][-1] != footer:
-            self.contents_per_page[-1] += [footer]
-        
+        # Fill out each page to the maximum height
+        empty_line = '│' + ' '*allowed_width + '│'
+        for i, page in enumerate(self.contents_per_page):
+            if len(page) < allowed_height:
+                self.contents_per_page[i] = page + [empty_line]*(allowed_height - len(page))
+            
         for i in range(len(self.contents_per_page)):
             self.contents_per_page[i] = newline.join(self.contents_per_page[i])
 
