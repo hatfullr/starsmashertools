@@ -57,7 +57,9 @@ def show_value(archive):
         return d
 
     # Format the output using json
-    ret = dict_to_string(get(*args, **kwargs))
+    ret = get(*args, **kwargs)
+    if isinstance(ret, dict):
+        ret = dict_to_string(ret)
     return json.dumps(ret, indent=4)
     
 
