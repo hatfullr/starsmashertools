@@ -21,6 +21,7 @@ class CLI(object):
     stdscr = None
     pad = None
     position = [None, None]
+    overlay = None
     
     def __init__(
             self,
@@ -188,6 +189,8 @@ class CLI(object):
         We parse out the styles for proper writing
         """
         import time
+        import curses
+
         ANSI = starsmashertools.bintools.ANSI
         mapping = {
             ANSI.BOLD : [curses.A_BOLD],
@@ -218,7 +221,7 @@ class CLI(object):
 
         # Print the first stuff that has no codes
         CLI.pad.addstr(text[:lowest_idx], *_codes)
-            
+
         # Turn on the code
         if lowest_code != ANSI.NORMAL:
             for code in mapping[lowest_code]:
@@ -304,7 +307,7 @@ class CLI(object):
         def main(stdscr):
             # This puts us in shell mode, which the rest of our code expects
             curses.use_default_colors()
-
+            
             curses.init_pair(1, curses.COLOR_GREEN, -1) # green
             curses.init_pair(2, curses.COLOR_RED, -1) # red
             curses.init_pair(3, -1, curses.COLOR_WHITE)
@@ -313,8 +316,9 @@ class CLI(object):
             stdscr.refresh()
 
             CLI.stdscr = stdscr
-            
+
             height, width = stdscr.getmaxyx()
+            
             CLI.pad = curses.newpad(1000, 1000)
             CLI.position = [0, 0]
             CLI.refresh()
@@ -365,8 +369,9 @@ class CLI(object):
     def refresh():
         if CLI.pad is None:
             raise Exception("Cannot refresh the screen because the screen has not yet been created")
-        CLI.stdscr.redrawwin()
+
         height, width = CLI.get_height_and_width()
+        CLI.stdscr.redrawwin()
         CLI.pad.refresh(
             CLI.position[1],
             CLI.position[0],
@@ -393,5 +398,4 @@ class CLI(object):
         elif isinstance(simulation, int):
             simulation = self.simulations[simulation]
         self.simulations.remove(simulation)
-
 

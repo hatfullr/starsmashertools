@@ -50,11 +50,11 @@ class Page(object):
         self._back_asprompt = False
         if back is not None: self.add_back(back, asprompt=True)
 
-    def prompt(self, **kwargs):
+    def prompt(self, refresh = True, **kwargs):
         if not kwargs: kwargs = self._prompt_kwargs
         if self.inputmanager is None:
             raise Exception("No InputManager was given for this page")
-        self.input = self.inputmanager.get(self.inputtypes, **kwargs)
+        self.input = self.inputmanager.get(self.inputtypes, refresh = refresh, **kwargs)
         return self.input
 
     def process_input(self, _input):
@@ -146,10 +146,10 @@ class Page(object):
             self.cli.write(options, flush=True)
             self.on_event_end('get_content_options')
 
-    def show_prompt(self, **kwargs):
+    def show_prompt(self, refresh = True, **kwargs):
         if self.inputmanager is not None and self.inputtypes:
             self._prompt_kwargs = kwargs
-            self.prompt()
+            self.prompt(refresh = refresh)
             if self.process_input(self.input):
                 if self.callback is not None: self.callback(self.input)
                 return False
@@ -637,8 +637,16 @@ class MultiPage(Page, object):
         self.contents_per_page = []
         self.pagenumber = 0
         self._forward = True
-        self._listen_to_enter = True
+        self._listen_to_enter = 'forward'
         self._past_initial_input = False
+        self._searching = False
+        self._search_matches = []
+        self._search_match_index = -1
+
+    @property
+    def width(self):
+        height, width = self.cli.get_height_and_width()
+        return width - 3
 
     def reverse(self):
         self._forward = False
@@ -646,7 +654,7 @@ class MultiPage(Page, object):
         if self.pagenumber == 0:
             self._forward = True
             if self._past_initial_input:
-                self._listen_to_enter = False
+                self._listen_to_enter = None
         
     def advance(self):
         self._forward = True
@@ -654,46 +662,95 @@ class MultiPage(Page, object):
         if self.pagenumber == len(self.contents_per_page) - 1:
             self._forward = False
             if self._past_initial_input:
-                self._listen_to_enter = False
+                self._listen_to_enter = None
 
-    def go_to_start(self):
-        self._forward = True
-        self.pagenumber = 0
-        self._listen_to_enter = True
+    def goto(self, number):
+        if number == 0:
+            self._forward = True
+            self._listen_to_enter = 'forward'
+        elif number == len(self.contents_per_page) - 1:
+            self._forward = False
+            self._listen_to_enter = 'backward'
+        
+        self.pagenumber = number
 
-    def go_to_end(self):
-        self._forward = False
-        self.pagenumber = len(self.contents_per_page) - 1
-        self._listen_to_enter = True
+    def previous_match(self):
+        self._search_match_index = max(self._search_match_index - 1, 0)
+        self.show_search_match()
+        self._listen_to_enter = 'search backward'
+
+    def next_match(self):
+        self._search_match_index = min(
+            self._search_match_index + 1,
+            len(self._search_matches) - 1,
+        )
+        self.show_search_match()
+        self._listen_to_enter = 'search forward'
 
     def prompt(self, **kwargs):
         kwargs['error_on_empty'] = False
         return super(MultiPage, self).prompt(**kwargs)
     
     def process_input(self, _input):
+        import starsmashertools.bintools
+        import starsmashertools.bintools.inputmanager
+
         if _input in self.triggers.keys():
             self.triggers[_input]()
             return True
         if _input == '.':
-            self._listen_to_enter = True
+            self._listen_to_enter = 'forward'
             self._forward = True
             self.advance()
             return False
         if _input == ',':
-            self._listen_to_enter = True
+            self._listen_to_enter = 'backward'
             self._forward = False
             self.reverse()
             return False
         if _input is None or (isinstance(_input, str) and _input.strip() == ''):
-            if self._listen_to_enter:
-                if self._forward: self.advance()
-                else: self.reverse()
+            if self._listen_to_enter == 'forward' and self._forward:
+                self.advance()
+            elif self._listen_to_enter == 'backward' and not self._forward:
+                self.reverse()
+            elif self._listen_to_enter == 'search forward' and self._searching:
+                self.next_match()
+            elif self._listen_to_enter == 'search backward' and self._searching:
+                self.previous_match()
             return False
         if _input == 'a':
-            self.go_to_start()
+            self.goto(0)
             return False
         if _input == 'e':
-            self.go_to_end()
+            self.goto(len(self.contents_per_page) - 1)
+            return False
+        
+        if self._searching:
+            if self._search_matches:
+                if _input == '>':
+                    self.next_match()
+                    return False
+                if _input == '<':
+                    self.previous_match()
+                    return False
+
+            if _input in ['', None]:
+                return False
+            
+            self._search_matches = self.search(_input)
+            if self._search_matches:
+                self.next_match()
+                #self._search_match_index = 0
+                #self.show_search_match()
+                return False
+            else:
+                raise starsmashertools.bintools.inputmanager.InputManager.InvalidInputError("phrase not found: %s" % repr(_input))
+            
+            return False
+        
+        
+        if _input == 'S':
+            self._searching = True
             return False
         if self.simulation_controls and _input in ['s', 'simulations']:
             self.show_simulation_controls()
@@ -706,6 +763,8 @@ class MultiPage(Page, object):
         return False
     
     def show(self, **kwargs):
+        import starsmashertools.bintools.inputmanager
+        import starsmashertools.bintools
         self.cli.page = self
         
         if not self.contents_per_page: self.split_content_to_pages(**kwargs)
@@ -714,42 +773,102 @@ class MultiPage(Page, object):
         self.show_content()
         self.show_content_options(**kwargs)
 
-        while self.show_prompt(**kwargs):
-            self._past_initial_input = True
-            self.cli.clear()
-            self.show_content()
-            self.show_content_options(**kwargs)
+        while True:
+            try:
+                prompt_answer = self.show_prompt(**kwargs)
+            except (KeyboardInterrupt, starsmashertools.bintools.inputmanager.InputManager.InvalidInputError) as e:
+                if isinstance(e, KeyboardInterrupt):
+                    if self._searching:
+                        self.reset_search()
+                        self.cli.clear()
+                        self.show_content()
+                        self.show_content_options(**kwargs)
+                        continue
+                    else: raise
+                else:
+                    starsmashertools.bintools.print_error(error = e, halt = False)
+                    continue
             
-        #if not self.show_prompt(**kwargs): return
+            if prompt_answer:
+                self._past_initial_input = True
+                self.cli.clear()
+                self.show_content()
+                self.show_content_options(**kwargs)
+            else: break
+            
         self._on_no_connection()
+
+    def reset_search(self):
+        self._search_match_index = -1
+        self._searching = False
+        self._search_matches = []
+
+        # Redraw to remove highlighting
+        self.cli.clear()
+        self.show_content()
+        self.show_content_options()
+        
 
     def show_content(self, *args, **kwargs):
         if self.contents_per_page:
-            content = self.contents_per_page[self.pagenumber]
+            if self._searching: content = self.get_highlighted()
+            else: content = self.contents_per_page[self.pagenumber]
             content = self.get_page_header() + content + self.get_page_footer()
             self.cli.write(content, flush=True)
 
     def get_page_header(self):
-        height, width = starsmashertools.bintools.cli.CLI.get_height_and_width()
-        return newline.join([
-            '{pagenumber:<4d} / {total:<4d}  ,) previous {f1:7s}  .) next {f2:7s}  a) start  e) end',
-            '┌' + '─' * (width-3) + '┐',
+        normal = starsmashertools.bintools.Style.get('text', 'normal')
+        return normal + newline.join([
+            '{pagenumber:<4d} / {total:<4d}  ,) previous {f1:7s}  .) next {f2:7s}  a) start  e) end  S) search',
+            '┌' + '─' * self.width + '┐',
         ]).format(
             pagenumber = self.pagenumber + 1,
-            f1 = '[enter]' if (self._listen_to_enter and not self._forward) else '',
-            f2 = '[enter]' if (self._listen_to_enter and self._forward) else '',
+            f1 = '[enter]' if (self._listen_to_enter == 'forward' and not self._forward) else '',
+            f2 = '[enter]' if (self._listen_to_enter == 'backward' and self._forward) else '',
             total = len(self.contents_per_page),
         )
     
     def get_page_footer(self):
-        height, width = starsmashertools.bintools.cli.CLI.get_height_and_width()
-        return '└' + '─' * (width - 3) + '┘'
+        return '└' + '─' * self.width + '┘'
+
+    def get_content_options(self, *args, **kwargs):
+        if self._searching:
+            exit_message = "Exit: Ctrl+C"
+            if not self._search_matches:
+                match_string = "Match -/-"
+            else:
+                total = len(self._search_matches)
+                fmt = "Match {{current:{width:d}d}} / {{total:{width:d}d}}"
+                fmt = fmt.format(width = len(str(total)))
+
+                match_string = fmt.format(
+                    current = self._search_match_index + 1,
+                    total = total,
+                )
+
+            string = [
+                '>) next match {:7s}'.format(
+                    '[enter]' if self._listen_to_enter == 'search forward' else '',
+                ),
+                '<) previous match {:7s}'.format(
+                    '[enter]' if self._listen_to_enter == 'search backward' else '',
+                ),
+            ]
+            
+            string[0] += ' ' * (self.width + 1 - len(string[0]) - len(match_string))
+            string[0] += match_string
+            string[1] += ' ' * (self.width + 1 - len(string[1]) - len(exit_message))
+            string[1] += exit_message
+            
+            return newline.join(string)
+        else:
+            return super(MultiPage, self).get_content_options(*args, **kwargs)
 
     def split_content_to_pages(self, **kwargs):
         import textwrap
         import itertools
         
-        height, width = starsmashertools.bintools.cli.CLI.get_height_and_width()
+        height, width = self.cli.get_height_and_width()
         
         # Obtain all the content
         content = self.get_content()
@@ -758,7 +877,7 @@ class MultiPage(Page, object):
         self.on_event_end('get_content_options')
         
         allowed_height = height - len(content_options.split(newline)) - 5
-        allowed_width = width - 3
+        allowed_width = self.width
 
         wrapper = textwrap.TextWrapper(width = allowed_width)
         content = [wrapper.wrap(i) for i in content.split(newline) if i != '']
@@ -780,4 +899,54 @@ class MultiPage(Page, object):
             
         for i in range(len(self.contents_per_page)):
             self.contents_per_page[i] = newline.join(self.contents_per_page[i])
+
+
+    def search(self, phrase):
+        """
+        Scan all contents to find the given all instances of the given phrase.
+        """
+        import re
+        import starsmashertools.bintools
+        import starsmashertools.bintools.inputmanager
+        
+        search_matches = []
+        
+        use = re.compile(phrase, flags = re.MULTILINE)
+
+        for pagenumber, content in enumerate(self.contents_per_page):
+            search_matches += [{
+                'page number' : pagenumber,
+                'start' : m.start(),
+                'end' : m.end(),
+                'page content' : content,
+                'phrase' : phrase,
+            } for m in use.finditer(content)]
+
+        return search_matches
+
+
+    def get_highlighted(self):
+        if self._search_match_index == -1:
+            return self.contents_per_page[self.pagenumber]
+        
+        style = starsmashertools.bintools.Style.get('text', 'bold')
+        normal = starsmashertools.bintools.Style.get('text', 'normal')
+
+        match = self._search_matches[self._search_match_index]
+        pagenumber = match['page number']
+        content = self.contents_per_page[pagenumber]
+
+        i0, i1 = match['start'], match['end']
+        content = normal + content[:i0] + style + content[i0:i1] + normal + content[i1:]
+        return content
+    
+
+    def show_search_match(self):
+        match = self._search_matches[self._search_match_index]
+        if self.pagenumber != match['page number']:
+            self.goto(match['page number'])
+        
+        self.cli.clear()
+        self.show_content()
+        self.show_content_options()
 

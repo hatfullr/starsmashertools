@@ -98,7 +98,7 @@ class InputManager(object):
             replace_whitespace=False,
         )
 
-        if self.input: 
+        if self.input:
             nlines = len(wrapped)
         else: # Empty input means Enter button was pressed only. Enter button
               # creates a new line
@@ -117,11 +117,16 @@ class InputManager(object):
             prompt : str | type(None) = None,
             halt : bool = False,
             error_on_empty : bool = True,
+            refresh : bool = True,
             **kwargs
     ):
         if prompt is None: prompt = self.prompt
         
-        starsmashertools.bintools.cli.CLI.refresh()
+        if refresh:
+            starsmashertools.bintools.cli.CLI.refresh()
+            #print("refreshed")
+            #import time
+            #time.sleep(1)
         
         while True:
             curses.reset_shell_mode()

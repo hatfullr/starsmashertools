@@ -157,6 +157,9 @@ class Style(object):
 
         for value in values:
             string = string.replace(value, '')
+
+        string = string.replace('<highlight>','')
+            
         return string
 
     # Given a string littered with terminal magic, return a formatter that does
