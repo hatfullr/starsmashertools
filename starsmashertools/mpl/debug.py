@@ -15,6 +15,7 @@ class Outline(matplotlib.artist.Artist, object):
     allowed_types = [
         matplotlib.collections.LineCollection,
         matplotlib.lines.Line2D,
+        matplotlib.image.AxesImage,
     ]
     
     def __init__(
@@ -23,7 +24,7 @@ class Outline(matplotlib.artist.Artist, object):
             transform = None,
             facecolor = 'none',
             edgecolor = 'r',
-            show_extent : bool = False,
+            show_extent : bool | type(None) = None,
             outlinewidth : float | int | np.float_ | np.integer = 3, # in points
             **kwargs
     ):
@@ -36,6 +37,9 @@ class Outline(matplotlib.artist.Artist, object):
                 break
         else:
             raise NotImplementedError("Artist of type '%s' is not supported" % type(artist).__name__)
+
+        if show_extent is None: # Set a default
+            show_extent = self._artist_type == matplotlib.image.AxesImage
         
         self.artist = artist
         
@@ -67,11 +71,18 @@ class Outline(matplotlib.artist.Artist, object):
     @show_extent.setter
     def show_extent(self, value): self._rect.set_visible(value)
 
+    def get_renderer(self):
+        fig = self.get_figure()
+        try:
+            return fig.canvas.get_renderer()
+        except AttributeError: pass
+        return None
+
     def remove(self, *args, **kwargs):
         self._rect.remove(*args, **kwargs)
 
     def get_extent(self, renderer = None):
-        if renderer is None: renderer = self.get_figure().canvas.get_renderer()
+        if renderer is None: renderer = self.get_renderer()
         
         if self._artist_type == matplotlib.collections.LineCollection:
             # Obtain the data limits
@@ -95,6 +106,12 @@ class Outline(matplotlib.artist.Artist, object):
                 # data to display space
                 self.artist.axes.transData
             )
+        # Line2D correctly obtains its own bounding box
+        elif self._artist_type == matplotlib.lines.Line2D: pass
+        # AxesImage correctly obtains its own bounding box
+        elif self._artist_type == matplotlib.image.AxesImage: pass
+        else:
+            raise NotImplementedError(str(self._artist_type))
             
         return self.artist.get_window_extent(renderer = renderer)
 
@@ -102,20 +119,18 @@ class Outline(matplotlib.artist.Artist, object):
         super(Outline, self).set_visible(*args, **kwargs)
         self._rect.set_visible(self.get_visible() and self.show_extent)
 
-    def get_bbox(self):
-        fig = self.get_figure()
-        extent = self.get_extent(
-            renderer = fig.canvas.get_renderer(),
-        )
+    def get_bbox(self, renderer = None):
+        if renderer is None: renderer = self.get_renderer()
+        extent = self.get_extent(renderer = renderer)
         return matplotlib.transforms.Bbox(extent).transformed(
-            fig.transFigure.inverted()
+            self.get_figure().transFigure.inverted()
         )
         
     def draw(self, renderer):
         if not self.get_visible(): return
-
+        
         # Update the Bbox
-        bbox = self.get_bbox()
+        bbox = self.get_bbox(renderer = renderer)
         self._rect.set_bounds(bbox.x0, bbox.y0, bbox.width, bbox.height)
         
         super(Outline, self).draw(renderer)
