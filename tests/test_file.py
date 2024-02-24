@@ -56,8 +56,10 @@ test4test9
                 path, 'r',
                 timeout = 1.,
         ) as f:
-            lock = starsmashertools.helpers.file.Lock.get(path)
-            self.assertTrue(lock.locked)
+            locks = starsmashertools.helpers.file.Lock.get_locks(path)
+            self.assertEqual(len(locks), 1)
+            for lock in locks:
+                self.assertTrue(lock.locked)
             
             t0 = time.time()
             with starsmashertools.helpers.file.open(
