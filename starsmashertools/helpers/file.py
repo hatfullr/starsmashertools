@@ -38,7 +38,8 @@ class Lock(object):
         
         dirname = starsmashertools.helpers.path.dirname(path)
         basename = starsmashertools.helpers.path.basename(path)
-        
+
+        if not dirname: dirname = starsmashertools.helpers.path.getcwd()
         filenames = starsmashertools.helpers.path.listdir(dirname)
 
         pattern = r'\.{basename:s}\.lock\.\d+\.\d+$'.format(
@@ -60,6 +61,8 @@ class Lock(object):
         import re
         
         dirname = starsmashertools.helpers.path.dirname(path)
+        if not dirname: dirname = starsmashertools.helpers.path.getcwd()
+        
         basename = starsmashertools.helpers.path.basename(path)
         
         filenames = starsmashertools.helpers.path.listdir(dirname)
@@ -91,16 +94,16 @@ class Lock(object):
         return (len(lockfiles) == 0 or
                 (len(lockfiles) == 1 and lockfiles[0] == self.lockfile))
 
-    def is_only_locker(self):
-        # Returns True if this Lock's process ID (pid) is the same as
-        # what is written in the lock file
-        lockfiles = Lock.get_all_lockfiles(self.path)
-        return len(lockfiles) == 1 and lockfiles[0] == self.lockfile
-
     @staticmethod
     def unlock_all(*args, **kwargs):
         for instance in Lock.instances:
             instance.unlock()
+
+    def is_next_locker(self):
+        """ Returns True if the file is ready to be manipulated. """
+        lockfiles = Lock.get_all_lockfiles(self.path)
+        if lockfiles: return lockfiles[0] == self.lockfile
+        return False
     
     def lock(self, timeout = None):
         import time
@@ -122,13 +125,17 @@ class Lock(object):
         builtins.open(self.lockfile, 'w').close()
         
         # Wait for all other locks to be released
-        timer = 0.
-        t0 = time.time()
-        while not self.is_only_locker() and timer < self.timeout:
-            time.sleep(1.e-8)
-            t1 = time.time()
-            timer += t1 - t0
-            t0 = copy.deepcopy(t1)
+        try:
+            timer = 0.
+            t0 = time.time()
+            while not self.is_next_locker() and timer < self.timeout:
+                time.sleep(1.e-8)
+                t1 = time.time()
+                timer += t1 - t0
+                t0 = copy.deepcopy(t1)
+        except KeyboardInterrupt:
+            self.unlock()
+            raise
     
     def unlock(self):
         import starsmashertools.helpers.path
