@@ -2,6 +2,7 @@ import starsmashertools.helpers.argumentenforcer
 from starsmashertools.helpers.apidecorator import api
 import contextlib
 
+
 class ArchiveValue(object):
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
@@ -368,7 +369,7 @@ class Archive(dict, object):
                 namelist = zfile.namelist()
                 if not namelist:
                     raise Archive.CorruptFileError("Failed to load archive file because it did not save correctly. Please delete it and try again: '%s'" % self.filename)
-                content = zfile.read(namelist[0])
+                content = zfile.read(namelist[0]) # MAIN BOTTLENECK
 
             return content
             
@@ -481,11 +482,6 @@ class Archive(dict, object):
         if self.auto_save: self.save()
 
 
-
-
-
-
-        
 
 
 
