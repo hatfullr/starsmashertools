@@ -16,6 +16,7 @@ serialization_methods = {
     float       : {'name' : 'float', 'conversions' : [lambda obj: obj, lambda obj: obj]},
     bool        : {'name' : 'bool' , 'conversions' : [lambda obj: obj, lambda obj: obj]},
     type(None)  : {'name' : 'None' , 'conversions' : [lambda obj: obj, lambda obj: obj]},
+    bytes       : {'name' : 'bytes', 'conversions' : [lambda obj: obj.decode('utf-8'), lambda obj: obj.encode('utf-8')]},
 
     np.int8     : {'name' :  'np.int8', 'conversions' : [lambda obj: int(obj), lambda obj : np.int8(obj)]},
     np.int16    : {'name' : 'np.int16', 'conversions' : [lambda obj: int(obj), lambda obj : np.int16(obj)]},
