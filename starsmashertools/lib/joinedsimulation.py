@@ -17,7 +17,7 @@ class JoinedSimulation(starsmashertools.lib.simulation.Simulation, object):
     @api
     def __init__(self, simulations : list | tuple):
         import numpy as np
-        import starsmashertools
+        import starsmashertools.lib.simulation
         
         for simulation in simulations:
             if isinstance(simulation, str):
