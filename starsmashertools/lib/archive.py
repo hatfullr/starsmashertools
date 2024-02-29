@@ -3,6 +3,13 @@ from starsmashertools.helpers.apidecorator import api
 import contextlib
 import zipfile
 
+
+def get_file_info():
+    import starsmashertools.helpers.jsonfile
+    return starsmashertools.helpers.jsonfile.save_bytes({
+        '__version__' : starsmashertools.__version__,
+    })
+
 def update_archive_version(
         old_path : str,
         new_path : str | type(None) = None,
@@ -32,7 +39,7 @@ def update_archive_version(
     if new_path is None: new_path = old_path
     
     with starsmashertools.helpers.file.open(
-            old_path, 'r', **Archive.open_method_kwargs
+            old_path, 'a', **Archive.open_method_kwargs
     ) as zfile:
         namelist = zfile.namelist()
         if len(namelist) == 1 and namelist[0] in ['archive','sstools.archive.json']:
@@ -41,9 +48,11 @@ def update_archive_version(
             for identifier, val in data.items():
                 data[identifier] = ArchiveValue.deserialize(identifier, val)
         else: # If we were not able to detect the old Archive format
-            # We assume it is in the latest format
+            # We assume it is in the latest format, so just update the version
+            # info
+            zfile.writestr('file info', get_file_info())
             return
-
+    
     # We should now have the base data. We now create a new Archive as a
     # temporary file, and then overwrite the old one with the new one.
     new_archive = Archive('new_archive.temp', auto_save = False)
@@ -486,17 +495,15 @@ class Archive(dict, object):
         )
 
         if old_version is not None:
-            message = "%s was written by starsmashertools version '%s', but the current version is '%s'. This Archive might be updated to the latest format."
+            message = "%s was written by starsmashertools version '%s', but the current version is '%s'. This Archive will be updated to the latest format."
             message = message % (str(self), old_version, starsmashertools.__version__)
         else:
-            message = "%s was written by an older starsmashertools version, but the current version is '%s'. This Archive might be updated to the latest format."
+            message = "%s was written by an older starsmashertools version, but the current version is '%s'. This Archive will be updated to the latest format."
             message = message % (str(self), starsmashertools.__version__)
         
         if should_update:
-            if not user_allowed:
-                raise Archive.FormatError(message)
-            else:
-                warnings.warn(message)
+            if not user_allowed: raise Archive.FormatError(message)
+            warnings.warn(message)
             update_archive_version(self.filename)
             
 
@@ -604,16 +611,13 @@ class Archive(dict, object):
         if not data: return
 
         # Get file info
-        info = {
-            '__version__' : starsmashertools.__version__,
-        }
-        infostr = starsmashertools.helpers.jsonfile.save_bytes(info)
+        info = get_file_info()
         
         def do(*args, **kwargs):
             with starsmashertools.helpers.file.open(
                     self.filename, 'w', **Archive.open_method_kwargs
             ) as zfile:
-                zfile.writestr('file info', infostr)
+                zfile.writestr('file info', info)
                 for key, val in data.items():
                     zfile.writestr(key, val)
 
