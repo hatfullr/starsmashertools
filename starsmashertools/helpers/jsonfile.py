@@ -4,6 +4,7 @@ import zipfile
 import numpy as np
 import starsmashertools.helpers.path
 import starsmashertools.lib.units
+import starsmashertools.lib.simulation
 
 # Add your own serialization methods here to convert to/from JSON format.
 serialization_methods = {
@@ -46,6 +47,11 @@ serialization_methods = {
     starsmashertools.lib.units.Unit : {'name' : 'starsmashertools.lib.units.Unit', 'conversions' : [
         lambda obj: [float(obj), str(obj.label)], # To JSON
         lambda obj: starsmashertools.lib.units.Unit(obj[0], obj[1]), # From JSON
+    ]},
+
+    starsmashertools.lib.simulation.Simulation : {'name' : 'starsmashertools.lib.simulation.Simulation', 'conversions' : [
+        lambda obj: [obj.directory], # To JSON
+        lambda obj: starsmashertools.lib.simulation.Simulation(obj), # From JSON
     ]},
 }
 # This is used for speedier type checking in the Encoder and Decoder

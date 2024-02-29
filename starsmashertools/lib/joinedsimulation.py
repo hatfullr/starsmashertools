@@ -43,13 +43,13 @@ class JoinedSimulation(starsmashertools.lib.simulation.Simulation, object):
             if 'joined simulations' not in simulation.archive:
                 simulation.archive.add(
                     'joined simulations',
-                    [s.directory for s in others],
+                    others,
                 )
             else:
                 l = simulation.archive['joined simulations'].value
                 for other in others:
-                    if other.directory not in l:
-                        l += [other.directory]
+                    if other not in l:
+                        l += [other]
                 simulation.archive['joined simulations'].value = l
                 simulation.archive.save()
 
@@ -180,11 +180,11 @@ class JoinedSimulation(starsmashertools.lib.simulation.Simulation, object):
         l = simulation.archive['joined simulations'].value
         for s in self:
             l2 = s.archive['joined simulations'].value
-            l2.remove(s.directory)
+            l2.remove(s)
             s.archive['joined simulations'].value = l2
             s.archive.save()
             
-            l.remove(s.directory)
+            l.remove(s)
         
         simulation.archive['joined simulations'].value = l
         simulation.archive.save()
