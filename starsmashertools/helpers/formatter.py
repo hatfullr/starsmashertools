@@ -1,5 +1,8 @@
 import starsmashertools.lib.output
 import starsmashertools.lib.units
+import starsmashertools.bintools.page
+
+newline = starsmashertools.bintools.page.newline
 
 def sheet_name_to_path(name : str):
     import starsmashertools
@@ -92,7 +95,7 @@ class FormatSheet(object):
         except Exception as e:
             raise FormatSheet.ReadError() from e
             
-        content = "\n".join(lines)
+        content = newline.join(lines)
 
         # Get the variables to omit
         matches = re.findall(r"omit.*=.*\[[^\]]*.", content)
@@ -100,7 +103,7 @@ class FormatSheet(object):
             raise FormatSheet.ReadError("Cannot have more than one 'omit' statement")
         self.omit = []
         for match in matches:
-            l = match.split('=')[1].replace('\n','').strip()
+            l = match.split('=')[1].replace(newline,'').strip()
             self.omit = eval(l)
 
         # Get the width statements
@@ -361,8 +364,6 @@ class Formatter(object):
         for key, val in remaining:
             string = self.get_string(key, val, namelength = namelength)
             arr += [string]
-        
-        string = str(output) + '\n'
-        string += "\n".join(["".join(a) for a in arr])
-            
-        return string
+
+        arr = [str(output)] + ["".join(a) for a in arr]
+        return newline.join(arr)

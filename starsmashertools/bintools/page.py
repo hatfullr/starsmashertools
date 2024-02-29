@@ -8,6 +8,8 @@ import os
 import inspect
 
 newline = starsmashertools.bintools.Style.get('characters', 'newline')
+PAGEBREAK = newline + r'\f' + newline
+
 
 class Page(object):
     def __init__(
@@ -126,25 +128,48 @@ class Page(object):
     # Override this method in children, but also call this method from children
     # None in keywords means use the page's default
     def show(self, **kwargs):
-        self.cli.page = self
-        
-        self.show_content()
-        self.show_content_options(**kwargs)
-        
-        if not self.show_prompt(**kwargs): return
-        self._on_no_connection()
-
-    def show_content(self):
         content = self.get_content()
-        if content:
-            self.cli.write(content, flush=True)
-            self.on_event_end('get_content')
-
-    def show_content_options(self, **kwargs):
         options = self.get_content_options(**kwargs)
+
+        # Get the content's width and height
+        if content and not isinstance(self, MultiPage):
+            c = self.cli.prepare_string(content)
+            height = c.count(newline)
+            width = 0
+            for line in c.split(newline):
+                width = max(width, len(line))
+
+            screen_height, screen_width = self.cli.get_height_and_width()
+            if ((height > screen_height or width > screen_width) or
+                PAGEBREAK in content):
+                # Switch to a MultiPage
+                self.cli.remove_page(self)
+                self.cli.add_page(
+                    self.inputtypes, content, kind = MultiPage,
+                    header = self.header,
+                    footer = self.footer,
+                    identifier = self.identifier,
+                    inputmanager = self.inputmanager,
+                    indent = self.indent,
+                    simulation_controls = self.simulation_controls,
+                    back = self.back,
+                    _quit = self._quit,
+                    callback = self.callback,
+                )
+                self.cli.navigate(self)
+                return
+        
+        self.cli.page = self
+
+        if content:
+            self.cli.write(content, flush = True)
+            self.on_event_end('get_content')
         if options:
             self.cli.write(options, flush=True)
             self.on_event_end('get_content_options')
+            
+        if not self.show_prompt(**kwargs): return
+        self._on_no_connection()
 
     def show_prompt(self, refresh = True, **kwargs):
         if self.inputmanager is not None and self.inputtypes:
@@ -654,7 +679,7 @@ class MultiPage(Page, object):
         if self.pagenumber == 0:
             self._forward = True
             if self._past_initial_input:
-                self._listen_to_enter = None
+                self._listen_to_enter = 'backward'
         
     def advance(self):
         self._forward = True
@@ -662,7 +687,7 @@ class MultiPage(Page, object):
         if self.pagenumber == len(self.contents_per_page) - 1:
             self._forward = False
             if self._past_initial_input:
-                self._listen_to_enter = None
+                self._listen_to_enter = 'forward'
 
     def goto(self, number):
         if number == 0:
@@ -811,7 +836,12 @@ class MultiPage(Page, object):
         self.cli.clear()
         self.show_content()
         self.show_content_options()
-        
+
+    def show_content_options(self, **kwargs):
+        options = self.get_content_options(**kwargs)
+        if options:
+            self.cli.write(options, flush=True)
+            self.on_event_end('get_content_options')
 
     def show_content(self, *args, **kwargs):
         if self.contents_per_page:
@@ -827,8 +857,8 @@ class MultiPage(Page, object):
             '┌' + '─' * self.width + '┐',
         ]).format(
             pagenumber = self.pagenumber + 1,
-            f1 = '[enter]' if (self._listen_to_enter == 'forward' and not self._forward) else '',
-            f2 = '[enter]' if (self._listen_to_enter == 'backward' and self._forward) else '',
+            f1 = '[enter]' if (self._listen_to_enter == 'backward' and not self._forward) else '',
+            f2 = '[enter]' if (self._listen_to_enter == 'forward' and self._forward) else '',
             total = len(self.contents_per_page),
         )
     
@@ -886,14 +916,24 @@ class MultiPage(Page, object):
         wrapper = textwrap.TextWrapper(width = allowed_width)
         content = [wrapper.wrap(i) for i in content.split(newline) if i != '']
         content = list(itertools.chain.from_iterable(content))
-        
+
+        pb = PAGEBREAK.replace(newline, '')
+        self.contents_per_page = [[]]
+        c = 0
         for i, line in enumerate(content):
-            if i == 0:
-                self.contents_per_page = [[]]
-            if i > 0 and i%allowed_height == 0:
+            if line.endswith(pb):
+                c = 0
+                line = line.replace(pb, '')
                 self.contents_per_page += [[]]
+                if not line.strip(): continue
+            
+            if i > 0 and c >= allowed_height:
+                self.contents_per_page += [[]]
+                c = 0
+            
             missing_width = allowed_width - len(line)
             self.contents_per_page[-1] += ['│' + line + ' '*missing_width + '│']
+            c += 1
 
         # Fill out each page to the maximum height
         empty_line = '│' + ' '*allowed_width + '│'

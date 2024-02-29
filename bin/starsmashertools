@@ -56,6 +56,7 @@ def get_function_names(functions):
     return names
 
 def call_function(function):
+    import copy
     args = exposed_programs[function]['args']
     kwargs = exposed_programs[function]['kwargs']
 
@@ -146,7 +147,6 @@ for i, (name, function) in enumerate(zip(names, available_functions)):
     page = cli.add_page(
         [],
         lambda function=function: call_function(function),
-        header="Result:"+newline,
         footer=newline,
         back=mainmenu,
         _quit=True,

@@ -864,11 +864,9 @@ class Simulation(object):
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
-    @cli('starsmashertools')
     def get_output_at_time(
             self,
             time : int | float | starsmashertools.lib.units.Unit,
-            cli : bool = False,
     ):
         """
         Return the `starsmashertools.lib.output.Output` object of this
@@ -912,13 +910,11 @@ class Simulation(object):
             lambda output: output['t'] * conversion > time,
         )
 
-        ret = m.get()
-        if cli:
-            return ret.get_formatted_string('cli')
-        return ret
+        return m.get()
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
+    @cli('starsmashertools')
     def get_output(
             self,
             start : int | type(None) = None,
@@ -926,6 +922,7 @@ class Simulation(object):
             step : int | type(None) = None,
             times : int | float | starsmashertools.lib.units.Unit | list | tuple | np.ndarray | type(None) = None,
             indices : list | tuple | np.ndarray | type(None) = None,
+            cli : bool = False,
     ):
         """
         Obtain a list of `starsmashertools.lib.output.Output` objects associated
@@ -990,6 +987,12 @@ class Simulation(object):
             filenames = filenames.tolist()[s]
         
         ret = [starsmashertools.lib.output.Output(filename, self) for filename in filenames]
+
+        if cli:
+            import starsmashertools.bintools.page
+            if len(ret) == 1: return ret[0].get_formatted_string('cli')
+            return starsmashertools.bintools.page.PAGEBREAK.join([r.get_formatted_string('cli') for r in ret])
+
         if len(ret) == 1: return ret[0]
         return ret
 

@@ -189,6 +189,10 @@ class InputManager(object):
             provided function.
         """
         import inspect
+        import copy
+
+        _args = copy.deepcopy(args)
+        _kwargs = copy.deepcopy(kwargs)
 
         signature = inspect.signature(function)
 
@@ -200,12 +204,12 @@ class InputManager(object):
             # Skip things we don't want the user to edit
             if name in Session.ignore_arguments: continue
             if parameter.default == inspect._empty: # Positional argument
-                if i_pos >= len(args): needed_positionals += [name]
+                if i_pos >= len(_args): needed_positionals += [name]
                 i_pos += 1
             else: # Keyword argument
                 # All keywords should be given to the user to edit, except for
                 # those which were specified in the cli function decorator
-                if name in kwargs.keys(): continue
+                if name in _kwargs.keys(): continue
                 needed_keywords += [name]
 
         cli = starsmashertools.bintools.cli.CLI.instance
@@ -219,9 +223,9 @@ class InputManager(object):
                 types[name] = None
 
         # Obtain positionals
-        args = list(args) # For editing
+        _args = list(_args) # For editing
         for name in needed_positionals:
-            args += [cli.inputmanager.get(
+            _args += [cli.inputmanager.get(
                 types[name],
                 prompt="Enter a value for parameter '%s': " % name,
             )]
@@ -236,14 +240,14 @@ class InputManager(object):
                 prompt="Enter a value for keyword '%s' (default = %s): " % (name,d),
                 error_on_empty = False,
             )
-            if _input is None: kwargs[name] = default
-            else: kwargs[name] = _input
+            if _input is None: _kwargs[name] = default
+            else: _kwargs[name] = _input
 
         for name in needed_keywords:
-            self.session.set(function, name, kwargs[name])
+            self.session.set(function, name, _kwargs[name])
         self.session.save()
 
-        return tuple(args), kwargs
+        return tuple(_args), _kwargs
 
         
 class CursesInput(object):
@@ -311,10 +315,17 @@ class Session(object):
             for name, parameter in inspect.signature(function).parameters.items():
                 if name in Session.ignore_arguments: continue
                 param_type_hints = type_hints.get(name, None)
+
                 if isinstance(param_type_hints, type):
                     param_type_hints = param_type_hints.__name__
+
                 else:
-                    if isinstance(param_type_hints, types.UnionType):
+                    if isinstance(param_type_hints, (
+                            types.UnionType,
+                            # This is true whenever we have a keyword which can
+                            # be some type but also NoneType.
+                            typing._UnionGenericAlias,
+                    )):
                         param_type_hints = [t.__name__ for t in param_type_hints.__args__]
                     else:
                         param_type_hints = [t.__name__ for t in param_type_hints]
