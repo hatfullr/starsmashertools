@@ -8,10 +8,6 @@ class JoinedSimulation(starsmashertools.lib.simulation.Simulation, object):
     Multiple :py:class:`~.simulation.Simulation` objects merged into one, 
     pulling each time domain into one unified time domain.
     """
-    def __new__(cls, simulations : list | tuple):
-        obj = object.__new__(cls)
-        obj.__init__(simulations)
-        return obj
     
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
