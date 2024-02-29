@@ -5,6 +5,9 @@ import numpy as np
 import starsmashertools.helpers.path
 import starsmashertools.lib.units
 import starsmashertools.lib.simulation
+import starsmashertools.lib.relaxation
+import starsmashertools.lib.binary
+import starsmashertools.lib.dynamical
 
 # Add your own serialization methods here to convert to/from JSON format.
 serialization_methods = {
@@ -53,7 +56,23 @@ serialization_methods = {
         lambda obj: [obj.directory], # To JSON
         lambda obj: starsmashertools.lib.simulation.Simulation(obj), # From JSON
     ]},
+
+    starsmashertools.lib.relaxation.Relaxation : {'name' : 'starsmashertools.lib.relaxation.Relaxation', 'conversions' : [
+        lambda obj: [obj.directory], # To JSON
+        lambda obj: starsmashertools.lib.relaxation.Relaxation(obj), # From JSON
+    ]},
+
+    starsmashertools.lib.binary.Binary : {'name' : 'starsmashertools.lib.binary.Binary', 'conversions' : [
+        lambda obj: [obj.directory], # To JSON
+        lambda obj: starsmashertools.lib.binary.Binary(obj), # From JSON
+    ]},
+
+    starsmashertools.lib.dynamical.Dynamical : {'name' : 'starsmashertools.lib.dynamical.Dynamical', 'conversions' : [
+        lambda obj: [obj.directory], # To JSON
+        lambda obj: starsmashertools.lib.dynamical.Dynamical(obj), # From JSON
+    ]},
 }
+
 # This is used for speedier type checking in the Encoder and Decoder
 serializable_types = tuple(serialization_methods.keys())
 encoding_methods, decoding_methods = {}, {}
