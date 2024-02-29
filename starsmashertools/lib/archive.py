@@ -25,6 +25,7 @@ def update_archive_version(
         :py:class:`~.Archive`'s path, overwriting it.
     """
     import starsmashertools.helpers.file
+    import starsmashertools.helpers.jsonfile
     import tempfile
     import shutil
 
@@ -34,7 +35,7 @@ def update_archive_version(
             old_path, 'r', **Archive.open_method_kwargs
     ) as zfile:
         namelist = zfile.namelist()
-        if len(namelist) == 1 and namelist[0] == 'archive':
+        if len(namelist) == 1 and namelist[0] in ['archive','sstools.archive.json']:
             content = zfile.read(namelist[0])
             data = starsmashertools.helpers.jsonfile.load_bytes(content)
             for identifier, val in data.items():

@@ -1,5 +1,6 @@
 #import os
 import subprocess
+import sys
 
 # Extract the test simulation directories
 p = subprocess.Popen(['./extract', '--quiet', '--no-remove'])
@@ -13,11 +14,12 @@ except:
     # Re-compress the simulation directories asynchronously
     p = subprocess.Popen(['./restore'])
     p.wait()
-    raise
+    sys.exit(1)
+    #raise
 
 # Re-compress the simulation directories asynchronously
 p = subprocess.Popen(['./restore', '--quiet'])
 p.wait()
 
-
+sys.exit(0)
 
