@@ -21,7 +21,7 @@ class JoinedSimulation(starsmashertools.lib.simulation.Simulation, object):
         
         for simulation in simulations:
             if isinstance(simulation, str):
-                simulation = starsmashertools.get_simulation(simulation)
+                simulation = starsmashertools.simulation.Simulation(simulation)
             if not isinstance(simulation, starsmashertools.lib.simulation.Simulation):
                 raise TypeError("A JoinedSimulation can only consist of type 'Simulation', not '%s'" % type(simulation).__name__)
 
