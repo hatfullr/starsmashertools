@@ -41,16 +41,21 @@ def get_exposed_programs():
         module_name = obj['module']
         full_name = obj['full name']
         module = importlib.import_module(module_name)
-        if obj['class'] is not None:
-            f = None
-            for _class in obj['class'].split('.'):
-                if f is None: f = getattr(module, _class)
-                else: f = getattr(f, _class)
-            if f is None:
-                f = getattr(getattr(module, obj['class']), obj['short name'])
-            else: f = getattr(f, obj['short name'])
-        else:
-            f = getattr(module, obj['short name'])
+        try:
+            if obj['class'] is not None:
+                f = None
+                for _class in obj['class'].split('.'):
+                    if f is None: f = getattr(module, _class)
+                    else: f = getattr(f, _class)
+                if f is None:
+                    f = getattr(getattr(module, obj['class']), obj['short name'])
+                else: f = getattr(f, obj['short name'])
+            else:
+                f = getattr(module, obj['short name'])
+        except AttributeError:
+            # This can happen if, for example, certain module members are only
+            # defined inside a conditional statement.
+            pass
         del module
     return _exposed_programs
     
