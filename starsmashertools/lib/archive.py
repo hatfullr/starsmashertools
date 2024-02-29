@@ -35,6 +35,7 @@ def update_archive_version(
     import starsmashertools.helpers.jsonfile
     import tempfile
     import shutil
+    import warnings
 
     if new_path is None: new_path = old_path
     
@@ -50,7 +51,9 @@ def update_archive_version(
         else: # If we were not able to detect the old Archive format
             # We assume it is in the latest format, so just update the version
             # info
+            warnings.filterwarnings(action = 'ignore')
             zfile.writestr('file info', get_file_info())
+            warnings.resetwarnings()
             return
     
     # We should now have the base data. We now create a new Archive as a

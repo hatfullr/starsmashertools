@@ -35,6 +35,13 @@ class TestSimulation(basetest.BaseTest):
 
         iterator = s.get_output_iterator()
         self.assertIn(iterator, s)
+
+    def test_join(self):
+        sim1 = starsmashertools.lib.simulation.Simulation(self.simdir)
+        sim2 = starsmashertools.lib.simulation.Simulation(self.simdir)
+
+        joined = sim1.join(sim2)
+        joined.split()
         
 
 if __name__ == "__main__":
