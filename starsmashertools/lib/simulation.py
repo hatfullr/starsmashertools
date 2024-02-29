@@ -27,7 +27,7 @@ class Simulation(object):
                 l = obj.archive['joined simulations'].value
                 if l:
                     import starsmashertools.lib.joinedsimulation
-                    return starsmashertools.lib.joinedsimulation.JoinedSimulation(obj, l + [obj])
+                    return starsmashertools.lib.joinedsimulation.JoinedSimulation(l + [obj])
         
         return obj
         
