@@ -12,8 +12,11 @@ class JoinedSimulation(starsmashertools.lib.simulation.Simulation, object):
     @api
     def __init__(self, simulations : list | tuple):
         import numpy as np
+        import starsmashertools
         
         for simulation in simulations:
+            if isinstance(simulation, str):
+                simulation = starsmashertools.get_simulation(simulation)
             if not isinstance(simulation, starsmashertools.lib.simulation.Simulation):
                 raise TypeError("A JoinedSimulation can only consist of type 'Simulation', not '%s'" % type(simulation).__name__)
 

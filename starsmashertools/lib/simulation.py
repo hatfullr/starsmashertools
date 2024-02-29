@@ -1177,4 +1177,8 @@ class Simulation(object):
         elif isinstance(other, str):
             other = Simulation(other)
         members = [self, other]
-        return starsmashertools.lib.joinedsimulation.JoinedSimulation(members)
+
+        
+        ret = starsmashertools.lib.joinedsimulation.JoinedSimulation(members)
+        if cli: return "Success"
+        return ret
