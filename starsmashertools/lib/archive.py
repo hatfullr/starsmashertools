@@ -459,6 +459,9 @@ class Archive(dict, object):
         import starsmashertools.helpers.file
         import starsmashertools.helpers.jsonfile
 
+        # We can't update the file if we're in readonly mode.
+        if self.readonly: return
+
         should_update = False
         info = None
         with starsmashertools.helpers.file.open(
@@ -483,10 +486,10 @@ class Archive(dict, object):
         )
 
         if old_version is not None:
-            message = "%s was written by starsmashertools version '%s', but the current version is '%s'. The Archive will now be updated to the latest format."
+            message = "%s was written by starsmashertools version '%s', but the current version is '%s'. This Archive might be updated to the latest format."
             message = message % (str(self), old_version, starsmashertools.__version__)
         else:
-            message = "%s was written by an older starsmashertools version, but the current version is '%s'. The Archive will now be updated to the latest format."
+            message = "%s was written by an older starsmashertools version, but the current version is '%s'. This Archive might be updated to the latest format."
             message = message % (str(self), starsmashertools.__version__)
         
         if should_update:
