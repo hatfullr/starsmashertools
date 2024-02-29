@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import zipfile
 
+# Compresses the contents of all subdirectories in the current working directory
+
 # We need the comments below to identify this part of the file in extract script
 # Start extract static variables
 zipname = 'archive.zip'
@@ -8,7 +10,7 @@ size_identifier = 'uncompressed_size'
 times_identifier = 'times'
 compression_kwargs = {
     'compresslevel' : 9,
-      'compression' : zipfile.ZIP_DEFLATED,
+    'compression' : zipfile.ZIP_DEFLATED,
 }
 # Stop extract static variables
 

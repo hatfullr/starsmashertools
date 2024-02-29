@@ -43,11 +43,11 @@ def show_keys(archive):
 def show_value(archive):
     import json
     
-    if not archive.loaded: load_archive(archive)
+    #if not archive.loaded: load_archive(archive)
 
     def get(key):
         return archive[key].value
-        
+
     args, kwargs = starsmashertools.bintools.cli.CLI.instance.inputmanager.get_function(
         get,
         [],

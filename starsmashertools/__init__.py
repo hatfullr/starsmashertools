@@ -17,6 +17,23 @@ if __file__.endswith(os.path.join('starsmashertools', 'starsmashertools','__init
 else:
     SOURCE_DIRECTORY = os.path.dirname(os.path.dirname(util.find_spec('starsmashertools').origin))
 
+# Check if some version string is older than the current version
+def _is_version_older(version):
+    # We use semantic versioning 2.0.0
+    major, minor, patch = version.split('.')
+    major = int(major)
+    minor = int(minor)
+    patch = int(patch)
+
+    _major, _minor, _patch = __version__.split('.')
+    _major = int(_major)
+    _minor = int(_minor)
+    _patch = int(_patch)
+
+    if major < _major: return True
+    if minor < _minor: return True
+    if patch < _patch: return True
+    return False
 
 # If our current version mis-matches the installed version, show a warning
 def _check_version():

@@ -4,13 +4,12 @@ import starsmashertools.helpers.argumentenforcer
 import os
 import basetest
 
-
 class TestArchive(basetest.BaseTest):
     def setUp(self):
         #print("setUp")
         self.archive = starsmashertools.lib.archive.Archive(
             'test.dat',
-            load = True,
+            load = False,
             auto_save = True,
         )
 
@@ -19,11 +18,33 @@ class TestArchive(basetest.BaseTest):
             self.archive.filename,
             'test_autoSave.dat',
             'test_combine.dat',
-            #'test_password.dat',
         ]
         for filename in filenames:
             if os.path.isfile(filename):
                 os.remove(filename)
+
+    def testConversion(self):
+        # Try converting all the historical Archives to the newest format
+        paths = []
+        for filename in os.listdir('archives'):
+            if filename.endswith('.py'): continue
+            paths += [os.path.join('archives', filename)]
+
+        # All these should raise no error
+        for path in paths:
+            error = None
+            try:
+                new_archive = starsmashertools.lib.archive.update_archive_version(
+                    path,
+                    new_path = 'test_old.dat',
+                )
+            except Exception as e:
+                error = e
+            
+            if os.path.isfile('test_old.dat'):
+                os.remove('test_old.dat')
+
+            if error is not None: raise(error)
 
     def testAdd(self):
         #print("testAdd")
@@ -44,6 +65,7 @@ class TestArchive(basetest.BaseTest):
 
     def testSave(self):
         #print("testSave")
+        self.archive.add('test', 0, 'filename', mtime = 5)
         self.archive.save()
         self.assertTrue(os.path.isfile(self.archive.filename))
 
@@ -63,8 +85,7 @@ class TestArchive(basetest.BaseTest):
         #print("add")
         self.archive.add('test', 0, 'filename', mtime = 5)
         self.assertIn('test', self.archive)
-
-
+        
         archive = starsmashertools.lib.archive.Archive(
             'test_autoSave.dat',
             load = False,

@@ -765,9 +765,13 @@ class MultiPage(Page, object):
     def show(self, **kwargs):
         import starsmashertools.bintools.inputmanager
         import starsmashertools.bintools
-        self.cli.page = self
-        
-        if not self.contents_per_page: self.split_content_to_pages(**kwargs)
+
+        if self.cli.page is not self:
+            self.cli.page = self
+            self.split_content_to_pages(**kwargs)
+        else:
+            #if not self.contents_per_page: self.split_content_to_pages(**kwargs)
+            self.split_content_to_pages(**kwargs)
 
         self.cli.clear()
         self.show_content()

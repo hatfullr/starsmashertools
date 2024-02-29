@@ -6,6 +6,10 @@ defaults = {
 # ------------------------------------------------------------------------------
     'Archive' : {
         'replacement flags' : (REPLACE_OLD, REPLACE_NEQ,),
+        # Setting this to False will prevent starsmashertools from overwriting
+        # Archives which have old formatting, but you will need to update the
+        # Archive formatting yourself in order to read it.
+        'auto update format' : True,
     },
 # ------------------------------------------------------------------------------
     'CLI' : {
