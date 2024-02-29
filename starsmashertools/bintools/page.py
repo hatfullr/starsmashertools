@@ -733,7 +733,8 @@ class MultiPage(Page, object):
             self._forward = False
             self.reverse()
             return False
-        if _input is None or (isinstance(_input, str) and _input.strip() == ''):
+        if (isinstance(_input, starsmashertools.bintools.inputmanager.InputManager.NullValue) or
+            (isinstance(_input, str) and _input.strip() == '')):
             if self._listen_to_enter == 'forward' and self._forward:
                 self.advance()
             elif self._listen_to_enter == 'backward' and not self._forward:
@@ -759,7 +760,7 @@ class MultiPage(Page, object):
                     self.previous_match()
                     return False
 
-            if _input in ['', None]:
+            if isinstance(_input, starsmashertools.bintools.inputmanager.InputManager.NullValue):
                 return False
             
             self._search_matches = self.search(_input)

@@ -9,12 +9,19 @@ import textwrap
 import typing
 import types
 
+union_types = (
+    types.UnionType,
+    # This is true whenever we have a keyword which can be some type but also
+    # NoneType.
+    typing._UnionGenericAlias,
+)
+
 def _get_types(_types):
     # Given a list of Python types from a function annotation, parse out each
     # individual type.
     new_types = []
     for i, t in enumerate(_types):
-        if not (isinstance(t, types.UnionType) or
+        if not (isinstance(t, union_types) or
                 typing.get_origin(t) is typing.Union):
             new_types += [t]
             continue
@@ -27,6 +34,8 @@ def _get_types(_types):
 class InputManager(object):
     class InvalidInputError(Exception):
         __module__ = Exception.__module__
+
+    class NullValue(object): pass
     
     def __init__(self, prompt=': '):
         super(InputManager, self).__init__()
@@ -49,7 +58,7 @@ class InputManager(object):
             _types = [_types]
 
         for _type in _get_types(_types):
-            if _type is types.NoneType:
+            if _type is types.NoneType or _type is type(None):
                 if string == 'None': return None
             elif _type is bool:
                 if string.lower() in ['true', 'false']:
@@ -79,8 +88,13 @@ class InputManager(object):
 
         if len(_types) <= 0:
             raise Exception("The list of input types must have a length greater than 0")
+
+        names = []
+        for t in _types:
+            if isinstance(t, union_types): names += [_t.__name__ for _t in t.__args__]
+            else: names += [t.__name__]
         type_string = starsmashertools.helpers.string.list_to_string(
-            [t.__name__ for t in _types],
+            names,
             join = 'or',
         )
         raise InputManager.InvalidInputError("Input must be of type " + type_string)
@@ -149,7 +163,7 @@ class InputManager(object):
                 if len(self.input) == 0:
                     if error_on_empty:
                         raise InputManager.InvalidInputError(repr(self.input))
-                    else: return None
+                    else: return InputManager.NullValue()
                 return self.parse(self.input, _type)
             except InputManager.InvalidInputError as error:
                 self.reset()
@@ -240,7 +254,8 @@ class InputManager(object):
                 prompt="Enter a value for keyword '%s' (default = %s): " % (name,d),
                 error_on_empty = False,
             )
-            if _input is None: _kwargs[name] = default
+            if isinstance(_input, InputManager.NullValue):
+                _kwargs[name] = default
             else: _kwargs[name] = _input
 
         for name in needed_keywords:
@@ -320,12 +335,7 @@ class Session(object):
                     param_type_hints = param_type_hints.__name__
 
                 else:
-                    if isinstance(param_type_hints, (
-                            types.UnionType,
-                            # This is true whenever we have a keyword which can
-                            # be some type but also NoneType.
-                            typing._UnionGenericAlias,
-                    )):
+                    if isinstance(param_type_hints, union_types):
                         param_type_hints = [t.__name__ for t in param_type_hints.__args__]
                     else:
                         param_type_hints = [t.__name__ for t in param_type_hints]
