@@ -17,41 +17,6 @@ class Simulation(object):
     ############################################################################
     # private attributes
 
-    """
-    @starsmashertools.helpers.argumentenforcer.enforcetypes
-    @api
-    def __new__(cls, directory : str):
-        # This is called before __init__ to create the actual instance.
-        import starsmashertools.helpers.path
-        import starsmashertools.lib.archive
-        import starsmashertools.lib.joinedsimulation
-        
-        # Prepare the directory string
-        directory = starsmashertools.helpers.path.realpath(directory.strip())
-        
-        # Validate the directory
-        if not Simulation.valid_directory(directory):
-            raise Simulation.InvalidDirectoryError(directory)
-
-        # Check the directory for a SimulationArchive, to see if this simulation
-        # should actually be a JoinedSimulation
-        try:
-            archive = starsmashertools.lib.archive.SimulationArchive(directory)
-        except:
-            # Something went wrong, but just ignore any problems
-            return super(Simulation, cls).__new__(cls)
-
-        # Now that we have the SimulationArchive, we check it for any joined
-        # simulations
-        if 'joined simulations' in archive:
-            joined_simulations = archive['joined simulations'].value
-            if joined_simulations:
-                return starsmashertools.lib.joinedsimulation.JoinedSimulation(joined_simulations)
-
-        # No joined simulations, so just return a normal Simulation object
-        return super(Simulation, cls).__new__(cls)
-    """
-
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def __init__(self, directory : str):
@@ -60,6 +25,13 @@ class Simulation(object):
         import starsmashertools.helpers.path
         import starsmashertools.lib.archive
         import starsmashertools.helpers.asynchronous
+
+        # Prepare the directory string
+        directory = starsmashertools.helpers.path.realpath(directory.strip())
+        
+        # Validate the directory
+        if not Simulation.valid_directory(directory):
+            raise Simulation.InvalidDirectoryError(directory)
 
         self.directory = directory
 
@@ -386,7 +358,10 @@ class Simulation(object):
     @api
     def valid_directory(directory : str):
         import starsmashertools.helpers.path
-        return starsmashertools.helpers.path.get_src(directory) is not None
+        try:
+            return starsmashertools.helpers.path.get_src(directory) is not None
+        except FileNotFoundError as e:
+            raise Simulation.InvalidDirectoryError() from e
     
     @api
     def get_logfiles(

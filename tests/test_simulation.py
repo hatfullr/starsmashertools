@@ -15,6 +15,8 @@ class TestSimulation(basetest.BaseTest):
 
     def test_valid_directory(self):
         self.assertFalse(starsmashertools.lib.simulation.Simulation.valid_directory("."))
+        with self.assertRaises(starsmashertools.lib.simulation.Simulation.InvalidDirectoryError):
+            starsmashertools.lib.simulation.Simulation('this is not a real directory, at all')
 
     def test_init(self):
         starsmashertools.lib.simulation.Simulation(self.simdir)
