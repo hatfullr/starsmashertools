@@ -64,8 +64,20 @@ class Simulation(object):
 
     @property
     def joined_simulations(self):
+        import warnings
+        import starsmashertools.helpers.path
         if 'joined simulations' not in self.archive: return []
-        return self.archive['joined simulations'].value
+        simulations = []
+        for directory in self.archive['joined simulations'].value:
+            directory = starsmashertools.helpers.path.join(
+                self.directory,
+                directory,
+            )
+            try:
+                simulations += [starsmashertools.get_simulation(directory)]
+            except Simulation.InvalidDirectoryError as e:
+                warnings.warn("A joined simulation is no longer a valid directory, likely because it was moved on the file system. Please split the simulation and re-join it to quell this warning. '%s'" % directory)
+        return simulations
     
     @api
     def __eq__(self, other):
@@ -1211,6 +1223,7 @@ class Simulation(object):
         :meth:`~.split`
         """
         import starsmashertools
+        import starsmashertools.helpers.path
 
         starsmashertools.helpers.argumentenforcer.enforcetypes({
             'other' : [Simulation, str],
@@ -1224,26 +1237,35 @@ class Simulation(object):
             if cli: return message
             raise ValueError(message)
 
+        other_path = starsmashertools.helpers.path.relpath(
+            other.directory,
+            start = self.directory,
+        )
+        our_path = starsmashertools.helpers.path.relpath(
+            self.directory,
+            start = other.directory,
+        )
+
         if 'joined simulations' not in self.archive:            
             self.archive.add(
                 'joined simulations',
-                [other],
+                [other_path],
             )
         else:
             v = self.archive['joined simulations']
-            if other not in v.value:
-                v.value += [other]
+            if other_path not in v.value:
+                v.value += [other_path]
             self.archive['joined simulations'] = v
         
         if 'joined simulations' not in other.archive:
             other.archive.add(
                 'joined simulations',
-                [self],
+                [our_path],
             )
         else:
             v = other.archive['joined simulations']
-            if self not in v.value:
-                v.value += [self]
+            if our_path not in v.value:
+                v.value += [our_path]
             other.archive['joined simulations'] = v
         
         if cli: return "Success"
@@ -1270,7 +1292,13 @@ class Simulation(object):
 
         for simulation in joined_simulations:
             v = simulation.archive['joined simulations']
-            v.value.remove(self)
+
+            our_path = starsmashertools.helpers.path.relpath(
+                self.directory,
+                start = simulation.directory,
+            )
+            
+            v.value.remove(our_path)
             if len(v.value) == 0:
                 simulation.archive.remove('joined simulations')
             else:
@@ -1285,4 +1313,6 @@ class Simulation(object):
     def show_joined_simulations(self, cli : bool = True):
         import starsmashertools.bintools
         newline = starsmashertools.bintools.Style.get('characters', 'newline')
-        return newline.join([sim.directory for sim in self.joined_simulations])
+        simulations = [sim.directory for sim in self.joined_simulations]
+        if not simulations: return "There are no joined simulations"
+        return newline.join(simulations)

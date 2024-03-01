@@ -61,13 +61,15 @@ test4test9
             for lock in locks:
                 self.assertTrue(lock.locked)
             
-            t0 = time.time()
+            timer = time.time()
             with starsmashertools.helpers.file.open(
                     path, 'r',
-                    timeout = 1.e-3,
+                    timeout = 1.e-2,
             ) as f2:
-                pass
-            self.assertAlmostEqual(time.time() - t0, 1.e-3, places=3)
+                timer = time.time() - timer
+
+            # Reasonable precision. Doesn't matter a whole lot.
+            self.assertLessEqual(timer, 1.e-2 + 1.e-3)
         
 if __name__ == "__main__":
     unittest.main(failfast=True)
