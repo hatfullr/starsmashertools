@@ -22,29 +22,19 @@ def get_archive(filename):
     
     archive = starsmashertools.lib.archive.Archive(
         filename,
-        load = False,
         auto_save = False,
         readonly = True,
     )
 
     return archive, None
 
-def load_archive(archive):
-    try:
-        archive.load()
-    except Exception as e:
-        raise Exception("Failed to load Archive, likely because it is not a valid Archive or perhaps it is corrupted.") from e
-
 def show_keys(archive):
-    if not archive.loaded: load_archive(archive)
     return "\n".join(sorted(archive.keys()))
 
 
 def show_value(archive):
     import json
     
-    #if not archive.loaded: load_archive(archive)
-
     def get(key):
         return archive[key].value
 
@@ -71,7 +61,6 @@ def show_value(archive):
 
 def show_raw_value(archive):
     import starsmashertools.helpers.jsonfile
-    if not archive.loaded: load_archive(archive)
 
     def get(key):
         return archive[key]

@@ -96,7 +96,7 @@ def get_simulation(directory : str):
     :class:`~.lib.relaxation.Relaxation`, :class:`~.lib.binary.Binary`, 
     :class:`~.lib.dynamical.Dynamical`, or :class:`~.lib.simulation.Simulation`
         The StarSmasher simulation at the given `directory`.
-
+    
     Examples
     --------
     This example obtains a :class:`~.lib.simulation.Simulation` object from a

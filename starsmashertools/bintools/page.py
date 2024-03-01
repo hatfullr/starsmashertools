@@ -145,7 +145,9 @@ class Page(object):
                 # Switch to a MultiPage
                 self.cli.remove_page(self)
                 self.cli.add_page(
-                    self.inputtypes, content, kind = MultiPage,
+                    self.inputtypes,
+                    content,
+                    kind = MultiPage,
                     header = self.header,
                     footer = self.footer,
                     identifier = self.identifier,

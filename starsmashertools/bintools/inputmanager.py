@@ -1,6 +1,4 @@
 # This class handles the user input and parsing it.
-import starsmashertools.bintools
-import starsmashertools.bintools.cli
 import os
 import curses
 import readline # Allows for fancy input editing
@@ -100,6 +98,7 @@ class InputManager(object):
         raise InputManager.InvalidInputError("Input must be of type " + type_string)
 
     def reset(self):
+        import starsmashertools.bintools.cli
         starsmashertools.bintools.cli.CLI.refresh()
         width = starsmashertools.bintools.cli.CLI.get_width()
         
@@ -134,6 +133,9 @@ class InputManager(object):
             refresh : bool = True,
             **kwargs
     ):
+        import starsmashertools.bintools.cli
+        import starsmashertools.bintools
+        
         if prompt is None: prompt = self.prompt
         
         if refresh:
@@ -204,6 +206,7 @@ class InputManager(object):
         """
         import inspect
         import copy
+        import starsmashertools.bintools.cli
 
         _args = copy.deepcopy(args)
         _kwargs = copy.deepcopy(kwargs)

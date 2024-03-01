@@ -3,13 +3,8 @@ import sys
 import os
 import argparse
 import starsmashertools.bintools.page
-import starsmashertools.bintools.inputmanager
-import starsmashertools
 import starsmashertools.lib.simulation
 import starsmashertools.helpers.argumentenforcer
-import starsmashertools.helpers.path
-import starsmashertools.helpers.file
-import starsmashertools.helpers.string
 import collections
 import curses
 import copy
@@ -29,6 +24,8 @@ class CLI(object):
             description : str,
             require_valid_directory : bool = True,
     ):
+        import starsmashertools.bintools.inputmanager
+        
         if CLI.instance is not None:
             raise Exception("Only one CLI instance is permitted per process")
         
@@ -108,6 +105,10 @@ class CLI(object):
 
     @staticmethod
     def write(*args, xy=None, move=None, move_relative=False, end='\n', flush=True):
+        import starsmashertools.bintools
+        import starsmashertools.helpers.file
+        import starsmashertools.helpers.path
+        
         string = ' '.join(args) + end
 
         # Current cursor position
@@ -158,6 +159,7 @@ class CLI(object):
         Before calling writestr, the string should be prepared first by wrapping
         text for printing in the terminal.
         """
+        import starsmashertools.bintools
 
         width = CLI.get_width()
         codes = starsmashertools.bintools.ANSI.get_all()
@@ -190,6 +192,7 @@ class CLI(object):
         """
         import time
         import curses
+        import starsmashertools.bintools
 
         ANSI = starsmashertools.bintools.ANSI
         mapping = {
@@ -383,6 +386,9 @@ class CLI(object):
             self,
             simulation : str | starsmashertools.lib.simulation.Simulation,
     ):
+        import starsmashertools.helpers.path
+        import starsmashertools
+        
         if isinstance(simulation, str):
             simulation = starsmashertools.helpers.path.realpath(simulation)
             simulation = starsmashertools.get_simulation(simulation)
@@ -393,6 +399,8 @@ class CLI(object):
             self,
             simulation : int | str | starsmashertools.lib.simulation.Simulation,
     ):
+        import starsmashertools
+        
         if isinstance(simulation, str):
             simulation = starsmashertools.get_simulation(simulation)
         elif isinstance(simulation, int):

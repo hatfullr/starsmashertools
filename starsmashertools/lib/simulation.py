@@ -16,38 +16,50 @@ except ImportError:
 class Simulation(object):
     ############################################################################
     # private attributes
-    
+
+    """
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
     def __new__(cls, directory : str):
         # This is called before __init__ to create the actual instance.
-        obj = super(Simulation, cls).__new__(cls)
-        obj.__init__(directory)
+        import starsmashertools.helpers.path
+        import starsmashertools.lib.archive
+        import starsmashertools.lib.joinedsimulation
+        
+        # Prepare the directory string
+        directory = starsmashertools.helpers.path.realpath(directory.strip())
+        
+        # Validate the directory
+        if not Simulation.valid_directory(directory):
+            raise Simulation.InvalidDirectoryError(directory)
 
-        if hasattr(obj, 'archive'):
-            if 'joined simulations' in obj.archive:
-                l = obj.archive['joined simulations'].value
-                if l:
-                    import starsmashertools.lib.joinedsimulation
-                    return starsmashertools.lib.joinedsimulation.JoinedSimulation(l + [obj])
-        
-        return obj
-        
+        # Check the directory for a SimulationArchive, to see if this simulation
+        # should actually be a JoinedSimulation
+        try:
+            archive = starsmashertools.lib.archive.SimulationArchive(directory)
+        except:
+            # Something went wrong, but just ignore any problems
+            return super(Simulation, cls).__new__(cls)
+
+        # Now that we have the SimulationArchive, we check it for any joined
+        # simulations
+        if 'joined simulations' in archive:
+            joined_simulations = archive['joined simulations'].value
+            if joined_simulations:
+                return starsmashertools.lib.joinedsimulation.JoinedSimulation(joined_simulations)
+
+        # No joined simulations, so just return a normal Simulation object
+        return super(Simulation, cls).__new__(cls)
+    """
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
-    def __init__(
-            self,
-            directory : str,
-    ):
+    def __init__(self, directory : str):
         import starsmashertools.lib.input
         import starsmashertools.lib.output
         import starsmashertools.helpers.path
         import starsmashertools.lib.archive
         import starsmashertools.helpers.asynchronous
-        
-        directory = starsmashertools.helpers.path.realpath(directory.strip())
-        
-        if not Simulation.valid_directory(directory):
-            raise Simulation.InvalidDirectoryError(directory)
 
         self.directory = directory
 
@@ -62,9 +74,9 @@ class Simulation(object):
         
         self.reader = starsmashertools.lib.output.Reader(self)
 
-        if starsmashertools.helpers.asynchronous.is_main_process():
-            self.archive = starsmashertools.lib.archive.SimulationArchive(self)
-        else: self.archive = None
+        #if starsmashertools.helpers.asynchronous.is_main_process():
+        self.archive = starsmashertools.lib.archive.SimulationArchive(self)
+        #else: self.archive = None
             
     def __hash__(self):
         return hash(self.directory)
@@ -77,6 +89,11 @@ class Simulation(object):
     def __setstate__(self, data):
         self.__init__(data['directory'])
     """
+
+    @property
+    def joined_simulations(self):
+        if 'joined simulations' not in self.archive: return []
+        return self.archive['joined simulations'].value
     
     @api
     def __eq__(self, other):
@@ -90,23 +107,22 @@ class Simulation(object):
     @api
     def __getitem__(self, key): return self.input[key]
 
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
-    def __contains__(self, item):
+    def __contains__(self, item : "str | starsmashertools.lib.output.Output | starsmashertools.lib.output.OutputIterator" ):
         import starsmashertools.helpers.path
         import starsmashertools.lib.output
-        
+
+        iterator = self.get_output_iterator()
         if isinstance(item, str):
-            if starsmashertools.helpers.path.isfile(item):
-                return item in self.get_output_iterator()
-        elif isinstance(item, starsmashertools.lib.output.Output):
-            return item in self.get_output_iterator()
-        elif isinstance(item, starsmashertools.lib.output.OutputIterator):
-            # All the files in the iterator must be members of this simulation
-            full_iterator = self.get_output_iterator()
+            if not starsmashertools.helpers.path.isfile(item): return False
+        
+        if isinstance(item, starsmashertools.lib.output.OutputIterator):
             for filename in item.filenames:
-                if filename not in full_iterator: return False
+                if filename not in iterator: return False
             return True
-        return False
+        
+        return item in iterator
 
     # Override this in children. Must return a list of Simulation objects
     def _get_children(self):
@@ -373,7 +389,11 @@ class Simulation(object):
         return starsmashertools.helpers.path.get_src(directory) is not None
     
     @api
-    def get_logfiles(self, **kwargs):
+    def get_logfiles(
+            self,
+            include_joined : bool = True,
+            **kwargs
+    ):
         """
         Get a list of :class:`starsmashertools.lib.logfile.LogFile`, sorted by
         oldest-to-newest, including those in subdirectories in the simulation
@@ -384,6 +404,10 @@ class Simulation(object):
         **kwargs
             Passed directly to :func:`starsmashertools.lib.logfile.find`.
 
+        include_joined : bool, default = True
+            If `True`, the joined simulations will be included in the search.
+            Otherwise, only this simulation will be searched.
+
         Returns
         -------
         list
@@ -392,15 +416,26 @@ class Simulation(object):
         """
         import starsmashertools.lib.logfile
         import starsmashertools.helpers.path
+        
         if self._logfiles is None:
             self._logfiles = []
             for _path in starsmashertools.lib.logfile.find(self.directory, **kwargs):
                 if starsmashertools.helpers.path.getsize(_path) > 0:
                     self._logfiles += [starsmashertools.lib.logfile.LogFile(_path, self)]
-        if self._logfiles: # Sort the log files by modification times
-            modtimes = [starsmashertools.helpers.path.getmtime(p.path) for p in self._logfiles]
-            self._logfiles = [x for _, x in sorted(zip(modtimes, self._logfiles), key=lambda pair: pair[0])]
-        return self._logfiles
+
+        all_files = [logfile for logfile in self._logfiles]
+        if include_joined:
+            for simulation in self.joined_simulations:
+                all_files += simulation.get_logfiles(
+                    include_joined = False,
+                    **kwargs
+                )
+        
+        if all_files: # Sort the log files by modification times
+            modtimes = [starsmashertools.helpers.path.getmtime(p.path) for p in all_files]
+            self._logfiles = [x for _, x in sorted(zip(modtimes, all_files), key=lambda pair: pair[0])]
+        
+        return all_files
     
     @api
     @cli('starsmashertools')
@@ -479,6 +514,9 @@ class Simulation(object):
         Search the simulation directory for a file or files that match a
         pattern.
 
+        Only returns files belonging to this simulation's directory, and ignores
+        any joined simulations' directories.
+
         Parameters
         ----------
         filename_or_pattern : str
@@ -486,33 +524,78 @@ class Simulation(object):
             ``out*.sph``)
         recursive : bool, default = True
             If `True`, searches all sub directories in the simulation. If
-            `False`, searches just the simulation directory.
+            `False`, searches just the top level simulation directory.
 
         Returns
         -------
         `list`
+            A list of paths which match the given pattern or filenames.
         """
         import starsmashertools.helpers.path
         import glob
         if recursive: _path = starsmashertools.helpers.path.join(self.directory, '**', filename_or_pattern)
         else: _path = starsmashertools.helpers.path.join(self.directory, filename_or_pattern)
         return glob.glob(_path, recursive=recursive)
-    
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
-    def get_outputfiles(self, pattern : str | type(None) = None):
+    def get_outputfiles(
+            self,
+            pattern : str | type(None) = None,
+            include_joined : bool = True,
+    ):
+        """
+        Returns a list of output file locations. If this simulation has any
+        joined simulations, then each of those simulations' output file paths
+        are returned as well. The result is sorted by file modification times.
+
+        Parameters
+        ----------
+        pattern : str, None, default = None
+            Passed directly to :meth:`~.get_file`.
+        
+        include_joined : bool, default = True
+            If `True`, the joined simulations will be included in the search.
+            Otherwise, only this simulation will be searched.
+        
+        Returns
+        -------
+        list
+            A list of output file paths belonging to this simulation and any
+            joined simulations, sorted by file modification times.
+        """
         import starsmashertools.preferences
+        import starsmashertools.helpers.path
+        
         if pattern is None:
             pattern = starsmashertools.preferences.get_default('Simulation', 'output files', throw_error=True)
         matches = self.get_file(pattern)
-        if matches:
-            matches = sorted(matches)
-            
-        return matches
+
+        if include_joined:
+            for simulation in self.joined_simulations:
+                matches += simulation.get_outputfiles(
+                    pattern = pattern,
+                    include_joined = False, # Prevent infinite recursion
+                )
+
+        # Sort by file modification times
+        mtimes = [starsmashertools.helpers.path.getmtime(f) for f in matches]
+        return [x for _,x in sorted(zip(mtimes, matches), key=lambda pair: pair[0])]
     
     # The initial file is always the one that was written first.
     @api
-    def get_initialfile(self, pattern : str | type(None) = None):
-        return self.get_outputfiles(pattern=pattern)[0]
+    def get_initialfile(self, **kwargs):
+        """
+        Obtain the output file which was written first, as a 
+        :class:`~.lib.output.Output` object. Equivalent to calling
+        :meth:`~.get_outputfiles` and getting the first index.
+
+        Other Parameters
+        ----------------
+        kwargs
+            Keyword arguments are passed directly to :meth:`~.get_outputfiles`.
+        """
+        return self.get_outputfiles(**kwargs)[0]
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
@@ -529,6 +612,8 @@ class Simulation(object):
         """
         Create a compressed version of the Simulation. File creation times are
         preserved.
+
+        Does not compress any joined simulations.
 
         Parameters
         ----------
@@ -614,6 +699,8 @@ class Simulation(object):
         """
         Decompress the simulation from the given filename.
 
+        Does not decompress any joined simulations.
+
         Parameters
         ----------
         filename : str, None default = None
@@ -653,11 +740,12 @@ class Simulation(object):
 
     @api
     def get_size(self):
-        """Returns the size of the simulation in bytes.
-
+        """
         Returns
         -------
         int
+            The size of the simulation in bytes. Does not include any joined
+            simulations.
         """
         import starsmashertools.helpers.path
         return starsmashertools.helpers.path.get_directory_size(self.directory)
@@ -678,38 +766,51 @@ class Simulation(object):
             start : int | type(None) = None,
             stop : int | type(None) = None,
             step : int | type(None) = None,
+            include_joined : bool = True,
             **kwargs
     ):
         """
-        Return a `starsmashertools.lib.output.OutputIterator` containing all the
-        `starsmashertools.lib.output.Output` objects present in this simulation.
+        Return a :class:`starsmashertools.lib.output.OutputIterator` containing
+        all the :class:`starsmashertools.lib.output.Output` objects present in
+        this simulation.
+
+        The iterator includes output files from any joined simulations.
         
         Parameters
         ----------
         start : int, None, default = None
-            Passed directly to `~.get_output`.
+            Passed directly to :meth:`~.get_output`.
 
         stop : int, None, default = None
-            Passed directly to `~.get_output`.
+            Passed directly to :meth:`~.get_output`.
 
         step : int, None, default = None
-            Passed directly to `~.get_output`.
+            Passed directly to :meth:`~.get_output`.
+
+        include_joined : bool, default = True
+            If `True`, the joined simulations will be included in the search.
+            Otherwise, only this simulation will be searched. Passed directly to
+            :meth:`~.get_output`.
 
         Other Parameters
         ----------------
         **kwargs
             Other keyword arguments are passed directly to 
-            `starsmashertools.lib.output.OutputIterator`.
+            :class:`starsmashertools.lib.output.OutputIterator`.
         
         Returns
         -------
         iterator
-            The created `starsmashertools.lib.output.OutputIterator` instance.
+            The created :class:`starsmashertools.lib.output.OutputIterator` 
+            instance.
         """
         import starsmashertools.lib.output
         # Now that we have all the file names, we can create an output iterator
         # from them
-        outputs = self.get_output(start=start, stop=stop, step=step)
+        outputs = self.get_output(
+            start = start, stop = stop, step = step,
+            include_joined = include_joined,
+        )
         if not isinstance(outputs, list): outputs = [outputs]
         filenames = [output.path for output in outputs]
         return starsmashertools.lib.output.OutputIterator(filenames, self, **kwargs)
@@ -719,12 +820,13 @@ class Simulation(object):
     def get_output_at_time(
             self,
             time : int | float | starsmashertools.lib.units.Unit,
+            include_joined : bool = True,
     ):
         """
         Return the `starsmashertools.lib.output.Output` object of this
         simulation whose time best matches the given time. Raises a ValueError
         if the given time is out of bounds.
-
+        
         Parameters
         ----------
         time : int, float, `starsmashertools.lib.units.Unit`
@@ -732,6 +834,10 @@ class Simulation(object):
             this value represents time in the simulation units. If a 
             `starsmashertools.lib.units.Unit` is given, it will be converted to
             this simulation's time unit.
+
+        include_joined : bool, default = True
+            If `True`, the joined simulations will be included in the search.
+            Otherwise, only this simulation will be searched.
 
         Returns
         -------
@@ -745,7 +851,7 @@ class Simulation(object):
             time *= self.units['t']
             #time = float(time.convert(self.units['t'].label))
 
-        outputs = self.get_output()
+        outputs = self.get_output(include_joined = include_joined)
         if not outputs: raise ValueError("Cannot find output at time %f because there are no output files in simulation '%s'" % (time, str(self.directory)))
 
         conversion = self.units['t'].convert(time.label)
@@ -774,40 +880,47 @@ class Simulation(object):
             step : int | type(None) = None,
             times : int | float | starsmashertools.lib.units.Unit | list | tuple | np.ndarray | type(None) = None,
             indices : list | tuple | np.ndarray | type(None) = None,
+            include_joined : bool = True,
             cli : bool = False,
     ):
         """
-        Obtain a list of `starsmashertools.lib.output.Output` objects associated
-        with this Simulation. Returns all outputs if no arguments are specified.
+        Obtain a list of :class:`starsmashertools.lib.output.Output` objects 
+        associated with this simulation. Returns all outputs if no arguments are
+        specified.
         
         Parameters
         ----------
         start : int, None, default = None
             The starting index of a slice of the list of all output files.
-
+        
         stop : int, None, default = None
             The ending index in the slice of the list of all output files.
-
+        
         step : int, None, default = None
             How many output files to skip in the slice.
-
-        time : int, float, `starsmashertools.lib.units.Unit`, list, tuple, np.ndarray, default = None
+        
+        times : int, float, :class:`starsmashertools.lib.units.Unit`, list, tuple, np.ndarray, default = None
             If given, returns the output files that are closest to the given
             simulation time or collection of times. This can possibly include
             duplicate items.
-
+        
         indices : list, tuple, np.ndarray, default = None
             If given, returns the output files at each index from the result of
-            `~.get_outputfiles()`.
+            :meth:`~.get_outputfiles()`.
+
+        include_joined : bool, default = True
+            If `True`, the joined simulations will be included in the search.
+            Otherwise, only this simulation will be searched.
         
         Returns
         -------
         list, `starsmashertools.lib.output.Output`
-            A list of `starsmashertools.lib.output.Output` objects. If the list
-            contains only a single item, that item is returned instead.
+            A list of :class:`~.lib.output.Output` objects. If the list contains
+            only a single item, that item is returned instead.
         """
         import starsmashertools.lib.output
-        filenames = np.asarray(self.get_outputfiles(), dtype=object)
+        filenames = self.get_outputfiles(include_joined = include_joined)
+        filenames = np.asarray(filenames, dtype=object)
         if times is not None:
             starsmashertools.helpers.argumentenforcer.enforcevalues({
                 'start' : [None],
@@ -816,11 +929,11 @@ class Simulation(object):
                 'indices' : [None],
             })
             if hasattr(times, '__iter__'):
-                ret = [self.get_output_at_time(time) for time in times]
+                ret = [self.get_output_at_time(time, include_joined = include_joined) for time in times]
                 if len(ret) == 1: return ret[0]
                 return ret
             else:
-                return self.get_output_at_time(times)
+                return self.get_output_at_time(times, include_joined = include_joined)
         elif indices is not None:
             starsmashertools.helpers.argumentenforcer.enforcevalues({
                 'start' : [None],
@@ -859,19 +972,20 @@ class Simulation(object):
         keys : list
             The keys to query the output file headers for.
 
-        Returns
-        -------
-        `dict`
-            Each key is a `starsmashertools.lib.output.Output` object and each
-            value is the entire header.
-
         Other Parameters
         ----------------
         kwargs : dict
-            Extra keyword arguments passed to `.get_output_iterator`. Note that
-            keyword `return_headers` is always `True` and `return_data` is
-            always `False`. Keyword `asynchronous` is set to `False` by default
-            because reading headers is often faster that way.
+            Extra keyword arguments passed to :meth:`~.get_output_iterator`. 
+            Note that keyword ``return_headers`` is always `True` and 
+            ``return_data`` is always `False`. Keyword ``asynchronous`` is set 
+            to `False` by default because reading headers is often faster that 
+            way.
+
+        Returns
+        -------
+        `dict`
+            Each key is a :class:`starsmashertools.lib.output.Output` object and
+            each value is the entire header.
         """
         kwargs['return_headers'] = True
         kwargs['return_data'] = False
@@ -882,71 +996,12 @@ class Simulation(object):
             ret[output] = output.header
         return ret
 
-    """
-    @api
-    def get_flux(self, *args, **kwargs):
-        #""
-        Return a :class:`starsmashertools.flux.fluxfinder.FluxFinder` which can
-        be used to obtain the radiative flux for some given
-        :class:`~.lib.output.Output` objects.
-
-        Parameters
-        ----------
-        *args
-            If a single argument is given and it is a 
-            :class:`~.lib.output.Output`, a
-            :class:`~.lib.output.OutputIterator`, or an iterable of
-            :class:`~.lib.output.Output`, then those objects will be passed
-            directly to :class:`starsmashertools.flux.fluxfinder.FluxFinder`.
-            Otherwise, all positional arguments are passed directly to
-            :func:`~.get_output`.
-
-        **kwargs
-            If `*args` has a single element which is a
-            :class:`~.lib.output.Output`, a
-            :class:`~.lib.output.OutputIterator`, or an iterable of
-            :class:`~.lib.output.Output`, then an error will be raised if any
-            keyword arguments are given. Otherwise, all keyword arguments are
-            passed directly to to :func:`~.get_output`.
-        
-        Returns
-        -------
-        :class:`starsmashertools.flux.fluxfinder.FluxFinder`
-            This can be used to get the radiative flux using, e.g.,
-            :func:`starsmashertools.flux.fluxfinder.FluxFinder.get`.
-        #""
-        import starsmashertools.lib.output
-        import starsmashertools.flux.fluxfinder
-        import copy
-
-        outputs = None
-        
-        if len(args) == 1:
-            outputs = args[0]
-
-            if not isinstance(outputs, starsmashertools.lib.output.OutputIterator):
-                if isinstance(outputs, starsmashertools.lib.output.Output):
-                    outputs = [outputs]
-                elif hasattr(outputs, '__iter__'):
-                    # If any are not Output type, then revert to passing the
-                    # arguments directly to get_output
-                    for output in copy.deepcopy(outputs):
-                        if not isinstance(output, starsmashertools.lib.output.Output):
-                            outputs = None
-                            break
-        
-        # Revert to passing everything to get_output
-        if outputs is None: 
-            outputs = self.get_output(*args, **kwargs)
-            
-        return starsmashertools.flux.fluxfinder.FluxFinder(outputs)
-    """
-
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def get_energyfiles(
             self,
             skip_rows : int | type(None) = None,
+            include_joined : bool = True,
     ):
         """
         Get the :class:`~.lib.energyfile.EnergyFile` objects associated with
@@ -958,6 +1013,10 @@ class Simulation(object):
             Only read every Nth line of each energy file. If `None`, uses the 
             default value in :func:`~.lib.energyfile.EnergyFile.__init__`.
 
+        include_joined : bool, default = True
+            If `True`, the joined simulations will be included in the search.
+            Otherwise, only this simulation will be searched.
+
         Returns
         -------
         list
@@ -965,7 +1024,7 @@ class Simulation(object):
         """
         import starsmashertools.lib.energyfile
         energyfiles = []
-        for logfile in self.get_logfiles():
+        for logfile in self.get_logfiles(include_joined = include_joined):
             energyfiles += [starsmashertools.lib.energyfile.EnergyFile(
                 logfile,
                 skip_rows = skip_rows,
@@ -979,6 +1038,7 @@ class Simulation(object):
             self,
             sort : str | type(None) = None,
             skip_rows : int | type(None) = None,
+            include_joined : bool = True,
     ):
         """
         Obtain all the simulation energies as a function of simulation time.
@@ -993,13 +1053,20 @@ class Simulation(object):
             Only read every Nth line of each energy file. If `None`, uses the 
             default value in :func:`~.lib.energyfile.EnergyFile.__init__`.
 
+        include_joined : bool, default = True
+            If `True`, the joined simulations will be included in the search.
+            Otherwise, only this simulation will be searched.
+
         Returns
         -------
         dict or None
             A dictionary of NumPy arrays. If no energy files were found, returns
             `None` instead.
         """
-        energyfiles = self.get_energyfiles(skip_rows = skip_rows)
+        energyfiles = self.get_energyfiles(
+            skip_rows = skip_rows,
+            include_joined = include_joined,
+        )
         if not energyfiles: return None
 
         expected_keys = energyfiles[0].keys()
@@ -1148,37 +1215,99 @@ class Simulation(object):
             cli : bool = False,
     ):
         """
-        Merge two simulations of the same type together, creating a new
-        :py:class:`~.joinedsimulation.JoinedSimulation` object. This operation
-        is 'permanent' in that the simulations will hereby by detected by 
-        starsmashertools as a single 
-        :py:class:`~.joinedsimulation.JoinedSimulation` instance, but the actual
-        files on your system will be unchanged.
+        Merge two simulations of the same type together, by having
+        starsmashertools retrieve the output files of all joined simulations
+        whenever the ``include_joined`` flag is set to `True` (default) in
+        :meth:`~.get_output`, :meth:`~.get_output_at_time`, 
+        :meth:`~.get_output_iterator`, :meth:`~.get_outputfiles`, 
+        :meth:`~.get_logfiles`, :meth:`~.get_energyfiles`, and 
+        :meth:`~.get_energy`.
 
+        To undo this operation, use :meth:`~.split`.
+        
         Parameters
         ----------
-        other : :py:class:`~.Simulation` | :py:class:`~.joinedsimulation.JoinedSimulation` | str
+        other : :class:`~.Simulation` | str
             The other simulation to merge with, or a path to a simulation
             directory.
-        
-        Returns
-        -------
-        :py:class:`~.joinedsimulation.JoinedSimulation`
-            The joined simulations.
+
+        See Also
+        --------
+        :meth:`~.split`
         """
-        import starsmashertools.lib.joinedsimulation
+        import starsmashertools
 
         starsmashertools.helpers.argumentenforcer.enforcetypes({
-            'other' : [Simulation, starsmashertools.lib.joinedsimulation.JoinedSimulation, str],
+            'other' : [Simulation, str],
         })
-
-        if isinstance(other, starsmashertools.lib.joinedsimulation.JoinedSimulation):
-            other.join(self)
-        elif isinstance(other, str):
-            other = Simulation(other)
-        members = [self, other]
-
         
-        ret = starsmashertools.lib.joinedsimulation.JoinedSimulation(members)
+        if isinstance(other, str):
+            other = starsmashertools.get_simulation(other)
+
+        if self == other:
+            message = "Cannot join simulations %s and %s because they are the same simulation" % (self, other)
+            if cli: return message
+            raise ValueError(message)
+
+        if 'joined simulations' not in self.archive:            
+            self.archive.add(
+                'joined simulations',
+                [other],
+            )
+        else:
+            v = self.archive['joined simulations']
+            if other not in v.value:
+                v.value += [other]
+            self.archive['joined simulations'] = v
+        
+        if 'joined simulations' not in other.archive:
+            other.archive.add(
+                'joined simulations',
+                [self],
+            )
+        else:
+            v = other.archive['joined simulations']
+            if self not in v.value:
+                v.value += [self]
+            other.archive['joined simulations'] = v
+        
         if cli: return "Success"
-        return ret
+
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    @cli('starsmashertools')
+    def split(self, cli : bool = False):
+        """
+        The opposite of :meth:`~.join`. Split this simulation apart from each
+        simulation it is joined to. Any simulation joined to this one will also
+        be split apart from it.
+        
+        See Also
+        --------
+        :meth:`~.join`
+        """
+
+        joined_simulations = self.joined_simulations
+        if not joined_simulations:
+            if cli: return "This simulation has no joined simulations"
+            return
+
+        for simulation in joined_simulations:
+            v = simulation.archive['joined simulations']
+            v.value.remove(self)
+            if len(v.value) == 0:
+                simulation.archive.remove('joined simulations')
+            else:
+                simulation.archive['joined simulations'] = v
+
+        self.archive.remove('joined simulations')
+        
+        if cli: return "Success"
+        
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @cli('starsmashertools')
+    def show_joined_simulations(self, cli : bool = True):
+        import starsmashertools.bintools
+        newline = starsmashertools.bintools.Style.get('characters', 'newline')
+        return newline.join([sim.directory for sim in self.joined_simulations])

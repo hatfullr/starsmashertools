@@ -56,9 +56,13 @@ class LogFile(object):
             except:
                 self._buffer = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
 
-
-
-        
+    def __eq__(self, other):
+        import starsmashertools.helpers.file
+        starsmashertools.helpers.argumentenforcer.enforcetypes({
+            'other' : LogFile,
+        })
+        return starsmashertools.helpers.file.compare(self.path, other.path)
+    
     @property
     def header(self):
         if self._header is None: self.read_header()

@@ -9,11 +9,12 @@ class TestArchive(basetest.BaseTest):
         #print("setUp")
         self.archive = starsmashertools.lib.archive.Archive(
             'test.dat',
-            load = False,
             auto_save = True,
+            readonly = False,
         )
 
     def tearDown(self):
+        self.archive.clear()
         filenames = [
             self.archive.filename,
             'test_autoSave.dat',
@@ -48,14 +49,13 @@ class TestArchive(basetest.BaseTest):
 
     def testAdd(self):
         #print("testAdd")
-        self.archive.add('test', 0, 'filename', mtime = 5)
-        error = starsmashertools.helpers.argumentenforcer.ArgumentTypeError
         with self.assertRaises(Exception):
             self.archive['test'] = 0
+        self.archive.add('test', 0, 'filename', mtime = 5)
         self.assertIn('test', self.archive)
-        self.assertEqual(self.archive['test'].value, 0)
-        self.assertEqual(self.archive['test'].mtime, 5)
-        self.assertEqual(self.archive['test'].origin, 'filename')
+        self.assertEqual(0, self.archive['test'].value)
+        self.assertEqual(5, self.archive['test'].mtime)
+        self.assertEqual('filename', self.archive['test'].origin)
 
     def testRemove(self):
         #print("testRemove")
@@ -65,36 +65,74 @@ class TestArchive(basetest.BaseTest):
 
     def testSave(self):
         #print("testSave")
-        self.archive.add('test', 0, 'filename', mtime = 5)
+        with self.archive.nosave(): # Disable auto save temporarily
+            self.archive.add('test', 0, 'filename', mtime = 5)
+
+        self.assertIn('test', self.archive)
+        self.assertEqual(1, len(list(self.archive._to_add.keys())))
+        self.assertEqual(0, len(self.archive._to_remove))
+        self.assertEqual(0, self.archive['test'].value)
+        self.assertEqual('filename', self.archive['test'].origin)
+        self.assertEqual(5, self.archive['test'].mtime)
+
+        self.assertFalse(os.path.isfile(self.archive.filename))
         self.archive.save()
         self.assertTrue(os.path.isfile(self.archive.filename))
+        
+        self.assertIn('test', self.archive)
+        self.assertEqual(0, len(list(self.archive._to_add.keys())))
+        self.assertEqual(0, len(self.archive._to_remove))
+        self.assertEqual(0, self.archive['test'].value)
+        self.assertEqual('filename', self.archive['test'].origin)
+        self.assertEqual(5, self.archive['test'].mtime)
+
+    def testNoSaveContext(self):
+        self.assertFalse(os.path.isfile(self.archive.filename))
+        with self.archive.nosave(): # Disable auto save temporarily
+            self.archive.add('test', 0, 'filename', mtime = 5)
+        
+        self.assertFalse(os.path.isfile(self.archive.filename))
+        self.assertIn('test', self.archive)
+        self.assertEqual(1, len(list(self.archive._to_add.keys())))
+        self.assertEqual(0, len(self.archive._to_remove))
+        self.assertEqual(0, self.archive['test'].value)
+        self.assertEqual('filename', self.archive['test'].origin)
+        self.assertEqual(5, self.archive['test'].mtime)
 
     def testAutoSave(self):
-        #print("testAutoSave")
+        import os
+        self.assertFalse(os.path.exists(self.archive.filename))
+        
         self.archive.auto_save = False
+        
         self.archive.add('test', 0, 'filename', mtime = 5)
-        with self.assertRaises(FileNotFoundError):
-            #print("load error")
-            self.archive.load()
-        #print("remove")
+        self.assertFalse(os.path.exists(self.archive.filename))
+        
+        self.assertIn('test', self.archive)
+        self.assertEqual(0, self.archive['test'].value)
+        self.assertEqual('filename', self.archive['test'].origin)
+        self.assertEqual(5, self.archive['test'].mtime)
+        
         self.archive.remove('test')
-
         self.assertNotIn('test', self.archive)
+
+        with self.assertRaises(KeyError):
+            self.archive['test']
         
         self.archive.auto_save = True
-        #print("add")
+
+        self.assertFalse(os.path.exists(self.archive.filename))
         self.archive.add('test', 0, 'filename', mtime = 5)
+        self.assertTrue(os.path.exists(self.archive.filename))
         self.assertIn('test', self.archive)
+        self.assertEqual(0, self.archive['test'].value)
+        self.assertEqual('filename', self.archive['test'].origin)
+        self.assertEqual(5, self.archive['test'].mtime)
         
         archive = starsmashertools.lib.archive.Archive(
             'test_autoSave.dat',
-            load = False,
             auto_save = False,
         )
-        self.assertFalse(archive.auto_save)
-        self.assertFalse(os.path.exists('test_autoSave.dat'))
-        with self.assertRaises(FileNotFoundError):
-            archive.load()
         self.assertFalse(archive.auto_save)
         self.assertFalse(os.path.exists('test_autoSave.dat'))
         archive.add('test', 0, 'filename', mtime = 5)
@@ -103,31 +141,6 @@ class TestArchive(basetest.BaseTest):
         archive.save()
         self.assertFalse(archive.auto_save)
         self.assertTrue(os.path.exists('test_autoSave.dat'))
-        
-
-    def testLoad(self):
-        #print("testLoad")
-        self.archive.add('test', 0, 'filename', mtime = 5)
-
-        new_archive = starsmashertools.lib.archive.Archive(
-            self.archive.filename,
-            load = True,
-        )
-        self.assertIn('test', new_archive)
-        self.assertEqual(new_archive['test'].value, 0)
-        self.assertEqual(new_archive['test'].mtime, 5)
-        self.assertEqual(new_archive['test'].origin, 'filename')
-
-        new_archive = starsmashertools.lib.archive.Archive(
-            self.archive.filename,
-            load = False,
-        )
-        new_archive.load()
-        self.assertIn('test', new_archive)
-        self.assertEqual(new_archive['test'].value, 0)
-        self.assertEqual(new_archive['test'].mtime, 5)
-        self.assertEqual(new_archive['test'].origin, 'filename')
-
 
     def testCompression(self):
         #print("testCompression")
@@ -150,7 +163,7 @@ class TestArchive(basetest.BaseTest):
         self.archive.add('test', 0, 'filename', mtime = 5)
         
         other = starsmashertools.lib.archive.Archive(
-            'test_combine.dat', load=False,
+            'test_combine.dat',
             auto_save = False,
         )
         other.add('test', 1, 'filename', mtime = 6)
@@ -177,7 +190,8 @@ class TestArchive(basetest.BaseTest):
 
         with self.assertRaises(starsmashertools.lib.archive.Archive.ReadOnlyError):
             self.archive.save()
-        
+
+        self.archive.readonly = False
 
     #"""
     def testParallel(self):
@@ -188,7 +202,6 @@ class TestArchive(basetest.BaseTest):
             import time
             archive = starsmashertools.lib.archive.Archive(
                 filename,
-                load = True,
             )
             alot_of_data = {}
             for key, val in enumerate(range(1000000)):
