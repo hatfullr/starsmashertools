@@ -91,11 +91,14 @@ class Simulation(object):
     @api
     def __getitem__(self, key): return self.input[key]
 
-    @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
-    def __contains__(self, item : "str | starsmashertools.lib.output.Output | starsmashertools.lib.output.OutputIterator" ):
+    def __contains__(self, item):
         import starsmashertools.helpers.path
         import starsmashertools.lib.output
+
+        starsmashertools.helpers.argumentenforcer.enforcetypes({
+            'item' : [str, starsmashertools.lib.output.Output, starsmashertools.lib.output.OutputIterator],
+        })
 
         iterator = self.get_output_iterator()
         if isinstance(item, str):
