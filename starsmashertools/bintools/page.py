@@ -85,8 +85,11 @@ class Page(object):
         
         if callable(self.contents): content = self.contents()
         else: content = copy.copy(self.contents)
-        
-        content = newline.join([" "*self.indent + c for c in content.split(newline)])
+
+        if content is None:
+            content = ''
+        else:
+            content = newline.join([" "*self.indent + c for c in content.split(newline)])
         
         header = self.get_header()
         footer = self.get_footer()
