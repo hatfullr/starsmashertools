@@ -90,6 +90,7 @@ class InputManager(object):
         names = []
         for t in _types:
             if isinstance(t, union_types): names += [_t.__name__ for _t in t.__args__]
+            elif t is None: names += ['None']
             else: names += [t.__name__]
         type_string = starsmashertools.helpers.string.list_to_string(
             names,
@@ -171,102 +172,6 @@ class InputManager(object):
                 self.reset()
                 starsmashertools.bintools.print_error(halt=halt)
 
-    def get_function(
-            self,
-            function : typing.Callable,
-            args : list | tuple = (),
-            kwargs : dict = {},
-    ):
-        """ 
-        Given a function and any pre-entered arguments and keywords, ask the
-        user for additional missing inputs and keywords. Keyword defaults are
-        taken first from the user's previous session (if there was one).
-        Otherwise, keyword defaults are the same as in the given function.
-
-        Parameters
-        ----------
-        function : callable
-            The function to obtain positional and keyword arguments for.
-
-        Other Parameters
-        ----------------
-        args : list, tuple, default = ()
-            A list of arguments that have been pre-filled for the user. The user
-            will not be asked to give values for these.
-
-        kwargs : dict, default = {}
-            A dictionary of keywords that have been pre-filled for the user. The
-            user will not be asked to give values for these.
-
-        Returns
-        -------
-        args, kwargs
-            The positional and keyword arguments that can be passed to the 
-            provided function.
-        """
-        import inspect
-        import copy
-        import starsmashertools.bintools.cli
-
-        _args = copy.deepcopy(args)
-        _kwargs = copy.deepcopy(kwargs)
-
-        signature = inspect.signature(function)
-
-        # Get the argument names that we need to ask input for
-        i_pos = 0
-        needed_positionals = []
-        needed_keywords = []
-        for name, parameter in signature.parameters.items():
-            # Skip things we don't want the user to edit
-            if name in Session.ignore_arguments: continue
-            if parameter.default == inspect._empty: # Positional argument
-                if i_pos >= len(_args): needed_positionals += [name]
-                i_pos += 1
-            else: # Keyword argument
-                # All keywords should be given to the user to edit, except for
-                # those which were specified in the cli function decorator
-                if name in _kwargs.keys(): continue
-                needed_keywords += [name]
-
-        cli = starsmashertools.bintools.cli.CLI.instance
-        type_hints = typing.get_type_hints(function)
-
-        types = {}
-        for name in needed_positionals + needed_keywords:
-            if name in type_hints.keys():
-                types[name] = type_hints[name]
-            else: # Any type is permitted, I guess
-                types[name] = None
-
-        # Obtain positionals
-        _args = list(_args) # For editing
-        for name in needed_positionals:
-            _args += [cli.inputmanager.get(
-                types[name],
-                prompt="Enter a value for parameter '%s': " % name,
-            )]
-
-        # Obtain keywords
-        for name in needed_keywords:
-            default = self.session.get(function, name)
-            if isinstance(default, str): d = "'%s'" % default
-            else: d = str(default)
-            _input = cli.inputmanager.get(
-                types[name],
-                prompt="Enter a value for keyword '%s' (default = %s): " % (name,d),
-                error_on_empty = False,
-            )
-            if isinstance(_input, InputManager.NullValue):
-                _kwargs[name] = default
-            else: _kwargs[name] = _input
-
-        for name in needed_keywords:
-            self.session.set(function, name, _kwargs[name])
-        self.session.save()
-
-        return tuple(_args), _kwargs
-
         
 class CursesInput(object):
     def __init__(self, window):
@@ -337,11 +242,17 @@ class Session(object):
                 if isinstance(param_type_hints, type):
                     param_type_hints = param_type_hints.__name__
 
+                elif param_type_hints is None: param_type_hints = 'None'
                 else:
                     if isinstance(param_type_hints, union_types):
                         param_type_hints = [t.__name__ for t in param_type_hints.__args__]
                     else:
-                        param_type_hints = [t.__name__ for t in param_type_hints]
+                        for i, t in enumerate(param_type_hints):
+                            if t is None:
+                                param_type_hints[i] = 'None'
+                            else:
+                                param_type_hints[i] = t.__name__
+                
                 if parameter.default == inspect._empty: # Positional argument
                     positional[name] = {
                         'type hints' : param_type_hints,
