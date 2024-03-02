@@ -1316,6 +1316,8 @@ class Simulation(object):
     def show_joined_simulations(self, cli : bool = True):
         import starsmashertools.bintools
         newline = starsmashertools.bintools.Style.get('characters', 'newline')
-        simulations = [sim.directory for sim in self.joined_simulations]
-        if not simulations: return "There are no joined simulations"
-        return newline.join(simulations)
+
+        if 'joined simulations' not in self.archive:
+            return "There are no joined simulations"
+        return newline.join(self.archive['joined simulations'].value)
+
