@@ -6,6 +6,7 @@ import functools
 import copy
 import os
 import inspect
+import typing
 
 newline = starsmashertools.bintools.Style.get('characters', 'newline')
 PAGEBREAK = newline + r'\f' + newline
@@ -133,15 +134,7 @@ class Page(object):
 
         # Get the content's width and height
         if content and not isinstance(self, MultiPage):
-            c = self.cli.prepare_string(content)
-            height = c.count(newline)
-            width = 0
-            for line in c.split(newline):
-                width = max(width, len(line))
-
-            screen_height, screen_width = self.cli.get_height_and_width()
-            if ((height > screen_height or width > screen_width) or
-                PAGEBREAK in content):
+            if MultiPage.would_content_be_multipage(content, options):
                 # Switch to a MultiPage
                 self.cli.remove_page(self)
                 self.cli.add_page(
@@ -338,6 +331,307 @@ class List(Page, object):
         def get_text(self):
             if callable(self.text): return self.text()
             return self.text
+
+
+class ArgumentPage(Page, object):
+    """ Used to gather arguments for FunctionPage """
+    def __init__(self, *args, argument = None, **kwargs):
+        self.argument = argument
+        super(ArgumentPage, self).__init__(*args, **kwargs)
+
+    def show(self, *args, **kwargs):
+        self.header = newline.join([
+            "Enter a value for '%s'" % self.argument.name,
+            "Current value = %s" % str(self.argument.value),
+            "Accepted types: %s" % str(self.argument.types),
+        ]) + newline
+        
+        return super(ArgumentPage, self).show(*args, **kwargs)
+
+    def prompt(self, refresh = True, **kwargs):
+        if not kwargs: kwargs = self._prompt_kwargs
+        if self.inputmanager is None:
+            raise Exception("No InputManager was given for this page")
+        kwargs['error_on_empty'] = isinstance(self.argument.value, FunctionPage.NullArgument)
+        self.input = self.inputmanager.get(
+            self.inputtypes,
+            refresh = refresh,
+            **kwargs
+        )
+        return self.input
+
+    def process_input(self, _input):
+        import starsmashertools.bintools.inputmanager
+        if self._back is not None and _input in ['b', 'back']:
+            self.back()
+            return True
+        
+        if self._quit and _input in ['q', 'quit']:
+            quit()
+        
+        if type(_input) in self.inputtypes:
+            self.argument.value = _input
+            self.back()
+            return True
+
+        if isinstance(_input, starsmashertools.bintools.inputmanager.InputManager.NullValue):
+            self.argument.value = FunctionPage.NullArgument()
+            self.back()
+            return True
+        
+        return False
+
+class FunctionPage(List, object):
+    """ A manager for setting function inputs. """
+
+    exposed_programs = None
+
+    class NullArgument(inspect._empty, object):
+        def __repr__(self): return ""
+
+    class Argument(object):
+        def __init__(self, name, types, function):
+            # Search the Session for remembered value
+            import starsmashertools.bintools.cli
+
+            self._value = starsmashertools.bintools.cli.CLI.instance.inputmanager.session.get(
+                function, name
+            )
+            if self._value == inspect._empty:
+                self._value = FunctionPage.NullArgument()
+            
+            self.name = name
+            self.types = FunctionPage.ArgumentTypes(types)
+            self.function = function
+        @property
+        def has_value(self):
+            return not isinstance(self.value, FunctionPage.NullArgument)
+        @property
+        def value(self): return self._value
+        @value.setter
+        def value(self, new_value):
+            import starsmashertools.bintools.cli
+            if self._value != new_value:
+                self._value = new_value
+                starsmashertools.bintools.cli.CLI.instance.inputmanager.session.set(
+                    self.function, self.name, self.value,
+                )
+        def __str__(self): return self.name + " (%s)" % repr(self.value)
+
+    class Positional(Argument, object):
+        def __str__(self):
+            if not self.has_value: return self.name + " (required)"
+            return super(FunctionPage.Positional, self).__str__()
+    
+    class Keyword(Argument, object):
+        def __str__(self):
+            if isinstance(self.value, FunctionPage.NullArgument):
+                raise Exception("This should never happen")
+            return super(FunctionPage.Keyword, self).__str__()
+
+    class ArgumentTypes(list, object):
+        def __str__(self):
+            import starsmashertools.bintools.inputmanager
+            import starsmashertools.helpers.string
+            
+            typenames = []
+            for t in self:
+                if isinstance(t, starsmashertools.bintools.inputmanager.union_types):
+                    typenames += [_t.__name__ for _t in t.__args__]
+                else: typenames += [t.__name__]
+            if typenames:
+                return starsmashertools.helpers.string.list_to_string(
+                    typenames,
+                    join = 'or',
+                )
+            return 'any'
+    
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    def __init__(
+            self,
+            cli : "starsmashertools.bintools.cli.CLI",
+            function : typing.Callable,
+            **kwargs
+    ):
+        import starsmashertools.helpers.clidecorator
+        import starsmashertools.helpers.string
+        import starsmashertools.bintools.inputmanager
+        
+        if FunctionPage.exposed_programs is None:
+            FunctionPage.exposed_programs = starsmashertools.helpers.clidecorator.get_exposed_programs()
+
+        self.cli = cli
+        self.function = function
+
+        self.arguments = FunctionPage.get_allowed_arguments(self.function)
+        
+        super(FunctionPage, self).__init__(
+            self.cli,
+            [int, str],
+            items = [str(argument) for argument in self.arguments],
+            **kwargs
+        )
+
+        # Create the pages for setting individual arguments
+        
+        for i, argument in enumerate(self.arguments):
+            page = self.cli.add_argument_page(
+                argument.types,
+                "",
+                argument = argument,
+                back = self,
+                _quit = True,
+            )
+            self.connect(page, [i, argument.name])
+        
+        self.result_page = self.cli.add_page(
+            [],
+            self.call_function,
+            footer = newline,
+            back = self if self.arguments else self._back,
+            _quit = True,
+        )
+        
+        self.confirmation_page = None
+        options = starsmashertools.helpers.clidecorator.get_clioptions(self.function)
+        confirm = options.get('confirm', None)
+        if confirm is not None:
+            self.confirmation_page = self.cli.add_confirmation_page(
+                header = confirm + newline,
+                back = self if self.arguments else self._back,
+                footer = newline,
+                _quit = True,
+            )
+            if not self.arguments:
+                self.confirmation_page.connect(self._back, [0, 'no'])
+            self.confirmation_page.connect(self.result_page, [1, 'yes'])
+
+    def prompt(self, *args, **kwargs):
+        kwargs['error_on_empty'] = False
+        return super(FunctionPage, self).prompt(*args, **kwargs)
+
+    def process_input(self, _input):
+        import starsmashertools.bintools.inputmanager
+        if isinstance(_input, starsmashertools.bintools.inputmanager.InputManager.NullValue):
+            return False
+
+        return super(FunctionPage, self).process_input(_input)
+
+    def _on_no_connection(self):
+        import starsmashertools.bintools.inputmanager
+        # If the user pressed just "Enter", then they were missing arguments
+        if isinstance(self.input, starsmashertools.bintools.inputmanager.InputManager.NullValue):
+
+            missing_argument = None
+            for argument in self.arguments:
+                if not argument.has_value:
+                    missing_argument = argument
+                    break
+
+            if missing_argument is not None:
+                self.inputmanager.reset()
+                starsmashertools.bintools.print_error(
+                    error = starsmashertools.bintools.inputmanager.InputManager.InvalidInputError("Missing argument '%s'" % missing_argument.name),
+                )
+            else: # There's no missing argument, which means that we want to
+                # show the function results
+                if self.confirmation_page is not None:
+                    self.cli.navigate(self.confirmation_page)
+                    return
+                else:
+                    self.cli.navigate(self.result_page)
+                    return
+                
+        else:
+            # Process regular invalid list selection
+            error = starsmashertools.bintools.inputmanager.InputManager.InvalidInputError("Invalid list selection '%s'" % str(self.input))
+            self.inputmanager.reset()
+            starsmashertools.bintools.print_error(error=error)
+        
+        # Ask again
+        result = self.process_input(self.prompt())
+        if result: return
+        else: self._on_no_connection()
+
+    def show(self, *args, **kwargs):
+        if not self.arguments:
+            if self.confirmation_page is not None:
+                self.cli.navigate(self.confirmation_page)
+                return
+            return self.result_page.show(*args, **kwargs)
+        
+        for item, argument in zip(self.items, self.arguments):
+            item.text = str(argument)
+        
+        return super(FunctionPage, self).show(*args, **kwargs)
+    
+    @staticmethod
+    def get_allowed_arguments(function):
+        # Get the argument names that we need to ask input for
+        import starsmashertools.bintools.inputmanager
+
+        existing_args = FunctionPage.exposed_programs[function]['args']
+        existing_kwargs = FunctionPage.exposed_programs[function]['kwargs']
+
+        allowed_args = []
+        allowed_kwargs = []
+
+        type_hints = typing.get_type_hints(function)
+        
+        signature = inspect.signature(function)
+        i_pos = 0
+        for name, parameter in signature.parameters.items():
+            # Hide arguments we don't want the user to be able to edit
+            if name in starsmashertools.bintools.inputmanager.Session.ignore_arguments: continue
+            if name in type_hints.keys(): types = type_hints[name]
+            else: types = None
+            if not isinstance(types, (list, tuple)): types = [types]
+            
+            if parameter.default == inspect._empty: # Positional argument
+                if i_pos >= len(existing_args): allowed_args += [
+                        FunctionPage.Positional(
+                            name,
+                            #FunctionPage.NullArgument(),
+                            types,
+                            function,
+                        )
+                ]
+                i_pos += 1
+            else: # Keyword argument
+                if name in existing_kwargs.keys(): continue
+                allowed_kwargs += [
+                    FunctionPage.Keyword(
+                        name,
+                        #parameter.default,
+                        types,
+                        function,
+                    )
+                ]
+        
+        return allowed_args + allowed_kwargs
+
+    def call_function(self):
+        # args and kwargs are the final positional and keyword arguments
+        
+        args = []
+        kwargs = {}
+        for argument in self.arguments:
+            if isinstance(argument, FunctionPage.Positional):
+                args += [argument.value]
+            elif isinstance(argument, FunctionPage.Keyword):
+                kwargs[argument.name] = argument.value
+            else:
+                raise NotImplementedError("Unrecognized Argument class '%s'" % type(argument).__name__)
+        
+        if self.cli._object is not None:
+            result = self.function(self.cli._object, *args, **kwargs)
+        else:
+            result = str(self.function(*args, **kwargs))
+
+        # After a successful function call, save the input manager session
+        self.cli.inputmanager.session.save()
+            
+        return result
 
         
 class ConfirmationPage(List, object):
@@ -670,9 +964,10 @@ class MultiPage(Page, object):
         self._search_matches = []
         self._search_match_index = -1
 
-    @property
-    def width(self):
-        height, width = self.cli.get_height_and_width()
+    @staticmethod
+    def get_width():
+        import starsmashertools.bintools.cli
+        height, width = starsmashertools.bintools.cli.CLI.get_height_and_width()
         return width - 3
 
     def reverse(self):
@@ -857,7 +1152,7 @@ class MultiPage(Page, object):
         normal = starsmashertools.bintools.Style.get('text', 'normal')
         return normal + newline.join([
             '{pagenumber:<4d} / {total:<4d}  ,) previous {f1:7s}  .) next {f2:7s}  a) start  e) end  S) search',
-            '┌' + '─' * self.width + '┐',
+            '┌' + '─' * MultiPage.get_width() + '┐',
         ]).format(
             pagenumber = self.pagenumber + 1,
             f1 = '[enter]' if (self._listen_to_enter == 'backward' and not self._forward) else '',
@@ -866,7 +1161,7 @@ class MultiPage(Page, object):
         )
     
     def get_page_footer(self):
-        return '└' + '─' * self.width + '┘'
+        return '└' + '─' * MultiPage.get_width() + '┘'
 
     def get_content_options(self, *args, **kwargs):
         if self._searching:
@@ -892,61 +1187,73 @@ class MultiPage(Page, object):
                 ),
             ]
             
-            string[0] += ' ' * (self.width + 1 - len(string[0]) - len(match_string))
+            string[0] += ' ' * (MultiPage.get_width() + 1 - len(string[0]) - len(match_string))
             string[0] += match_string
-            string[1] += ' ' * (self.width + 1 - len(string[1]) - len(exit_message))
+            string[1] += ' ' * (MultiPage.get_width() + 1 - len(string[1]) - len(exit_message))
             string[1] += exit_message
             
             return newline.join(string)
         else:
             return super(MultiPage, self).get_content_options(*args, **kwargs)
 
-    def split_content_to_pages(self, **kwargs):
+    @staticmethod
+    def would_content_be_multipage(content, options):
+        return len(MultiPage.get_split_content(content, options)) > 1
+
+    @staticmethod
+    def get_split_content(content, options):
         import textwrap
         import itertools
+        import starsmashertools.bintools.cli
+
+        height, width = starsmashertools.bintools.cli.CLI.get_height_and_width()
         
-        height, width = self.cli.get_height_and_width()
-        
-        # Obtain all the content
-        content = self.get_content()
-        self.on_event_end('get_content')
-        content_options = self.get_content_options(**kwargs)
-        self.on_event_end('get_content_options')
-        
-        allowed_height = height - len(content_options.split(newline)) - 5
-        allowed_width = self.width
+        allowed_height = height - len(options.split(newline)) - 5
+        allowed_width = MultiPage.get_width()
 
         wrapper = textwrap.TextWrapper(width = allowed_width)
         content = [wrapper.wrap(i) for i in content.split(newline) if i != '']
         content = list(itertools.chain.from_iterable(content))
 
         pb = PAGEBREAK.replace(newline, '')
-        self.contents_per_page = [[]]
+        contents_per_page = [[]]
         c = 0
         for i, line in enumerate(content):
             if line.endswith(pb):
                 c = 0
                 line = line.replace(pb, '')
-                self.contents_per_page += [[]]
+                contents_per_page += [[]]
                 if not line.strip(): continue
             
             if i > 0 and c >= allowed_height:
-                self.contents_per_page += [[]]
+                contents_per_page += [[]]
                 c = 0
             
             missing_width = allowed_width - len(line)
-            self.contents_per_page[-1] += ['│' + line + ' '*missing_width + '│']
+            contents_per_page[-1] += ['│' + line + ' '*missing_width + '│']
             c += 1
 
         # Fill out each page to the maximum height
         empty_line = '│' + ' '*allowed_width + '│'
-        for i, page in enumerate(self.contents_per_page):
+        for i, page in enumerate(contents_per_page):
             if len(page) < allowed_height:
-                self.contents_per_page[i] = page + [empty_line]*(allowed_height - len(page))
+                contents_per_page[i] = page + [empty_line]*(allowed_height - len(page))
             
-        for i in range(len(self.contents_per_page)):
-            self.contents_per_page[i] = newline.join(self.contents_per_page[i])
+        for i in range(len(contents_per_page)):
+            contents_per_page[i] = newline.join(contents_per_page[i])
+        return contents_per_page
 
+    def split_content_to_pages(self, **kwargs):
+        # Obtain all the content
+        content = self.get_content()
+        self.on_event_end('get_content')
+        content_options = self.get_content_options(**kwargs)
+        self.on_event_end('get_content_options')
+
+        self.contents_per_page = MultiPage.get_split_content(
+            content,
+            content_options,
+        )
 
     def search(self, phrase):
         """

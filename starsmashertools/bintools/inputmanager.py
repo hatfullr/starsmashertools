@@ -442,20 +442,6 @@ class Session(object):
             obj[key] = Session.Value.from_json(val)
 
         session = Session.update_to_current(Session(obj))
-        """
-        # Remove items which don't exist anymore, perhaps because the
-        # starsmashertools version was changed.
-        new_obj = {}
-        for key, val in obj.items():
-            found = importlib.util.find_spec(val.module)
-            if found is None: continue
-            module = importlib.import_module(val.module)
-            if hasattr(module, val._class):
-                attr = getattr(module, val._class)
-                if hasattr(attr, val.name):
-                    new_obj[key] = val
-            del module
-        """
         return session
 
     def save(self):
@@ -472,10 +458,13 @@ class Session(object):
         function_path = Session.get_function_path(function)
         default = inspect.signature(function).parameters[name].default
         if function_path in self.values.keys():
-            return self.values[function_path].keyword.get(
+            return self.values[function_path].positional.get(
                 name,
-                {},
-            ).get('default', default)
+                self.values[function_path].keyword.get(
+                    name,
+                    {},
+                ).get('default', default)
+            )
         return default
     
     def set(self, function : typing.Callable, name : str, value):
@@ -493,11 +482,14 @@ class Session(object):
                 positional, keyword = Session.Value.get_arguments(function)
 
                 if name not in keyword.keys():
-                    raise KeyError("The given name '%s' is not a valid keyword name for function '%s'" % (name, function_path))
-
-                # Set the default value
-                keyword[name]['default'] = value
-                self.values[function_path].keyword = keyword
+                    # Must be in positionals
+                    positional[name] = value
+                    #raise KeyError("The given name '%s' is not a valid keyword name for function '%s'" % (name, function_path))
+                    self.values[function_path].positional = positional
+                else:
+                    # Set the default value
+                    keyword[name]['default'] = value
+                    self.values[function_path].keyword = keyword
         else: # This is the first time seeing this function
             # Create a set of default values for this function
             self.values[function_path] = Session.Value(function = function)

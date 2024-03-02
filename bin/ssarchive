@@ -6,14 +6,11 @@ Use this program to work with archives created by starsmashertools.
 
 import starsmashertools.bintools.cli
 import starsmashertools.bintools
-import collections
 import os
+import starsmashertools
 
 newline = starsmashertools.bintools.Style.get('characters', 'newline')
 
-################################################################################
-################################## Back end ####################################
-################################################################################
 def get_archive(filename):
     # Returns the archive and either a string message of failure, or None on
     # success.
@@ -28,63 +25,8 @@ def get_archive(filename):
 
     return archive, None
 
-def show_keys(archive):
-    return "\n".join(sorted(archive.keys()))
-
-
-def show_value(archive):
-    import json
-    
-    def get(key):
-        return archive[key].value
-
-    args, kwargs = starsmashertools.bintools.cli.CLI.instance.inputmanager.get_function(
-        get,
-        [],
-        {},
-    )
-
-    def dict_to_string(d):
-        for k, v in d.items():
-            if isinstance(v, dict):
-                dict_to_string(v)
-            else:
-                d[k] = str(v)
-        return d
-
-    # Format the output using json
-    ret = get(*args, **kwargs)
-    if isinstance(ret, dict):
-        ret = dict_to_string(ret)
-    return json.dumps(ret, indent=4)
-    
-
-def show_raw_value(archive):
-    import starsmashertools.helpers.jsonfile
-
-    def get(key):
-        return archive[key]
-        
-    args, kwargs = starsmashertools.bintools.cli.CLI.instance.inputmanager.get_function(
-        get,
-        [],
-        {},
-    )
-
-    ret = get(*args, **kwargs)
-    stuff = starsmashertools.helpers.jsonfile.save_bytes(ret.value).decode('utf-8')
-    header = ['origin: ' + str(ret.origin)]
-    header += ['mtime: ' + str(ret.mtime)]
-    header = newline.join(header)
-    
-    return header + newline + stuff
-
-
-################################################################################
-################################# Front end ####################################
-################################################################################
-cli = starsmashertools.bintools.cli.CLI(
-    'ssarchive',
+cli = starsmashertools.bintools.cli.HookedCLI(
+    os.path.basename(__file__),
     "Work with Archive files created by starsmashertools.",
     require_valid_directory = False,
 )
@@ -101,60 +43,12 @@ header = starsmashertools.bintools.Style.bold("Main Menu") + newline + newline+\
     ("File = %s" % os.path.realpath(archive.filename)) + newline + newline +\
     'Choose an option' + newline
 
+cli.set_object(archive)
 
 
-lookup = collections.OrderedDict()
-lookup['show keys'] = {
-    'args' : (
-        [],
-        lambda archive=archive: show_keys(archive),
-    ),
-    'kwargs' : {
-        'kind' : starsmashertools.bintools.page.MultiPage,
-        '_quit' : True,
-    },
-}
-
-lookup['show value'] = {
-    'args' : (
-        [],
-        lambda archive=archive: show_value(archive),
-    ),
-    'kwargs' : {
-        'kind' : starsmashertools.bintools.page.MultiPage,
-        '_quit' : True,
-    },
-}
-
-lookup['show raw value'] = {
-    'args' : (
-        [],
-        lambda archive=archive: show_raw_value(archive),
-    ),
-    'kwargs' : {
-        'kind' : starsmashertools.bintools.page.MultiPage,
-        '_quit' : True,
-    },
-}
-
-
-mainmenu = cli.add_list(
-    [int, str],
-    items = lookup.keys(),
-    bullet = '%5d)',
+cli.set_mainmenu_properties(
     header = header,
     footer = newline,
 )
-
-
-for i, (name, obj) in enumerate(lookup.items()):
-    obj['kwargs']['back'] = obj['kwargs'].get('back', mainmenu)
-    page = cli.add_page(
-        *obj['args'],
-        **obj['kwargs'],
-    )
-    obj['kwargs']['back'].connect(page, [i, name])
-
-cli.set_mainmenu(mainmenu)
 
 cli.run()

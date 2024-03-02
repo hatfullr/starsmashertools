@@ -1,5 +1,6 @@
 import starsmashertools.helpers.argumentenforcer
 from starsmashertools.helpers.apidecorator import api
+from starsmashertools.helpers.clidecorator import cli, clioptions
 import contextlib
 import zipfile
 
@@ -505,17 +506,18 @@ class Archive(object):
             
     @api
     def values(self):
-        """ Return all the keys and values in the Archive. This reads the entire
-        Archive file, so use it sparingly. """
+        """ Return all the values in the Archive. This reads the entire Archive
+        file, so use it sparingly. """
 
         values = []
         for key, value in self.items():
             values += [value]
         return values
-
     
     @api
-    def clear(self, *args, **kwargs):
+    @cli('ssarchive')
+    @clioptions(confirm = "Are you sure? This will remove all contents and delete the archive file.")
+    def clear(self, cli : bool = False):
         """ Clears all contents from the archive and deletes the file if auto
         save is enabled. """
         import starsmashertools.helpers.path
@@ -606,74 +608,6 @@ class Archive(object):
             if not user_allowed: raise Archive.FormatError(message)
             warnings.warn(message)
             update_archive_version(self.filename)
-            
-
-    """
-    @starsmashertools.helpers.argumentenforcer.enforcetypes
-    @api
-    def load(
-            self,
-            verbose : bool | type(None) = None,
-    ):
-        ""
-        Load the entire archive into memory. This is preferred when you expect
-        to perform many read/write operations so as to not flood the I/O with
-        requests.
-
-        For large Archives, loading can take a long time.
-
-        Parameters
-        ----------
-        verbose : bool, None, default = None
-            Overrides the :py:attr:`~.verbose` option in :py:func:`~.__init__`.
-            If `None` then :py:attr:`~.verbose` is used instead.
-        ""
-        import starsmashertools.helpers.jsonfile
-        import starsmashertools.helpers.file
-        import starsmashertools.helpers.path
-        import starsmashertools.helpers.string
-        if verbose is None: verbose = self.verbose
-        
-        if starsmashertools.helpers.path.exists(self.filename):
-            if starsmashertools.helpers.path.getsize(self.filename) == 0:
-                starsmashertools.helpers.path.remove(self.filename)
-
-        def do(*args, **kwargs):
-            with starsmashertools.helpers.file.open(
-                    self.filename, 'r', **Archive.open_method_kwargs
-            ) as zfile:
-                try:
-                    namelist = zfile.namelist()
-                except Exception as e:
-                    raise Archive.CorruptFileError("Failed to load archive file, likely because it did not save correctly. Please delete it and try again: '%s'" % self.filename) from e
-                content = {}
-                for key in namelist:
-                    if key == 'file info': continue
-                    content[key] = zfile.read(key)
-
-            return content
-            
-                
-        if verbose:
-            message = "Loading '%s'" % starsmashertools.helpers.string.shorten(
-                self.filename,
-                50,
-                where = 'left',
-            )
-            with starsmashertools.helpers.string.loading_message(message,delay=5):
-                data = do()
-        else: data = do()
-        
-        with self.nosave():
-            self.clear()
-            for identifier, val in data.items():
-                self[identifier] = ArchiveValue.deserialize(
-                    identifier,
-                    starsmashertools.helpers.jsonfile.load_bytes(val),
-                )
-        
-        self.loaded = True
-    """
     
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
@@ -749,17 +683,19 @@ class Archive(object):
             
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
-    def remove(self, identifier : str):
+    @cli('ssarchive')
+    def remove(self, key : str, cli : bool = False):
         """
         Remove an identifier from the Archive. Calls :py:meth:`~.save` if auto
         save is enabled.
 
         Parameters
         ----------
-        identifier : str
+        key : str
             The identifier key to remove.
         """
-        del self[identifier]
+        del self[key]
+        if cli: return 'Success'
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
@@ -786,6 +722,49 @@ class Archive(object):
         if self.auto_save: self.save()
 
 
+    # Some convenience methods for the CLI only
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @cli('ssarchive')
+    def show_keys(self, cli : bool = True):
+        import starsmashertools.bintools
+        newline = starsmashertools.bintools.Style.get('characters', 'newline')
+        return newline.join(sorted(self.keys()))
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @cli('ssarchive')
+    def show_value(self, key : str, cli : bool = True):
+        import starsmashertools.helpers.jsonfile
+
+        newline = starsmashertools.bintools.Style.get('characters', 'newline')
+        
+        if key not in self:
+            if cli: return "No key '%s' found in the Archive" % key
+            else: raise KeyError(key)
+
+        # Use JSON format for human-readable formatting
+        return ("Showing '%s':" % key) + newline + newline + starsmashertools.helpers.jsonfile.save_bytes(self[key].value).decode('utf-8')
+
+    #return str(self[key].value)
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @cli('ssarchive')
+    def show_raw_value(self, key : str, cli : bool = True):
+        import starsmashertools.bintools
+        
+        if key not in self:
+            if cli: return "No key '%s' found in the Archive" % key
+            else: raise KeyError(key)
+
+        newline = starsmashertools.bintools.Style.get('characters', 'newline')
+        
+        val = self[key]
+        header = newline.join([
+            'origin: ' + str(val.origin),
+            'mtime: ' + str(val.mtime),
+        ])
+        
+        return ("Showing '%s':" % key) + newline + newline + header + newline + newline + str(val.value)
+        
 
 
 

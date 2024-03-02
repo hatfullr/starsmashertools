@@ -280,6 +280,12 @@ class CLI(object):
     ):
         return self._add_page(kind(self, inputtypes, contents, **kwargs))
 
+    def add_function_page(self, function, **kwargs):
+        return self._add_page(starsmashertools.bintools.page.FunctionPage(self, function, **kwargs))
+
+    def add_argument_page(self, *args, **kwargs):
+        return self._add_page(starsmashertools.bintools.page.ArgumentPage(self, *args, **kwargs))
+    
     def add_confirmation_page(self, **kwargs):
         return self._add_page(starsmashertools.bintools.page.ConfirmationPage(self, **kwargs))
     
@@ -406,4 +412,93 @@ class CLI(object):
         elif isinstance(simulation, int):
             simulation = self.simulations[simulation]
         self.simulations.remove(simulation)
+
+
+
+
+
+
+
+
+
+
+class HookedCLI(CLI, object):
+    """
+    This is a CLI which uses the @cli decorator to expose functions to the user.
+    """
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    def __init__(self, *args, **kwargs):
+        import starsmashertools.helpers.clidecorator
+
+        super(HookedCLI, self).__init__(*args, **kwargs)
+
+        self._object = None
+
+        self.exposed_programs = starsmashertools.helpers.clidecorator.get_exposed_programs()
+        
+        self.mainmenu = self.add_list(
+            [int, str],
+            bullet = '%5d)',
+        )
+        
+        self.set_mainmenu(self.mainmenu)
+
+    def run(self, *args, **kwargs):
+        import starsmashertools.bintools
+        
+        available_functions = self.get_available_functions()
+        names = self.get_function_names(available_functions)
+
+        newline = starsmashertools.bintools.Style.get('characters', 'newline')
+
+        for name in names:
+            self.mainmenu.add(name)
+        
+        for i, (name, function) in enumerate(zip(names, available_functions)):
+            page = self.add_function_page(
+                function,
+                bullet = '%5d)',
+                header = ("Select an argument to modify for '%s'. When you are finished, press enter to execute" + newline) % name,
+                footer = newline,
+                back = self.mainmenu,
+                _quit = True,
+            )
+            self.mainmenu.connect(page, [i, name])
+
+        return super(HookedCLI, self).run(*args, **kwargs)
+
+    def set_object(self, _object):
+        self._object = _object
+        
+    def set_mainmenu_properties(self, **properties):
+        for key, val in properties.items():
+            setattr(self.mainmenu, key, val)
+
+    def get_function_class_name(self, function):
+        if '.' in function.__qualname__:
+            return ".".join(function.__qualname__.split(".")[:-1])
+        return None
+    
+    def get_available_functions(self):
+        available_functions = []
+        for key, val in self.exposed_programs.items():
+            if val['program'] == self.name:
+                available_functions += [key]
+        basenames = [a.__name__ for a in self._object.__class__.__bases__]
+        keep = []
+        for function in available_functions:
+            cls = self.get_function_class_name(function)
+            if cls is None: continue
+            if cls == self._object.__class__.__name__ or cls in basenames:
+                keep += [function]
+        return keep
+
+    def get_function_names(self, functions):
+        names = []
+        for function in functions:
+            if '.' in function.__qualname__:
+                names += [function.__qualname__.split('.')[-1]]
+            else: names += [function.__qualname__]
+        return names
 

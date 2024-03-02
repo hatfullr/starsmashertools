@@ -4,12 +4,20 @@ import sys
 import textwrap
 import curses
 
+class UnknownException(Exception, object):
+    __module__ = ""
+
 # If 'error' is None, uses the last-raised error.
 def print_error(error=None, halt=False):
     import starsmashertools.bintools.cli
     width = starsmashertools.bintools.cli.CLI.get_width()
-                
+    
     if error is not None:
+        if isinstance(error, str):
+            string = textwrap.fill("UnknownException: %s" % error, width=width-1)
+            starsmashertools.bintools.cli.CLI.write(string, xy=(0, -(string.count('\n')+1)), end='', move=(0, None))
+            return
+        
         if halt: raise error
         else:
             try:

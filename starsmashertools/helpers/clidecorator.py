@@ -1,5 +1,6 @@
 import functools
 import starsmashertools
+import starsmashertools.helpers.argumentenforcer
 
 _exposed_programs = {}
 
@@ -22,6 +23,16 @@ def cli(program, *args, **kwargs):
             'args' : args,
             'kwargs' : kwargs,
         }
+        @functools.wraps(f)
+        def wrapper(*_args, **_kwargs):
+            return f(*_args, **_kwargs)
+        return wrapper
+    return decorator
+
+def clioptions(**kwargs):
+    def decorator(f):
+        # Functions can have arbitrary attributes
+        f.clioptions = kwargs
         @functools.wraps(f)
         def wrapper(*_args, **_kwargs):
             return f(*_args, **_kwargs)
@@ -59,3 +70,12 @@ def get_exposed_programs():
         del module
     return _exposed_programs
     
+def get_clioptions(function):
+    options = getattr(function, 'clioptions', {})
+    return validate_options(**options)
+
+@starsmashertools.helpers.argumentenforcer.enforcetypes
+def validate_options(
+        confirm : str | type(None) = None,
+):
+    return locals()
