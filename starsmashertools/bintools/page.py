@@ -626,12 +626,14 @@ class FunctionPage(List, object):
                 kwargs[argument.name] = argument.value
             else:
                 raise NotImplementedError("Unrecognized Argument class '%s'" % type(argument).__name__)
-        
+
+        kwargs['cli'] = True
+            
         if self.cli._object is not None:
             result = self.function(self.cli._object, *args, **kwargs)
         else:
             result = str(self.function(*args, **kwargs))
-
+            
         # After a successful function call, save the input manager session
         self.cli.inputmanager.session.save()
             
