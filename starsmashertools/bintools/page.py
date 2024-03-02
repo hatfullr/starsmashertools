@@ -438,6 +438,7 @@ class FunctionPage(List, object):
             for t in self:
                 if isinstance(t, starsmashertools.bintools.inputmanager.union_types):
                     typenames += [_t.__name__ for _t in t.__args__]
+                elif t is None: typenames += ['None']
                 else: typenames += [t.__name__]
             if typenames:
                 return starsmashertools.helpers.string.list_to_string(
