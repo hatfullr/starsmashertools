@@ -33,3 +33,8 @@ def warn(message, category=UserWarning):
     return thewarning
 
     
+def filterwarnings(*args, **kwargs):
+    return warnings.filterwarnings(*args, **kwargs)
+
+def resetwarnings(*args, **kwargs):
+    return warnings.resetwarnings(*args, **kwargs)

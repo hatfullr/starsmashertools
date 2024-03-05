@@ -144,7 +144,17 @@ def basename(path):
 def getmtime(path):
     if starsmashertools.helpers.ssh.isRemote(path):
         raise NotImplementedError
-    return os.path.getmtime(path)
+    # Use stat instead of os.path.getmtime, for reasons detailed in the official
+    # documentation:
+    #    Note that the exact times you set here may not be returned by a
+    #    subsequent stat() call, depending on the resolution with which your
+    #    operating system records access and modification times; see stat(). The
+    #    best way to preserve exact times is to use the st_atime_ns and
+    #    st_mtime_ns fields from the os.stat() result object with the ns
+    #    parameter to utime().
+    stat_result = os.stat(path)
+    return int(stat_result.st_mtime_ns * 1e-9)
+    #return os.path.getmtime(path)
 
 def rename(path, newpath):
     if starsmashertools.helpers.ssh.isRemote(path):

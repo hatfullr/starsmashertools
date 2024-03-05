@@ -3,6 +3,7 @@ from starsmashertools.helpers.apidecorator import api
 from starsmashertools.helpers.clidecorator import cli, clioptions
 import contextlib
 import zipfile
+import atexit
 
 def get_file_info():
     import starsmashertools.helpers.jsonfile
@@ -38,8 +39,8 @@ def update_archive_version(
     import starsmashertools.helpers.jsonfile
     import tempfile
     import shutil
-    import warnings
-
+    import starsmashertools.helpers.warnings
+    
     if new_path is None: new_path = old_path
     
     with starsmashertools.helpers.file.open(
@@ -60,9 +61,9 @@ def update_archive_version(
         else: # If we were not able to detect the old Archive format
             # We assume it is in the latest format, so just update the version
             # info
-            warnings.filterwarnings(action = 'ignore')
+            starsmashertools.helpers.warnings.filterwarnings(action = 'ignore')
             zfile.writestr('file info', get_file_info())
-            warnings.resetwarnings()
+            starsmashertools.helpers.warnings.resetwarnings()
             return
     
     # We should now have the base data. We now create a new Archive as a
@@ -348,7 +349,6 @@ class Archive(object):
         """
         import starsmashertools.helpers.path
         import starsmashertools.preferences
-        import atexit
 
         self._previous_mtime = None
         
@@ -368,16 +368,21 @@ class Archive(object):
 
         if starsmashertools.helpers.path.isfile(self.filename):
             self._check_and_update_format()
-
-        # If the program is about to quit, make sure the Archive has been saved
-        def save_at_exit():
-            if self.readonly: return
-            self.save()
-        atexit.register(save_at_exit)
         
-        self._to_add = {}
-        self._to_remove = []
-
+        # If the program is about to quit, make sure the Archive has been saved
+        atexit.register(self._on_quit)
+        
+        self._buffers = {
+            'add' : {},
+            'remove' : [],
+        }
+        self._nosave_holders = 0
+    
+    def _on_quit(self):
+        if not self.auto_save: return
+        self.save()
+        atexit.unregister(self._on_quit)
+    
     @property
     def modified(self):
         import starsmashertools.helpers.path
@@ -398,18 +403,29 @@ class Archive(object):
             where = 'left',
         )
         return "Archive('%s')" % path
-
+    
+    def _clear_buffers(self):
+        self._buffers['add'].clear()
+        self._buffers['remove'] = []
+    
     @contextlib.contextmanager
     def nosave(self):
-        """ A context manager for temporarily disabling auto save. """
-        import copy
-        was_auto_save = copy.deepcopy(self.auto_save)
+        """ A context manager for temporarily disabling auto save. Entering this
+        context will first save the Archive. Then, saving is disabled until the
+        context is exited, even if auto save is enabled. Upon exiting, the 
+        buffers are cleared. """
+        
+        # This clears the buffers
+        self.save()
+        
         try:
-            self.auto_save = False
+            self._nosave_holders += 1
             yield
         finally:
-            self.auto_save = copy.deepcopy(was_auto_save)
-
+            # Clear the buffers
+            self._clear_buffers()
+            self._nosave_holders -= 1
+    
     @contextlib.contextmanager
     def open(self, mode, verbose : bool | type(None) = None):
         """ Used for opening the Archive for file manipulation. """
@@ -457,50 +473,57 @@ class Archive(object):
     def __delitem__(self, key):
         """ Remove the given key from the Archive. If auto save is enabled, the
         Archive file will be modified. """
-        if key in self._to_remove: raise KeyError(key)
-        self._to_remove += [key]
-        self._to_add.pop(key, None)
+        
+        if key not in self.keys(): raise KeyError(key)
+        self._buffers['add'].pop(key, None)
+        self._buffers['remove'] += [key]
         if self.auto_save: self.save()
     
     @api
     def keys(self):
         """ Return a list of Archive identifiers from the file. """
         import starsmashertools.helpers.path
-        
-        keys = list(self._to_add.keys())
-        if not starsmashertools.helpers.path.exists(self.filename):
-            return keys
-        
-        with self.open('r') as zfile:
-            namelist = zfile.namelist()
 
-        for key in namelist:
-            if (key == 'file info' or
-                key in self._to_remove):
-                continue
-            keys += [key]
+        keys = []
+        if starsmashertools.helpers.path.exists(self.filename):
+            with self.open('r') as zfile:
+                keys = zfile.namelist()
+            if 'file info' in keys: keys.remove('file info')
+
+        for key in self._buffers['remove']:
+            if key not in keys: continue
+            keys.remove(key)
+
+        for key in self._buffers['add'].keys():
+            if key not in keys: keys += [key]
         
-        return list(set(keys))
+        return keys
 
     @api
     def items(self):
         """ Return all keys and values in the Archive. This is I/O intensive, 
-        so use sparingly. """
+        so use it sparingly. """
         import starsmashertools.helpers.path
 
         everything = {}
-        if not starsmashertools.helpers.path.exists(self.filename):
-            return everything.items()
-
-        with self.open('r') as zfile:
-            for key in zfile.namelist():
-                if key == 'file info': continue
-                everything[key] = zfile.read(key)
         
-        for key, value in everything.items():
-            everything[key] = ArchiveValue.deserialize(key, value)
+        # First we need to read in the contents of the file
+        if starsmashertools.helpers.path.exists(self.filename):
+            with self.open('r') as zfile:
+                for key in zfile.namelist():
+                    if key == 'file info': continue
+                    everything[key] = zfile.read(key)
+            
+            # Deserialize everything
+            for key, value in everything.items():
+                everything[key] = ArchiveValue.deserialize(key, value)
 
-        everything.update(self._to_add)
+        # Now remove the keys in the removal buffer
+        for key in self._buffers['remove']:
+            if key in everything.keys(): del everything[key]
+
+        # Now add the contents of the addition buffer
+        everything.update(self._buffers['add'])
         
         return everything.items()
             
@@ -520,15 +543,13 @@ class Archive(object):
     def clear(self, cli : bool = False):
         """ Clears all contents from the archive and deletes the file if auto
         save is enabled. """
-        import starsmashertools.helpers.path
-        if self.readonly:
-            raise Archive.ReadOnlyError("Cannot call method 'clear' on an Archive in readonly mode.")
         
-        self._to_add.clear()
-        self._to_remove = []
-        if self.auto_save:
-            if starsmashertools.helpers.path.exists(self.filename):
-                starsmashertools.helpers.path.remove(self.filename)
+        to_remove = self.keys()
+        for key in self.keys():
+            if key in self._buffers['remove']: continue
+            self._buffers['remove'] += [key]
+        
+        if self.auto_save: self.save()
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
@@ -547,27 +568,35 @@ class Archive(object):
             if not all([flag(self[key], value) for flag in self.replacement_flags]):
                 return
         
-        # Insert a new key or add it to the archive
-        self._to_add[key] = value
-        if self.auto_save: self.save()
+        # Either add a new key or overwrite an old key
+        self._buffers['add'][key] = value
+        if key in self._buffers['remove']: self._buffers['remove'].remove(key)
 
+        if self.auto_save: self.save()
+    
     def __getitem__(self, key):
         """ Obtain the value corresponding with the given key. """
         # If we don't have the key, check the file itself
-        if key not in self.keys():
+        #if key not in self.keys():
+        #    raise KeyError(key)
+        
+        # If we do have the key in the buffer, fetch its value
+        if key in self._buffers['remove']:
             raise KeyError(key)
+        if key in self._buffers['add'].keys():
+            return self._buffers['add'][key]
 
-        # If we do have the key, fetch its value
-        if key in self._to_add.keys():
-            return self._to_add[key]
-        else:
-            with self.open('r') as zfile:
-                value = zfile.read(key)
-            return ArchiveValue.deserialize(key, value)
-
+        # Otherwise, check the archive
+        with self.open('r') as zfile:
+            keys = zfile.namelist()
+            if 'file info' in keys: keys.remove('file info')
+            if key not in keys: raise KeyError(key)
+            value = zfile.read(key)
+        return ArchiveValue.deserialize(key, value)
+    
     def _check_and_update_format(self):
         import starsmashertools
-        import warnings
+        import starsmashertools.helpers.warnings
         import starsmashertools.preferences
         import starsmashertools.helpers.path
 
@@ -606,7 +635,7 @@ class Archive(object):
         
         if should_update:
             if not user_allowed: raise Archive.FormatError(message)
-            warnings.warn(message)
+            starsmashertools.helpers.warnings.warn(message)
             update_archive_version(self.filename)
     
     @starsmashertools.helpers.argumentenforcer.enforcetypes
@@ -624,21 +653,24 @@ class Archive(object):
             Overrides the :py:attr:`~.verbose` option in :py:func:`~.__init__`.
             If `None` then :py:attr:`~.verbose` is used instead.
         """
+        import starsmashertools.helpers.path
+        
         if self.readonly: raise Archive.ReadOnlyError(self.filename)
-
-        # If nothing changed
-        if not self._to_add and not self._to_remove: return
+        if self._nosave_holders > 0: return
+        
+        # If nothing changed since the last time we saved
+        if not self._buffers['add'] and not self._buffers['remove']: return
         
         # Serialize the data we will add
-        data = {}
-        for key, val in self._to_add.items():
-            data[key] = val.serialize()
+        data = {key:val.serialize() for key, val in self._buffers['add'].items()}
         
         # Get file info
         info = get_file_info()
 
-        remove_keys = self._to_remove + list(data.keys())
+        # These are the keys that will change in the file
+        remove_keys = list(self._buffers['remove']) + list(data.keys())
         
+        current_keys = []
         with self.open('a', verbose = verbose) as zfile:
             keys = zfile.namelist()
             
@@ -648,7 +680,7 @@ class Archive(object):
             
             zfile.writestr('file info', info)
             
-            # Remove all keys which are to be either removed or overwritten
+            # Remove all keys that are going to change
             for key in remove_keys:
                 if key not in keys: continue
                 _remove_zipfile_member(zfile, key)
@@ -656,9 +688,16 @@ class Archive(object):
             # Add keys that need to be added
             for key, val in data.items():
                 zfile.writestr(key, val)
+            
+            current_keys = zfile.namelist()
         
-        self._to_add.clear()
-        self._to_remove = []
+        if 'file info' in current_keys: current_keys.remove('file info')
+
+        # Clear the buffers
+        self._clear_buffers()
+
+        if not current_keys:
+            starsmashertools.helpers.path.remove(self.filename)
     
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
@@ -713,12 +752,13 @@ class Archive(object):
             The Archive whose contents will be merged into this Archive. Only 
             this Archive will be affected.
         """
-        with self.nosave():
-            if isinstance(other, str): other = Archive(other)
-            else: other.save() # Ensure the other Archive is up-to-date
-            
-            for key, val in other.items():
-                self[key] = val
+        import copy
+        if isinstance(other, str): other = Archive(other)
+        previous_auto_save = copy.deepcopy(self.auto_save)
+        self.auto_save = False
+        for key, val in other.items():
+            self[key] = val
+        self.auto_save = previous_auto_save
         if self.auto_save: self.save()
 
 
@@ -956,3 +996,19 @@ class SimulationArchive(Archive, object):
         self[val.identifier] = val
 
         
+
+
+
+
+class NoSave(contextlib.ContextDecorator, object):
+    """ A context class for using the "nosave" method on Archives. """
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    def __init__(self, archive : Archive):
+        self.archive = archive
+
+    def __enter__(self):
+        self.archive._nosave_holders += 1
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.archive._nosave_holders -= 1

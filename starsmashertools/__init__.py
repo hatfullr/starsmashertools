@@ -37,6 +37,20 @@ def _is_version_older(version, other = None):
     if patch < _patch: return True
     return False
 
+
+def _get_git_branch():
+    # TODO: Test if this still works on main branch.
+    import os
+
+    filename = os.path.join(
+        SOURCE_DIRECTORY,
+        '.git',
+        'HEAD',
+    )
+    with open(filename, 'r') as f:
+        content = f.readline()
+    return content.split('/')[-1]
+
 # If our current version mis-matches the installed version, show a warning
 def _check_version():
     # Don't do this on my local development machine. I increment the version
@@ -53,7 +67,9 @@ def _check_version():
     import starsmashertools.helpers.warnings
 
     def get_latest_version():
-        url = 'https://raw.githubusercontent.com/hatfullr/starsmashertools/main/pyproject.toml'
+        url = 'https://raw.githubusercontent.com/hatfullr/starsmashertools/{branch:s}/pyproject.toml'.format(
+            branch = _get_git_branch(),
+        )
         request = urllib.request.Request(url)
         # This is to get the most recent webpage
         request.add_header('Cache-Control', 'max-age=0')

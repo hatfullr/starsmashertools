@@ -17,6 +17,7 @@ class EnergyFile(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
     ):
         import starsmashertools.helpers.path
         import re
+        import starsmashertools.helpers.warnings
 
         if skip_rows is None:
             skip_rows = 1000
@@ -75,8 +76,7 @@ class EnergyFile(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
                 raise Exception("Failed to parse the StarSmasher source code for the names of the variables which were written to the energy file '%s'" % self.path)
 
             if len(possible) > 1:
-                import warnings
-                warnings.warn("Found multiple lines in the StarSmasher source code which write to the energy file the same number of columns found in the energy file. The descriptors in the energy file might not be accurate")
+                starsmashertools.helpers.warnings.warn("Found multiple lines in the StarSmasher source code which write to the energy file the same number of columns found in the energy file. The descriptors in the energy file might not be accurate")
 
             EnergyFile.names[logfile.simulation.directory] = [name.strip() for name in possible[0].split(',')]
         

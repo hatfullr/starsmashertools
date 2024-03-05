@@ -64,8 +64,10 @@ class Simulation(object):
 
     @property
     def joined_simulations(self):
-        import warnings
         import starsmashertools.helpers.path
+        import starsmashertools
+        import starsmashertools.helpers.warnings
+        
         if 'joined simulations' not in self.archive: return []
         simulations = []
         for directory in self.archive['joined simulations'].value:
@@ -76,7 +78,7 @@ class Simulation(object):
             try:
                 simulations += [starsmashertools.get_simulation(directory)]
             except Simulation.InvalidDirectoryError as e:
-                warnings.warn("A joined simulation is no longer a valid directory, likely because it was moved on the file system. Please split the simulation and re-join it to quell this warning. '%s'" % directory)
+                starsmashertools.helpers.warnings.warn("A joined simulation is no longer a valid directory, likely because it was moved on the file system. Please split the simulation and re-join it to quell this warning. '%s'" % directory)
         return simulations
     
     @api
@@ -119,6 +121,8 @@ class Simulation(object):
         import starsmashertools.preferences
         import starsmashertools.helpers.file
         import starsmashertools.helpers.path
+        import starsmashertools
+        
         children = None
         hint_filename = starsmashertools.preferences.get_default(
             'Simulation', 'children hint filename', throw_error=True)
@@ -1277,37 +1281,93 @@ class Simulation(object):
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     @cli('starsmashertools')
-    def split(self, cli : bool = False):
+    def split(
+            self,
+            which = None,
+            cli : bool = False,
+    ):
         """
         The opposite of :meth:`~.join`. Split this simulation apart from each
         simulation it is joined to. Any simulation joined to this one will also
         be split apart from it.
+
+        Other Parameters
+        ----------------
+        which : str, :class:`~.Simulation`, None, default = None
+            Which simulation to split from the joined simulations. If a `str` is
+            given, it must match exactly one of the directory strings stored in
+            this simulation's archive file. If a :class:`~.Simulation` is given,
+            it must have a directory which matches one of those directory
+            strings. Otherwise, if `None`, this simulation will be split apart 
+            from all of its joined simulations.
         
         See Also
         --------
         :meth:`~.join`
         """
+        import warnings
+        import copy
+
+        starsmashertools.helpers.argumentenforcer.enforcetypes({
+            'which' : [str, Simulation, type(None)],
+        })
 
         joined_simulations = self.joined_simulations
         if not joined_simulations:
             if cli: return "This simulation has no joined simulations"
             return
 
-        for simulation in joined_simulations:
-            v = simulation.archive['joined simulations']
+        archive_value = self.archive['joined simulations']
+        directories = copy.deepcopy(archive_value.value)
 
-            our_path = starsmashertools.helpers.path.relpath(
-                self.directory,
-                start = simulation.directory,
-            )
+        to_update = []
+        
+        if isinstance(which, str):
+            simulation = None
             
-            v.value.remove(our_path)
-            if len(v.value) == 0:
-                simulation.archive.remove('joined simulations')
-            else:
-                simulation.archive['joined simulations'] = v
+            if which not in directories:
+                if cli: return ("No simulation identified by which = '%s'. The joined simulations are identified as:\n" + show_joined_simulations(cli = True)) % which
+                else: raise KeyError("No simulation identified by which = '%s'" % which)
 
-        self.archive.remove('joined simulations')
+            directories.remove(which)
+            to_update = [which]
+
+        elif isinstance(which, Simulation):
+            has_warnings = False
+            simulations = []
+            for directory in directories:
+                try:
+                    simulations += [starsmashertools.get_simulation(directory)]
+                except Simulation.InvalidDirectoryError as e:
+                    has_warnings = True
+                    simulations += [None]
+                    
+            if which not in simulations:
+                message = "No simulation identified by which = '%s'." % str(which)
+                if has_warnings: message += " You have warnings related to the joined simulations. Try to resolve those first before trying again. If you are using the CLI, try using the 'show_joined_simulations' method and copying one of the strings to use as the value for 'which'."
+                if cli: return message
+                else: raise KeyError(message)
+
+            index = simulations.index(which)
+            del directories[index]
+            to_update = [which.directory]
+
+        elif which is None:
+            to_update = copy.deepcopy(directories)
+            directories = []
+        else:
+            raise NotImplementedError("Unrecognized input for keyword 'which': %s" % str(which))
+
+        archive_value.value = directories
+        self.archive['joined simulations'] = archive_value
+
+        # Update the joined simulations' joined simulations (removing oursel
+        for directory in to_update:
+            try:
+                simulation = starsmashertools.get_simulation(directory)
+            except Simulation.InvalidDirectoryError:
+                continue
+            simulation.split(which = self)
         
         if cli: return "Success"
         
