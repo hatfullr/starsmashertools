@@ -358,6 +358,7 @@ class Ticker(threading.Thread):
         self.daemon = True
         self._cycle = None
         self.ran = False
+        self.completed = False
     
     def cancel(self):
         self._stopEvent.set()
@@ -409,4 +410,5 @@ class Ticker(threading.Thread):
                 if iteration >= len(self._cycle): iteration = 0
             else:
                 self.target(*self.args, **self.kwargs)
+        self.completed = True
         

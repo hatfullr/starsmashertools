@@ -17,6 +17,7 @@ def load_file_info(info):
 def update_archive_version(
         old_path : str,
         new_path : str | type(None) = None,
+        verbose : bool = False,
 ):
     """
     Convert old-style :py:class:`~.Archive` files to new-style files. This 
@@ -40,40 +41,65 @@ def update_archive_version(
     import tempfile
     import shutil
     import starsmashertools.helpers.warnings
+    import starsmashertools.helpers.string
     
     if new_path is None: new_path = old_path
-    
+
+    new_archive = starsmashertools.lib.archive.Archive(
+        'new_archive.temp',
+        auto_save = False,
+    )
+
+    loading_name = starsmashertools.helpers.string.shorten(
+        old_path,
+        50,
+        where = 'left',
+    )
+
+    format_detected = True
     with starsmashertools.helpers.file.open(
-            old_path, 'a', **Archive.open_method_kwargs
+            old_path, 'r', **Archive.open_method_kwargs
     ) as zfile:
         namelist = zfile.namelist()
         if len(namelist) == 1 and namelist[0] != 'file info':
-            content = zfile.read(namelist[0])
-            data = starsmashertools.helpers.jsonfile.load_bytes(content)
-            for identifier, val in data.items():
-                data[identifier] = ArchiveValue(
-                    identifier,
-                    val['value'],
-                    val['origin'],
-                    val['mtime'],
-                )
-                #data[identifier] = ArchiveValue.deserialize(identifier, val)
+            with starsmashertools.helpers.string.loading_message("Reading '%s'" % loading_name) as l:
+                content = zfile.read(namelist[0])
+                data = starsmashertools.helpers.jsonfile.load_bytes(content)
+        
         else: # If we were not able to detect the old Archive format
-            # We assume it is in the latest format, so just update the version
-            # info
+            format_detected = False
+    if format_detected:
+        with starsmashertools.helpers.string.progress_message(
+                "Writing '%s'" % loading_name,
+                max = len(data.keys()),
+        ) as p:
+            for key, val in data.items():
+                new_archive.add(
+                    key,
+                    val['value'],
+                    origin = val['origin'],
+                    mtime = val['mtime'],
+                )
+                p.increment()
+            
+    if not format_detected:
+        with starsmashertools.helpers.file.open(
+                old_path, 'a', **Archive.open_method_kwargs
+        ) as zfile:
+            # We assume it is in the latest format, so just update the
+            # version info
             starsmashertools.helpers.warnings.filterwarnings(action = 'ignore')
+
+            _remove_zipfile_member(zfile, 'file info')
             zfile.writestr('file info', get_file_info())
+            
             starsmashertools.helpers.warnings.resetwarnings()
             return
-    
-    # We should now have the base data. We now create a new Archive as a
-    # temporary file, and then overwrite the old one with the new one.
-    new_archive = Archive('new_archive.temp', auto_save = False)
-    for identifier, val in data.items():
-        new_archive[identifier] = val
-    new_archive.save()
-    
-    shutil.move(new_archive.filename, new_path)
+    else:
+        newa.save()
+
+        # Now change file names
+        shutil.move(new_archive.filename, new_path)
 
 
 
@@ -436,7 +462,12 @@ class Archive(object):
             self._nosave_holders -= 1
     
     @contextlib.contextmanager
-    def open(self, mode, verbose : bool | type(None) = None):
+    def open(
+            self,
+            mode : str,
+            verbose : bool | type(None) = None,
+            message = "Waiting for",
+    ):
         """ Used for opening the Archive for file manipulation. """
         import starsmashertools.helpers.string
         import starsmashertools.helpers.file
@@ -444,7 +475,7 @@ class Archive(object):
         if verbose is None: verbose = self.verbose
 
         if verbose:
-            message = "Loading '%s'" % self._loading_name
+            message = (message + " '%s'") % self._loading_name
             try:
                 with starsmashertools.helpers.string.loading_message(message,delay=5):
                     with starsmashertools.helpers.file.open(
@@ -491,7 +522,7 @@ class Archive(object):
 
         keys = []
         if starsmashertools.helpers.path.exists(self.filename):
-            with self.open('r') as zfile:
+            with self.open('r', message = 'Loading keys') as zfile:
                 keys = zfile.namelist()
             if 'file info' in keys: keys.remove('file info')
 
@@ -514,7 +545,7 @@ class Archive(object):
         
         # First we need to read in the contents of the file
         if starsmashertools.helpers.path.exists(self.filename):
-            with self.open('r') as zfile:
+            with self.open('r', message = "Loading items") as zfile:
                 for key in zfile.namelist():
                     if key == 'file info': continue
                     everything[key] = zfile.read(key)
@@ -592,7 +623,7 @@ class Archive(object):
             return self._buffers['add'][key]
 
         # Otherwise, check the archive
-        with self.open('r') as zfile:
+        with self.open('r', message = "Loading key '%s' in" % str(key)) as zfile:
             keys = zfile.namelist()
             if 'file info' in keys: keys.remove('file info')
             if key not in keys: raise KeyError(key)
@@ -606,13 +637,14 @@ class Archive(object):
         import starsmashertools.helpers.path
 
         if not starsmashertools.helpers.path.exists(self.filename): return
-
+        
         # We can't update the file if we're in readonly mode.
         if self.readonly: return
 
+        
         should_update = False
         info = None
-        with self.open('r') as zfile:
+        with self.open('r', message = "Getting file info") as zfile:
             if 'file info' in zfile.namelist():
                 info = zfile.read('file info')
 
@@ -637,18 +669,11 @@ class Archive(object):
         else:
             message = "%s was written by an older starsmashertools version, but the current version is '%s'. This Archive will be updated to the latest format."
             message = message % (str(self), starsmashertools.__version__)
-        
+
         if should_update:
             if not user_allowed: raise Archive.FormatError(message)
             starsmashertools.helpers.warnings.warn(message)
-
-            if self.verbose:
-                with starsmashertools.helpers.string.loading_message(
-                        "Updating '%s'" % self._loading_name, delay = 5,
-                ):
-                    update_archive_version(self.filename)
-            else:
-                update_archive_version(self.filename)
+            update_archive_version(self.filename, verbose = self.verbose)
     
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
@@ -683,7 +708,7 @@ class Archive(object):
         remove_keys = list(self._buffers['remove']) + list(data.keys())
         
         current_keys = []
-        with self.open('a', verbose = verbose) as zfile:
+        with self.open('a', verbose = verbose, message = "Saving") as zfile:
             keys = zfile.namelist()
             
             # Update the file info
@@ -1006,21 +1031,3 @@ class SimulationArchive(Archive, object):
         """
         val = OutputArchiveValue(*args, **kwargs)
         self[val.identifier] = val
-
-        
-
-
-
-
-class NoSave(contextlib.ContextDecorator, object):
-    """ A context class for using the "nosave" method on Archives. """
-
-    @starsmashertools.helpers.argumentenforcer.enforcetypes
-    def __init__(self, archive : Archive):
-        self.archive = archive
-
-    def __enter__(self):
-        self.archive._nosave_holders += 1
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.archive._nosave_holders -= 1

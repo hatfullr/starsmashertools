@@ -8,68 +8,151 @@ import starsmashertools.lib.output
 
 progress_printers = []
 
+class LoadingMessage(object):
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    def __init__(
+            self,
+            message : str = "Loading",
+            delay : int | float = 0,
+            interval : int | float = 1,
+            suffixes : list | tuple = ['.','..','...'],
+            done_message : str = 'Done',
+    ):
+        import starsmashertools.helpers.asynchronous
+        import sys
+        
+        self.message = message
+        self.suffixes = suffixes
+        self.done_message = done_message
+
+        self.ticker = None
+        if sys.stdout.isatty(): # Output is going to the terminal
+            self.ticker = starsmashertools.helpers.asynchronous.Ticker(
+                interval,
+                target = self.print_message,
+                delay = delay,
+            )
+        
+        self._index = 0
+
+    def __enter__(self):
+        if self.ticker is not None:
+            if not self.ticker.is_alive():
+                self.ticker.start()
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        import starsmashertools.bintools.cli
+
+        if exc_type is not None: raise
+
+        print_done_message = True
+        if self.ticker is not None:
+            print_done_message = self.ticker.completed
+            self.ticker.cancel()
+
+        if print_done_message:
+            if starsmashertools.bintools.cli.CLI.instance is not None:
+                starsmashertools.bintools.cli.CLI.write(self.done_message)
+            else:
+                print(self.done_message)
+        
+        return True
+
+    def get_message(self):
+        return self.message + self.suffixes[self._index]
+    
+    def print_message(self):
+        import starsmashertools.bintools.cli
+        import sys
+        
+        message = self.get_message()
+        
+        if starsmashertools.bintools.cli.CLI.instance is not None:
+            starsmashertools.bintools.cli.CLI.move(
+                starsmashertools.bintools.cli.CLI.get_height() - 1,
+                0
+            )
+            starsmashertools.bintools.cli.CLI.write(
+                ' '*(starsmashertools.bintools.cli.CLI.get_width() - 1),
+                flush = True,
+                end = '',
+            )
+            starsmashertools.bintools.cli.CLI.move(
+                starsmashertools.bintools.cli.CLI.get_height() - 1,
+                0
+            )
+            starsmashertools.bintools.cli.CLI.write(
+                message,
+                flush = True,
+                end = '',
+            )
+        else: print('\r\033[K\r' + message, flush = True, end = '')
+
+        self._index += 1
+
+        if self._index >= len(self.suffixes):
+            self._index = 0
+
+class ProgressMessage(LoadingMessage, object):
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    def __init__(
+            self,
+            *args,
+            suffixes : str = [
+                '.   {current:d} / {total:d} ({progress:5.1f}%)',
+                '..  {current:d} / {total:d} ({progress:5.1f}%)',
+                '... {current:d} / {total:d} ({progress:5.1f}%)',
+            ],
+            done_message : str = '',
+            min : int | float = 0,
+            max : int | float = 100,
+            **kwargs
+    ):
+        self.min = min
+        self.max = max
+        self.progress = self.min
+        super(ProgressMessage, self).__init__(
+            *args,
+            suffixes = suffixes,
+            done_message = done_message,
+            **kwargs
+        )
+
+    def get_message(self):
+        return self.message + self.suffixes[self._index].format(
+            current = self.progress,
+            total = self.max - self.min,
+            progress = self.progress / float(self.max - self.min) * 100.,
+        )
+
+    def increment(self, amount : int | float = 1):
+        self.progress += amount 
+    
+    def __exit__(self, *args, **kwargs):
+        self.progress = self.max
+        self.print_message()
+        return super(ProgressMessage, self).__exit__(*args, **kwargs)
+
+    def __enter__(self, *args, **kwargs):
+        return super(ProgressMessage, self).__enter__(*args, **kwargs)
+
 
 @contextlib.contextmanager
-@starsmashertools.helpers.argumentenforcer.enforcetypes
-def loading_message(
-        message : str = "Loading",
-        delay : int | float = 0,
-        interval : int | float = 1,
-        suffixes : list | tuple = ['.','..','...'],
-):
-    import starsmashertools.helpers.asynchronous
-    import sys
-    import starsmashertools.bintools.cli
+def loading_message(*args, **kwargs):
+    try:
+        with LoadingMessage(*args, **kwargs) as l:
+            yield l
+    finally: pass
 
-    isCLI = starsmashertools.bintools.cli.CLI.instance is not None
+@contextlib.contextmanager
+def progress_message(*args, **kwargs):
+    try:
+        with ProgressMessage(*args, **kwargs) as p:
+            yield p
+    finally: pass
 
-    if not sys.stdout.isatty(): # Output is not going to the terminal at all
-        try:
-            print(message, flush=True)
-            yield None
-        finally: pass
-    else:
-        def print_message(message, extra, extra_length):
-            if isCLI:
-                starsmashertools.bintools.cli.CLI.move(
-                    starsmashertools.bintools.cli.CLI.get_height() - 1,
-                    0
-                )
-                starsmashertools.bintools.cli.CLI.write(
-                    ' '*(starsmashertools.bintools.cli.CLI.get_width() - 1),
-                    flush = True,
-                    end = '',
-                )
-                starsmashertools.bintools.cli.CLI.move(
-                    starsmashertools.bintools.cli.CLI.get_height() - 1,
-                    0
-                )
-                starsmashertools.bintools.cli.CLI.write(
-                    message + extra,
-                    flush = True,
-                    end = '',
-                )
-            else: print('\r\033[K\r' + message + extra, flush = True, end = '')
-
-        maxlen = max([len(s) for s in suffixes])
-        ticker = starsmashertools.helpers.asynchronous.Ticker(
-            interval,
-            target = print_message,
-            delay = delay,
-        )
-        ticker.cycle(
-            len(suffixes),
-            args = [(message, s, maxlen) for s in suffixes],
-        )
-        ticker.start()
-
-        try:
-            yield None
-        finally:
-            ticker.cancel()
-            if ticker.ran:
-                if isCLI: starsmashertools.bintools.cli.CLI.write("Done")
-                else: print("Done")
+    
 
 @starsmashertools.helpers.argumentenforcer.enforcetypes
 def get_progress_string(
