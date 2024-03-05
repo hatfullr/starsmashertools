@@ -79,8 +79,8 @@ def get_bin_state():
         # Remove # comments first
         re.compile("(?<!['\"])#.*", flags = re.M),
         # Then remove block comments (which can be commented out by #)
-        re.compile('(?<!\')(?<!\\\\)""".*?"""', flags = re.M | re.s),
-        re.compile("(?<!\")(?<!\\\\)'''.*?'''", flags = re.M | re.s),
+        re.compile('(?<!\')(?<!\\\\)""".*?"""', flags = re.M | re.S),
+        re.compile("(?<!\")(?<!\\\\)'''.*?'''", flags = re.M | re.S),
     ]
     
     bindir = get_bindir()
