@@ -182,7 +182,7 @@ if __name__ == '__main__':
 
     src = starsmashertools.SOURCE_DIRECTORY
 
-    bin_states_changed = is_states_same(previous_bin_state, bin_state)
+    bin_states_changed = is_bin_states_same(previous_bin_state, bin_state)
     if bin_states_changed:
         print("Detected changes in the bin directory. Uninstalling current version")
         run_src_script('uninstall')
