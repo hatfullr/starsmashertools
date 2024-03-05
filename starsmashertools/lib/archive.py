@@ -389,6 +389,15 @@ class Archive(object):
         if not starsmashertools.helpers.path.exists(self.filename): return False
         current_mtime = starsmashertools.helpers.path.getmtime(self.filename)
         return current_mtime > self._previous_mtime
+
+    @property
+    def _loading_name(self):
+        import starsmashertools.helpers.string
+        return starsmashertools.helpers.string.shorten(
+            self.filename,
+            50,
+            where = 'left',
+        )
     
     def __copy__(self, *args, **kwargs):
         raise NotImplementedError
@@ -435,11 +444,7 @@ class Archive(object):
         if verbose is None: verbose = self.verbose
 
         if verbose:
-            message = "Loading '%s'" % starsmashertools.helpers.string.shorten(
-                self.filename,
-                50,
-                where = 'left',
-            )
+            message = "Loading '%s'" % self._loading_name
             try:
                 with starsmashertools.helpers.string.loading_message(message,delay=5):
                     with starsmashertools.helpers.file.open(
@@ -636,7 +641,14 @@ class Archive(object):
         if should_update:
             if not user_allowed: raise Archive.FormatError(message)
             starsmashertools.helpers.warnings.warn(message)
-            update_archive_version(self.filename)
+
+            if self.verbose:
+                with starsmashertools.helpers.string.loading_message(
+                        "Updating '%s'" % self._loading_name, delay = 5,
+                ):
+                    update_archive_version(self.filename)
+            else:
+                update_archive_version(self.filename)
     
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
