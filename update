@@ -96,7 +96,7 @@ def get_bin_state():
             # Remove all comments
             for check in comment_checks:
                 for match in check.findall(content):
-                    content.remove(match)
+                    content.replace(match, '')
             
             state[path] = content.encode('utf-8')
     return state
