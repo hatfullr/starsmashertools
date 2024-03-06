@@ -1128,7 +1128,9 @@ class Simulation(object):
 
             fig.align_ylabels(ax)
 
-            if cli: fig.show()
+            if cli:
+                fig.show()
+                return ""
             return fig
 
         @api
@@ -1196,7 +1198,9 @@ class Simulation(object):
                 fig, update, maxi=total,
             )
             
-            if cli: fig.show()
+            if cli:
+                fig.show()
+                return ""
             return ani
 
 
