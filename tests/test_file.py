@@ -112,7 +112,7 @@ test4test9
         manager = multiprocessing.Manager()
         output_queue = manager.Queue()
         
-        nprocs = 4
+        nprocs = multiprocessing.cpu_count()
 
         for mode in all_modes:
             processes = []
