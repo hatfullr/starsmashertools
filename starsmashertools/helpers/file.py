@@ -106,8 +106,10 @@ class Lock(object):
         # Unlock all file locks this process ever created
         import starsmashertools.helpers.path
         for path in Lock.lockfiles:
-            if starsmashertools.helpers.path.isfile(path):
+            try:
                 starsmashertools.helpers.path.remove(path)
+            except FileNotFoundError: pass
+        Lock.lockfiles = []
     
     def is_next_locker(self):
         """ Returns True if the file is ready to be manipulated. """
@@ -149,8 +151,9 @@ class Lock(object):
                 
     def unlock(self):
         import starsmashertools.helpers.path
-        if starsmashertools.helpers.path.isfile(self.lockfile):
+        try:
             starsmashertools.helpers.path.remove(self.lockfile)
+        except FileNotFoundError: pass
         if self.lockfile in Lock.lockfiles: Lock.lockfiles.remove(self.lockfile)
         self.timeout = None
             
