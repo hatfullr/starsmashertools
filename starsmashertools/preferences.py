@@ -10,6 +10,10 @@ defaults = {
         # Archives which have old formatting, but you will need to update the
         # Archive formatting yourself in order to read it.
         'auto update format' : True,
+        # The maximum allowed size in bytes that the buffer can have when auto
+        # save is disabled. When the buffer exceeds this value the archive is
+        # saved. default = 1e5 (0.1 MB)
+        'max buffer size' : int(1e5),
     },
 # ------------------------------------------------------------------------------
     'CLI' : {

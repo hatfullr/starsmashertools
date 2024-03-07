@@ -45,16 +45,17 @@ def update_archive_version(
     
     if new_path is None: new_path = old_path
 
+    def do_atexit(*args, **kwargs):
+        import os
+        if os.path.exists(new_archive.filename):
+            os.remove(new_archive.filename)
+
     new_archive = starsmashertools.lib.archive.Archive(
         'new_archive.temp',
         auto_save = False,
     )
-
-    loading_name = starsmashertools.helpers.string.shorten(
-        old_path,
-        50,
-        where = 'left',
-    )
+    # In case we fail to write the new archive, delete it
+    atexit.register(do_atexit)
 
     format_detected = True
     with starsmashertools.helpers.file.open(
@@ -62,26 +63,20 @@ def update_archive_version(
     ) as zfile:
         namelist = zfile.namelist()
         if len(namelist) == 1 and namelist[0] != 'file info':
-            with starsmashertools.helpers.string.loading_message("Reading '%s'" % loading_name) as l:
+            with starsmashertools.helpers.string.loading_message("Reading '%s'" % Archive.to_str(old_path)) as l:
                 content = zfile.read(namelist[0])
                 data = starsmashertools.helpers.jsonfile.load_bytes(content)
         
         else: # If we were not able to detect the old Archive format
             format_detected = False
     if format_detected:
-        with starsmashertools.helpers.string.progress_message(
-                "Writing '%s'" % loading_name,
-                max = len(data.keys()),
-        ) as p:
-            for key, val in data.items():
-                new_archive.add(
-                    key,
-                    val['value'],
-                    origin = val['origin'],
-                    mtime = val['mtime'],
-                )
-                p.increment()
-            
+        new_archive._buffers['add'] = {key:ArchiveValue(
+            key,
+            val['value'],
+            origin = val['origin'],
+            mtime = val['mtime'],
+        ) for key, val in data.items()}
+    
     if not format_detected:
         with starsmashertools.helpers.file.open(
                 old_path, 'a', **Archive.open_method_kwargs
@@ -96,11 +91,12 @@ def update_archive_version(
             starsmashertools.helpers.warnings.resetwarnings()
             return
     else:
-        newa.save()
-
+        new_archive.save()
+        
         # Now change file names
         shutil.move(new_archive.filename, new_path)
 
+    atexit.unregister(do_atexit)
 
 
 def _remove_zipfile_member(zfile, member):
@@ -198,34 +194,40 @@ class ArchiveValue(object):
             'value' : _types,
         })
 
+        self._value = None
+        self.serialized = None
+        
         self.identifier = identifier
-        self.value = value
         self.origin = origin
-
+        
         if self.origin is not None and mtime is None:
             mtime = starsmashertools.helpers.path.getmtime(self.origin)
-        
         self.mtime = mtime
+        
+        self.value = value
 
     def __str__(self):
         return 'ArchiveValue(%s)' % str(self.value)
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     def __eq__(self, other : "ArchiveValue"):
-        return self.serialize() == other.serialize()
-
-    def serialize(self):
-        """
-        Return a copy of this value in a format that can be written to the
-        :class:`~.Archive` file.
-        """
+        return self.serialized == other.serialized
+    
+    @property
+    def size(self): return self.serialized.__sizeof__()
+    
+    @property
+    def value(self): return self._value
+    @value.setter
+    def value(self, new_value):
         import starsmashertools.helpers.jsonfile
-        return starsmashertools.helpers.jsonfile.save_bytes({
-            'value' : self.value,
+        self._value = new_value
+        self.serialized = starsmashertools.helpers.jsonfile.save_bytes({
+            'value' : new_value,
             'origin' : self.origin,
             'mtime' : self.mtime,
         })
-
+    
     @staticmethod
     def deserialize(identifier, obj):
         """
@@ -268,6 +270,7 @@ def REPLACE_OLD(
         If `True` then ``new_value`` will replace ``old_value`` in the archive.
         Otherwise, no replacement is made.
     """
+    if new_value.mtime is None or old_value.mtime is None: return True
     return new_value.mtime > old_value.mtime
 
 def REPLACE_NEQ(
@@ -337,6 +340,7 @@ class Archive(object):
             auto_save : bool = True,
             readonly : bool = False,
             verbose : bool = True,
+            max_buffer_size : int | type(None) = None,
     ):
         """
         Constructor for :class:`~.Archive`.
@@ -372,6 +376,11 @@ class Archive(object):
         verbose : bool, default = True
             If `False`, messages are suppressed. Otherwise messages are
             printed to the standard output.
+
+        max_buffer_size : int, None, default = None
+            The maximum allowed size in bytes that the buffer can have when auto
+            save is disabled. When the buffer exceeds this value the archive is
+            saved.
         """
         import starsmashertools.helpers.path
         import starsmashertools.preferences
@@ -380,8 +389,12 @@ class Archive(object):
         
         if replacement_flags is None:
             replacement_flags = starsmashertools.preferences.get_default(
-                'Archive',
-                'replacement flags',
+                'Archive', 'replacement flags', throw_error = True,
+            )
+
+        if max_buffer_size is None:
+            max_buffer_size = starsmashertools.preferences.get_default(
+                'Archive', 'max buffer size', throw_error = True,
             )
         
         self.filename = filename
@@ -389,6 +402,7 @@ class Archive(object):
         self.auto_save = auto_save
         self.readonly = readonly
         self.verbose = verbose
+        self._max_buffer_size = max_buffer_size
         
         super(Archive, self).__init__()
 
@@ -402,7 +416,25 @@ class Archive(object):
             'add' : {},
             'remove' : [],
         }
+        self._buffer_size = 0
         self._nosave_holders = 0
+
+    @staticmethod
+    def to_str(filename : str):
+        import starsmashertools.helpers.string
+        path = starsmashertools.helpers.string.shorten(
+            filename,
+            50,
+            where = 'left',
+        )
+        return "Archive('%s')" % path
+
+    @staticmethod
+    def to_repr(filename : str):
+        return "Archive('%s')" % archive.filename
+
+    def __str__(self): return Archive.to_str(self.filename)
+    def __repr__(self): return Archive.to_repr(self.filename)
     
     def _on_quit(self):
         if not self.auto_save: return
@@ -441,6 +473,7 @@ class Archive(object):
     
     def _clear_buffers(self):
         self._buffers['add'].clear()
+        self._buffer_size = 0
         self._buffers['remove'] = []
     
     @contextlib.contextmanager
@@ -466,7 +499,8 @@ class Archive(object):
             self,
             mode : str,
             verbose : bool | type(None) = None,
-            message = "Waiting for",
+            message : str | type(None) = None,
+            progress_max : int = 0,
     ):
         """ Used for opening the Archive for file manipulation. """
         import starsmashertools.helpers.string
@@ -474,25 +508,17 @@ class Archive(object):
 
         if verbose is None: verbose = self.verbose
 
-        if verbose:
-            message = (message + " '%s'") % self._loading_name
-            try:
-                with starsmashertools.helpers.string.loading_message(message,delay=5):
-                    with starsmashertools.helpers.file.open(
-                            self.filename, mode, **Archive.open_method_kwargs
-                    ) as zfile:
-                        yield zfile
-            except Exception as e:
-                raise Archive.CorruptFileError("Failed to load archive file, likely because it did not save correctly. Please delete it and try again: '%s'" % self.filename) from e
-        else:
-            try:
-                with starsmashertools.helpers.file.open(
-                        self.filename, mode, **Archive.open_method_kwargs
-                ) as zfile:
-                    yield zfile
-            except Exception as e:
-                raise Archive.CorruptFileError("Failed to load archive file, likely because it did not save correctly. Please delete it and try again: '%s'" % self.filename) from e
-            
+        try:
+            with starsmashertools.helpers.file.open(
+                    self.filename, mode, verbose = verbose,
+                    message = message, progress_max = progress_max,
+                    **Archive.open_method_kwargs
+            ) as zfile:
+                yield zfile
+        except Exception as e:
+            raise Archive.CorruptFileError("Failed to load archive file, likely because it did not save correctly. Please delete it and try again: '%s'" % self.filename) from e
+        
+        
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def __contains__(
@@ -511,7 +537,9 @@ class Archive(object):
         Archive file will be modified. """
         
         if key not in self.keys(): raise KeyError(key)
-        self._buffers['add'].pop(key, None)
+        value = self._buffers['add'].pop(key, None)
+        if value is not None:
+            self._buffer_size -= value.size
         self._buffers['remove'] += [key]
         if self.auto_save: self.save()
     
@@ -584,6 +612,8 @@ class Archive(object):
         for key in self.keys():
             if key in self._buffers['remove']: continue
             self._buffers['remove'] += [key]
+        self._buffers['add'] = {}
+        self._buffer_size = 0
         
         if self.auto_save: self.save()
 
@@ -606,9 +636,11 @@ class Archive(object):
         
         # Either add a new key or overwrite an old key
         self._buffers['add'][key] = value
+        self._buffer_size += value.size
         if key in self._buffers['remove']: self._buffers['remove'].remove(key)
-
-        if self.auto_save: self.save()
+        
+        if self.auto_save and self._buffer_size >= self._max_buffer_size:
+            self.save()
     
     def __getitem__(self, key):
         """ Obtain the value corresponding with the given key. """
@@ -697,9 +729,9 @@ class Archive(object):
         
         # If nothing changed since the last time we saved
         if not self._buffers['add'] and not self._buffers['remove']: return
-        
+
         # Serialize the data we will add
-        data = {key:val.serialize() for key, val in self._buffers['add'].items()}
+        data = {key:val.serialized for key, val in self._buffers['add'].items()}
         
         # Get file info
         info = get_file_info()
@@ -708,7 +740,11 @@ class Archive(object):
         remove_keys = list(self._buffers['remove']) + list(data.keys())
         
         current_keys = []
-        with self.open('a', verbose = verbose, message = "Saving") as zfile:
+        with self.open(
+                'a',
+                verbose = verbose,
+                progress_max = len(data.keys()),
+        ) as zfile:
             keys = zfile.namelist()
             
             # Update the file info
@@ -725,6 +761,7 @@ class Archive(object):
             # Add keys that need to be added
             for key, val in data.items():
                 zfile.writestr(key, val)
+                zfile.progress.increment()
             
             current_keys = zfile.namelist()
         
@@ -798,7 +835,6 @@ class Archive(object):
         self.auto_save = previous_auto_save
         if self.auto_save: self.save()
 
-
     # Some convenience methods for the CLI only
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @cli('ssarchive')
@@ -820,8 +856,6 @@ class Archive(object):
 
         # Use JSON format for human-readable formatting
         return ("Showing '%s':" % key) + newline + newline + starsmashertools.helpers.jsonfile.save_bytes(self[key].value).decode('utf-8')
-
-    #return str(self[key].value)
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @cli('ssarchive')

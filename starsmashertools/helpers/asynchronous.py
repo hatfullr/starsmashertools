@@ -363,6 +363,7 @@ class Ticker(threading.Thread):
     def cancel(self):
         self._stopEvent.set()
         self.join(timeout = 0)
+        self.completed = False
 
     def cycle(
             self,
@@ -385,6 +386,7 @@ class Ticker(threading.Thread):
     def run(self):
         import time
         self.ran = False
+        self.completed = False
         self._stopEvent.wait(max(self.delay - self.interval, 0))
 
         timer = 0.
@@ -400,7 +402,7 @@ class Ticker(threading.Thread):
             if self.limit is not None:
                 timer += time.time() - t0
                 t0 = time.time()
-                if timer > self.limit: break
+                if timer >= self.limit: break
             
             if self.target is None: continue
             if self._cycle:

@@ -43,14 +43,15 @@ class LoadingMessage(object):
     
     def __exit__(self, exc_type, exc_val, exc_tb):
         import starsmashertools.bintools.cli
+        import copy
 
         if exc_type is not None: raise
 
         print_done_message = True
         if self.ticker is not None:
-            print_done_message = self.ticker.completed
+            print_done_message = copy.deepcopy(self.ticker.completed)
             self.ticker.cancel()
-
+        
         if print_done_message:
             if starsmashertools.bintools.cli.CLI.instance is not None:
                 starsmashertools.bintools.cli.CLI.write(self.done_message)
@@ -115,7 +116,7 @@ class ProgressMessage(LoadingMessage, object):
         super(ProgressMessage, self).__init__(
             *args,
             suffixes = suffixes,
-            done_message = done_message,
+            done_message = '',
             **kwargs
         )
 
@@ -129,13 +130,11 @@ class ProgressMessage(LoadingMessage, object):
     def increment(self, amount : int | float = 1):
         self.progress += amount 
     
-    def __exit__(self, *args, **kwargs):
-        self.progress = self.max
-        self.print_message()
-        return super(ProgressMessage, self).__exit__(*args, **kwargs)
+    #def __exit__(self, *args, **kwargs):
+    #    return super(ProgressMessage, self).__exit__(*args, **kwargs)
 
-    def __enter__(self, *args, **kwargs):
-        return super(ProgressMessage, self).__enter__(*args, **kwargs)
+    #def __enter__(self, *args, **kwargs):
+    #    return super(ProgressMessage, self).__enter__(*args, **kwargs)
 
 
 @contextlib.contextmanager

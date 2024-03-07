@@ -116,7 +116,7 @@ class Decoder(json.JSONDecoder):
     def __init__(self, *args, **kwargs):
         kwargs['object_hook'] = self.object_hook
         super(Decoder, self).__init__(*args, **kwargs)
-    
+
     def object_hook(self, obj):
         if isinstance(obj, dict) and Conversion.isConversion(obj):
             return Conversion.decode(obj)

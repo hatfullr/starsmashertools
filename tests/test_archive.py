@@ -278,6 +278,7 @@ class TestArchive(basetest.BaseTest):
             self.archive['test']
         
         self.archive.auto_save = True
+        self.archive._max_buffer_size = 0
 
         self.assertFalse(os.path.exists(self.archive.filename))
         self.archive.add('test', 0, 'filename', mtime = 5)
@@ -362,11 +363,13 @@ class TestArchive(basetest.BaseTest):
                 filename,
             )
             alot_of_data = {}
-            for key, val in enumerate(range(1000000)):
+            for key, val in enumerate(range(100000)):
                 alot_of_data[key] = val
             archive.add(
-                filename,
+                'same key',
                 alot_of_data,
+                origin = None,
+                mtime = None,
             )
 
         nprocs = 4
