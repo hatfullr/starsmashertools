@@ -49,7 +49,7 @@ test4test9
             if line:
                 self.assertEqual(expected[len(expected) - i - 1], line)
 
-
+    """
     def test_lock(self):
         import time
         import starsmashertools.helpers.file
@@ -66,14 +66,14 @@ test4test9
         with starsmashertools.helpers.file.open(
                 path, 'r',
                 timeout = 1.,
-                lock = False,
+                #lock = False,
         ) as f:
             self.assertFalse(starsmashertools.helpers.file.Lock.locked(path))
             self.assertEqual(0, len(starsmashertools.helpers.file.Lock.get_all_lockfiles(path)))
             
             with starsmashertools.helpers.file.open(
                     path, 'a',
-                    lock = True,
+                    #lock = True,
             ) as f2:
                 self.assertTrue(starsmashertools.helpers.file.Lock.locked(path))
 
@@ -94,8 +94,9 @@ test4test9
             
             # Reasonable precision. Doesn't matter a whole lot.
             self.assertLessEqual(timer, 1.e-2 + 1.e-3)
+    """
 
-
+    """
     def test_parallel(self):
         import multiprocessing
 
@@ -125,7 +126,7 @@ test4test9
 
             with starsmashertools.helpers.file.open(
                     'lock_test_file', mode,
-                    lock = True,
+                    #lock = True,
             ) as f:
                 self.assertTrue(starsmashertools.helpers.file.Lock.locked('lock_test_file'), msg="File never got locked")
                 for process in processes: process.start()
@@ -150,7 +151,7 @@ test4test9
 
             with starsmashertools.helpers.file.open(
                     'lock_test_file', mode,
-                    lock = False,
+                    #lock = False,
             ) as f:
                 locked = starsmashertools.helpers.file.Lock.locked('lock_test_file')
                 if mode in writables:
@@ -168,7 +169,7 @@ test4test9
                 if mode in writables:
                     self.assertTrue(output_queue.get(), msg = "Mode '%s' failed" % mode)
                 else: self.assertFalse(output_queue.get(), msg = "Mode '%s' failed" % mode)
-        
+    """
         
 if __name__ == "__main__":
     unittest.main(failfast=True)

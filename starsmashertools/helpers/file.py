@@ -168,7 +168,8 @@ atexit.register(Lock.unlock_all)
 def open(
         path : str,
         mode : str,
-        lock : bool = True,
+        #lock : bool = True,
+        lock = None,
         method : typing.Callable | type(None) = None,
         timeout : int | float | np.generic | type(None) = None,
         verbose : bool = True,
@@ -194,15 +195,17 @@ def open(
             path, 40, where = 'left',
         )
 
-    _lock = None
-    if lock or Lock.locked(path) or writable:
-        _lock = Lock(path)
-        if not verbose: _lock.lock(timeout = timeout)
-        else:
-            with starsmashertools.helpers.string.loading_message(
-                    "Waiting for '%s'" % short_path, delay = 5,
-            ) as loading_message:
-                _lock.lock(timeout = timeout)
+    #_lock = None
+    #if lock or Lock.locked(path) or writable:
+
+    # Always lock no matter what
+    _lock = Lock(path)
+    if not verbose: _lock.lock(timeout = timeout)
+    else:
+        with starsmashertools.helpers.string.loading_message(
+                "Waiting for '%s'" % short_path, delay = 5,
+        ) as loading_message:
+            _lock.lock(timeout = timeout)
     
     f = None
                 

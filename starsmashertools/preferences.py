@@ -57,8 +57,7 @@ defaults = {
     # Used in both the CLI and API to handle user requests.
     'IO' : {
         'Lock' : {
-            # If None, the file IO will never timeout. Otherwise, give in units
-            # of seconds.
+            # Give in units of seconds.
             'timeout' : float('inf'),
         },
     },

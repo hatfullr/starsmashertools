@@ -320,7 +320,7 @@ class Archive(object):
         'method' : zipfile.ZipFile,
         'compression' : zipfile.ZIP_DEFLATED,
         'compresslevel' : 9,
-        'lock' : True,
+        #'lock' : True,
     }
 
     class ReadOnlyError(Exception, object):
