@@ -541,7 +541,7 @@ class Simulation(object):
         """
         Returns a list of output file locations. If this simulation has any
         joined simulations, then each of those simulations' output file paths
-        are returned as well. The result is sorted by file modification times.
+        are returned as well. The result is sorted by simulation times.
 
         Parameters
         ----------
@@ -556,25 +556,65 @@ class Simulation(object):
         -------
         list
             A list of output file paths belonging to this simulation and any
-            joined simulations, sorted by file modification times.
+            joined simulations, unsorted.
         """
         import starsmashertools.preferences
         import starsmashertools.helpers.path
+        import starsmashertools.lib.output
+        import time
         
         if pattern is None:
             pattern = starsmashertools.preferences.get_default('Simulation', 'output files', throw_error=True)
         matches = self.get_file(pattern)
 
+        simulation_matches = {
+            self : matches,
+        }
         if include_joined:
             for simulation in self.joined_simulations:
-                matches += simulation.get_outputfiles(
+                simulation_matches[simulation] = simulation.get_outputfiles(
                     pattern = pattern,
                     include_joined = False, # Prevent infinite recursion
                 )
-
-        # Sort by file modification times
-        mtimes = [starsmashertools.helpers.path.getmtime(f) for f in matches]
-        return [x for _,x in sorted(zip(mtimes, matches), key=lambda pair: pair[0])]
+        
+        # Check the simulation archive to see if its list contains the same
+        # match names as what we found. If so, pull the match order from the
+        # archive. Otherwise, sort the matches by simulation times and write the
+        # order to the simulation archive.
+        if 'output file order' in self.archive.keys():
+            order = self.archive['output file order'].value
+            # Need to get the real paths of each in the order
+            order = [starsmashertools.helpers.path.realpath(o) for o in order]
+            
+            all_matches = []
+            for simulation, _list in simulation_matches.items():
+                all_matches += _list
+            
+            if set(all_matches) == set(order): # Both contain the same files
+                return order
+        
+        # We need to order our matches by simulation times, then save to the
+        # simulation archive.
+        order, times = [], []
+        for simulation, _list in simulation_matches.items():
+            for m in _list:
+                output = starsmashertools.lib.output.Output(m, simulation)
+                order += [m]
+                times += [output.header['t']]
+        
+        # Sort by simulation times
+        order = [x for _,x in sorted(zip(times, order), key=lambda pair:pair[0])]
+        
+        # Save the order of files to the simulation archive, as relative paths
+        relorder = [starsmashertools.helpers.path.relpath(o, start=self.directory) for o in order]
+        self.archive.set(
+            'output file order',
+            relorder,
+            origin = None,
+            mtime = time.time(),
+        )
+        
+        return order
     
     # The initial file is always the one that was written first.
     @api
