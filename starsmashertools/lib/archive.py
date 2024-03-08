@@ -547,7 +547,8 @@ class Archive(object):
         if starsmashertools.helpers.path.exists(self.filename):
             try:
                 with self.open('r', message = 'Loading keys') as zfile:
-                    keys = zfile.namelist()
+                    with zfile._lock:
+                        keys = zfile.namelist()
             except Exception as e:
                 raise Archive.CorruptFileError("Failed to load keys from the archive file. Perhaps it did not save correctly. All data in this archive is lost. Please delete the file and try again: '%s'" % self.filename) from e
             
@@ -574,9 +575,10 @@ class Archive(object):
         if starsmashertools.helpers.path.exists(self.filename):
             try:
                 with self.open('r', message = "Loading items") as zfile:
-                    for key in zfile.namelist():
-                        if key == 'file info': continue
-                        everything[key] = zfile.read(key)
+                    with zfile._lock:
+                        for key in zfile.namelist():
+                            if key == 'file info': continue
+                            everything[key] = zfile.read(key)
             except Exception as e:
                 raise Archive.CorruptFileError("Failed to load items from the archive file. Perhaps it did not save correctly. All data in this archive is lost. Please delete the file and try again: '%s'" % self.filename) from e
             
@@ -659,10 +661,11 @@ class Archive(object):
         # Otherwise, check the archive
         try:
             with self.open('r', message = "Loading key '%s' in" % str(key)) as zfile:
-                keys = zfile.namelist()
-                if 'file info' in keys: keys.remove('file info')
-                if key not in keys: raise KeyError(key)
-                value = zfile.read(key)
+                with zfile._lock:
+                    keys = zfile.namelist()
+                    if 'file info' in keys: keys.remove('file info')
+                    if key not in keys: raise KeyError(key)
+                    value = zfile.read(key)
         except Exception as e:
             if not isinstance(e, KeyError): raise
             raise Archive.CorruptFileError("Failed to load key '%s' from the archive file. Perhaps it did not save correctly. All data in this archive is lost. Please delete the file and try again: '%s'" % (key, self.filename)) from e
@@ -684,8 +687,9 @@ class Archive(object):
         info = None
         try:
             with self.open('r', message = "Getting file info") as zfile:
-                if 'file info' in zfile.namelist():
-                    info = zfile.read('file info')
+                with zfile._lock:
+                    if 'file info' in zfile.namelist():
+                        info = zfile.read('file info')
         except Exception as e:
             raise Archive.CorruptFileError("Failed to get file info from the archive file. Perhaps it did not save correctly. All data in this archive is lost. Please delete the file and try again: '%s'" % self.filename) from e
 
@@ -755,28 +759,29 @@ class Archive(object):
                     verbose = verbose,
                     progress_max = len(data.keys()),
             ) as zfile:
-                keys = zfile.namelist()
+                with zfile._lock:
+                    keys = zfile.namelist()
 
-                # Update the file info
-                if 'file info' in keys:
-                    _remove_zipfile_member(zfile, 'file info')
+                    # Update the file info
+                    if 'file info' in keys:
+                        _remove_zipfile_member(zfile, 'file info')
 
-                zfile.writestr('file info', info)
+                    zfile.writestr('file info', info)
 
-                # Remove all keys that are going to change
-                for key in remove_keys:
-                    if key not in keys: continue
-                    _remove_zipfile_member(zfile, key)
+                    # Remove all keys that are going to change
+                    for key in remove_keys:
+                        if key not in keys: continue
+                        _remove_zipfile_member(zfile, key)
 
-                # Add keys that need to be added
-                for key, val in data.items():
-                    zfile.writestr(key, val)
-                    # Only true when verbose is True and in the main process. See
-                    # helpers/file.py for details
-                    if hasattr(zfile, 'progress'):
-                        zfile.progress.increment()
+                    # Add keys that need to be added
+                    for key, val in data.items():
+                        zfile.writestr(key, val)
+                        # Only true when verbose is True and in the main process. See
+                        # helpers/file.py for details
+                        if hasattr(zfile, 'progress'):
+                            zfile.progress.increment()
 
-                current_keys = zfile.namelist()
+                    current_keys = zfile.namelist()
         except Exception as e:
             raise Archive.CorruptFileError("Failed to save archive file. Perhaps it did not save correctly. All data in this archive is lost. Please delete the file and try again: '%s'" % self.filename) from e
         
