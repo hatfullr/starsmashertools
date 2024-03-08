@@ -45,7 +45,7 @@ class LoadingMessage(object):
         import starsmashertools.bintools.cli
         import copy
         
-        print_done_message = True
+        print_done_message = False
         if self.ticker is not None:
             print_done_message = copy.deepcopy(self.ticker.completed)
             self.ticker.cancel()
