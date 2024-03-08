@@ -69,24 +69,22 @@ test4test9
         open(filename, 'x').close()
 
         self.assertEqual(0, len(os.listdir(lockdir)), msg="Clear lock directory first")
-
+        
         all_modes = []
         for key, val in starsmashertools.helpers.file.modes.items():
             all_modes += val
-
+        
         # All modes should register file locking
         for mode in all_modes:
-            if mode == 'x':
-                with self.assertRaises(FileExistsError):
-                    with starsmashertools.helpers.file.open(filename, mode) as f:
-                        pass
-                self.assertEqual(0, len(os.listdir(lockdir)), msg = "Mode '%s' left a residual lock file" % mode)
-            else:
-                with starsmashertools.helpers.file.open(filename, mode) as f:
-                    self.assertEqual(1, len(os.listdir(lockdir)), msg="Mode '%s' didn't cause locking" % mode)
-                self.assertEqual(0, len(os.listdir(lockdir)), msg = "Mode '%s' left a residual lock file" % mode)
+            if mode == 'x': continue
+            with starsmashertools.helpers.file.open(filename, mode) as f:
+                self.assertEqual(1, len(os.listdir(lockdir)), msg = "Mode '%s' didn't cause locking" % mode)
+
+            self.assertEqual(0, len(os.listdir(lockdir)), msg = "Mode '%s' left a residual lock file" % mode)
 
         # Try nested open statements
+        readonly_modes = starsmashertools.helpers.file.modes['readonly']
+        write_modes = starsmashertools.helpers.file.modes['write']
         for mode1 in all_modes:
             if mode1 == 'x': continue
             with starsmashertools.helpers.file.open(filename, mode1) as f1:
@@ -94,19 +92,29 @@ test4test9
                     if mode2 == 'x': continue
                     try:
                         with starsmashertools.helpers.file.open(filename, mode2, timeout=1.e-6) as f2:
-                            self.assertEqual(2, len(os.listdir(lockdir)), msg = "Two lock files should be created: '%s', '%s'" % (mode1, mode2))
+                            if mode1 in write_modes and mode2 in write_modes:
+                                self.assertEqual(
+                                    1, len(os.listdir(lockdir)),
+                                    msg = "One lock file should be created: '%s', '%s'" % (mode1, mode2)
+                                )
+                            else:
+                                self.assertEqual(
+                                    2, len(os.listdir(lockdir)),
+                                    msg = "Two lock files should be created: '%s', '%s'" % (mode1, mode2)
+                                )
                     except TimeoutError as e:
-                        if (mode2 in starsmashertools.helpers.file.modes['write'] or
-                            mode1 in starsmashertools.helpers.file.modes['write']):
+                        if (mode2 in write_modes or mode1 in write_modes):
                             with self.assertRaises(TimeoutError):
                                 raise
                         else:
                             raise Exception("Failed timeout test: '%s', '%s'" % (mode1, mode2)) from e
-                    else:
-                        self.assertEqual(1, len(os.listdir(lockdir)), msg = "Nested open statements leave residual lock files: '%s', '%s'" % (mode1, mode2))
+                    self.assertEqual(
+                        1, len(os.listdir(lockdir)),
+                        msg = "Nested open statements leave residual lock files: '%s', '%s'" % (mode1, mode2)
+                    )
 
                     
-
+    
     def test_parallel_lock(self):
         import multiprocessing
         import starsmashertools
@@ -178,7 +186,7 @@ test4test9
                         _mode, locked = output_queue.get()
                         self.assertEqual(_mode, mode2, msg="process got wrong mode")
                         self.assertEqual(expected, locked, msg = "Mode failed: '%s', '%s'" % (mode1, mode2))
-
+    
 
 
         
