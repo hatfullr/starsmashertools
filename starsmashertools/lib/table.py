@@ -88,6 +88,8 @@ class TEOS(Table, object):
         return data
     
     def interpolate(self, rho, u, which):
+        import starsmashertools.lib.interpolation
+        
         if isinstance(which, int): which = self._header_order[which]
 
         # Create interpolators on-the-fly
