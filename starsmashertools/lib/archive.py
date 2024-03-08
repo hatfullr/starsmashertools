@@ -494,7 +494,7 @@ class Archive(object):
             self._clear_buffers()
             self._nosave_holders -= 1
     
-    @contextlib.contextmanager
+    #@contextlib.contextmanager
     def open(
             self,
             mode : str,
@@ -508,14 +508,14 @@ class Archive(object):
 
         if verbose is None: verbose = self.verbose
 
-        try:
-            yield starsmashertools.helpers.file.open(
-                self.filename, mode, verbose = verbose,
-                message = message, progress_max = progress_max,
-                **Archive.open_method_kwargs
-            )
-        except Exception as e:
-            raise Archive.CorruptFileError("Failed to open archive file. Perhaps it did not save correctly. All data in this archive is lost. Please delete the file and try again: '%s'" % self.filename) from e
+        #try:
+        return starsmashertools.helpers.file.open(
+            self.filename, mode, verbose = verbose,
+            message = message, progress_max = progress_max,
+            **Archive.open_method_kwargs
+        )
+        #except Exception as e:
+        #    raise Archive.CorruptFileError("Failed to open archive file. Perhaps it did not save correctly. All data in this archive is lost. Please delete the file and try again: '%s'" % self.filename) from e
         
         
     @starsmashertools.helpers.argumentenforcer.enforcetypes
