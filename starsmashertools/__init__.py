@@ -17,6 +17,11 @@ if __file__.endswith(os.path.join('starsmashertools', 'starsmashertools','__init
 else:
     SOURCE_DIRECTORY = os.path.dirname(os.path.dirname(util.find_spec('starsmashertools').origin))
 
+DATA_DIRECTORY = os.path.join(SOURCE_DIRECTORY, 'data')
+LOCK_DIRECTORY = os.path.join(DATA_DIRECTORY, 'locks')
+if not os.path.isdir(DATA_DIRECTORY): os.makedirs(DATA_DIRECTORY)
+if not os.path.isdir(LOCK_DIRECTORY): os.makedirs(LOCK_DIRECTORY)
+
 # Check if some version string is older than the current version
 def _is_version_older(version, other = None):
     if other is None: other = __version__

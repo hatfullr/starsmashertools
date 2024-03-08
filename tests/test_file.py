@@ -7,6 +7,14 @@ curdir = os.getcwd()
 
 class TestFile(basetest.BaseTest):
 
+    def setUp(self):
+        import starsmashertools
+        import os
+        
+        for filename in os.listdir(starsmashertools.LOCK_DIRECTORY):
+            path = os.path.join(starsmashertools.LOCK_DIRECTORY, filename)
+            os.remove(path)
+    
     def tearDown(self):
         if os.path.isfile('lock_test_file'):
             os.remove('lock_test_file')
@@ -49,127 +57,130 @@ test4test9
             if line:
                 self.assertEqual(expected[len(expected) - i - 1], line)
 
-    """
     def test_lock(self):
-        import time
         import starsmashertools.helpers.file
+        import starsmashertools
+        import os
+        
+        lockdir = starsmashertools.LOCK_DIRECTORY
+        
+        # Touch a new file for us to use
+        filename = 'lock_test_file'
+        open(filename, 'x').close()
+
+        self.assertEqual(0, len(os.listdir(lockdir)), msg="Clear lock directory first")
+
+        all_modes = []
+        for key, val in starsmashertools.helpers.file.modes.items():
+            all_modes += val
+
+        # All modes should register file locking
+        for mode in all_modes:
+            if mode == 'x':
+                with self.assertRaises(FileExistsError):
+                    with starsmashertools.helpers.file.open(filename, mode) as f:
+                        pass
+                self.assertEqual(0, len(os.listdir(lockdir)), msg = "Mode '%s' left a residual lock file" % mode)
+            else:
+                with starsmashertools.helpers.file.open(filename, mode) as f:
+                    self.assertEqual(1, len(os.listdir(lockdir)), msg="Mode '%s' didn't cause locking" % mode)
+                self.assertEqual(0, len(os.listdir(lockdir)), msg = "Mode '%s' left a residual lock file" % mode)
+
+        # Try nested open statements
+        for mode1 in all_modes:
+            if mode1 == 'x': continue
+            with starsmashertools.helpers.file.open(filename, mode1) as f1:
+                for mode2 in all_modes:
+                    if mode2 == 'x': continue
+                    try:
+                        with starsmashertools.helpers.file.open(filename, mode2, timeout=1.e-6) as f2:
+                            self.assertEqual(2, len(os.listdir(lockdir)), msg = "Two lock files should be created: '%s', '%s'" % (mode1, mode2))
+                    except TimeoutError as e:
+                        if (mode2 in starsmashertools.helpers.file.modes['write'] or
+                            mode1 in starsmashertools.helpers.file.modes['write']):
+                            with self.assertRaises(TimeoutError):
+                                raise
+                        else:
+                            raise Exception("Failed timeout test: '%s', '%s'" % (mode1, mode2)) from e
+                    else:
+                        self.assertEqual(1, len(os.listdir(lockdir)), msg = "Nested open statements leave residual lock files: '%s', '%s'" % (mode1, mode2))
+
+                    
+
+    def test_parallel_lock(self):
+        import multiprocessing
+        import starsmashertools
+        import time
         import os
 
         # Touch a new file for us to use
-        open('lock_test_file', 'w').close()
+        filename = 'lock_test_file'
+        open(filename, 'x').close()
         
-        path = 'lock_test_file'
-
-        # When we open the file, we should create a corresponding *.lock
-        # file.
-        t0 = time.time()
-        with starsmashertools.helpers.file.open(
-                path, 'r',
-                timeout = 1.,
-                #lock = False,
-        ) as f:
-            self.assertFalse(starsmashertools.helpers.file.Lock.locked(path))
-            self.assertEqual(0, len(starsmashertools.helpers.file.Lock.get_all_lockfiles(path)))
-            
-            with starsmashertools.helpers.file.open(
-                    path, 'a',
-                    #lock = True,
-            ) as f2:
-                self.assertTrue(starsmashertools.helpers.file.Lock.locked(path))
-
-            self.assertFalse(starsmashertools.helpers.file.Lock.locked(path))
-
-        with starsmashertools.helpers.file.open(
-                path, 'w',
-        ) as f:
-            
-            self.assertTrue(starsmashertools.helpers.file.Lock.locked(path))
-
-            t0 = time.time()
-            with starsmashertools.helpers.file.open(
-                    path, 'r',
-                    timeout = 1.e-2,
-            ) as f2:
-                timer = time.time() - t0
-            
-            # Reasonable precision. Doesn't matter a whole lot.
-            self.assertLessEqual(timer, 1.e-2 + 1.e-3)
-    """
-
-    """
-    def test_parallel(self):
-        import multiprocessing
-
-        writables = ['w', 'a', 'w+', 'r+', 'wb', 'wb+', 'rb+', 'ab']
-        all_modes = ['r', 'rb'] + writables
-
-        # Touch a new file for us to use
-        open('lock_test_file', 'w').close()
-        
-        def check_lock(output_queue):
+        def check_lock(mode, output_queue):
             import starsmashertools.helpers.file
-            output_queue.put(starsmashertools.helpers.file.Lock.locked('lock_test_file'))
+            import os
+            try:
+                with starsmashertools.helpers.file.open(
+                        filename, mode, timeout=1.e-6,
+                ) as f:
+                    output_queue.put([mode, False]) # was not locked
+            except TimeoutError:
+                output_queue.put([mode, True]) # was locked
+        
+        modes = starsmashertools.helpers.file.modes
+        all_modes = []
+        for key, val in modes.items():
+            all_modes += val
         
         manager = multiprocessing.Manager()
         output_queue = manager.Queue()
         
         nprocs = multiprocessing.cpu_count()
 
-        for mode in all_modes:
-            processes = []
-            for i in range(nprocs):
-                processes += [multiprocessing.Process(
-                    target = check_lock,
-                    args = (output_queue, ),
-                    daemon = True,
-                )]
-
+        for mode1 in all_modes:
+            if mode1 == 'x': continue
             with starsmashertools.helpers.file.open(
-                    'lock_test_file', mode,
-                    #lock = True,
+                    filename, mode1,
             ) as f:
-                self.assertTrue(starsmashertools.helpers.file.Lock.locked('lock_test_file'), msg="File never got locked")
-                for process in processes: process.start()
+                for mode2 in all_modes:
+                    #print(mode1, mode2)
+                    if mode2 == 'x': continue
+                    processes = []
+                    for i in range(nprocs):
+                        processes += [multiprocessing.Process(
+                            target = check_lock,
+                            args = (mode2, output_queue,),
+                            daemon = True,
+                        )]
 
-                for process in processes:
-                    process.join()
-                    process.terminate()
+                    for process in processes: process.start()
 
-            while not output_queue.empty():
-                self.assertTrue(output_queue.get(), msg = "Mode '%s' failed" % mode)
-
-        # Writable modes should always lock
-        
-        for mode in all_modes:
-            processes = []
-            for i in range(nprocs):
-                processes += [multiprocessing.Process(
-                    target = check_lock,
-                    args = (output_queue, ),
-                    daemon = True,
-                )]
-
-            with starsmashertools.helpers.file.open(
-                    'lock_test_file', mode,
-                    #lock = False,
-            ) as f:
-                locked = starsmashertools.helpers.file.Lock.locked('lock_test_file')
-                if mode in writables:
-                    self.assertTrue(locked, msg="File was not locked")
-                else:
-                    self.assertFalse(locked, msg="File was locked")
+                    for process in processes:
+                        process.join()
+                        process.terminate()
                 
-                for process in processes: process.start()
+                    # Make sure all the processes found the right results
+                
+                    expected = None
+                    if mode1 in modes['readonly'] and mode2 in modes['readonly']:
+                        expected = False
+                    elif mode1 in modes['readonly'] and mode2 in modes['write']:
+                        expected = True
+                    elif mode1 in modes['write'] and mode2 in modes['readonly']:
+                        expected = True
+                    elif mode1 in modes['write'] and mode2 in modes['write']:
+                        expected = True
+                    else:
+                        raise Exception("Unknown modes: '%s', '%s'" % (mode1,mode2))
+                    
+                    while not output_queue.empty():
+                        _mode, locked = output_queue.get()
+                        self.assertEqual(_mode, mode2, msg="process got wrong mode")
+                        self.assertEqual(expected, locked, msg = "Mode failed: '%s', '%s'" % (mode1, mode2))
 
-                for process in processes:
-                    process.join()
-                    process.terminate()
 
-            while not output_queue.empty():
-                if mode in writables:
-                    self.assertTrue(output_queue.get(), msg = "Mode '%s' failed" % mode)
-                else: self.assertFalse(output_queue.get(), msg = "Mode '%s' failed" % mode)
-    """
+
         
 if __name__ == "__main__":
     unittest.main(failfast=True)

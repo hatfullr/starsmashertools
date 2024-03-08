@@ -10,6 +10,12 @@ import collections
 import warnings
 import starsmashertools.helpers.string
 
+def makedirs(path : str, **kwargs):
+    if starsmashertools.helpers.ssh.isRemote(path):
+        raise NotImplementedError
+    if isdir(path): return
+    return os.makedirs(path, **kwargs)
+
 def getcwd():
     return os.getcwd()
 

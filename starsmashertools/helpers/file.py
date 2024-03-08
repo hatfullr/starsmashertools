@@ -9,159 +9,163 @@ fortran_comment_characters = ['c','C','!','*']
 
 downloaded_files = []
 
+modes = {
+    'readonly' : ['r', 'rb'],
+    'write' : ['w', 'a', 'w+', 'r+', 'wb', 'wb+', 'rb+', 'ab', 'x'],
+}
+
 class FileModeError(Exception, object): pass
 
-# This works even with using multiprocessing.
 class Lock(object):
-    lockfiles = []
+    """
+    If a file is being read, writing is not allowed.
+    If a file is being written, reading/writing is not allowed.
+    """
     
-    def __init__(self, path, lockfile = None):
+    def __init__(
+            self,
+            path : str,
+            mode : str,
+            timeout : int | float | type(None) = None,
+    ):
         import os
-        import starsmashertools.helpers.path
-        
-        self.timeout = None
-        basename = starsmashertools.helpers.path.basename(path)
-        if '.lock.' in basename:
-            raise Exception("Cannot lock a lock file: '%s'" % path)
-        
-        if lockfile is None: lockfile = Lock.get_lockfile(path)
-        
-        self.lockfile = lockfile
-        self.path = path
-    
-    @staticmethod
-    def get_lockdir():
-        import starsmashertools.helpers.path
         import starsmashertools
-
-        return starsmashertools.helpers.path.join(
-            starsmashertools.SOURCE_DIRECTORY, 'data', 'lock',
-        )
-
-    @staticmethod
-    def get_lock_basename(path):
         import starsmashertools.helpers.path
-        import os
-        return starsmashertools.helpers.path.realpath(path).replace(os.sep, '_')
-
-    @staticmethod
-    def get_all_lockfiles(path):
-        import os
-        import starsmashertools.helpers.path
-        import re
-        
-        dirname = Lock.get_lockdir()
-        basename = Lock.get_lock_basename(path)
-
-        filenames = starsmashertools.helpers.path.listdir(dirname)
-        
-        pattern = r'{basename:s}\.lock\.\d+$'.format(
-            basename = basename,
-        )
-
-        matches = re.findall(
-            pattern,
-            '\n'.join(filenames),
-            flags = re.MULTILINE,
-        )
-        
-        return sorted([starsmashertools.helpers.path.join(dirname,match) for match in matches])
-
-    @staticmethod
-    def get_lockfile(path):
-        import os
-        import starsmashertools.helpers.path
-        import starsmashertools
-        import re
-
-        dirname = Lock.get_lockdir()
-        
-        # This guarantees uniqueness
-        basename = Lock.get_lock_basename(path)
-        
-        filenames = starsmashertools.helpers.path.listdir(dirname)
-        pattern = r'{basename:s}\.lock\.\d+$'.format(
-            basename = basename,
-        )
-        matches = re.findall(
-            pattern,
-            '\n'.join(filenames),
-            flags = re.MULTILINE,
-        )
-
-        lock_basename = r'{basename:s}.lock.{num:d}'.format(
-            basename = basename,
-            num = len(matches),
-        )
-        
-        return starsmashertools.helpers.path.join(dirname, lock_basename)
-
-    @staticmethod
-    def locked(path):
-        lockfiles = Lock.get_all_lockfiles(path)
-        return len(lockfiles) > 0
-    
-    @staticmethod
-    def unlock_all(*args, **kwargs):
-        # Unlock all file locks this process ever created
-        import starsmashertools.helpers.path
-        for path in Lock.lockfiles:
-            try:
-                starsmashertools.helpers.path.remove(path)
-            except FileNotFoundError: pass
-        Lock.lockfiles = []
-    
-    def is_next_locker(self):
-        """ Returns True if the file is ready to be manipulated. """
-        lockfiles = Lock.get_all_lockfiles(self.path)
-        if lockfiles: return lockfiles[0] == self.lockfile
-        return False
-    
-    def lock(self, timeout = None):
-        import time
-        import copy
         import starsmashertools.preferences
+        import copy
+        
+        if timeout is None:
+            timeout = starsmashertools.preferences.get_default(
+                'IO', 'Lock', throw_error = True,
+            ).get('timeout', float('inf'))
+        
+        self.path = starsmashertools.helpers.path.realpath(path)
+        self.mode = mode
+        self.timeout = timeout
+        
+        basename = self.path.replace(os.sep, '_')
+        basename_with_mode = copy.deepcopy(basename)
+        for key, val in modes.items():
+            if self.mode not in val: continue
+            basename_with_mode += '.' + key
+            break
+        else:
+            raise NotImplementedError("Unknown file mode '%s'" % self.mode)
 
-        try:
-            if timeout is None:
-                # Check the preferences
-                pref = starsmashertools.preferences.get_default(
-                    'IO', 'Lock', throw_error = False,
-                )
-                if pref is None: timeout = float('inf')
-                else: timeout = pref.get('timeout', float('inf'))
+        directory = starsmashertools.LOCK_DIRECTORY
+        
+        full_name = starsmashertools.helpers.path.join(directory, basename_with_mode)
+        
+        # Find other files that start with the same name and mode identifier. It
+        # doesn't need to match the mode we are in, it just needs to exist. This
+        # keeps our order of operations consistent with what user's code wants
+        # to do. It works like a "stack".
+        while True: # Keep trying until we make a correct file
+            existing = []
+            for filename in starsmashertools.helpers.path.listdir(directory):
+                if not filename.startswith(basename): continue
+                existing += [filename]
 
-            self.timeout = timeout
+            self.lockfile = full_name + '.%d' % len(existing)
+            
+            try:
+                # Touch to create the lock file, regardless if we are reading or
+                # writing
+                builtins.open(self.lockfile, 'x').close()
+            except FileExistsError:
+                continue
+            
+            break
+        
+        # Always unlock before program exit
+        atexit.register(self.unlock)
 
-            # Register that we would like to lock the file by creating an empty
-            # file identifier.
-            builtins.open(self.lockfile, 'w').close()
-            Lock.lockfiles += [self.lockfile]
+    @staticmethod
+    def get_lockfile_mode(lockfile : str):
+        return lockfile.split('.')[-2]
 
-            # Wait for all other locks to be released
-            t0 = time.time()
-            while Lock.locked(self.path) and not self.is_next_locker():
-                time.sleep(1.e-6)
-                if time.time() - t0 >= self.timeout:
-                    self.unlock()
-                    break
-        except:
-            print("Cleaning up")
-            Lock.unlock_all()
-            raise
-                
+    @staticmethod
+    def get_lockfile_number(lockfile : str):
+        return int(lockfile.split('.')[-1])
+
+    @staticmethod
+    def get_lockfile_basename(lockfile : str):
+        return '.'.join(lockfile.split('.')[:-2])
+
+    @property
+    def locking(self):
+        import starsmashertools.helpers.path
+        return starsmashertools.helpers.path.exists(self.lockfile)
+
+    def get_all_locks(self):
+        # Obtain all the lock files including us.
+        import starsmashertools.helpers.path
+        directory = starsmashertools.helpers.path.dirname(self.lockfile)
+        basename = starsmashertools.helpers.path.basename(self.lockfile)
+        base_lock_name = Lock.get_lockfile_basename(basename)
+        ret = []
+        numbers = []
+        for filename in starsmashertools.helpers.path.listdir(directory):
+            if Lock.get_lockfile_basename(filename) != base_lock_name: continue
+            path = starsmashertools.helpers.path.join(directory, filename)
+            ret += [path]
+            numbers += [Lock.get_lockfile_number(path)]
+        # Sort by the modification times
+        ret = [x for _, x in sorted(zip(numbers, ret), key=lambda pair:pair[0])]
+        return ret
+
+    def get_locks(self):
+        ret = {}
+        for path in self.get_all_locks():
+            mode = Lock.get_lockfile_mode(path)
+            if mode not in ret: ret[mode] = []
+            ret[mode] += [path]
+        # This is already sorted by the numbers from get_all_locks
+        return ret
+
+    def get_active_lockfile(self):
+        # The 'active' lockfile is the one which is in write mode and has the
+        # lowest number, or which is in read 
+        paths = self.get_locks()['write']
+        if paths: return paths[0]
+        raise FileNotFoundError("Failed to find the active lockfile. This should never be possible.")
+    
+    def ready(self):
+        # If we're next on the stack to hold the lock on this file
+        locks = self.get_all_locks() # Includes us
+        if locks[0] == self.lockfile: return True
+        
+        # If we want to write, then we aren't ready until we're at the bottom of
+        # the stack.
+        if self.mode in modes['write']: return False
+        
+        # Check the locks below us on the stack.
+        
+        # If all we want to do is read, then we're not ready if the file is
+        # going to be written on the stack.
+        if self.mode in modes['readonly']:
+            for lock in locks:
+                if Lock.get_lockfile_mode(lock) == 'write': return False
+            return True
+
+        raise NotImplementedError("Unknown file mode '%s'" % mode)    
+    
     def unlock(self):
         import starsmashertools.helpers.path
         try:
             starsmashertools.helpers.path.remove(self.lockfile)
         except FileNotFoundError: pass
-        if self.lockfile in Lock.lockfiles: Lock.lockfiles.remove(self.lockfile)
-        self.timeout = None
-            
 
-# Catch all interrupts and unlock all the files before exiting
-# This unlocks all files which this process has ever created.
-atexit.register(Lock.unlock_all)
+    def wait(self):
+        import time
+        
+        t0 = time.time()
+        while not self.ready():
+            #print("Still waiting", time.time() - t0)
+            if time.time() - t0 >= self.timeout:
+                self.unlock()
+                raise TimeoutError("Timeout while waiting for lock on file '%s'" % self.path)
+            time.sleep(1.e-6)
 
 
 @starsmashertools.helpers.argumentenforcer.enforcetypes
@@ -184,29 +188,36 @@ def open(
     import zipfile
     import os
     import starsmashertools.helpers.string
+    import starsmashertools.helpers.asynchronous
 
+    for _list in modes.values():
+        if mode in _list: break
+    else:
+        raise NotImplementedError("Unsupported file mode '%s'" % mode)    
+
+    if not starsmashertools.helpers.asynchronous.is_main_process():
+        verbose = False
+    
     if method is None: method = builtins.open
-
-    writable = mode in ['w', 'a', 'w+', 'r+', 'wb', 'wb+', 'rb+', 'ab']
+    
+    writable = mode in modes['write']
     if not writable and not starsmashertools.helpers.path.isfile(path):
         raise FileNotFoundError(path)
-
+    
     if verbose:
         short_path = starsmashertools.helpers.string.shorten(
             path, 40, where = 'left',
         )
-
-    #_lock = None
-    #if lock or Lock.locked(path) or writable:
-
+    
     # Always lock no matter what
-    _lock = Lock(path)
-    if not verbose: _lock.lock(timeout = timeout)
-    else:
-        with starsmashertools.helpers.string.loading_message(
-                "Waiting for '%s'" % short_path, delay = 5,
-        ) as loading_message:
-            _lock.lock(timeout = timeout)
+    _lock = Lock(path, mode, timeout = timeout)
+    if _lock.timeout > 0:
+        if not verbose: _lock.wait()
+        else:
+            with starsmashertools.helpers.string.loading_message(
+                    "Waiting for '%s'" % short_path, delay = 5,
+            ) as loading_message:
+                _lock.wait()
     
     f = None
                 
@@ -235,13 +246,20 @@ def open(
                     yield f
     except:
         if f is not None: f.close()
-        if _lock is not None: _lock.unlock()
-        f = None
+        _lock.unlock()
         _lock = None
         raise
     finally:
         if f is not None: f.close()
         if _lock is not None: _lock.unlock()
+        _lock = None
+        f = None
+
+    if f is not None: f.close()
+    if _lock is not None: _lock.unlock()
+    f = None
+    _lock = None
+
 
 # Check if the file at the given path is a MESA file
 def isMESA(path):

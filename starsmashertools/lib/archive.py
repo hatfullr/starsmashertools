@@ -761,7 +761,10 @@ class Archive(object):
             # Add keys that need to be added
             for key, val in data.items():
                 zfile.writestr(key, val)
-                zfile.progress.increment()
+                # Only true when verbose is True and in the main process. See
+                # helpers/file.py for details
+                if hasattr(zfile, 'progress'):
+                    zfile.progress.increment()
             
             current_keys = zfile.namelist()
         

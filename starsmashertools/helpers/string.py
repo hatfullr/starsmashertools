@@ -24,7 +24,7 @@ class LoadingMessage(object):
         self.message = message
         self.suffixes = suffixes
         self.done_message = done_message
-
+        
         self.ticker = None
         if sys.stdout.isatty(): # Output is going to the terminal
             self.ticker = starsmashertools.helpers.asynchronous.Ticker(
@@ -44,13 +44,13 @@ class LoadingMessage(object):
     def __exit__(self, exc_type, exc_val, exc_tb):
         import starsmashertools.bintools.cli
         import copy
-
-        if exc_type is not None: raise
-
+        
         print_done_message = True
         if self.ticker is not None:
             print_done_message = copy.deepcopy(self.ticker.completed)
             self.ticker.cancel()
+
+        if exc_type is not None: raise
         
         if print_done_message:
             if starsmashertools.bintools.cli.CLI.instance is not None:
@@ -128,14 +128,7 @@ class ProgressMessage(LoadingMessage, object):
         )
 
     def increment(self, amount : int | float = 1):
-        self.progress += amount 
-    
-    #def __exit__(self, *args, **kwargs):
-    #    return super(ProgressMessage, self).__exit__(*args, **kwargs)
-
-    #def __enter__(self, *args, **kwargs):
-    #    return super(ProgressMessage, self).__enter__(*args, **kwargs)
-
+        self.progress += amount
 
 @contextlib.contextmanager
 def loading_message(*args, **kwargs):
