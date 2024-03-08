@@ -141,6 +141,7 @@ class Lock(object):
             # Wait for all other locks to be released
             t0 = time.time()
             while Lock.locked(self.path) and not self.is_next_locker():
+                time.sleep(1.e-6)
                 if time.time() - t0 >= self.timeout:
                     self.unlock()
                     break
