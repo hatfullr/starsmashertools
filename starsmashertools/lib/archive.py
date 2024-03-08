@@ -546,7 +546,7 @@ class Archive(object):
         keys = []
         if starsmashertools.helpers.path.exists(self.filename):
             try:
-                with self.open('r', message = 'Loading keys') as zfile:
+                with self.open('r', message = 'Loading keys in %s' % self) as zfile:
                     keys = zfile.namelist()
             except Exception as e:
                 raise Archive.CorruptFileError("Failed to load keys from the archive file. Perhaps it did not save correctly. All data in this archive is lost. Please delete the file and try again: '%s'" % self.filename) from e
@@ -573,7 +573,7 @@ class Archive(object):
         # First we need to read in the contents of the file
         if starsmashertools.helpers.path.exists(self.filename):
             try:
-                with self.open('r', message = "Loading items") as zfile:
+                with self.open('r', message = "Loading items in %s" % self) as zfile:
                     for key in zfile.namelist():
                         if key == 'file info': continue
                         everything[key] = zfile.read(key)
@@ -658,7 +658,7 @@ class Archive(object):
 
         # Otherwise, check the archive
         try:
-            with self.open('r', message = "Loading key '%s' in" % str(key)) as zfile:
+            with self.open('r', message = "Loading key '%s' in %s" % (str(key), self)) as zfile:
                 keys = zfile.namelist()
                 if 'file info' in keys: keys.remove('file info')
                 if key not in keys: raise KeyError(key)
@@ -683,7 +683,7 @@ class Archive(object):
         should_update = False
         info = None
         try:
-            with self.open('r', message = "Getting file info") as zfile:
+            with self.open('r', message = "Getting file info from %s" % self) as zfile:
                 if 'file info' in zfile.namelist():
                     info = zfile.read('file info')
         except Exception as e:
@@ -758,6 +758,7 @@ class Archive(object):
             with self.open(
                     'a',
                     verbose = verbose,
+                    message = "Saving %s" % self,
                     progress_max = len(data.keys()),
             ) as zfile:
                 keys = zfile.namelist()
