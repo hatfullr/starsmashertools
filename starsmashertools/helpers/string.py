@@ -121,9 +121,9 @@ class ProgressMessage(LoadingMessage, object):
         )
 
     def get_message(self):
-        total = float(self.max - self.min)
+        total = self.max - self.min
         if total == 0: current = 100.
-        else: current = self.progress / total * 100.
+        else: current = self.progress / float(total) * 100.
         return self.message + self.suffixes[self._index].format(
             current = self.progress,
             total = total,
