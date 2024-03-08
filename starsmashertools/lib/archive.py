@@ -813,6 +813,19 @@ class Archive(object):
         """
         value = ArchiveValue(*args, **kwargs)
         self[value.identifier] = value
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    @cli('ssarchive')
+    def set(self, *args, **kwargs):
+        """
+        A simple alias for :meth:`~.add`.
+
+        See Also
+        --------
+        :meth:`~.add`
+        """
+        return self.add(*args, **kwargs)
             
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
@@ -829,7 +842,7 @@ class Archive(object):
         """
         del self[key]
         if cli: return 'Success'
-
+    
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def combine(
