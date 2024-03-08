@@ -359,18 +359,22 @@ class TestArchive(basetest.BaseTest):
         def func(filename):
             import starsmashertools.lib.archive
             import time
+            import warnings
+            
             archive = starsmashertools.lib.archive.Archive(
                 filename,
             )
             alot_of_data = {}
             for key, val in enumerate(range(100000)):
                 alot_of_data[key] = val
+            warnings.filterwarnings(action = 'ignore')
             archive.add(
                 'same key',
                 alot_of_data,
                 origin = None,
                 mtime = None,
             )
+            warnings.resetwarnings()
 
         nprocs = 4
         processes = [None]*nprocs

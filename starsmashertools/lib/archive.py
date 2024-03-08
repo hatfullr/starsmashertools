@@ -732,6 +732,11 @@ class Archive(object):
             If `None` then :py:attr:`~.verbose` is used instead.
         """
         import starsmashertools.helpers.path
+        import starsmashertools.helpers.asynchronous
+        import starsmashertools.helpers.warnings
+
+        if not starsmashertools.helpers.asynchronous.is_main_process():
+            starsmashertools.helpers.warnings.warn("Archive.save() is being called by a process that is not the main process. Archive.save() is not thread safe, so make sure you are calling Archive.save() from a single process only. You can suppress this warning with warnings.filterwarnings(action = 'ignore').")
         
         if self.readonly: raise Archive.ReadOnlyError(self.filename)
         if self._nosave_holders > 0: return
