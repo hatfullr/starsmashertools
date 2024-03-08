@@ -106,13 +106,13 @@ class ProgressMessage(LoadingMessage, object):
                 '... {current:d} / {total:d} ({progress:5.1f}%)',
             ],
             done_message : str = '',
-            min : int | float = 0,
-            max : int | float = 100,
+            min : int = 0,
+            max : int = 100,
             **kwargs
     ):
-        self.min = min
-        self.max = max
-        self.progress = self.min
+        self._min = min
+        self._max = max
+        self._progress = self._min
         super(ProgressMessage, self).__init__(
             *args,
             suffixes = suffixes,
@@ -121,17 +121,18 @@ class ProgressMessage(LoadingMessage, object):
         )
 
     def get_message(self):
-        total = self.max - self.min
-        if total == 0: current = 100.
-        else: current = self.progress / float(total) * 100.
+        total = self._max - self._min
+        current = self._progress
+        if total == 0: progress = 100.
+        else: progress = current / float(total) * 100.
         return self.message + self.suffixes[self._index].format(
-            current = self.progress,
+            current = current,
             total = total,
-            progress = current,
+            progress = progress,
         )
 
-    def increment(self, amount : int | float = 1):
-        self.progress += amount
+    def increment(self, amount : int = 1):
+        self._progress += amount
 
 @contextlib.contextmanager
 def loading_message(*args, **kwargs):
