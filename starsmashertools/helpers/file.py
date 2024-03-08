@@ -42,7 +42,12 @@ class Lock(object):
         self.path = starsmashertools.helpers.path.realpath(path)
         self.mode = mode
         self.timeout = timeout
-        
+
+        self.identifier = starsmashertools.helpers.path.realpath(path).replace(
+            os.sep,
+            '_',
+        )
+
         basename = self.path.replace(os.sep, '_')
         basename_with_mode = copy.deepcopy(basename)
         for key, val in modes.items():
@@ -51,10 +56,12 @@ class Lock(object):
             break
         else:
             raise NotImplementedError("Unknown file mode '%s'" % self.mode)
-
+        
         directory = starsmashertools.LOCK_DIRECTORY
         
-        full_name = starsmashertools.helpers.path.join(directory, basename_with_mode)
+        full_name = starsmashertools.helpers.path.join(
+            directory, basename_with_mode,
+        )
         
         # Find other files that start with the same name and mode identifier. It
         # doesn't need to match the mode we are in, it just needs to exist. This
@@ -76,6 +83,7 @@ class Lock(object):
                 continue
             
             break
+
         
         # Always unlock before program exit
         atexit.register(self.unlock)
@@ -83,7 +91,7 @@ class Lock(object):
     @staticmethod
     def get_lockfile_mode(lockfile : str):
         return lockfile.split('.')[-2]
-
+    
     @staticmethod
     def get_lockfile_number(lockfile : str):
         return int(lockfile.split('.')[-1])
@@ -91,11 +99,6 @@ class Lock(object):
     @staticmethod
     def get_lockfile_basename(lockfile : str):
         return '.'.join(lockfile.split('.')[:-2])
-
-    @property
-    def locking(self):
-        import starsmashertools.helpers.path
-        return starsmashertools.helpers.path.exists(self.lockfile)
 
     def get_all_locks(self):
         # Obtain all the lock files including us.
@@ -149,13 +152,13 @@ class Lock(object):
             return True
 
         raise NotImplementedError("Unknown file mode '%s'" % mode)    
-    
+
     def unlock(self):
         import starsmashertools.helpers.path
         try:
             starsmashertools.helpers.path.remove(self.lockfile)
         except FileNotFoundError: pass
-
+    
     def wait(self):
         import time
         
@@ -223,6 +226,7 @@ def open(
                 
     try:
         f = method(path, mode, **kwargs)
+        f.sstools_lock = _lock
         if not verbose: yield f
         else:
             if writable:
