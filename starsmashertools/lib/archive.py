@@ -509,14 +509,13 @@ class Archive(object):
         if verbose is None: verbose = self.verbose
 
         try:
-            with starsmashertools.helpers.file.open(
-                    self.filename, mode, verbose = verbose,
-                    message = message, progress_max = progress_max,
-                    **Archive.open_method_kwargs
-            ) as zfile:
-                yield zfile
+            yield starsmashertools.helpers.file.open(
+                self.filename, mode, verbose = verbose,
+                message = message, progress_max = progress_max,
+                **Archive.open_method_kwargs
+            )
         except Exception as e:
-            raise Archive.CorruptFileError("Failed to load archive file, likely because it did not save correctly. Please delete it and try again: '%s'" % self.filename) from e
+            raise Archive.CorruptFileError("Failed to open archive file. Perhaps it did not save correctly. All data in this archive is lost. Please delete the file and try again: '%s'" % self.filename) from e
         
         
     @starsmashertools.helpers.argumentenforcer.enforcetypes
