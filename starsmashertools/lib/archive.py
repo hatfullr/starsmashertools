@@ -567,32 +567,10 @@ class Archive(object):
         """ Return all keys and values in the Archive. This is I/O intensive, 
         so use it sparingly. """
         import starsmashertools.helpers.path
-
-        everything = {}
-        
-        # First we need to read in the contents of the file
-        if starsmashertools.helpers.path.exists(self.filename):
-            try:
-                with self.open('r', message = "Loading items in %s" % self) as zfile:
-                    for key in zfile.namelist():
-                        if key == 'file info': continue
-                        everything[key] = zfile.read(key)
-            except Exception as e:
-                raise Archive.CorruptFileError("Failed to load items from the archive file. Perhaps it did not save correctly. All data in this archive is lost. Please delete the file and try again: '%s'" % self.filename) from e
-            
-            # Deserialize everything
-            for key, value in everything.items():
-                everything[key] = ArchiveValue.deserialize(key, value)
-
-        # Now remove the keys in the removal buffer
-        for key in self._buffers['remove']:
-            if key in everything.keys(): del everything[key]
-
-        # Now add the contents of the addition buffer
-        everything.update(self._buffers['add'])
-        
-        return everything.items()
-            
+        import starsmashertools.helpers.string
+        keys = self.keys()
+        return zip(keys, self.get(keys))
+    
     @api
     def values(self):
         """ Return all the values in the Archive. This reads the entire Archive
@@ -664,7 +642,7 @@ class Archive(object):
                 if key not in keys: raise KeyError(key)
                 value = zfile.read(key)
         except Exception as e:
-            if not isinstance(e, KeyError): raise
+            if isinstance(e, KeyError): raise
             raise Archive.CorruptFileError("Failed to load key '%s' from the archive file. Perhaps it did not save correctly. All data in this archive is lost. Please delete the file and try again: '%s'" % (key, self.filename)) from e
         return ArchiveValue.deserialize(key, value)
     
@@ -827,6 +805,89 @@ class Archive(object):
         :meth:`~.add`
         """
         return self.add(*args, **kwargs)
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def get(
+            self,
+            keys : str | list | tuple,
+    ):
+        """
+        Obtain the key or keys given. This is useful for if you want to retrieve
+        many values from the archive without opening and closing the file each
+        time. Raises a :py:class:`KeyError` if any of the keys weren't found.
+
+        Parameters
+        ----------
+        keys : str, list, tuple
+            If a `str`, the behavior is equivalent to :meth:`~.__getitem__`. If
+            a `list` or `tuple`, each element must be type `str`. Then the
+            archive is opened and the values for the given keys are returned in
+            the same order as ``keys``.
+
+        Returns
+        -------
+        :class:`~.ArchiveValue` or `list`
+            If a `str` was given for ``keys``, a :class:`~.ArchiveValue` is 
+            returned. Otherwise, a `list` of :class:`~.ArchiveValue` objects is
+            returned.
+        """
+        import starsmashertools.helpers.string
+        
+        if isinstance(keys, (list, tuple)):
+            for key in keys:
+                if isinstance(key, str): continue
+                raise TypeError("Argument 'keys' must contain only elements of type 'str', not '%s'" % type(key).__name__)
+        else: keys = [keys]
+
+
+        remaining_keys = []
+        values = [None] * len(keys)
+        # Search the buffers first before loading the file values
+        for i, key in enumerate(keys):
+            # If we do have the key in the buffer, fetch its value
+            if key in self._buffers['remove']: raise KeyError(key)
+            if key in self._buffers['add'].keys():
+                values[i] = self._buffers['add'][key]
+            else: remaining_keys += [[i, key]]
+
+        if None not in values: # We only had to search the buffers! :)
+            return values
+
+        # Check the archive file
+        to_deserialize = []
+        with self.open(
+                'r',
+                message = "Loading keys in %s" % self,
+                progress_max = len(remaining_keys),
+        ) as zfile:
+            try:
+                file_keys = zfile.namelist()
+                if 'file info' in file_keys: file_keys.remove('file info')
+            except Exception as e:
+                raise Archive.CorruptFileError("Failed to load a key from the archive file. Perhaps it did not save correctly. All data in this archive is lost. Please delete the file and try again: '%s'" % (key, self.filename)) from e
+                
+            for i, key in remaining_keys:
+                if key not in file_keys: raise KeyError(key)
+                values[i] = zfile.read(key)
+                to_deserialize += [[i, key]]
+                zfile.progress.increment()
+
+
+        keys_to_deserialize = []
+        vals_to_deserialize = []
+        for i, key in to_deserialize:
+            keys_to_deserialize += [key]
+            vals_to_deserialize += [values[i]]
+            
+        deserialized_vals = self._deserialize(
+            keys_to_deserialize, vals_to_deserialize,
+        )
+        for i, key in to_deserialize:
+            values[i] = deserialized_vals[i]
+        
+        if len(values) == 1: return values[0]
+        return values
             
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
@@ -911,7 +972,49 @@ class Archive(object):
         return ("Showing '%s':" % key) + newline + newline + header + newline + newline + str(val.value)
         
 
+    def _deserialize(self, keys : list, values : list):
+        """ Deserialize many :class:`~.ArchiveValue` objects efficiently. Uses
+        parallel processing to speed things up. """
+        import starsmashertools.helpers.asynchronous
+        import starsmashertools.helpers.string
 
+        nprocs = min(
+            starsmashertools.helpers.asynchronous.max_processes,
+            len(keys),
+        )
+
+        def func(progress_message = None):
+            ret = []
+            if nprocs == 1 or not starsmashertools.helpers.asynchronous.is_main_process():
+                if progress_message:
+                    progress_message.message += " in serial"
+                # Run in serial
+                for key, val in zip(keys, values):
+                    ret += [ArchiveValue.deserialize(key, value)]
+                    progress.increment()
+            else:
+                if progress_message:
+                    progress_message.message += " on %d processes" % nprocs
+                arguments = [[key, value] for key, value in zip(keys, values)]
+                p = starsmashertools.helpers.asynchronous.ParallelFunction(
+                    target = ArchiveValue.deserialize,
+                    args = arguments,
+                    nprocs = nprocs,
+                    progress_message = progress,
+                    start = True,
+                )
+                ret = p.get_output()
+                del p
+            return ret
+
+        if self.verbose:
+            with starsmashertools.helpers.string.progress_message(
+                    message = "Deserializing archive values",
+                    max = len(keys), delay = 5,
+            ) as progress:
+                ret = func(progress_message = progress)
+        else: ret = func()
+        return ret
 
     
 class OutputArchiveValue(ArchiveValue, object):

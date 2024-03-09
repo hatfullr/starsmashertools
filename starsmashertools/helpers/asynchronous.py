@@ -25,8 +25,7 @@ class Process(multiprocessing.Process, object):
 class ParallelFunction(object):
     """
     This object can be used as a shortcut for writing parallel processes. You
-    supply a target function which will be run on many individual processes. The
-    supplied arguments are 
+    supply a target function which will be run on many individual processes.
     """
     
     def __init__(
@@ -36,6 +35,7 @@ class ParallelFunction(object):
             kwargs : tuple | list | type(None) = None,
             nprocs : int | type(None) = None,
             start : bool = True,
+            progress_message : "starsmashertools.helpers.string.ProgressMessage | type(None)" = None,
             **kw
     ):
         """
@@ -74,6 +74,10 @@ class ParallelFunction(object):
             blocking. To start with blocking, specify `False` and then call
             :func:`~.start` in your code.
 
+        progress_message : :class:`~.helpers.string.ProgressMessage`, None, default = None
+            A progress message to update each time a function call is completed
+            by one of the child processes.
+
         **kw
             Other keyword arguments are passed directly to
             ``multiprocessing.Process`` when creating each individual process.
@@ -81,6 +85,8 @@ class ParallelFunction(object):
         """
         if nprocs is None: nprocs = max_processes
         self._nprocs = nprocs
+
+        self.progress_message = progress_message
         
         # Populate the input queue
         if args is None and kwargs is None:
@@ -97,11 +103,14 @@ class ParallelFunction(object):
             if len(kwargs) < len(args):
                 kwargs += [{}] * (len(args) - len(kwargs))
 
+        # Don't spawn more processes than we need to
+        nprocs = min(nprocs, len(args))
+                
         manager = multiprocessing.Manager()
         self._input_queue = manager.Queue()
         self._output_queue = manager.Queue()
         self._error_queue = manager.Queue()
-
+        
         self._error_queue_lock = manager.Lock()
 
         for i, (a, k) in enumerate(zip(args, kwargs)):
@@ -158,6 +167,11 @@ class ParallelFunction(object):
             process.start()
 
     def terminate(self):
+        # If we terminate without joining, the queue becomes corrupted and
+        # unusable, possibly causing memory leaks.
+        #for process in self._processes:
+        #    process.join()
+            
         for process in self._processes:
             process.terminate()
 
@@ -237,11 +251,13 @@ class ParallelFunction(object):
                 onError = self.process_error,
                 onFinished = self.terminate,
                 do_every = self._do,
+                progress_message = self.progress_message,
             )
         else:
             # Block until all processes have finished
             timers = [0.] * len(self._do)
             t0 = time.time()
+            previous_qsize = self._output_queue.qsize()
             while self._output_queue.qsize() < self._expected_outputs:
                 if not self._error_queue.empty():
                     self.process_error(self._error_queue.get())
@@ -254,6 +270,15 @@ class ParallelFunction(object):
                     if timers[i] >= d[0]:
                         timers[i] -= d[0] # Maintain remainder
                         d[1](*d[2], **d[3])
+
+                if self.progress_message:
+                    current_qsize = self._output_queue.qsize()
+                    if current_qsize != previous_qsize:
+                        self.progress_message.increment(
+                            amount = current_qsize - previous_qsize,
+                        )
+                        previous_qsize = current_qsize
+                        
                 time.sleep(1.e-4)
 
             self.terminate()
@@ -264,7 +289,12 @@ class ParallelFunction(object):
                 index, output = self._output_queue.get()
                 outputs += [output]
                 indices += [index]
-
+            
+            # Close the queues
+            queues = [self._input_queue,self._output_queue,self._error_queue]
+            for queue in queues:
+                while not queue.empty(): queue.get()
+            
             # Return sorted by input indices
             return [x for _, x in sorted(zip(indices, outputs))]
 
@@ -277,6 +307,7 @@ class ParallelFunction(object):
                 onError : typing.Callable | type(None) = None,
                 onFinished : typing.Callable | type(None) = None,
                 do_every : list | tuple = [],
+                progress_message : "starsmashertools.helpers.string.ProgressMessage | type(None)" = None,
         ):
             self.queue = queue
             self.expected_length = expected_length
@@ -284,7 +315,8 @@ class ParallelFunction(object):
             self.onError = onError
             self.do_every = do_every
             self.onFinished = onFinished
-
+            self.progress_message = progress_message
+            
             self._iteration = 0
             self._timers = [0.] * len(self.do_every)
             self._t0 = None
@@ -319,7 +351,9 @@ class ParallelFunction(object):
                         d[1](*d[2], **d[3])
             
             self._iteration += 1
-            return self.queue.get()
+            ret = self.queue.get()
+            if self.progress_message: self.progress_message.increment()
+            return ret
 
         def stop(self):
             if self.onFinished is not None:

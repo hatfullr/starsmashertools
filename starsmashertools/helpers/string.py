@@ -24,6 +24,8 @@ class LoadingMessage(object):
         self.message = message
         self.suffixes = suffixes
         self.done_message = done_message
+
+        self._printed_done_message = False
         
         self.ticker = None
         if sys.stdout.isatty(): # Output is going to the terminal
@@ -42,7 +44,6 @@ class LoadingMessage(object):
         return self
     
     def __exit__(self, exc_type, exc_val, exc_tb):
-        import starsmashertools.bintools.cli
         import copy
         
         print_done_message = False
@@ -52,16 +53,20 @@ class LoadingMessage(object):
 
         if exc_type is not None: raise
         
-        if print_done_message:
-            if starsmashertools.bintools.cli.CLI.instance is not None:
-                starsmashertools.bintools.cli.CLI.write(self.done_message)
-            else:
-                print(self.done_message)
+        if print_done_message: self.print_done_message()
         
         return True
 
     def get_message(self):
         return self.message + self.suffixes[self._index]
+
+    def print_done_message(self):
+        import starsmashertools.bintools.cli
+        if starsmashertools.bintools.cli.CLI.instance is not None:
+            starsmashertools.bintools.cli.CLI.write(self.done_message)
+        else:
+            print(self.done_message)
+        self._printed_done_message = True
     
     def print_message(self):
         import starsmashertools.bintools.cli
@@ -116,7 +121,7 @@ class ProgressMessage(LoadingMessage, object):
         super(ProgressMessage, self).__init__(
             *args,
             suffixes = suffixes,
-            done_message = '',
+            done_message = done_message,
             **kwargs
         )
 
@@ -133,6 +138,16 @@ class ProgressMessage(LoadingMessage, object):
 
     def increment(self, amount : int = 1):
         self._progress += amount
+
+    def print_done_message(self):
+        self._progress = self._max
+        self.print_message()
+        super(ProgressMessage, self).print_done_message()
+
+    def __exit__(self, *args, **kwargs):
+        super(ProgressMessage, self).__exit__(*args, **kwargs)
+        if self._printed_done_message: return
+        self.print_done_message()
 
 @contextlib.contextmanager
 def loading_message(*args, **kwargs):

@@ -229,21 +229,17 @@ def open(
         f.sstools_lock = _lock
         if not verbose: yield f
         else:
-            if writable:
-                if message is None: message = "Writing '%s'" % short_path
-                if progress_max > 0:
-                    with starsmashertools.helpers.string.progress_message(
-                            message = message, delay = 5, max = progress_max,
-                    ) as progress:
-                        f.progress = progress
-                        yield f
-                else:
-                    with starsmashertools.helpers.string.loading_message(
-                            message = message, delay = 5,
-                    ) as loading_message:
-                        yield f
+            if message is None:
+                if writable: message = "Writing '%s'" % short_path
+                else: message = "Reading '%s'" % short_path
+                
+            if progress_max > 0:
+                with starsmashertools.helpers.string.progress_message(
+                        message = message, delay = 5, max = progress_max,
+                ) as progress:
+                    f.progress = progress
+                    yield f
             else:
-                if message is None: message = "Reading '%s'" % short_path
                 with starsmashertools.helpers.string.loading_message(
                         message = message, delay = 5,
                 ) as loading_message:
