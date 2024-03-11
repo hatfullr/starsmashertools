@@ -13,7 +13,7 @@ class LoadingMessage(object):
     def __init__(
             self,
             message : str = "Loading",
-            delay : int | float = 0,
+            delay : int | float = 5,
             interval : int | float = 1,
             suffixes : list | tuple = ['.','..','...'],
             done_message : str = 'Done',
