@@ -191,22 +191,34 @@ def enforce_numpy_dtype(
 
 
 # Returns a dictionary with keys equal to the variable names and values equal to
-# the variable values, where the variables match the keys from the input
-# list
+# the variable values, where the variables match the keys from the input list
 def _get_variables_in_context_from_dict(name_list):
+    found = []
     frame = inspect.currentframe()
     while frame is not None:
         # Don't search any frames in this file
-        if frame.f_code.co_filename != __file__:
-            for name in name_list:
-                if name not in frame.f_locals.keys():
-                    break
-            else:
-                # Found the right frame that has all the given variables
-                break
+        if frame.f_code.co_filename == __file__:
+            frame = frame.f_back
+            continue
+        
+        found += list(frame.f_locals.keys())
+        for name in name_list:
+            # If a name isn't in this list, then it isn't the frame we are
+            # looking for
+            if name not in frame.f_locals.keys(): break
+        # Found the right frame that has all the given variables (probably)
+        else: break
+        
         frame = frame.f_back
     else:
-        raise Exception("Failed to find the context that contains all the given variable names")
+        import starsmashertools.helpers.string
+        list_str = starsmashertools.helpers.string.list_to_string(
+            sorted(list(name_list)),
+        )
+        found_str = starsmashertools.helpers.string.list_to_string(
+            sorted(list(set(found))),
+        )
+        raise Exception("Failed to find the context that contains all the given variable names: %s.\nFound: %s" % (list_str, found_str))
     
     _locals = frame.f_locals
     keys = _locals.keys()

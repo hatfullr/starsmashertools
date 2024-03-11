@@ -1,8 +1,10 @@
 import copy
 
 class ReadOnlyDict(dict, object):
+    class EditError(Exception, object): pass
+    
     def raise_readonly(*args, **kwargs):
-        raise Exception("Cannot edit a ReadOnlyDict")
+        raise ReadOnlyDict.EditError("Cannot edit a ReadOnlyDict")
 
     __setitem__ = raise_readonly
     __delitem__ = raise_readonly

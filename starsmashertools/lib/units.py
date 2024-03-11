@@ -27,9 +27,39 @@ def get_all_labels():
 
 class Unit(object):
     exception_message = "Operation '%s' is disallowed on 'Unit' type objects. Please convert to 'float' first using, e.g., 'float(unit)'."
+
+    # This defines the allowed data types for the operations defined
+    # below. np.generic identifies NumPy scalars:
+    # https://numpy.org/doc/stable/reference/arrays.scalars.html
+    operation_types = {
+        '__mul__'      : [float, int, 'Unit', np.generic],
+        '__rmul__'     : [float, int, 'Unit', np.generic],
+        '__truediv__'  : [float, int, 'Unit', np.generic],
+        '__rtruediv__' : [float, int, 'Unit', np.generic],
+        '__add__'      : [float, int, 'Unit', np.generic],
+        '__radd__'     : [float, int, 'Unit', np.generic],
+        '__sub__'      : [float, int, 'Unit', np.generic],
+        '__rsub__'     : [float, int, 'Unit', np.generic],
+        '__pow__'      : [float, int,         np.generic],
+        '__eq__'       : [float, int, 'Unit', np.generic],
+        '__gt__'       : [float, int, 'Unit', np.generic],
+        '__ge__'       : [float, int, 'Unit', np.generic],
+        '__lt__'       : [float, int, 'Unit', np.generic],
+        '__le__'       : [float, int, 'Unit', np.generic],
+    }
+
+    class InvalidLabelError(Exception, object): pass
+    class InvalidTypeConversionError(Exception, object): pass
+    
     @api
     def __init__(self, *args, base=['cm', 'g', 's']):
         import starsmashertools.helpers.argumentenforcer
+
+        # Fix the string values in operation_types above
+        for key, val in Unit.operation_types.items():
+            if 'Unit' not in val: continue
+            Unit.operation_types[key][val.index('Unit')] = Unit
+        
         if len(args) == 1 and isinstance(args[0], str):
             import starsmashertools.helpers.string
             # Convert string to Unit
@@ -40,7 +70,7 @@ class Unit(object):
                 value = starsmashertools.helpers.string.parse(value.strip())
                 label = label.strip().replace('"','').replace("'",'')
             except Exception as e:
-                raise ValueError("Invalid str to Unit conversion: '%s'" % string) from e
+                raise Unit.InvalidTypeConversionError("Invalid str to Unit conversion: '%s'" % string) from e
         elif len(args) == 2:
             value, label = args
         
@@ -195,7 +225,7 @@ class Unit(object):
         })
         if isinstance(new_label, str): new_label = Unit.Label(new_label)
         if not self.label.is_compatible(new_label):
-            raise Exception("Cannot convert unit because labels '%s' and '%s' are incompatible" % (self.label, new_label))
+            raise Unit.InvalidLabelError("Cannot convert unit because labels '%s' and '%s' are incompatible" % (self.label, new_label))
         #if isinstance(new_label, Unit.Label): new_label = str(new_label)
         factor = self.get_conversion_factor(new_label, **kwargs)
         return Unit(self.value * factor, new_label)
@@ -226,21 +256,6 @@ class Unit(object):
                     ret.value /= conversion_values[conversion_names.index(name)]
                     ret.label.right[i] = conversion['base']
         return ret
-                    
-        """
-        ret = copy.deepcopy(self)
-        for i, unit in enumerate(ret.label.left):
-            if unit in self.base: continue
-            factor, new_unit = self.get_conversion_factor(unit, conversions=conversions)
-            ret *= factor
-            ret.label.left[i] = new_unit
-        for i, unit in enumerate(ret.label.right):
-            if unit in self.base: continue
-            factor, new_unit = self.get_conversion_factor(unit, conversions=conversions)
-            ret *= factor
-            ret.label.right[i] = new_unit
-        """
-        return ret
 
     def sqrt(self, *args, **kwargs):
         return Unit(self.value**0.5, self.label**0.5)
@@ -249,62 +264,59 @@ class Unit(object):
         string = self.__class__.__name__ + "(%g, %s)"
         return string % (self.value, str(self.label))
     def __str__(self): return '%g %s' % (self.value, str(self.label))
-
-    #def __copy__(self, *args, **kwargs):
-    #    return Unit(self.value, self.label, base=self.base)
-    #
-    #def __deepcopy__(self, *args, **kwargs):
-    #    return Unit(self.value, self.label, base=self.base)
-
+    
     @api
     def __eq__(self, other):
-        starsmashertools.helpers.argumentenforcer.enforcetypes({'other' : [Unit]})
-        return self.value == other.value and self.label == other.label
+        starsmashertools.helpers.argumentenforcer.enforcetypes({
+            'other' : Unit.operation_types['__eq__'],
+        })
+        if isinstance(other, Unit):
+            return self.value == other.value and self.label == other.label
+        return self.value == other
     @api
     def __gt__(self, other):
         starsmashertools.helpers.argumentenforcer.enforcetypes({
-            'other' : [float, int, Unit]
+            'other' : Unit.operation_types['__gt__'],
         })
         if isinstance(other, Unit):
             if self.label != other.label:
-                raise Exception("Cannot compare '%s' to '%s' because they have different labels" % (str(self.label), str(other.label)))
+                raise Unit.InvalidLabelError("Cannot compare '%s' to '%s' because they have different labels" % (str(self.label), str(other.label)))
             other = other.value
-        return self.value.__gt__(other)
+        return self.value > other
     @api
     def __ge__(self, other):
         starsmashertools.helpers.argumentenforcer.enforcetypes({
-            'other' : [float, int, Unit]
+            'other' : Unit.operation_types['__ge__'],
         })
         if isinstance(other, Unit):
             if self.label != other.label:
-                raise Exception("Cannot compare '%s' to '%s' because they have different labels" % (str(self.label), str(other.label)))
+                raise Unit.InvalidLabelError("Cannot compare '%s' to '%s' because they have different labels" % (str(self.label), str(other.label)))
             other = other.value
-        return self.value.__ge__(other)
+        return self.value >= other
     @api
     def __lt__(self, other):
         starsmashertools.helpers.argumentenforcer.enforcetypes({
-            'other' : [float, int, Unit]
+            'other' : Unit.operation_types['__lt__'],
         })
         if isinstance(other, Unit):
             if self.label != other.label:
-                raise Exception("Cannot compare '%s' to '%s' because they have different labels" % (str(self.label), str(other.label)))
+                raise Unit.InvalidLabelError("Cannot compare '%s' to '%s' because they have different labels" % (str(self.label), str(other.label)))
             other = other.value
-        return self.value.__lt__(other)
+        return self.value < other
     @api
     def __le__(self, other):
         starsmashertools.helpers.argumentenforcer.enforcetypes({
-            'other' : [float, int, Unit]
+            'other' : Unit.operation_types['__le__'],
         })
         if isinstance(other, Unit):
             if self.label != other.label:
-                raise Exception("Cannot compare '%s' to '%s' because they have different labels" % (str(self.label), str(other.label)))
+                raise Unit.InvalidLabelError("Cannot compare '%s' to '%s' because they have different labels" % (str(self.label), str(other.label)))
             other = other.value
-        return self.value.__le__(other)
-
+        return self.value <= other
     
     def __reduce__(self):
         # https://docs.python.org/3/library/pickle.html#object.__reduce__
-        return (Unit, (float(self), self.label))
+        return (Unit, (self.value, self.label))
     def __reduce_ex__(self, *args, **kwargs):
         return self.__reduce__()
 
@@ -313,68 +325,93 @@ class Unit(object):
         return self.value.__float__(*args, **kwargs)
     @api
     def __int__(self, *args, **kwargs):
-        ret = self.value.__int__(*args, **kwargs)
-        if ret != self.value:
-            raise Exception("Cannot convert Unit with value %g to integer because its value would not be preserved" % self.value)
-        return ret
-
+        return self.value.__int__(*args, **kwargs)
+    
     # self * other = self.__mul__(other)
     @api
     def __mul__(self, other):
-        starsmashertools.helpers.argumentenforcer.enforcetypes({'other' : [float, int, Unit]})
+        starsmashertools.helpers.argumentenforcer.enforcetypes({
+            'other' : Unit.operation_types['__mul__'],
+        })
         if isinstance(other, Unit):
             return Unit(self.value * other.value, self.label * other.label)
         return Unit(self.value * other, self.label)
-    __rmul__ = __mul__
+
+    @api
+    def __rmul__(self, other):
+        starsmashertools.helpers.argumentenforcer.enforcetypes({
+            'other' : Unit.operation_types['__rmul__'],
+        })
+        if isinstance(other, Unit):
+            return Unit(other.value * self.value, other.label * self.label)
+        return Unit(other * self.value, self.label)
 
     # self / other = self.__truediv__(other)
     @api
     def __truediv__(self, other):
-        starsmashertools.helpers.argumentenforcer.enforcetypes({'other' : [float, int, Unit]})
+        starsmashertools.helpers.argumentenforcer.enforcetypes({
+            'other' : Unit.operation_types['__truediv__'],
+        })
         if isinstance(other, Unit):
             return Unit(self.value / other.value, self.label / other.label)
         return Unit(self.value / other, self.label)
 
-    # other / self = self.__rtruediv__(other) if other doesn't have __truediv__
+    # other / self = self.__rtruediv__(other)
     @api
     def __rtruediv__(self, other):
-        starsmashertools.helpers.argumentenforcer.enforcetypes({'other' : [float, int, Unit]})
+        starsmashertools.helpers.argumentenforcer.enforcetypes({
+            'other' : Unit.operation_types['__rtruediv__'],
+        })
         if isinstance(other, Unit):
             return Unit(other.value / self.value, other.label / self.label)
         return Unit(other / self.value, 1 / self.label)
     
-
-    
     @api
     def __add__(self, other):
-        starsmashertools.helpers.argumentenforcer.enforcetypes({'other' : [Unit]})
-        if self.label != other.label:
-            raise Exception("Adding Units can only be done when they have the same Labels.")
-        return Unit(self.value + other.value, self.label)
+        starsmashertools.helpers.argumentenforcer.enforcetypes({
+            'other' : Unit.operation_types['__add__'],
+        })
+        if isinstance(other, Unit):
+            if self.label != other.label:
+                raise Unit.InvalidLabelError("Adding Units can only be done when they have the same Labels.")
+            return Unit(self.value + other.value, self.label)
+        return Unit(self.value + other, self.label)
     @api
     def __radd__(self, other):
-        starsmashertools.helpers.argumentenforcer.enforcetypes({'other' : [Unit]})
-        if self.label != other.label:
-            raise Exception("Adding Units can only be done when they have the same Labels.")
-        return Unit(other.value + self.value, self.label)
+        starsmashertools.helpers.argumentenforcer.enforcetypes({
+            'other' : Unit.operation_types['__radd__'],
+        })
+        if isinstance(other, Unit):
+            if self.label != other.label:
+                raise Unit.InvalidLabelError("Adding Units can only be done when they have the same Labels.")
+            return Unit(other.value + self.value, self.label)
+        return Unit(other + self.value, self.label)
     @api
     def __sub__(self, other):
-        starsmashertools.helpers.argumentenforcer.enforcetypes({'other' : [Unit]})
-        if self.label != other.label:
-            raise Exception("Subtracting Units can only be done when they have the same Labels.")
-        return Unit(self.value - other.value, self.label)
+        starsmashertools.helpers.argumentenforcer.enforcetypes({
+            'other' : Unit.operation_types['__sub__'],
+        })
+        if isinstance(other, Unit):
+            if self.label != other.label:
+                raise Unit.InvalidLabelError("Subtracting Units can only be done when they have the same Labels.")
+            return Unit(self.value - other.value, self.label)
+        return Unit(self.value - other, self.label)
     @api
     def __rsub__(self, other):
-        starsmashertools.helpers.argumentenforcer.enforcetypes({'other' : [Unit]})
-        if self.label != other.label:
-            raise Exception("Subtracting Units can only be done when they have the same Labels.")
-        return Unit(other.value - self.value, self.label)
+        starsmashertools.helpers.argumentenforcer.enforcetypes({
+            'other' : Unit.operation_types['__rsub__'],
+        })
+        if isinstance(other, Unit):
+            if self.label != other.label:
+                raise Unit.InvalidLabelError("Subtracting Units can only be done when they have the same Labels.")
+            return Unit(other.value - self.value, self.label)
+        return Unit(other - self.value, self.label)
     @api
     def __pow__(self, value):
-        starsmashertools.helpers.argumentenforcer.enforcetypes({'value' : [float, int]})
+        starsmashertools.helpers.argumentenforcer.enforcetypes({
+            'value' : Unit.operation_types['__pow__'],
+        })
         return Unit(self.value**value, self.label**value)
-
-
     
     # Outright disallow the following magic methods
     def __abs__(self, *args, **kwargs):

@@ -129,9 +129,70 @@ class TestUnits(basetest.BaseTest):
         self.assertEqual(l.short, 'erg')
         self.assertEqual(l.long, 'cm*g*g/s*s')
 
-        
+    def test_integers(self):
+        u = starsmashertools.lib.units.Unit(1, 's')
 
-        
+        u *= 10
+        self.assertEqual(u, 10)
+        self.assertEqual(u.label, 's')
+        u /= 10
+        self.assertEqual(u, 1 * 10 / 10)
+        u -= 1
+        self.assertEqual(u, 0)
+        self.assertEqual(u.label, 's')
+        u += 1
+        self.assertEqual(u, 1)
+        self.assertEqual(u.label, 's')
+
+        u.value = 1
+        self.assertEqual(u, 1)
+        self.assertEqual(u.label, 's')
+
+        u = 10 / u
+        self.assertEqual(u, 10)
+        self.assertEqual(u.label, '1/s')
+        u.value = 1
+        u = 10 * u
+        self.assertEqual(u, 10)
+        self.assertEqual(u.label, '1/s')
+        u = 1 - u
+        self.assertEqual(u, 1 - 10)
+        self.assertEqual(u.label, '1/s')
+        u = 1 + u
+        self.assertEqual(u, 1 - 10 + 1)
+        self.assertEqual(u.label, '1/s')
+
+    def test_floats(self):
+        u = starsmashertools.lib.units.Unit(1., 's')
+        u *= 1.5
+        self.assertEqual(u, 1. * 1.5)
+        self.assertEqual(u.label, 's')
+        u /= 3.
+        self.assertEqual(u, 1.5 / 3.)
+        u -= 0.1
+        self.assertEqual(u, 1.5 / 3. - 0.1)
+        self.assertEqual(u.label, 's')
+        u += 0.1
+        self.assertEqual(u, 1.5 / 3. - 0.1 + 0.1)
+        self.assertEqual(u.label, 's')
+
+        u.value = 2.
+        self.assertEqual(u, 2.)
+        self.assertEqual(u.label, 's')
+
+        u = 1.5 / u
+        self.assertEqual(u, 1.5 / 2.)
+        self.assertEqual(u.label, '1/s')
+        u.value = 1.
+        u = 10.5 * u
+        self.assertEqual(u, 10.5)
+        self.assertEqual(u.label, '1/s')
+        u = 1.5 - u
+        self.assertEqual(u, 1.5 - 10.5)
+        self.assertEqual(u.label, '1/s')
+        u = 1.5 + u
+        self.assertEqual(u, 1.5 - 10.5 + 1.5)
+        self.assertEqual(u.label, '1/s')
 
     def test_unit(self):
         u0 = starsmashertools.lib.units.Unit(1.0, 'cm')
@@ -181,13 +242,9 @@ class TestUnits(basetest.BaseTest):
         self.assertAlmostEqual(float(u), 1)
 
         u = starsmashertools.lib.units.Unit(1.0, '')
-        self.assertRaises(
-            Exception,
-            u.convert,
-            ('km'),
-        )
-
-
+        with self.assertRaises(starsmashertools.lib.units.Unit.InvalidLabelError):
+            u.convert('km')
+        
         u = starsmashertools.lib.units.Unit(3600*24, 's')
         factor = u.get_conversion_factor('day')
         u *= factor
@@ -220,30 +277,16 @@ class TestUnits(basetest.BaseTest):
         
 
     def test_units(self):
+        import starsmashertools.helpers.readonlydict
         simulation = starsmashertools.get_simulation("data")
         units = starsmashertools.lib.units.Units(simulation)
         
-        self.assertRaises(
-            starsmashertools.helpers.argumentenforcer.ArgumentTypeError,
-            starsmashertools.lib.units.Units,
-            (None),
-        )
-        
-        def f(val):
-            units['x'] = val
-        self.assertRaises(
-            Exception,
-            f,
-            (0),
-        )
-
-        #print(simulation['runit']**3 / (simulation.units.gravconst * simulation['munit']))
-        #expected = np.sqrt(simulation['runit']**3 / (simulation.units.gravconst * simulation['munit']))
-        #self.assertAlmostEqual(float(simulation.units['t']), expected)
-        #u = simulation.units['t'].convert('day')
-        #self.assertAlmostEqual(float(u), expected / (3600 * 24))
+        with self.assertRaises(starsmashertools.helpers.argumentenforcer.ArgumentTypeError):
+            starsmashertools.lib.units.Units(None)
 
         
+        with self.assertRaises(starsmashertools.helpers.readonlydict.ReadOnlyDict.EditError):
+            units['x'] = 0
 
 if __name__ == "__main__":
     unittest.main(failfast=True)
