@@ -6,8 +6,6 @@ import numpy as np
 import contextlib
 import starsmashertools.lib.output
 
-progress_printers = []
-
 class LoadingMessage(object):
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     def __init__(
@@ -20,12 +18,12 @@ class LoadingMessage(object):
     ):
         import starsmashertools.helpers.asynchronous
         import sys
+
+        self._printed_done_message = False
         
         self.message = message
         self.suffixes = suffixes
         self.done_message = done_message
-
-        self._printed_done_message = False
         
         self.ticker = None
         if sys.stdout.isatty(): # Output is going to the terminal
@@ -139,16 +137,6 @@ class ProgressMessage(LoadingMessage, object):
     def increment(self, amount : int = 1):
         self._progress += amount
 
-    def print_done_message(self):
-        self._progress = self._max
-        self.print_message()
-        super(ProgressMessage, self).print_done_message()
-
-    def __exit__(self, *args, **kwargs):
-        super(ProgressMessage, self).__exit__(*args, **kwargs)
-        if self._printed_done_message: return
-        self.print_done_message()
-
 @contextlib.contextmanager
 def loading_message(*args, **kwargs):
     try:
@@ -164,14 +152,14 @@ def progress_message(*args, **kwargs):
     finally: pass
 
     
-
+"""
 @starsmashertools.helpers.argumentenforcer.enforcetypes
 def get_progress_string(
         progress : float | np.float_,
         fmt : str = 'progress = %5.1f%%',
         console : bool = True,
 ):
-    """
+    ""
     Obtain a progress metric, which varies from 0 to 100.
 
     Parameters
@@ -194,8 +182,7 @@ def get_progress_string(
     str
         A string which is formatted using ``fmt`` and the provided ``progress``
         value.
-    """
-    global progress_printers
+    ""
     import inspect
     frame = inspect.currentframe().f_back
     code = frame.f_code
@@ -212,7 +199,7 @@ def get_progress_string(
     else:
         progress_printers += [code]
     return result
-    
+"""
 
 @starsmashertools.helpers.argumentenforcer.enforcetypes
 def find_all_indices(

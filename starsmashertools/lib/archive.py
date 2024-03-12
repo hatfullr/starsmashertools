@@ -209,8 +209,8 @@ class ArchiveValue(object):
     def __str__(self):
         return 'ArchiveValue(%s)' % str(self.value)
 
-    @starsmashertools.helpers.argumentenforcer.enforcetypes
-    def __eq__(self, other : "ArchiveValue"):
+    def __eq__(self, other):
+        if not isinstance(other, ArchiveValue): return False
         return self.serialized == other.serialized
     
     @property
@@ -569,7 +569,9 @@ class Archive(object):
         import starsmashertools.helpers.path
         import starsmashertools.helpers.string
         keys = self.keys()
-        return zip(keys, self.get(keys))
+        values = self.get(keys)
+        if isinstance(values, ArchiveValue): values = [values]
+        return zip(keys, values)
     
     @api
     def values(self):
@@ -989,7 +991,7 @@ class Archive(object):
                 if progress_message:
                     progress_message.message += " in serial"
                 # Run in serial
-                for key, val in zip(keys, values):
+                for key, value in zip(keys, values):
                     ret += [ArchiveValue.deserialize(key, value)]
                     progress.increment()
             else:

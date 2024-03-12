@@ -436,7 +436,9 @@ class Ticker(threading.Thread):
             if self.limit is not None:
                 timer += time.time() - t0
                 t0 = time.time()
-                if timer >= self.limit: break
+                if timer >= self.limit:
+                    self.completed = True
+                    break
             
             if self.target is None: continue
             if self._cycle:
@@ -446,5 +448,3 @@ class Ticker(threading.Thread):
                 if iteration >= len(self._cycle): iteration = 0
             else:
                 self.target(*self.args, **self.kwargs)
-        self.completed = True
-        
