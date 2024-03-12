@@ -98,6 +98,14 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
             if threshold_frac <= 0 or threshold_frac > 1:
                 raise ValueError("Keyword 'threshold_frac' must be within range (0, 1], not '%g'" % threshold_frac)
 
+
+        # Check the archive
+        if 'get_plunge_time' in self.archive.keys():
+            for possibility in self.archive['get_plunge_time'].value:
+                if possibility['threshold_frac'] != threshold_frac: continue
+                if possibility['threshold'] != threshold: continue
+                return possibility['result']
+
         children = self.get_children()
         if not children or not isinstance(children[0], starsmashertools.lib.binary.Binary):
             raise Exception("Cannot obtain the plunge time for a dynamical simulation that did not originate from a Binary simulation: '%s'" % self.directory)
@@ -169,6 +177,28 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
             except starsmashertools.helpers.argumentenforcer.ArgumentTypeError as e:
                 raise Exception("You are likely missing output files") from e
 
+        # Save to the archive
+        toadd = {
+            'threshold_frac' : threshold_frac,
+            'threshold' : threshold,
+            'result' : ret,
+        }
+        if 'get_plunge_time' not in self.archive.keys():
+            self.archive.add(
+                'get_plunge_time',
+                [toadd],
+                origin = self.directory,
+            )
+        else:
+            val = self.archive['get_plunge_time'].value
+            val += [toadd]
+            self.archive.add(
+                'get_plunge_time',
+                val,
+                origin = self.directory,
+            )
+
+            
         if cli:
             if ret is None: return 'No plunge-in detected yet'
             return str(output) + "\n" + str(ret.auto())

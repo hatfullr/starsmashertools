@@ -723,20 +723,29 @@ class Archive(object):
         
         # If nothing changed since the last time we saved
         if not self._buffers['add'] and not self._buffers['remove']: return
-
+        
         # Serialize the data we will add
         data = {key:val.serialized for key, val in self._buffers['add'].items()}
         
         # Get file info
         info = get_file_info()
-
+        
         # These are the keys that will change in the file
         remove_keys = list(self._buffers['remove']) + list(data.keys())
+
+        exists = starsmashertools.helpers.path.isfile(self.filename)
+        dir_exists = starsmashertools.helpers.path.isdir(
+            starsmashertools.helpers.path.dirname(
+                starsmashertools.helpers.path.realpath(self.filename),
+            ),
+        )
+
+        if not dir_exists: return
         
         current_keys = []
         try:
             with self.open(
-                    'a',
+                    'a' if exists else 'w',
                     verbose = verbose,
                     message = "Saving %s" % self,
                     progress_max = len(data.keys()),
@@ -764,6 +773,7 @@ class Archive(object):
 
                 current_keys = zfile.namelist()
         except Exception as e:
+            print(e)
             raise Archive.CorruptFileError("Failed to save archive file. Perhaps it did not save correctly. All data in this archive is lost. Please delete the file and try again: '%s'" % self.filename) from e
         
         if 'file info' in current_keys: current_keys.remove('file info')
