@@ -38,7 +38,7 @@ defaults = {
         ],
     },
 # ------------------------------------------------------------------------------
-'FormatSheet' : {
+    'FormatSheet' : {
         # Directory paths to additional format sheets
         'directories' : [
         ],
@@ -116,21 +116,14 @@ defaults = {
         'archive filename' : 'sstools.archive',
         'output files' : 'out*.sph',
         
-        # Files which are defined in the StarSmasher code and present in the
-        # simulation directory will be compressed, such as 'sph.eos' when neos=2
-        # for example. Others need to be added manually here.
-        'compress include' : [
+        # Files which are created by the StarSmasher code.
+        'state files' : [
             'out*.sph',
             'log*.sph',
             'energy*.sph',
             'col*.sph',
             'restartrad.sph*',
         ],
-        # Files you want to exclude from compression
-        'compress exclude' : [
-        ],
-        # You must give a value in centimeters
-        'get_simulation_continued_from position threshold' : 0.01 * 6.9599e10,
     },
 # ------------------------------------------------------------------------------
     # Note that currently the setting of values 'gram', 'sec', 'cm', and

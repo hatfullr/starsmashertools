@@ -61,7 +61,7 @@ class Simulation(object):
     def __setstate__(self, data):
         self.__init__(data['directory'])
     """
-
+    
     @property
     def joined_simulations(self):
         import starsmashertools.helpers.path
@@ -636,8 +636,7 @@ class Simulation(object):
     def compress(
             self,
             filename : str | type(None) = None,
-            include_patterns : list | type(None) = None,
-            exclude_patterns : list | type(None) = None,
+            patterns : list | type(None) = None,
             recursive : bool = True,
             delete : bool = True,
             delete_after : bool = True,
@@ -656,15 +655,9 @@ class Simulation(object):
             of the file will be the name of the simulation directory with
             '.zip' on the end.
         
-        include_patterns : list, None, default = None
+        patterns : list, None, default = None
             File name patterns to include in the compression. If `None`, uses 
-            the "compress include" value in 
-            :py:property:`~.preferences.defaults`.
-
-        exclude_patterns : list, None, default = None
-            File name patterns to exclude in the compression. If `None`, uses
-            the "compress exclude" value from 
-            :py:property:`~.preferences.defaults`.
+            the "state files" value in :py:property:`~.preferences.defaults`.
 
         recursive : bool, default = True
             If `True`, subdirectories are also searched for files matching the
@@ -696,20 +689,14 @@ class Simulation(object):
         import starsmashertools.helpers.compressiontask
 
         # Obtain the file names to be compressed.
-        if include_patterns is None:
-            include_patterns = starsmashertools.preferences.get_default('Simulation', 'compress include')
-        if exclude_patterns is None:
-            exclude_patterns = starsmashertools.preferences.get_default('Simulation', 'compress exclude')
-
-        exclude_files = []
-        for pattern in exclude_patterns:
-            fs = self.get_file(pattern, recursive=recursive)
-            exclude_files += fs
+        if patterns is None:
+            patterns = starsmashertools.preferences.get_default(
+                'Simulation', 'state files', throw_error = True
+            )
         
         files = []
-        for pattern in include_patterns:
-            fs = self.get_file(pattern, recursive=recursive)
-            files += [f for f in fs if f not in exclude_files]
+        for pattern in patterns:
+            files += self.get_file(pattern, recursive=recursive)
             
         for key, val in self.items():
             if not isinstance(val, str): continue
@@ -1425,3 +1412,118 @@ class Simulation(object):
             return "There are no joined simulations"
         return newline.join(self.archive['joined simulations'].value)
 
+
+    def get_state(self):
+        """ 
+        Return a new :class:`~.State` object and call :meth:`~.State.get`.
+        """
+        state = State(self)
+        state.get()
+        return state
+
+
+class State(object):
+    """
+    Contains information about a :class:`~.Simulation` which can be used to
+    check for changes in a :class:`~.Simulation` over time. A :class:`~.State`
+    cares only about changes which StarSmasher has made to the physical 
+    simulation and all other changes are ignored.
+    """
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    def __init__(self, simulation : Simulation | str):
+        import starsmashertools
+        import starsmashertools.preferences
+        import starsmashertools.helpers.path
+            
+        if isinstance(simulation, str):
+            simulation = starsmashertools.get_simulation(simulation)
+        
+        self.simulation = simulation
+        self.mtimes = None
+
+    def get(self):
+        # Get the modification times of all the files that we expect for
+        # StarSmasher to produce. This will set this unique state.
+        patterns_list = starsmashertools.preferences.get_default(
+            'Simulation', 'state files', throw_error = True,
+        )
+        self.mtimes = {}
+        for pattern in patterns_list:
+            for f in self.simulation.get_file(pattern):
+                path = starsmashertools.helpers.path.relpath(
+                    f, start = self.simulation.directory,
+                )
+                self.mtimes[path] = starsmashertools.helpers.path.getmtime(f)
+    
+    def __getattribute__(self, attr):
+        if attr == 'mtimes':
+            ret = super(State, self).__getattribute__(attr)
+            if ret is None:
+                raise Exception("Uninitialized State object. You must call the get() function before using a State object.")
+            return ret
+        return super(State, self).__getattribute__(attr)
+
+    def pack(self):
+        import starsmashertools.helpers.jsonfile
+        import zlib
+        return zlib.compress(
+            starsmashertools.helpers.jsonfile.save_bytes({
+                'simulation' : self.simulation.directory,
+                'mtimes' : self.mtimes,
+            }),
+            level=9,
+        )
+    
+    @staticmethod
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    def unpack(obj : bytes):
+        import starsmashertools.helpers.jsonfile
+        import zlib
+        obj = starsmashertools.helpers.jsonfile.load_bytes(
+            zlib.decompress(obj),
+        )
+        state = State(obj['simulation'])
+        state.mtimes = obj['mtimes']
+        return state
+    
+    def __eq__(self, other):
+        import starsmashertools.helpers.argumentenforcer
+        starsmashertools.helpers.argumentenforcer.enforcetypes({
+            'other' : State,
+        })
+        
+        if self.simulation != other.simulation:
+            raise ValueError("State objects from two different simulations cannot be compared: %s and %s" % (self.simulation, other.simulation))
+
+        keys1 = self.mtimes.keys()
+        keys2 = other.mtimes.keys()
+        
+        if set(keys1) != set(keys2): return False
+        for key, val in zip(keys1, self.mtimes.values()):
+            if other.mtimes[key] != val: return False
+        return True
+        
+    def __gt__(self, other):
+        # A State is 'greater than' another if it contains new or more recent
+        # files than the other state. If the other state contains any new or
+        # more recent files, this returns False.
+        if self == other: return False
+        
+        keys = self.mtimes.keys()
+        for key, val in other.mtimes.items():
+            # If other contains files that we don't have, we are not greater
+            # than it
+            if key not in keys: return False
+            # If other has at least one more recent file than us, we aren't
+            # greater than it
+            if val > self.mtimes[key]: return False
+        
+        # If we are not equal to other, then we must be greater than it
+        return True
+
+    def __lt__(self, other):
+        return (not self > other) and self != other
+    def __ge__(self, other):
+        return self == other or self > other
+    def __le__(self, other):
+        return self == other or self < other

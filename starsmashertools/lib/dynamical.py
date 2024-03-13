@@ -9,17 +9,6 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
         import starsmashertools.preferences
         import starsmashertools.helpers.path
         import starsmashertools.lib.binary
-
-        """
-        if self.isContinuation:
-            continued_from = self.get_simulation_continued_from()
-            if starsmashertools.lib.simulation.Simulation.compare_type(
-                    continued_from,
-                    self,
-            ):
-                return continued_from.get_children(*args, **kwargs)
-            return [continued_from]
-        """
         
         search_directory = self.get_search_directory(throw_error = True)
         restartradfile = self.get_initialfile()
@@ -98,14 +87,21 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
             if threshold_frac <= 0 or threshold_frac > 1:
                 raise ValueError("Keyword 'threshold_frac' must be within range (0, 1], not '%g'" % threshold_frac)
 
-
+        current_state = self.get_state()
+            
         # Check the archive
         if 'get_plunge_time' in self.archive.keys():
             for possibility in self.archive['get_plunge_time'].value:
                 if possibility['threshold_frac'] != threshold_frac: continue
                 if possibility['threshold'] != threshold: continue
+                
+                last_state = possibility.get('state', None)
+                # Need to recalculate
+                if current_state > last_state: break
+                
+                # Don't need to recalculate
                 return possibility['result']
-
+        
         children = self.get_children()
         if not children or not isinstance(children[0], starsmashertools.lib.binary.Binary):
             raise Exception("Cannot obtain the plunge time for a dynamical simulation that did not originate from a Binary simulation: '%s'" % self.directory)
@@ -181,6 +177,7 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
         toadd = {
             'threshold_frac' : threshold_frac,
             'threshold' : threshold,
+            'state' : current_state,
             'result' : ret,
         }
         if 'get_plunge_time' not in self.archive.keys():
@@ -191,13 +188,19 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
             )
         else:
             val = self.archive['get_plunge_time'].value
-            val += [toadd]
+            modified = False
+            for i, v in enumerate(val):
+                if v['threshold_frac'] != threshold_frac: continue
+                if v['threshold'] != threshold: continue
+                if v['state'] != last_state: continue
+                val[i] = toadd
+                modified = True
+            if not modified: val += [toadd]
             self.archive.add(
                 'get_plunge_time',
                 val,
                 origin = self.directory,
             )
-
             
         if cli:
             if ret is None: return 'No plunge-in detected yet'
