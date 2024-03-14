@@ -277,7 +277,7 @@ def list_to_string(
     if len(_list) == 0: return "''"
     if len(_list) == 1: return format % str(_list[0])
     string = ", ".join(format % s for s in _list[:-1])
-    if len(_list) > 2: string += ","
+    if len(_list) > 2: string += ','
     string += " " + join + " " + (format % _list[-1])
     return string
 

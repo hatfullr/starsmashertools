@@ -298,10 +298,15 @@ def get_particles(
 @api
 def trace_particles(
         particles : int | list | tuple | np.ndarray,
-        outputs_or_simulation : list | tuple | starsmashertools.lib.output.OutputIterator | starsmashertools.lib.simulation.Simulation,
+        outputs_or_simulation,
         **kwargs
 ):
     import starsmashertools.lib.output
+    import starsmashertools.lib.simulation
+
+    starsmashertools.helpers.argumentenforcer.enforcetypes({
+        'outputs_or_simulation' : [list, tuple, starsmashertools.lib.output.Output, starsmashertools.lib.simulation.Simulation],
+    })
     
     if isinstance(outputs_or_simulation, (list, tuple)):
         simulation = outputs_or_simulation[0].simulation

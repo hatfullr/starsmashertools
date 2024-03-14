@@ -1,16 +1,6 @@
 import starsmashertools.helpers.argumentenforcer
-import starsmashertools.helpers.file
-import starsmashertools.helpers.string
-import starsmashertools.helpers.readonlydict
 from starsmashertools.helpers.apidecorator import api
 import numpy as np
-import time
-import starsmashertools.lib.simulation
-import starsmashertools.helpers.asynchronous
-import collections
-import mmap
-import copy as _copy
-import itertools
 
 try:
     import matplotlib.axes
@@ -50,6 +40,7 @@ class Output(dict, object):
             mode='raw',
     ):
         import starsmashertools.helpers.path
+        import starsmashertools.helpers.string
         
         if mode not in Output.modes:
             s = starsmashertools.helpers.string.list_to_string(Output.modes, join='or')
@@ -72,9 +63,28 @@ class Output(dict, object):
 
         self._original_data = None
 
+    @staticmethod
+    def _get_path_and_simulation(obj):
+        import starsmashertools.helpers.path
+        import starsmashertools
+        simulation = starsmashertools.get_simulation(obj['simulation'])
+        path = starsmashertools.helpers.path.join(
+            obj['path'],
+            simulation.directory,
+        )
+        return path, simulation
+
+    def _get_relpath(self):
+        import starsmashertools.helpers.path
+        return starsmashertools.helpers.path.relpath(
+            self.path,
+            start = self.simulation.directory,
+        )
+
     #"""
     # Used when pickling
     def __getstate__(self):
+        import starsmashertools.helpers.path
         return {
             'path' : self.path,
             'simulation' : self.simulation.directory,
@@ -102,34 +112,25 @@ class Output(dict, object):
     def __repr__(self): return str(self)
 
     @api
-    #@profile
     def __getitem__(self, item):
+        import copy
+        
         if item in self.keys(ensure_read=False):
             if item in self._cache.keys():
                 return self.from_cache(item)
         else:
             self._ensure_read()
         ret = super(Output, self).__getitem__(item)
-
-        #if isinstance(ret, np.ndarray):
-            # Try to mask the output data if we have a mask
-            #if self._mask is not None:
-            #    if not isinstance(self._mask, np.ndarray):
-            #        raise TypeError("Property 'Output._mask' must be of type 'np.ndarray', not '%s'" % type(self._mask).__name__)
-            #    try:
-            #        ret = ret[self._mask]
-            #    except IndexError as e:
-            #        if 'boolean index did not match indexed array' in str(e):
-            #            pass
         
         if self.mode == 'cgs':
             if item in self.simulation.units.keys():
-                ret = _copy.copy(ret) * self.simulation.units[item]
+                ret = copy.copy(ret) * self.simulation.units[item]
             elif hasattr(self.simulation.units, item):
-                ret = _copy.copy(ret) * getattr(self.simulation.units, item)
+                ret = copy.copy(ret) * getattr(self.simulation.units, item)
         return ret
 
     def __eq__(self, other):
+        import starsmashertools.helpers.file
         return starsmashertools.helpers.file.compare(self.path, other.path)
 
     def __hash__(self, *args, **kwargs):
@@ -150,7 +151,8 @@ class Output(dict, object):
 
     def _clear_cache(self):
         import starsmashertools.preferences
-        self._cache = _copy.copy(starsmashertools.preferences.get_default('Output', 'cache'))
+        import copy
+        self._cache = copy.copy(starsmashertools.preferences.get_default('Output', 'cache'))
         # If no cache is defined in preferences
         if self._cache is None: self._cache = {}
 
@@ -164,25 +166,17 @@ class Output(dict, object):
     def is_masked(self): return self._mask is not None
         
     @api
-    def keys(self, *args, **kwargs):
-        if 'ensure_read' in kwargs.keys():
-            if kwargs.pop('ensure_read'): self._ensure_read()
-        else: self._ensure_read()
+    def keys(self, *args, ensure_read : bool = True, **kwargs):
+        import itertools
+        if ensure_read: self._ensure_read()
         return itertools.chain(
             super(Output, self).keys(*args, **kwargs),
             self._cache.keys(),
         )
-        #ret = super(Output, self).keys(*args, **kwargs)
-        #all_keys = list(ret) + list(self._cache.keys())
-        #obj = {key:None for key in all_keys}
-        #for key in self._cache.keys(): obj[key] = None
-        #return obj.keys()
     
     @api
-    def values(self, *args, **kwargs):
-        if 'ensure_read' in kwargs.keys():
-            if kwargs.pop('ensure_read'): self._ensure_read()
-        else: self._ensure_read()
+    def values(self, *args, ensure_read : bool = True, **kwargs):
+        if ensure_read: self._ensure_read()
         keys = self._cache.keys()
         for key in self.keys():
             if key in keys:
@@ -190,10 +184,8 @@ class Output(dict, object):
         return super(Output, self).values(*args, **kwargs)
     
     @api
-    def items(self, *args, **kwargs):
-        if 'ensure_read' in kwargs.keys():
-            if kwargs.pop('ensure_read'): self._ensure_read()
-        else: self._ensure_read()
+    def items(self, *args, ensure_read : bool = True, **kwargs):
+        if ensure_read: self._ensure_read()
         keys = self.keys()
         for key in self._cache.keys():
             if key not in keys:
@@ -220,14 +212,6 @@ class Output(dict, object):
 
         read_header = return_headers
         read_data = return_data
-        
-        # Check if the archive already has the header
-        #identifier = self.simulation.archive.get_identifier(self)
-        #if identifier in self.simulation.archive:
-        #    archived_value = self.simulation.archive[identifier]
-        #    self._header = archived_value.value.get('header', None)
-        #    read_header = False
-        #    self._isRead['header'] = True
 
         if read_header or read_data:
             obj = self.simulation.reader.read(
@@ -248,9 +232,6 @@ class Output(dict, object):
             for key, val in self._header.items():
                 self[key] = val
 
-            # Save the header to the simulation archive
-            #self.simulation.archive.add_output(self, {'header' : self._header})
-        
         if self.data is not None:
             for key, val in self.data.items():
                 self[key] = val
@@ -259,22 +240,11 @@ class Output(dict, object):
         if read_data: self._isRead['data'] = True
         
     @api
-    #@profile
     def from_cache(self, key):
         if key in self._cache.keys():
             if callable(self._cache[key]):
                 self._cache[key] = self._cache[key](self)
         return self._cache[key]
-        #ret = self._cache[key]
-        #if self.is_masked:
-        #    if not isinstance(self._mask, np.ndarray):
-        #        raise TypeError("Property 'Output._mask' must be of type 'np.ndarray', not '%s'" % type(self._mask).__name__)
-        #    try:
-        #        ret = ret[self._mask]
-        #    except IndexError as e:
-        #        if 'boolean index did not match indexed array' in str(e):
-        #            pass
-        #return ret
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
@@ -611,7 +581,7 @@ class OutputIterator(object):
     def __init__(
             self,
             filenames : list | tuple | np.ndarray,
-            simulation : starsmashertools.lib.simulation.Simulation,
+            simulation : "starsmashertools.lib.simulation.Simulation",
             onFlush : list | tuple | np.ndarray = [],
             max_buffer_size : int | type(None) = None,
             asynchronous : bool = True,
@@ -684,6 +654,7 @@ class OutputIterator(object):
 
     def __contains__(self, item):
         import starsmashertools.helpers.path
+        import starsmashertools.helpers.file
         if isinstance(item, Output):
             for filename in self.filenames:
                 if starsmashertools.helpers.file.compare(item.path, filename):
@@ -700,9 +671,11 @@ class OutputIterator(object):
     def __iter__(self): return self
     
     def __next__(self):
+        import starsmashertools.helpers.asynchronous
+        import copy
+        
         if self._simulation_auto_save is None:
             if self.simulation.archive is not None:
-                import copy
                 self._simulation_auto_save = copy.deepcopy(self.simulation.archive.auto_save)
                 self.simulation.archive.auto_save = False
         if len(self.filenames) == 0: self.stop()
@@ -779,6 +752,10 @@ class ParticleIterator(OutputIterator, object):
         self.particle_IDs = particle_IDs
 
     def get(self, filename):
+        import starsmashertools.helpers.file
+        import starsmashertools.helpers.readonlydict
+        import mmap
+        
         if len(self.particle_IDs) == 0: return {}
         # Calculate the file position for the quantity we want to read
         header_stride = self.simulation.reader._stride['header']
@@ -982,6 +959,8 @@ class Reader(object):
             verbose=False,
     ):
         import starsmashertools.helpers.file
+        import mmap
+        
         if verbose: print(filename)
 
         if True not in [return_headers, return_data]:
@@ -1008,6 +987,10 @@ class Reader(object):
     @staticmethod
     def get_output_format(simulation):
         import starsmashertools.helpers.path
+        import starsmashertools.helpers.file
+        import starsmashertools.helpers.string
+        import collections
+        
         # Expected data types
         data_types = ('integer', 'real', 'logical', 'character')
         

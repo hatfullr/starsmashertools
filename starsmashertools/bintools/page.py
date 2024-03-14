@@ -444,6 +444,8 @@ class FunctionPage(List, object):
                 elif t is None: typenames += ['None']
                 else: typenames += [t.__name__]
             if typenames:
+                # Unique values only
+                typenames = list(set(typenames))
                 return starsmashertools.helpers.string.list_to_string(
                     typenames,
                     join = 'or',
@@ -760,7 +762,7 @@ class SimulationControlsPage(List, object):
         
         super(SimulationControlsPage, self).show(*args, **kwargs)
 
-    def remove_simulation(self, simulation : starsmashertools.lib.simulation.Simulation):
+    def remove_simulation(self, simulation : 'starsmashertools.lib.simulation.Simulation'):
         self.cli.remove_simulation(simulation)
 
         self.delete_remove_page()

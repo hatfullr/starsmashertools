@@ -16,6 +16,9 @@ def get_archive(filename):
     # success.
     import starsmashertools.lib.archive
     import os
+
+    if not os.path.isfile(filename):
+        raise FileNotFoundError(filename)
     
     archive = starsmashertools.lib.archive.Archive(
         filename,

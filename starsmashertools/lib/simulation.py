@@ -5,6 +5,7 @@ import starsmashertools.lib.units
 import starsmashertools.helpers.argumentenforcer
 from starsmashertools.helpers.apidecorator import api
 from starsmashertools.helpers.clidecorator import cli
+from starsmashertools.helpers.archiveddecorator import archived
 import numpy as np
 
 try:
@@ -24,8 +25,7 @@ class Simulation(object):
         import starsmashertools.lib.output
         import starsmashertools.helpers.path
         import starsmashertools.lib.archive
-        import starsmashertools.helpers.asynchronous
-
+        
         # Prepare the directory string
         directory = starsmashertools.helpers.path.realpath(directory.strip())
         
@@ -46,13 +46,14 @@ class Simulation(object):
         
         self.reader = starsmashertools.lib.output.Reader(self)
 
-        #if starsmashertools.helpers.asynchronous.is_main_process():
         self.archive = starsmashertools.lib.archive.SimulationArchive(self)
-        #else: self.archive = None
             
     def __hash__(self):
         return hash(self.directory)
 
+    def __json_view__(self):
+        return self.directory
+    
     """
     # For pickling
     def __getstate__(self):
@@ -380,7 +381,7 @@ class Simulation(object):
         try:
             return starsmashertools.helpers.path.get_src(directory) is not None
         except FileNotFoundError as e:
-            raise Simulation.InvalidDirectoryError() from e
+            raise Simulation.InvalidDirectoryError(directory) from e
     
     @api
     def get_logfiles(
@@ -430,7 +431,59 @@ class Simulation(object):
             self._logfiles = [x for _, x in sorted(zip(modtimes, all_files), key=lambda pair: pair[0])]
         
         return all_files
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    @cli('starsmashertools')
+    def set_children(
+            self,
+            children : str | list | tuple,
+            cli : bool = False,
+    ):
+        """
+        Set the list of :class:`~.Simulation` objects that were used to create
+        this simulation. This can save time on searching the file system for 
+        child simulations.
+
+        Parameters
+        ----------
+        children : list, tuple, str
+            If a `list` or `tuple` is given, this simulation's children become
+            the contents of ``children``. Thus, each element must at least be of
+            type :class:`~.Simulation`. If a `str` or :class:`~.Simulation` is 
+            given, then :meth:`starsmashertools.get_simulation` will be called
+            if it is a `str`, and then this simulation will have one child.
+
+        See Also
+        --------
+        :meth:`~.get_children`
+        """
+        import starsmashertools
+        import starsmashertools.helpers.path
+        
+        if isinstance(children, str):
+            children = [starsmashertools.get_simulation(children)]
+        if not isinstance(children, (list, tuple)): children = [children]
+        if isinstance(children, tuple): children = list(children)
+
+        val = []
+        for child in children:
+            val += [starsmashertools.helpers.path.relpath(
+                child.directory, start = self.directory,
+            )]
+        
+        self.archive.add(
+            'children',
+            val,
+            mtime = None,
+        )
+
+        if cli:
+            string = ["Success:"]
+            string += val
+            return '\n'.join(string)
     
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     @cli('starsmashertools')
     def get_children(
@@ -439,22 +492,20 @@ class Simulation(object):
             cli : bool = False,
     ):
         """
-        Return a list of `starsmashertools.lib.simulation.Simulation` objects
-        that were used to create this simulation. For example, if this
-        simulation is a dynamical simulation (nrelax = 0), then it has one
-        child, which is the binary scan that it originated from. Similarly, a
-        binary scan has two children, which are each the stellar relaxations
-        that make up the two stars in the binary.
+        Return a list of :class:`~.Simulation` objects that were used to create
+        this simulation. For example, if this simulation is a dynamical
+        simulation (nrelax = 0), then it has one child, which is the binary scan
+        that it originated from. Similarly, a binary scan has two children,
+        which are each the stellar relaxations that make up the two stars in the
+        binary.
 
-        If the simulation's directory contains a file with the name specified in
-        :py:property:`~.preferences.defaults` (key 'children hint filename'; 
-        default = 'children.sstools') then it will be read as a text file where
-        each line is the path to a different child simulation directory. If that
-        file doesn't exist then it will be created after the children have been
-        found for the first time.
-
-        This function acts as a wrapper for `~._get_children`, which is
-        overridden in subclasses of Simulation.
+        If the children are already known because they ahve been saved in this 
+        simulation's :class:`~.lib.archive.SimulationArchive`, then the children
+        will be recovered from the archive. Otherwise, :meth:`~._get_children`
+        is called and the result is saved to the archive. You can edit the 
+        children in the archive using the ``starsmashertools`` CLI by selecting
+        :meth:`~.set_children` in the main menu. This can save time on searching
+        the file system for child simulations.
         
         Parameters
         ----------
@@ -465,37 +516,31 @@ class Simulation(object):
         -------
         list
             A list of the child simulations.
+
+        See Also
+        --------
+        :meth:`~.set_children`
         """
-        if self._children is None:
-
-            # Get the children from the hint files
-            self._children = self._load_children_from_hint_files()
-            
-            # If loading the children didn't work, or we are doing multiple
-            # processes
-            if self._children is None:
-                if verbose: print("Searching for child simulations for the first time for '%s'" % self.directory)
-                
-                self._children = self._get_children()
-                
-                if self._children is None:
-                    raise Exception("Children found was 'None'. If you want to specify that a Simulation has no children, then its get_children() method should return empty list '[]', not 'None'.")
-                
-                # Now save the children (only if we aren't doing multiple
-                # processes)
-                self._save_children_to_hint_file(
-                    self._children,
-                    verbose=verbose,
+        import starsmashertools
+        import starsmashertools.helpers.path
+        
+        if 'children' in self.archive.keys():
+            children = []
+            for directory in self.archive['children'].value:
+                path = starsmashertools.helpers.path.join(
+                    self.directory, directory,
                 )
-
+                children += [starsmashertools.get_simulation(path)]
+        else:
+            children = self._get_children()
+            self.set_children(children)
+        
         if cli:
             string = []
-            for i, child in enumerate(self._children):
-                if issubclass(child.__class__, Simulation):
-                    string += ["Star %d: %s" % (i+1,child.directory)]
-                else: string += ["Star %d: %s" % (i+1, str(child))]
+            for i, child in enumerate(children):
+                string += ["Star %d: %s" % (i+1, child.directory)]
             return "\n".join(string)
-        return self._children
+        return children
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
@@ -564,34 +609,18 @@ class Simulation(object):
         import time
         
         if pattern is None:
-            pattern = starsmashertools.preferences.get_default('Simulation', 'output files', throw_error=True)
+            pattern = starsmashertools.preferences.get_default(
+                'Simulation', 'output files', throw_error=True,
+            )
         matches = self.get_file(pattern)
-
-        simulation_matches = {
-            self : matches,
-        }
+        
+        simulation_matches = {self : matches}
         if include_joined:
             for simulation in self.joined_simulations:
                 simulation_matches[simulation] = simulation.get_outputfiles(
                     pattern = pattern,
                     include_joined = False, # Prevent infinite recursion
                 )
-        
-        # Check the simulation archive to see if its list contains the same
-        # match names as what we found. If so, pull the match order from the
-        # archive. Otherwise, sort the matches by simulation times and write the
-        # order to the simulation archive.
-        if 'output file order' in self.archive.keys():
-            order = self.archive['output file order'].value
-            # Need to get the real paths of each in the order
-            order = [starsmashertools.helpers.path.realpath(o) for o in order]
-            
-            all_matches = []
-            for simulation, _list in simulation_matches.items():
-                all_matches += _list
-            
-            if set(all_matches) == set(order): # Both contain the same files
-                return order
         
         # We need to order our matches by simulation times, then save to the
         # simulation archive.
@@ -603,18 +632,7 @@ class Simulation(object):
                 times += [output.header['t']]
         
         # Sort by simulation times
-        order = [x for _,x in sorted(zip(times, order), key=lambda pair:pair[0])]
-        
-        # Save the order of files to the simulation archive, as relative paths
-        relorder = [starsmashertools.helpers.path.relpath(o, start=self.directory) for o in order]
-        self.archive.set(
-            'output file order',
-            relorder,
-            origin = None,
-            mtime = time.time(),
-        )
-        
-        return order
+        return [x for _,x in sorted(zip(times, order), key=lambda pair:pair[0])]
     
     # The initial file is always the one that was written first.
     @api
@@ -941,7 +959,7 @@ class Simulation(object):
         """
         import starsmashertools.lib.output
         filenames = self.get_outputfiles(include_joined = include_joined)
-        filenames = np.asarray(filenames, dtype=object)
+        filenames = np.asarray(filenames, dtype = object)
         if times is not None:
             starsmashertools.helpers.argumentenforcer.enforcevalues({
                 'start' : [None],
@@ -950,11 +968,17 @@ class Simulation(object):
                 'indices' : [None],
             })
             if hasattr(times, '__iter__'):
-                ret = [self.get_output_at_time(time, include_joined = include_joined) for time in times]
+                ret = [self.get_output_at_time(
+                    time,
+                    include_joined = include_joined,
+                ) for time in times]
                 if len(ret) == 1: return ret[0]
                 return ret
             else:
-                return self.get_output_at_time(times, include_joined = include_joined)
+                return self.get_output_at_time(
+                    times,
+                    include_joined = include_joined,
+                )
         elif indices is not None:
             starsmashertools.helpers.argumentenforcer.enforcevalues({
                 'start' : [None],
@@ -1463,25 +1487,20 @@ class State(object):
             return ret
         return super(State, self).__getattribute__(attr)
 
+    def __json_view__(self):
+        import datetime
+        max_mtime = max([mtime for mtime in self.mtimes.values()])
+        return str(datetime.datetime.fromtimestamp(max_mtime))
+
     def pack(self):
-        import starsmashertools.helpers.jsonfile
-        import zlib
-        return zlib.compress(
-            starsmashertools.helpers.jsonfile.save_bytes({
-                'simulation' : self.simulation.directory,
-                'mtimes' : self.mtimes,
-            }),
-            level=9,
-        )
+        return {
+            'simulation' : self.simulation,
+            'mtimes' : self.mtimes,
+        }
     
     @staticmethod
     @starsmashertools.helpers.argumentenforcer.enforcetypes
-    def unpack(obj : bytes):
-        import starsmashertools.helpers.jsonfile
-        import zlib
-        obj = starsmashertools.helpers.jsonfile.load_bytes(
-            zlib.decompress(obj),
-        )
+    def unpack(obj : dict):
         state = State(obj['simulation'])
         state.mtimes = obj['mtimes']
         return state

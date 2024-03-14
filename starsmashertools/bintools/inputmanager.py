@@ -26,7 +26,13 @@ def _get_types(_types):
         for a in t.__args__:
             if a not in new_types:
                 new_types += [a]
-    return new_types
+    # Sort the types a bit for smoother parsing attempts
+    my_types = []
+    for t in [bool, int, float, str]:
+        if t in new_types: my_types += [t]
+    for t in new_types:
+        if t not in my_types: my_types += [t]
+    return my_types
     
 
 class InputManager(object):

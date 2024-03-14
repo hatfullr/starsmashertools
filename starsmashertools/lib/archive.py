@@ -962,8 +962,8 @@ class Archive(object):
             else: raise KeyError(key)
 
         # Use JSON format for human-readable formatting
-        return ("Showing '%s':" % key) + newline + newline + starsmashertools.helpers.jsonfile.save_bytes(self[key].value).decode('utf-8')
-
+        return starsmashertools.helpers.jsonfile.view(self[key].value)
+    
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @cli('ssarchive')
     def show_raw_value(self, key : str, cli : bool = True):
@@ -1029,44 +1029,6 @@ class Archive(object):
         return ret
 
     
-class OutputArchiveValue(ArchiveValue, object):
-    """
-    This class is used specifically for storing an :class:`~.lib.output.Output`
-    object in an Archive. If the output file is stored on a different file
-    system originally, then we should not identify it by its absolute path.
-    Instead we should identify it as its relative path to the simulation
-    directory.
-    """
-    @starsmashertools.helpers.argumentenforcer.enforcetypes
-    @api
-    def __init__(
-            self,
-            output : "starsmashertools.lib.output.Output",
-            value : dict,
-    ):
-        origin = None
-        identifier = SimulationArchive.get_identifier_static(output)
-        mtime = starsmashertools.helpers.path.getmtime(output.path)
-        super(OutputArchiveValue, self).__init__(
-            identifier,
-            value,
-            origin = origin,
-            mtime = mtime,
-        )
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1145,72 +1107,3 @@ class SimulationArchive(Archive, object):
             auto_save = True,
             readonly = False,
         )
-
-    @api
-    def get_identifier(self, output : "starsmashertools.lib.output.Output"):
-        """
-        Obtain the expected identifier for the given
-        :class:`~.lib.output.Output` object.
-
-        Parameters
-        ----------
-        output : :class:`starsmashertools.lib.output.Output`
-            The :class:`starsmashertools.lib.output.Output` object for which to
-            get the :class:`~.SimulationArchive` identifier.
-
-        Returns
-        -------
-        str
-            The output file's expected identifier in this archive.
-        """
-        return SimulationArchive.get_identifier_static(output)
-
-    @api
-    @staticmethod
-    def get_identifier_static(output : "starsmashertools.lib.output.Output"):
-        """
-        Obtain the expected identifier for the given
-        :class:`~.lib.output.Output` object.
-
-        Parameters
-        ----------
-        output : :class:`starsmashertools.lib.output.Output`
-            The :class:`starsmashertools.lib.output.Output` object for which to
-            get the :class:`~.SimulationArchive` identifier.
-
-        Returns
-        -------
-        str
-            The output file's expected identifier in this archive.
-        """
-        import starsmashertools.helpers.path
-        import starsmashertools.lib.output
-
-        starsmashertools.helpers.argumentenforcer.enforcetypes({
-            'output' : [starsmashertools.lib.output.Output],
-        })
-        
-        return starsmashertools.helpers.path.relpath(
-            output.path,
-            start = output.simulation.directory,
-        )
-
-    @starsmashertools.helpers.argumentenforcer.enforcetypes
-    @api
-    def add_output(self, *args, **kwargs):
-        """
-        Add an :class:`~.OutputArchiveValue` to the archive.
-
-        Parameters
-        ----------
-        *args
-            Positional arguments are passed directly to
-            :class:`~.OutputArchiveValue`.
-        
-        **kwargs
-            Keyword arguments are passed directly to
-            :class:`~.OutputArchiveValue`.
-        
-        """
-        val = OutputArchiveValue(*args, **kwargs)
-        self[val.identifier] = val

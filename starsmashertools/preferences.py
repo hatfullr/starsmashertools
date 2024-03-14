@@ -104,10 +104,6 @@ defaults = {
             'init.f',
             'output.f',
         ],
-        # You can create a file with this name in your simulation directories to
-        # instruct starsmashertools on where to find the child simulations. Each
-        # file should be a text file with one directory per line.
-        'children hint filename' : 'children.sstools',
         # This name will be used to create an archive of computed data. See the
         # SimulationArchive class for details.
         # CAUTION: Editing this value will cause any old archives in simulations
@@ -124,6 +120,20 @@ defaults = {
             'col*.sph',
             'restartrad.sph*',
         ],
+
+        # Whenever a function in a Simulation is called, if it has a decorator
+        # '@archived' then before running that function we check the
+        # SimulationArchive to see if that function has been called with the
+        # same arguments. If the Simulation has not changed since when we last
+        # called that function with those arguments, we return the result that
+        # was stored in the SimulationArchive. Otherwise, or if the function
+        # isn't in the SimulationArchive, then we call the function and store
+        # the arguments and result in the SimulationArchive. This is the maximum
+        # number of function calls we can store in the SimulationArchive this
+        # way, per function. That is, the SimulationArchive will contain up to
+        # 'max saved func args' calls for each function called. When the maximum
+        # is exceeded, the oldest (first) call is replaced.
+        'max saved func args' : 100,
     },
 # ------------------------------------------------------------------------------
     # Note that currently the setting of values 'gram', 'sec', 'cm', and
