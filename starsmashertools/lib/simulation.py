@@ -902,11 +902,11 @@ class Simulation(object):
         
         m = starsmashertools.helpers.midpoint.Midpoint(outputs)
         m.set_criteria(
-            lambda output: output['t'] * conversion < time,
-            lambda output: output['t'] * conversion == time,
-            lambda output: output['t'] * conversion > time,
+            lambda output: output.header['t'] * conversion < time,
+            lambda output: output.header['t'] * conversion == time,
+            lambda output: output.header['t'] * conversion > time,
         )
-
+        
         return m.get()
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
@@ -1241,7 +1241,7 @@ class Simulation(object):
                 if logy: _y = np.log10(_y)
                 artist.set_offsets(np.column_stack((_x, _y)))
                 label.set_text(str(output))
-                time = (output['t'] * self.units['t']).convert(tunit)
+                time = (output.header['t'] * self.units['t']).convert(tunit)
                 time_label.set_text('t = %10g %s' % (time.value, tunit))
 
             update(0)
