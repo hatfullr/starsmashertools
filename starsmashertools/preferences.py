@@ -188,7 +188,7 @@ defaults = {
 
 
 
-def get_default(name, default_name, throw_error=False):
+def get(name, default_name, throw_error=False):
     if not isinstance(name, str): name = type(name).__name__
     if name in defaults.keys():
         if default_name in defaults[name].keys():

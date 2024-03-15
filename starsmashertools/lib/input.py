@@ -45,7 +45,7 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
         return starsmashertools.helpers.path.realpath(
             starsmashertools.helpers.path.join(
                 self.src,
-                starsmashertools.preferences.get_default(self, 'src init filename', throw_error=True),
+                starsmashertools.preferences.get(self, 'src init filename', throw_error=True),
             ),
         )
 

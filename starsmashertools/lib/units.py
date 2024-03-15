@@ -7,7 +7,7 @@ import numpy as np
 
 def get_all_labels():
     import starsmashertools.preferences
-    conversions = starsmashertools.preferences.get_default(
+    conversions = starsmashertools.preferences.get(
         'Units', 'unit conversions',
         throw_error=True,
     )
@@ -99,7 +99,7 @@ class Unit(object):
         
         # Get all the available conversions
         if conversions is None:
-            conversions = starsmashertools.preferences.get_default('Units', 'unit conversions')
+            conversions = starsmashertools.preferences.get('Units', 'unit conversions')
         if conversions is None: return self
         
         base = self.get_base(conversions=conversions)
@@ -138,7 +138,7 @@ class Unit(object):
         })
         if isinstance(new_label, str): new_label = Unit.Label(new_label)
         if conversions is None:
-            conversions = starsmashertools.preferences.get_default('Units', 'unit conversions', throw_error=True)
+            conversions = starsmashertools.preferences.get('Units', 'unit conversions', throw_error=True)
 
         # In the comments we consider the case of converting '10 km/hr' to
         # 'm/min', where our current unit is 'km/hr' and the new_label='m/min'.
@@ -237,7 +237,7 @@ class Unit(object):
         import copy
         
         if conversions is None:
-            conversions = starsmashertools.preferences.get_default('Units', 'unit conversions', throw_error=True)
+            conversions = starsmashertools.preferences.get('Units', 'unit conversions', throw_error=True)
         
         ret = copy.deepcopy(self)
         for conversion in conversions:
@@ -521,7 +521,7 @@ class Unit(object):
             new_right = copy.deepcopy(self.right)
             
             # Search for unit conversions and then apply those conversions
-            conversions = starsmashertools.preferences.get_default('Units', 'label conversions')
+            conversions = starsmashertools.preferences.get('Units', 'label conversions')
             if conversions is not None:
                 for short, values in conversions:
                     short_lhs, short_rhs = Unit.Label.split(short)
@@ -579,7 +579,7 @@ class Unit(object):
             if isinstance(other, str): other = Unit.Label(other)
             if len(self.left) != len(other.left): return False
             if len(self.right) != len(other.right): return False
-            conversions = starsmashertools.preferences.get_default("Units", "unit conversions")
+            conversions = starsmashertools.preferences.get("Units", "unit conversions")
             cpy = copy.deepcopy(self)
             othercpy = copy.deepcopy(other)
             
@@ -631,7 +631,7 @@ class Unit(object):
             self.left, self.right = Unit.Label.split(string)
 
             # Break down conversions as needed
-            conversions = starsmashertools.preferences.get_default('Units', 'label conversions')
+            conversions = starsmashertools.preferences.get('Units', 'label conversions')
             if conversions is not None:
                 for short, value in conversions:
                     lhs, rhs = Unit.Label.split(value)
@@ -857,7 +857,7 @@ class Units(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
         for attr in dir(self):
             _locals[attr] = getattr(self, attr)
         
-        for key, val in starsmashertools.preferences.get_default('Units', 'extra').items():
+        for key, val in starsmashertools.preferences.get('Units', 'extra').items():
             if isinstance(val, (float, int)):
                 obj[key] = val
             elif isinstance(val, str):

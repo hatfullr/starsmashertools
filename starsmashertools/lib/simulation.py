@@ -239,7 +239,7 @@ class Simulation(object):
         ----------------
         **kwargs
             Keywords are passed directly to
-            :func:`starsmashertools.preferences.get_default`.
+            :func:`starsmashertools.preferences.get`.
 
         Returns
         -------
@@ -249,7 +249,7 @@ class Simulation(object):
         """
         import starsmashertools.preferences
         import starsmashertools.helpers.path
-        search_directory = starsmashertools.preferences.get_default(
+        search_directory = starsmashertools.preferences.get(
             'Simulation',
             'search directory',
             **kwargs,
@@ -549,7 +549,7 @@ class Simulation(object):
         import time
         
         if pattern is None:
-            pattern = starsmashertools.preferences.get_default(
+            pattern = starsmashertools.preferences.get(
                 'Simulation', 'output files', throw_error=True,
             )
         matches = self.get_file(pattern)
@@ -648,7 +648,7 @@ class Simulation(object):
 
         # Obtain the file names to be compressed.
         if patterns is None:
-            patterns = starsmashertools.preferences.get_default(
+            patterns = starsmashertools.preferences.get(
                 'Simulation', 'state files', throw_error = True
             )
         
@@ -1408,7 +1408,7 @@ class State(object):
     def get(self):
         # Get the modification times of all the files that we expect for
         # StarSmasher to produce. This will set this unique state.
-        patterns_list = starsmashertools.preferences.get_default(
+        patterns_list = starsmashertools.preferences.get(
             'Simulation', 'state files', throw_error = True,
         )
         self.mtimes = {}

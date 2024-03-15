@@ -17,7 +17,7 @@ def find(
         throw_error : bool = False,
 ):
     if pattern is None:
-        pattern = preferences.get_default('LogFile', 'file pattern', throw_error=True)
+        pattern = preferences.get('LogFile', 'file pattern', throw_error=True)
     direc = starsmashertools.helpers.path.realpath(directory)
     tosearch = starsmashertools.helpers.path.join(
         direc,

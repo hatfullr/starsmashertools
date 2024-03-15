@@ -388,12 +388,12 @@ class Archive(object):
         self._previous_mtime = None
         
         if replacement_flags is None:
-            replacement_flags = starsmashertools.preferences.get_default(
+            replacement_flags = starsmashertools.preferences.get(
                 'Archive', 'replacement flags', throw_error = True,
             )
 
         if max_buffer_size is None:
-            max_buffer_size = starsmashertools.preferences.get_default(
+            max_buffer_size = starsmashertools.preferences.get(
                 'Archive', 'max buffer size', throw_error = True,
             )
         
@@ -678,7 +678,7 @@ class Archive(object):
             should_update = True
             old_version = info['__version__']
 
-        user_allowed = starsmashertools.preferences.get_default(
+        user_allowed = starsmashertools.preferences.get(
             'Archive',
             'auto update format',
             throw_error = True,
@@ -1078,7 +1078,7 @@ class SimulationArchive(Archive, object):
         import starsmashertools.helpers.path
         import starsmashertools.preferences
 
-        basename = starsmashertools.preferences.get_default(
+        basename = starsmashertools.preferences.get(
             'Simulation',
             'archive filename',
             throw_error = True,

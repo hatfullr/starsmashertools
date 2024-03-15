@@ -10,7 +10,7 @@ def update_style_sheet_directories():
     import starsmashertools.preferences
     import starsmashertools
     
-    directories = starsmashertools.preferences.get_default(
+    directories = starsmashertools.preferences.get(
         'Figure', 'stylesheet directories',
     )
     if directories is None: directories = []

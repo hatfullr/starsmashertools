@@ -26,7 +26,7 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
         import starsmashertools.preferences
         filename = starsmashertools.helpers.path.join(
             self.directory,
-            starsmashertools.preferences.get_default(
+            starsmashertools.preferences.get(
                 'Dynamical',
                 'original initial restartrad',
             ),

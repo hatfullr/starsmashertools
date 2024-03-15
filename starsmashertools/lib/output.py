@@ -152,7 +152,7 @@ class Output(dict, object):
     def _clear_cache(self):
         import starsmashertools.preferences
         import copy
-        self._cache = copy.copy(starsmashertools.preferences.get_default('Output', 'cache'))
+        self._cache = copy.copy(starsmashertools.preferences.get('Output', 'cache'))
         # If no cache is defined in preferences
         if self._cache is None: self._cache = {}
 
@@ -401,7 +401,7 @@ class Output(dict, object):
         import starsmashertools.helpers.formatter
         import starsmashertools.preferences
         if format_sheet is None:
-            format_sheet = starsmashertools.preferences.get_default(
+            format_sheet = starsmashertools.preferences.get(
                 'Output',
                 'string format sheet',
                 throw_error = True,
@@ -585,7 +585,7 @@ class OutputIterator(object):
         """
         import starsmashertools.preferences
         
-        if max_buffer_size is None: max_buffer_size = starsmashertools.preferences.get_default('OutputIterator', 'max buffer size')
+        if max_buffer_size is None: max_buffer_size = starsmashertools.preferences.get('OutputIterator', 'max buffer size')
         self.max_buffer_size = max_buffer_size
         self.onFlush = onFlush
         self.simulation = simulation

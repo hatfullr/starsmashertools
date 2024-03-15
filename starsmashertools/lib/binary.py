@@ -102,7 +102,7 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
         import starsmashertools.preferences
         import starsmashertools.helpers.path
         
-        search_directory = starsmashertools.preferences.get_default('Simulation', 'search directory')
+        search_directory = starsmashertools.preferences.get('Simulation', 'search directory')
         search_directory = starsmashertools.helpers.path.realpath(search_directory)
 
         if self.isPrimaryPointMass():
@@ -348,7 +348,7 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
         if cli:
             # Give some additional fRLOF values in the vicinity of the found output files
             import starsmashertools.preferences
-            window = starsmashertools.preferences.get_default(
+            window = starsmashertools.preferences.get(
                 'CLI', 'Binary', throw_error = True,
             )['get_RLOF']['output window']
             

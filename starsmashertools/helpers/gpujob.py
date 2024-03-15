@@ -53,7 +53,7 @@ try:
                 return_duration : bool = False,
         ):
             if threadsperblock is None:
-                threadsperblock = starsmashertools.preferences.get_default("GPUJob", "threadsperblock", throw_error=True)
+                threadsperblock = starsmashertools.preferences.get("GPUJob", "threadsperblock", throw_error=True)
 
             # Send inputs to the GPU
             inputs = []

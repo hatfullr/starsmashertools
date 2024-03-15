@@ -274,7 +274,7 @@ def get_src(directory, throw_error=False):
     #print("get_src",directory)
     directory = realpath(directory)
     
-    src_identifiers = preferences.get_default('Simulation', 'src identifiers', throw_error=True)
+    src_identifiers = preferences.get('Simulation', 'src identifiers', throw_error=True)
 
     if starsmashertools.helpers.ssh.isRemote(directory):
         address, remote_path = starsmashertools.helpers.ssh.split_address(directory)

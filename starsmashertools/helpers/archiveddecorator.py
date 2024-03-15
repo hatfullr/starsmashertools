@@ -74,7 +74,7 @@ def get_function_result_from_archive(simulation, function, args, kwargs):
 def save_function_to_archive(simulation, function, result, args, kwargs):
     import starsmashertools.preferences
 
-    max_saved_func_args = starsmashertools.preferences.get_default(
+    max_saved_func_args = starsmashertools.preferences.get(
         'Simulation', 'max saved func args', throw_error = False,
     )
     if max_saved_func_args is None: max_saved_func_args = 100

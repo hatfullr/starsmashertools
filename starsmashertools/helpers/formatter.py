@@ -14,7 +14,7 @@ def sheet_name_to_path(name : str):
         'format_sheets',
     )
 
-    directories = starsmashertools.preferences.get_default(
+    directories = starsmashertools.preferences.get(
         'FormatSheet', 'directories',
     )
     directories += [default_directory]

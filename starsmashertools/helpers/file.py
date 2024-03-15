@@ -35,7 +35,7 @@ class Lock(object):
         import copy
         
         if timeout is None:
-            timeout = starsmashertools.preferences.get_default(
+            timeout = starsmashertools.preferences.get(
                 'IO', 'Lock', throw_error = True,
             ).get('timeout', float('inf'))
         
