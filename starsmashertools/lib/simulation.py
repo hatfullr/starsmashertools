@@ -408,10 +408,12 @@ class Simulation(object):
 
         val = []
         for child in children:
-            print(child)
-            val += [starsmashertools.helpers.path.relpath(
-                child.directory, start = self.directory,
-            )]
+            if child in [None, 'point mass']:
+                val += [child]
+            else:
+                val += [starsmashertools.helpers.path.relpath(
+                    child.directory, start = self.directory,
+                )]
         
         self.archive.add(
             'children',
