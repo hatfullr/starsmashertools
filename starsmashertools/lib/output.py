@@ -333,35 +333,6 @@ class Output(dict, object):
                 yangle = yangle,
                 zangle = zangle,
             )
-        
-    @api
-    def get_flux_finder(self, *args, **kwargs):
-        """
-        Create a :class:`starsmashertools.flux.fluxfinder.FluxFinder` instance.
-
-        Parameters
-        ----------
-        *args
-            Positional arguments are passed directly to the 
-            :class:`starsmashertools.flux.fluxfinder.FluxFinder` constructor,
-            except the first argument to the constructor is always this 
-            :class:`starsmashertools.lib.output.Output` object.
-        
-        **kwargs
-            Keyword arguments are passed directly to the 
-            :class:`starsmashertools.flux.fluxfinder.FluxFinder` constructor.
-
-        Returns
-        -------
-        FluxFinder
-            A :class:`starsmashertools.flux.fluxfinder.FluxFinder` instance.
-        """
-
-        import starsmashertools.flux.fluxfinder
-        instance = starsmashertools.flux.fluxfinder.FluxFinder(
-            self, *args, **kwargs
-        )
-        return instance
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
