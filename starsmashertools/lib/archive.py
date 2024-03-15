@@ -87,7 +87,9 @@ def update_archive_version(
             starsmashertools.helpers.warnings.filterwarnings(action = 'ignore')
 
             while 'file info' in zfile.namelist():
-                _remove_zipfile_member(zfile, 'file info')
+                try:
+                    _remove_zipfile_member(zfile, 'file info')
+                except KeyError: break
             
             zfile.writestr('file info', get_file_info())
             
@@ -760,7 +762,9 @@ class Archive(object):
             ) as zfile:
                 # Update the file info
                 while 'file info' in zfile.namelist():
-                    _remove_zipfile_member(zfile, 'file info')
+                    try:
+                        _remove_zipfile_member(zfile, 'file info')
+                    except KeyError: break
                 
                 keys = zfile.namelist()
                 
