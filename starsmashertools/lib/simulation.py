@@ -408,6 +408,7 @@ class Simulation(object):
 
         val = []
         for child in children:
+            print(child)
             val += [starsmashertools.helpers.path.relpath(
                 child.directory, start = self.directory,
             )]
