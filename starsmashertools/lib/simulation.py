@@ -38,7 +38,6 @@ class Simulation(object):
         super(Simulation, self).__init__()
         
         self.input = starsmashertools.lib.input.Input(self.directory)
-        self._children = None
         self._units = None
         self._teos = None
         self._logfiles = None
@@ -117,65 +116,6 @@ class Simulation(object):
     # Override this in children. Must return a list of Simulation objects
     def _get_children(self):
         raise NotImplementedError
-
-    def _load_children_from_hint_files(self):
-        import starsmashertools.preferences
-        import starsmashertools.helpers.file
-        import starsmashertools.helpers.path
-        import starsmashertools
-        
-        children = None
-        hint_filename = starsmashertools.preferences.get_default(
-            'Simulation', 'children hint filename', throw_error=True)
-        fname = self.get_file(hint_filename, recursive = False)
-        if not fname: return children # If the file wasn't found
-
-        fname = fname[0]
-        
-        with starsmashertools.helpers.file.open(fname, 'r', lock = False) as f:
-            for line in f:
-                line = line.strip()
-                if not line: continue
-
-                if line.lower() == 'point mass':
-                    if children is None: children = []
-                    children += ['point mass']
-                    continue
-
-                simulation = None
-                try:
-                    simulation = starsmashertools.get_simulation(line)
-                except FileNotFoundError as e:
-                    if 'Directory does not exist' in str(e):
-                        import starsmashertools.helpers.warnings
-                        starsmashertools.helpers.warnings.warn("Failed to find directory in children hint file '%s': '%s'" % (fname, line))
-                    else: raise
-
-                if simulation is not None:
-                    if children is None: children = []
-                    children += [simulation]
-        
-        if children is not None:
-            import starsmashertools.lib.binary
-            if isinstance(self, starsmashertools.lib.binary.Binary):
-                if len(children) != 2:
-                    raise Exception("File '%s' indicates that the binary simulation has only one child. If one of the stars is a point mass, please add a line 'point mass' to the file." % fname)
-        return children
-
-    def _save_children_to_hint_file(self, children, verbose : bool = False):
-        import starsmashertools.preferences
-        import starsmashertools.helpers.file
-        import starsmashertools.helpers.path
-
-        hint_filename = starsmashertools.preferences.get_default(
-            'Simulation', 'children hint filename', throw_error=True)
-        fname = starsmashertools.helpers.path.join(
-            self.directory,
-            hint_filename,
-        )
-        towrite = "\n".join([child if isinstance(child, str) else child.directory for child in children])
-        with starsmashertools.helpers.file.open(fname, 'w', lock = False) as f:
-            f.write(towrite)
     
     def _get_compression_filename(self):
         import starsmashertools.helpers.path
