@@ -1,6 +1,7 @@
 import starsmashertools.helpers.argumentenforcer
 from starsmashertools.helpers.apidecorator import api
 import numpy as np
+import typing
 
 try:
     import matplotlib.axes
@@ -77,7 +78,7 @@ class Output(dict, object):
     def _get_relpath(self):
         import starsmashertools.helpers.path
         return starsmashertools.helpers.path.relpath(
-            self.path,
+            starsmashertools.helpers.path.realpath(self.path),
             start = self.simulation.directory,
         )
 
@@ -280,6 +281,159 @@ class Output(dict, object):
         for key, val in self._original_data.items():
             self[key] = val
         self._original_data = None
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def condense(
+            self,
+            identifier : str,
+            func : str | typing.Callable | type(None) = None,
+            mask : np.ndarray | list | tuple | type(None) = None,
+            overwrite : bool = False,
+    ):
+        """
+        Perform an operation as defined by a string or function using this
+        :class:`~.Output` object. The result is saved to the 
+        :class:`~.lib.simulation.Simulation` archive for quick access in the
+        future.
+        
+        Values stored in the simulation archive will be erased when "max stored
+        condense results" in :property:`starsmashertools.preferences` is
+        reached, per output file. If this value is changed, the stored results
+        will be updated automatically the next time this function is called, but
+        only for this output object. The identifiers which were accessed most
+        recently are kept.
+        
+        It is good practice to ensure the value returned by your ``func`` 
+        argument is small, so that many of them can be stored in the simulation
+        archive. You could also use this method just to store a large object 
+        from a single output file, but it is generally not recommended because
+        it significantly increases the overhead of retrieving values from the 
+        simulation archive.
+        
+        Parameters
+        ----------
+        identifier : str
+           The name to use when storing the result of ``func`` in the simulation
+           archive. If ``overwrite = False`` then the value which is stored in 
+           the simulation archive with key ``identifier`` will be returned and 
+           no calculations will be done.
+
+        Other Parameters
+        ----------------
+        func : str, :py:class:`typing.Callable`, None, default = None
+           If `None`, no calculations will be done and the simulation archive
+           will be searched for ``identifier``. If no key is found matching
+           ``identifier`` for this output file, a :py:class:`KeyError` will be
+           raised. Keyword ``overwrite`` is ignored in this case.
+           
+           If type :py:class:`str` is given, it will be given as input to an 
+           :py:func:`exec` call. In this case, variables will be accessible as
+           the names of the keys in this :class:`~.Output` object, such as 'x',
+           'rho', etc., including keys which are in 
+           :py:property:`starsmashertools.preferences`. The string must set a
+           variable called "result", the contents of which will be saved in the
+           simulation archive.
+
+           If type :py:class:`typing.Callable` is given, it must be a function
+           which accepts a single input that is this :class:`~.Output` object 
+           and it must return an object that can be serialized, such as those
+           in :property:`~.helpers.jsonfile.serialization_methods`. This is so
+           that it can be saved in the simulation's archive.
+        
+        mask : np.ndarray, list, tuple, None, default = None
+           If not `None`, the mask will be applied to this :class:`~.Output`
+           object using :func:`~.mask`.
+
+        overwrite : bool, default = False
+           Ignored if ``func`` is `None`.
+
+           If `False` and the simulation archive already contains the given
+           ``identifier`` then the archived value is returned. Otherwise, the
+           result of ``func`` is added to the simulation archive.
+           
+           If `True`, then the result of ``func`` is added to the simulation 
+           archive if it doesn't already exists, and replaces the value in the 
+           archive if it does.
+
+        Returns
+        -------
+        The value returned depends on the contents of positional argument 
+        ``func``, and/or the contents of the simulation archive.
+        """
+        import starsmashertools
+        import time
+            
+        archive_key = 'Output.condense'
+        archive_value = {}
+        if archive_key in self.simulation.archive.keys():
+            archive_value = self.simulation.archive[archive_key].value
+
+        relpath = self._get_relpath()
+        # Make sure this output file exists in the archived values
+        archive_value[relpath] = archive_value.get(relpath, {})
+
+        # Make sure the size is right
+        max_stored_condense_results = starsmashertools.preferences.get(
+            'Output', 'max stored condense results',
+        )
+        if max_stored_condense_results is None:
+            max_stored_condense_results = 10000
+
+        if len(archive_value[relpath].keys()) > max_stored_condense_results:
+            # Reduce the number of stored values
+            keys = list(archive_value[relpath].keys())
+            values = []
+            for key in keys:
+                values += [archive_value[relpath][key]]
+            
+            # Sort keys by oldest-to-newest access times
+            keys = [x for _, x in sorted(zip(values, keys), key=lambda pair:pair[0]['access time'])]
+
+            ndel = len(archive_value[relpath].keys()) - max_stored_condense_results
+            keys = keys[ndel:]
+            values = values[ndel:]
+
+            archive_value[relpath] = {key:val for key, val in zip(keys, values)}
+        
+        
+        if func is None:
+            # Find the pre-existing identifier or throw an error if it doesn't
+            # exist
+            if identifier not in archive_value[relpath].keys():
+                raise KeyError("Identifier '%s' not found in the simulation archive for %s" % (identifier, self))
+        else:
+            # Run calculations
+            if identifier not in archive_value[relpath].keys() or overwrite:
+                if mask is not None: self.mask(mask)
+
+                if isinstance(func, str):
+                    variables = {key:val for key, val in self.items()}
+                    loc = {}
+                    exec(func, variables, loc)
+                    if 'result' not in loc.keys():
+                        raise SyntaxError("Argument 'func' is of type 'str' but it does not set variable 'result'")
+                    archive_value[relpath][identifier] = {
+                        'value' : loc['result'],
+                    }
+                else: # It's a function
+                    archive_value[relpath][identifier] = {
+                        'value' : func(self),
+                    }
+
+                if mask is not None: self.unmask()
+            # Otherwise, we don't need to run any calculations. Just access the
+            # value in the simulation archive.
+        
+        archive_value[relpath][identifier]['access time'] = time.time()
+        # Save to the archive
+        self.simulation.archive.add(
+            archive_key,
+            archive_value,
+            mtime = None,
+            origin = None,
+        )
+        return archive_value[relpath][identifier]['value']
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api

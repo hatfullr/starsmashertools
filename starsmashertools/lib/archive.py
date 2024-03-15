@@ -69,6 +69,7 @@ def update_archive_version(
         
         else: # If we were not able to detect the old Archive format
             format_detected = False
+
     if format_detected:
         new_archive._buffers['add'] = {key:ArchiveValue(
             key,
@@ -85,7 +86,9 @@ def update_archive_version(
             # version info
             starsmashertools.helpers.warnings.filterwarnings(action = 'ignore')
 
-            _remove_zipfile_member(zfile, 'file info')
+            while 'file info' in zfile.namelist():
+                _remove_zipfile_member(zfile, 'file info')
+            
             zfile.writestr('file info', get_file_info())
             
             starsmashertools.helpers.warnings.resetwarnings()
@@ -551,7 +554,7 @@ class Archive(object):
             except Exception as e:
                 raise Archive.CorruptFileError("Failed to load keys from the archive file. Perhaps it did not save correctly. All data in this archive is lost. Please delete the file and try again: '%s'" % self.filename) from e
             
-            if 'file info' in keys: keys.remove('file info')
+            while 'file info' in keys: keys.remove('file info')
 
         for key in self._buffers['remove']:
             if key not in keys: continue
@@ -638,9 +641,12 @@ class Archive(object):
 
         # Otherwise, check the archive
         try:
-            with self.open('r', message = "Loading key '%s' in %s" % (str(key), self)) as zfile:
+            with self.open(
+                    'r',
+                    message = "Loading key '%s' in %s" % (str(key), self)
+            ) as zfile:
                 keys = zfile.namelist()
-                if 'file info' in keys: keys.remove('file info')
+                while 'file info' in keys: keys.remove('file info')
                 if key not in keys: raise KeyError(key)
                 value = zfile.read(key)
         except Exception as e:
@@ -662,7 +668,10 @@ class Archive(object):
         should_update = False
         info = None
         try:
-            with self.open('r', message = "Getting file info from %s" % self) as zfile:
+            with self.open(
+                    'r',
+                    message = "Getting file info from %s" % self
+            ) as zfile:
                 if 'file info' in zfile.namelist():
                     info = zfile.read('file info')
         except Exception as e:
@@ -749,12 +758,12 @@ class Archive(object):
                     message = "Saving %s" % self,
                     progress_max = len(data.keys()),
             ) as zfile:
-                keys = zfile.namelist()
-
                 # Update the file info
-                if 'file info' in keys:
+                while 'file info' in zfile.namelist():
                     _remove_zipfile_member(zfile, 'file info')
-
+                
+                keys = zfile.namelist()
+                
                 zfile.writestr('file info', info)
 
                 # Remove all keys that are going to change
@@ -775,7 +784,7 @@ class Archive(object):
             print(e)
             raise Archive.CorruptFileError("Failed to save archive file. Perhaps it did not save correctly. All data in this archive is lost. Please delete the file and try again: '%s'" % self.filename) from e
         
-        if 'file info' in current_keys: current_keys.remove('file info')
+        while 'file info' in current_keys: current_keys.remove('file info')
 
         # Clear the buffers
         self._clear_buffers()
@@ -874,7 +883,7 @@ class Archive(object):
         ) as zfile:
             try:
                 file_keys = zfile.namelist()
-                if 'file info' in file_keys: file_keys.remove('file info')
+                while 'file info' in file_keys: file_keys.remove('file info')
             except Exception as e:
                 raise Archive.CorruptFileError("Failed to load a key from the archive file. Perhaps it did not save correctly. All data in this archive is lost. Please delete the file and try again: '%s'" % (key, self.filename)) from e
                 

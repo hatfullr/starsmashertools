@@ -60,5 +60,73 @@ class TestOutput(basetest.BaseTest):
             else:
                 self.assertAlmostEqual(val, output[key])
 
+    def test_condense(self):
+        import numpy as np
+        import time
+
+        # Make sure we don't save anything
+        with self.simulation.archive.nosave():
+            output = self.simulation.get_output(0)
+            relpath = output._get_relpath()
+            
+            output.condense(
+                'Eint',
+                func = """import numpy as np
+result = np.sum(am*u)
+""",
+            )
+
+            self.assertIn('Output.condense', self.simulation.archive.keys())
+            v = self.simulation.archive['Output.condense'].value[relpath]
+            self.assertAlmostEqual(
+                np.sum(output['am']*output['u']),
+                v['Eint']['value'],
+            )
+            self.assertEqual(
+                v['Eint']['value'],
+                output.condense('Eint'),
+            )
+
+            with self.assertRaises(KeyError):
+                output.condense('nonsense')
+
+            with self.assertRaises(NameError):
+                output.condense('blahblah', func = 'garbage')
+
+            with self.assertRaises(SyntaxError):
+                output.condense(
+                    'Eint',
+                    func = """import numpy as np
+np.sum(am*u)
+""",
+                    overwrite = True,
+                )
+
+            current_time = time.time()
+            v = self.simulation.archive['Output.condense'].value[relpath]
+            self.assertGreater(
+                current_time,
+                v['Eint']['access time'],
+            )
+
+            output.condense('Blah', func = "result = 1+1")
+            v = self.simulation.archive['Output.condense'].value[relpath]
+            self.assertGreater(
+                v['Blah']['access time'],
+                v['Eint']['access time'],
+            )
+
+            def func(o):
+                import numpy as np
+                return np.sum(o['am']*o['u']) + 1
+            v = self.simulation.archive['Output.condense'].value[relpath]
+            old = v['Eint']['value']
+            output.condense('Eint', func = func, overwrite = True)
+            v = self.simulation.archive['Output.condense'].value[relpath]
+            self.assertGreater(
+                v['Eint']['value'],
+                old,
+            )
+
 if __name__ == "__main__":
     unittest.main(failfast=True)

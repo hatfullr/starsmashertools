@@ -8,7 +8,6 @@ import starsmashertools.lib.simulation
 import starsmashertools.lib.relaxation
 import starsmashertools.lib.binary
 import starsmashertools.lib.dynamical
-import starsmashertools.helpers.archiveddecorator
 import importlib
 #import starsmashertools.lib.output
 

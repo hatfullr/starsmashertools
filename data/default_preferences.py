@@ -96,12 +96,17 @@ defaults = {
             'ekin' : lambda obj: 0.5 * obj['v2'],
             'etot' : lambda obj: obj['ekin'] + obj['grpot'] + obj['u'],
             'unbound' : lambda obj: obj['etot'] >= 0,
-            'angular momentum' : lambda obj: obj['am'] * np.sqrt(obj['r2'] * obj['v2']),
+            'angularmomentum' : lambda obj: obj['am'] * np.sqrt(obj['r2'] * obj['v2']),
             'mejecta' : lambda obj: np.sum(obj['am'][obj['unbound']]) if np.any(obj['unbound']) else 0.,
 
-            # Add your own functions here
+            # Add your own functions here. The keys need to be written as though
+            # they were variable names, so that Output.condense works properly.
         },
         'string format sheet' : 'cli.format',
+        
+        # The maximum number of results from Output.condense that is allowed to
+        # be stored in the simulation archives per output file.
+        'max stored condense results' : 10000,
     },
 # ------------------------------------------------------------------------------
     'OutputIterator' : {
