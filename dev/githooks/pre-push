@@ -1,0 +1,18 @@
+#!/usr/bin/env python3
+
+import subprocess
+import starsmashertools
+import os
+import sys
+
+test_dir = os.path.join(
+    starsmashertools.SOURCE_DIRECTORY,
+    'tests',
+)
+
+curdir = os.getcwd()
+os.chdir(test_dir)
+p = subprocess.Popen(['python3', 'run_all_tests.py'])
+p.wait()
+
+sys.exit(0)

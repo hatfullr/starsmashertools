@@ -16,12 +16,23 @@ compression_kwargs = {
 
 
 def get_gitignore_patterns(filename):
+    import os
+    import starsmashertools
+    
     patterns = []
     with open(filename, 'r') as f:
         for line in f:
             if not line.strip(): continue # Skip empty lines
             if line.strip()[0] == '#': continue # Skip comments
             patterns += [line.strip()]
+    # All patterns are relative to the source directory, not the current working
+    # directory (just patterns which refer to directories, and so end with '/')
+    for i, pattern in enumerate(patterns):
+        if pattern.endswith('/'):
+            patterns[i] = os.path.join(
+                starsmashertools.SOURCE_DIRECTORY,
+                pattern,
+            )
     return patterns
 
 def get_to_compress():
