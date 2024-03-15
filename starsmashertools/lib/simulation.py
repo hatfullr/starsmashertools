@@ -470,10 +470,13 @@ class Simulation(object):
         if 'children' in self.archive.keys():
             children = []
             for directory in self.archive['children'].value:
-                path = starsmashertools.helpers.path.join(
-                    self.directory, directory,
-                )
-                children += [starsmashertools.get_simulation(path)]
+                if directory in [None, 'point mass']:
+                    children += [directory]
+                else:
+                    path = starsmashertools.helpers.path.join(
+                        self.directory, directory,
+                    )
+                    children += [starsmashertools.get_simulation(path)]
         else:
             children = self._get_children()
             self.set_children(children)
@@ -481,7 +484,10 @@ class Simulation(object):
         if cli:
             string = []
             for i, child in enumerate(children):
-                string += ["Star %d: %s" % (i+1, child.directory)]
+                if child in [None, 'point mass']:
+                    string += ["Star %d: point mass" % (i+1)]
+                else:
+                    string += ["Star %d: %s" % (i+1, child.directory)]
             return "\n".join(string)
         return children
 
