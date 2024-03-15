@@ -569,7 +569,7 @@ class Simulation(object):
             for m in _list:
                 output = starsmashertools.lib.output.Output(m, simulation)
                 order += [m]
-                times += [output.condense('t', 'result = t')]
+                times += [output.header['t']]
         
         # Sort by simulation times
         return [x for _,x in sorted(zip(times, order), key=lambda pair:pair[0])]
