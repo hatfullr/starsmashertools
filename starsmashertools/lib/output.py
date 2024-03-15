@@ -288,6 +288,8 @@ class Output(dict, object):
             self,
             identifier : str,
             func : str | typing.Callable | type(None) = None,
+            args : list | tuple = (),
+            kwargs : dict = {},
             mask : np.ndarray | list | tuple | type(None) = None,
             overwrite : bool = False,
     ):
@@ -340,6 +342,14 @@ class Output(dict, object):
            and it must return an object that can be serialized, such as those
            in :property:`~.helpers.jsonfile.serialization_methods`. This is so
            that it can be saved in the simulation's archive.
+        
+        args : list, tuple, default = ()
+           Positional arguments passed directly to ``func`` when it is of type
+           :class:`typing.Callable`.
+
+        kwargs : dict, default = {}
+           Keyword arguments passed directly to ``func`` when it is of type
+           :class:`typing.Callable`.
         
         mask : np.ndarray, list, tuple, None, default = None
            If not `None`, the mask will be applied to this :class:`~.Output`
@@ -418,7 +428,7 @@ class Output(dict, object):
                     }
                 else: # It's a function
                     archive_value[relpath][identifier] = {
-                        'value' : func(self),
+                        'value' : func(self, *args, **kwargs),
                     }
 
                 if mask is not None: self.unmask()
