@@ -281,11 +281,6 @@ class Output(dict, object):
             self[key] = val
         self._original_data = None
 
-    @api
-    def get_file_creation_time(self):
-        import starsmashertools.helpers.path
-        return starsmashertools.helpers.path.getmtime(self.path)
-
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def rotate(
