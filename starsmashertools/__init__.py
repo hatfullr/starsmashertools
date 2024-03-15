@@ -9,6 +9,8 @@ import importlib.metadata as metadata
 import importlib.util as util
 import starsmashertools.mpl # Runs code in mpl/__init__.py
 import signal
+import copy
+import sys
 
 __version__ = metadata.version('starsmashertools')
 
@@ -21,6 +23,19 @@ DATA_DIRECTORY = os.path.join(SOURCE_DIRECTORY, 'data')
 LOCK_DIRECTORY = os.path.join(DATA_DIRECTORY, 'locks')
 if not os.path.isdir(DATA_DIRECTORY): os.makedirs(DATA_DIRECTORY)
 if not os.path.isdir(LOCK_DIRECTORY): os.makedirs(LOCK_DIRECTORY)
+
+# Import the user's preferences file from the data directory
+orig_path = copy.deepcopy(sys.path)
+sys.path.insert(1, DATA_DIRECTORY)
+try:
+    import preferences
+except ImportError:
+    # Try importing the default preferences if the user has no preferences
+    try:
+        import default_preferences as preferences
+    except ImportError as e:
+        raise FileNotFoundError("Failed to find either '%s' or '%s'. Your installation might be corrupt if you are missing default_preferences.py." % (os.path.join(DATA_DIRECTORY, 'preferences.py'), os.path.join(DATA_DIRECTORY, 'default_preferences.py'))) from e
+sys.path = orig_path
 
 # Check if some version string is older than the current version
 def _is_version_older(version, other = None):
@@ -750,6 +765,15 @@ try: del starsmashertools
 except: pass
 
 try: del os # The most terrifying syntax...
+except: pass
+
+try: del sys
+except: pass
+
+try: del copy
+except: pass
+
+try: del orig_path
 except: pass
 
 try: del f

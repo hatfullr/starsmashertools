@@ -1,7 +1,3 @@
-import starsmashertools.preferences as preferences
-import starsmashertools.helpers.path
-import starsmashertools.helpers.file
-import starsmashertools.helpers.string
 import starsmashertools.helpers.argumentenforcer
 from starsmashertools.helpers.apidecorator import api
 from glob import glob
@@ -16,8 +12,11 @@ def find(
         pattern : str | type(None) = None,
         throw_error : bool = False,
 ):
+    import starsmashertools
+    import starsmashertools.helpers.path
+    
     if pattern is None:
-        pattern = preferences.get('LogFile', 'file pattern', throw_error=True)
+        pattern = starsmashertools.preferences.get('LogFile', 'file pattern', throw_error=True)
     direc = starsmashertools.helpers.path.realpath(directory)
     tosearch = starsmashertools.helpers.path.join(
         direc,
@@ -41,6 +40,9 @@ class LogFile(object):
             path : str,
             simulation : "starsmashertools.lib.simulation.Simulation",
     ):
+        import starsmashertools.helpers.path
+        import starsmashertools.helpers.file
+        
         self.path = starsmashertools.helpers.path.realpath(path)
         self.simulation = simulation
         self._header = None
@@ -96,6 +98,8 @@ class LogFile(object):
             self,
             filenames : list | tuple | np.ndarray,
     ):
+        import starsmashertools.helpers.path
+        
         first_file = self.get_first_output_file(throw_error=False)
         last_file = self.get_last_output_file(throw_error=False)
         

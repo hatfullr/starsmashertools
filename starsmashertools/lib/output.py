@@ -150,7 +150,7 @@ class Output(dict, object):
             self.read(return_headers=not self._isRead['header'], return_data=not self._isRead['data'])
 
     def _clear_cache(self):
-        import starsmashertools.preferences
+        import starsmashertools
         import copy
         self._cache = copy.copy(starsmashertools.preferences.get('Output', 'cache'))
         # If no cache is defined in preferences
@@ -391,7 +391,8 @@ class Output(dict, object):
         ----------------
         format_sheet : str, None, default = None
             The format sheet to use when converting. If `None`, the default 
-            sheet specified in :py:mod:`~.preferences` is used.
+            sheet specified in :py:property:`starsmasherotols.preferences` is 
+            used.
 
         Returns
         -------
@@ -399,7 +400,7 @@ class Output(dict, object):
             The formatted string.
         """
         import starsmashertools.helpers.formatter
-        import starsmashertools.preferences
+        import starsmashertools
         if format_sheet is None:
             format_sheet = starsmashertools.preferences.get(
                 'Output',
@@ -583,7 +584,7 @@ class OutputIterator(object):
             Other optional keyword arguments that are passed to the
             `.Output.read` function.
         """
-        import starsmashertools.preferences
+        import starsmashertools
         
         if max_buffer_size is None: max_buffer_size = starsmashertools.preferences.get('OutputIterator', 'max buffer size')
         self.max_buffer_size = max_buffer_size

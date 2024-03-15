@@ -233,7 +233,7 @@ class Simulation(object):
     def get_search_directory(self, **kwargs):
         """
         Get the default search directory from
-        :py:property:`~.preferences.defaults`.
+        :py:property:`starsmashertools.preferences.defaults`.
         
         Other Parameters
         ----------------
@@ -247,7 +247,7 @@ class Simulation(object):
             The "realpath" (:func:`os.path.realpath`) of the default search
             directory.
         """
-        import starsmashertools.preferences
+        import starsmashertools
         import starsmashertools.helpers.path
         search_directory = starsmashertools.preferences.get(
             'Simulation',
@@ -543,7 +543,7 @@ class Simulation(object):
             A list of output file paths belonging to this simulation and any
             joined simulations, unsorted.
         """
-        import starsmashertools.preferences
+        import starsmashertools
         import starsmashertools.helpers.path
         import starsmashertools.lib.output
         import time
@@ -615,7 +615,8 @@ class Simulation(object):
         
         patterns : list, None, default = None
             File name patterns to include in the compression. If `None`, uses 
-            the "state files" value in :py:property:`~.preferences.defaults`.
+            the "state files" value in 
+            :py:property:`starsmashertools.preferences.defaults`.
 
         recursive : bool, default = True
             If `True`, subdirectories are also searched for files matching the
@@ -640,9 +641,9 @@ class Simulation(object):
         --------
         :func:`decompress`
         :func:`~.helpers.compressiontask.CompressionTask.compress`
-        :py:property:`~.preferences.defaults`
+        :py:property:`starsmashertools.preferences.defaults`
         """
-        import starsmashertools.preferences
+        import starsmashertools
         import starsmashertools.helpers.path
         import starsmashertools.helpers.compressiontask
 
@@ -1396,7 +1397,6 @@ class State(object):
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     def __init__(self, simulation : Simulation | str):
         import starsmashertools
-        import starsmashertools.preferences
         import starsmashertools.helpers.path
             
         if isinstance(simulation, str):

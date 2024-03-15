@@ -54,7 +54,7 @@ class InputManager(object):
     def parse(self, string, _types):
         import starsmashertools.lib.units
         import starsmashertools.helpers.string
-        import starsmashertools.preferences
+        import starsmashertools
         import numpy as np
         
         string = string.strip()

@@ -99,7 +99,7 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
             verbose : bool = False,
     ):
         import starsmashertools.lib.relaxation
-        import starsmashertools.preferences
+        import starsmashertools
         import starsmashertools.helpers.path
         
         search_directory = starsmashertools.preferences.get('Simulation', 'search directory')
@@ -312,6 +312,7 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
         import starsmashertools.helpers.midpoint
         import starsmashertools.helpers.string
         import os
+        import starsmashertools
         
         starsmashertools.helpers.argumentenforcer.enforcevalues({
             'which' : ['primary', 'secondary', 'both'],
@@ -347,7 +348,6 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
         
         if cli:
             # Give some additional fRLOF values in the vicinity of the found output files
-            import starsmashertools.preferences
             window = starsmashertools.preferences.get(
                 'CLI', 'Binary', throw_error = True,
             )['get_RLOF']['output window']

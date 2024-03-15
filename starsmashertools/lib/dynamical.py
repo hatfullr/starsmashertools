@@ -7,7 +7,6 @@ import numpy as np
 
 class Dynamical(starsmashertools.lib.simulation.Simulation, object):
     def _get_children(self, *args, **kwargs):
-        import starsmashertools.preferences
         import starsmashertools.helpers.path
         import starsmashertools.lib.binary
         
@@ -23,7 +22,7 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
         # We assume a dynamical run always begins from a restartrad.sph file,
         # and that the file was copied from a restartrad.sph.orig file.
         import starsmashertools.helpers.path
-        import starsmashertools.preferences
+        import starsmashertools
         filename = starsmashertools.helpers.path.join(
             self.directory,
             starsmashertools.preferences.get(

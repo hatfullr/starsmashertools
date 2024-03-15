@@ -1,6 +1,5 @@
 import starsmashertools.lib.units
 import starsmashertools
-import starsmashertools.preferences
 import starsmashertools.helpers.argumentenforcer
 import unittest
 import numpy as np

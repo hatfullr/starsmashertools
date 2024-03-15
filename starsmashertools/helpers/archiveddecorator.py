@@ -72,7 +72,7 @@ def get_function_result_from_archive(simulation, function, args, kwargs):
     raise FunctionNotFoundError(key)
 
 def save_function_to_archive(simulation, function, result, args, kwargs):
-    import starsmashertools.preferences
+    import starsmashertools
 
     max_saved_func_args = starsmashertools.preferences.get(
         'Simulation', 'max saved func args', throw_error = False,

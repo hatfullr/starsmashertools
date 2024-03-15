@@ -1,6 +1,5 @@
 # Path helper methods
 import os
-import starsmashertools.preferences as preferences
 import starsmashertools.helpers.argumentenforcer
 import glob
 import starsmashertools.helpers.ssh
@@ -266,6 +265,8 @@ def find_duplicate_file(filepath, search_directory, pattern="out*.sph", throw_er
 
 
 def get_src(directory, throw_error=False):
+    import starsmashertools
+    
     if not isdir(directory):
         raise FileNotFoundError("Directory does not exist: '%s'" % str(directory))
     
@@ -274,7 +275,7 @@ def get_src(directory, throw_error=False):
     #print("get_src",directory)
     directory = realpath(directory)
     
-    src_identifiers = preferences.get('Simulation', 'src identifiers', throw_error=True)
+    src_identifiers = starsmashertools.preferences.get('Simulation', 'src identifiers', throw_error=True)
 
     if starsmashertools.helpers.ssh.isRemote(directory):
         address, remote_path = starsmashertools.helpers.ssh.split_address(directory)

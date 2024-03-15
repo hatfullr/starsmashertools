@@ -6,7 +6,7 @@ import numpy as np
 
 
 def get_all_labels():
-    import starsmashertools.preferences
+    import starsmashertools
     conversions = starsmashertools.preferences.get(
         'Units', 'unit conversions',
         throw_error=True,
@@ -89,7 +89,7 @@ class Unit(object):
     # Decide on units that give the cleanest value
     @api
     def auto(self, threshold=100, conversions=None):
-        import starsmashertools.preferences
+        import starsmashertools
         import copy
         
         starsmashertools.helpers.argumentenforcer.enforcetypes({
@@ -130,7 +130,7 @@ class Unit(object):
 
     @api
     def get_conversion_factor(self, new_label, conversions=None):
-        import starsmashertools.preferences
+        import starsmashertools
         
         # Convert this Unit into a compatible new Unit
         starsmashertools.helpers.argumentenforcer.enforcetypes({
@@ -233,7 +233,7 @@ class Unit(object):
     # Returns a copy of this object in its base units
     @api
     def get_base(self, conversions=None):
-        import starsmashertools.preferences
+        import starsmashertools
         import copy
         
         if conversions is None:
@@ -515,7 +515,7 @@ class Unit(object):
         @property
         def short(self):
             import copy
-            import starsmashertools.preferences
+            import starsmashertools
             
             new_left = copy.deepcopy(self.left)
             new_right = copy.deepcopy(self.right)
@@ -627,7 +627,7 @@ class Unit(object):
 
         def set(self, string):
             import copy
-            import starsmashertools.preferences
+            import starsmashertools
             self.left, self.right = Unit.Label.split(string)
 
             # Break down conversions as needed
@@ -783,7 +783,7 @@ gravconst = Unit(6.67390e-08, 'cm*cm*cm/g*s*s')
 class Units(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
     @api
     def __init__(self, simulation):
-        import starsmashertools.preferences
+        import starsmashertools
         
         # Make sure the given simulation argument is of the right type
         import starsmashertools.lib.simulation

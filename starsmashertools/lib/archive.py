@@ -356,8 +356,8 @@ class Archive(object):
             A list of flags to use to determine if a replacement should happen
             in the archive whenever a new :class:`ArchiveValue` is about to be
             written to a pre-existing identifier. If `None` then the default
-            from :py:property:`~.preferences.defaults` under 'Archive' and
-            'replacement flags' will be used.
+            from :py:property:`starsmashertools.preferences.defaults` under 
+            'Archive' and 'replacement flags' will be used.
             Each element of in `replacement_flags` must be a function which
             accepts two arguments, each is :class:`~.ArchiveValue`. The first
             argument is the old value and the second the new value. Each 
@@ -383,7 +383,7 @@ class Archive(object):
             saved.
         """
         import starsmashertools.helpers.path
-        import starsmashertools.preferences
+        import starsmashertools
 
         self._previous_mtime = None
         
@@ -651,7 +651,6 @@ class Archive(object):
     def _check_and_update_format(self):
         import starsmashertools
         import starsmashertools.helpers.warnings
-        import starsmashertools.preferences
         import starsmashertools.helpers.path
 
         if not starsmashertools.helpers.path.exists(self.filename): return
@@ -1076,7 +1075,7 @@ class SimulationArchive(Archive, object):
             directory.
         """
         import starsmashertools.helpers.path
-        import starsmashertools.preferences
+        import starsmashertools
 
         basename = starsmashertools.preferences.get(
             'Simulation',

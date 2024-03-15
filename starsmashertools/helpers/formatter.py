@@ -7,7 +7,6 @@ newline = starsmashertools.bintools.page.newline
 def sheet_name_to_path(name : str):
     import starsmashertools
     import starsmashertools.helpers.path
-    import starsmashertools.preferences
 
     default_directory = starsmashertools.helpers.path.join(
         starsmashertools.SOURCE_DIRECTORY,

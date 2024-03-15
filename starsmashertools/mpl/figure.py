@@ -7,7 +7,6 @@ import matplotlib.artist
 
 def update_style_sheet_directories():
     """ Locate the style sheets listed in the preferences. """
-    import starsmashertools.preferences
     import starsmashertools
     
     directories = starsmashertools.preferences.get(

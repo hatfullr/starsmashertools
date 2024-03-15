@@ -1,3 +1,16 @@
+"""
+This file is overwritten whenever starsmashertools is updated. You can create a
+copy of this file and call it 'preferences.py' in the same directory to make
+your own preferences that will not be overwritten. The 'preferences.py' file
+must be in the same directory as 'default_preferences.py' and it is your 
+responsibility to update it whenever 'default_preferences.py' is updated.
+
+If your 'preferences.py' file is missing a preference required by
+starsmashertools, an error will be raised saying "Missing field [X] in [Y] in 
+preferences.py". Open 'default_preferences.py' and find key X in the defaults
+dictionary. Copy its value ("Y") into your 'preferences.py' to update your file.
+"""
+
 import os
 import numpy as np
 from starsmashertools.lib.archive import REPLACE_OLD, REPLACE_NEQ
@@ -195,5 +208,9 @@ def get(name, default_name, throw_error=False):
             return defaults[name][default_name]
         
     if throw_error:
-        raise Exception("Missing field '%s' in '%s' in preferences.defaults" % (default_name, name))
+        raise Exception("Missing field {field:s} in {key:s} in {filename:s}".format(
+            field = default_name,
+            key = name,
+            filename = os.path.basename(__file__),
+        ))
     

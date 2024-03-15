@@ -8,7 +8,8 @@
 .#*
 
 
-data/
+data/locks/
+data/preferences.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

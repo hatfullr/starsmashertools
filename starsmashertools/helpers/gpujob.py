@@ -1,6 +1,5 @@
 try:
     import starsmashertools.helpers.argumentenforcer
-    import starsmashertools.preferences
     import starsmashertools.lib.output
     import time
     import numpy as np
@@ -52,6 +51,8 @@ try:
                 threadsperblock : int | type(None) = None,
                 return_duration : bool = False,
         ):
+            import starsmashertools
+            
             if threadsperblock is None:
                 threadsperblock = starsmashertools.preferences.get("GPUJob", "threadsperblock", throw_error=True)
 

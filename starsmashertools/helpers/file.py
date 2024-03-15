@@ -31,7 +31,6 @@ class Lock(object):
         import os
         import starsmashertools
         import starsmashertools.helpers.path
-        import starsmashertools.preferences
         import copy
         
         if timeout is None:
