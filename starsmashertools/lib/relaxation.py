@@ -177,20 +177,24 @@ class Relaxation(starsmashertools.lib.simulation.Simulation, object):
             if len(cores) == 0: mass_coordinate = 0
             else: mass_coordinate = output['am'][cores[0]]
         
-        xyz = np.column_stack((output['x'], output['y'], output['z']))
+        xyz = np.column_stack((
+            output['x'], output['y'], output['z'],
+        )) * float(self.units.length)
         r2 = np.sum(xyz**2, axis=-1)
         idx = np.argsort(r2)
         
-        m = output['am']
+        m = output['am'] * float(self.units['am'])
         mr = np.cumsum(m[idx])[np.argsort(idx)]
         
         keep = mr >= mass_coordinate
-        m = m[keep] * float(self.units['am'])
+        m = m[keep] 
         u = output['u'][keep] * float(self.units['u'])
-        r = np.sqrt(r2[keep]) * float(self.units.length)
-        mr = mr[keep] * float(self.units['am'])
+        r = np.sqrt(r2[keep]) 
+        mr = mr[keep]
+
+        G = float(self.units.gravconst)
         
-        ret = np.sum((float(self.units.gravconst) * mr / r - u) * m)
+        ret = np.sum((G * mr / r - u) * m)
         return starsmashertools.lib.units.Unit(ret, self.units.energy.label)
     
 
