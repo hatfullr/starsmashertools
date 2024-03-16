@@ -33,6 +33,13 @@ class TestRelaxation(basetest.BaseTest):
         self.assertEqual(self.simulation.get_children(), [])
         warnings.resetwarnings()
 
+    def test_get_binding_energy(self):
+        import starsmashertools.lib.units
+        output = self.simulation.get_output(0)
+        Ebind = self.simulation.get_binding_energy(output)
+        self.assertTrue(isinstance(Ebind, starsmashertools.lib.units.Unit))
+        self.assertEqual(5.463207228488382e+46, Ebind.value)
+        self.assertEqual(Ebind.label, 'cm*cm*g/s*s')
 
 if __name__ == "__main__":
     unittest.main(failfast=True)

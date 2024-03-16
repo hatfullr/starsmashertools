@@ -282,6 +282,23 @@ class Output(dict, object):
             self[key] = val
         self._original_data = None
 
+    @api
+    def get_core_particles(self):
+        """
+        Return the IDs of any core particles present in this output file. A core
+        particle is identified in StarSmasher as having the unique property of 
+        zero specific internal energy. This is because core particles act only 
+        gravitationally on other particles.
+
+        Returns
+        -------
+        :class:`numpy.ndarray`
+           A NumPy array of IDs of the core particles in this output file, if 
+           there are any. Note that the IDs are zero'th indexed, unlike the
+           particle IDs in StarSmasher, which start at index 1 instead of 0.
+        """
+        return np.arange(self['ntot'], dtype = int)[self['u'] == 0]
+
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def condense(

@@ -197,8 +197,8 @@ defaults = {
         # labels. The conversions are queried in-order from top to bottom. See
         # the Unit.Label class in starsmashertools/lib/units.py for details.
         'label conversions' : [
-            ['erg', 'cm*g*g/s*s'], # Don't remove this
-            ['erg/g', 'cm*g/s*s'], # Don't remove this
+            ['erg', 'cm*cm*g/s*s'], # Don't remove this
+            ['erg/g', 'cm/s*s'], # Don't remove this
         ],
     },
 # ------------------------------------------------------------------------------

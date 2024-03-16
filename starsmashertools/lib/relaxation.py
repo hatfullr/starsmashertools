@@ -91,9 +91,14 @@ class Relaxation(starsmashertools.lib.simulation.Simulation, object):
                 self._n = header['ntot']
         return self._n
 
-    @cli('starsmashertools')
     @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    @cli('starsmashertools')
     def get_final_extents(self, cli : bool = False):
+        """
+        Returns the results of :func:`~.lib.output.Output.get_extents` with
+        keyword ``radial = True``.
+        """
         output = self.get_output(-1)
         extents = output.get_extents(radial = True)
         if cli:
@@ -104,6 +109,90 @@ class Relaxation(starsmashertools.lib.simulation.Simulation, object):
             return string
         return extents
 
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    @cli('starsmashertools')
+    def get_binding_energy(
+            self,
+            output : "starsmashertools.lib.output.Output | starsmashertools.lib.output.OutputIterator",
+            mass_coordinate : int | float | type(None) = None,
+            cli : bool = False,
+    ):
+        """
+        Returns the binding energy of the star's envelope E_{SPH}(m(r)) at some
+        specified mass coordinate, as defined in equation (12) of Hatfull et al.
+        (2021).
+
+        Parameters
+        ----------
+        output : :class:`~.lib.output.Output`, :class:`~.lib.output.OutputIterator`
+           If a :class:`~.lib.output.Output` is given, the binding energy will
+           be calculated just for that output file and a single value will be 
+           returned. If a :class:`~.lib.output.OutputIterator` is given then the
+           binding energy will be calculated for all 
+           :class:`~.lib.output.Output` objects in the iterator and a list of
+           values will be returned.
+        
+        Other Parameters
+        ----------
+        mass_coordinate : int, float, None, default = None
+           The mass coordinate "m(r)" to calculate the binding energy at. Set to
+           `None` to get the total binding energy of the envelope, skipping the
+           core particle if there is one. That is, m(r) = m_coreparticle. Set to
+           0 to get the binding energy of the entire star, including any core
+           particles (perhaps not valid?). A ValueError is raised if this 
+           argument is negative.
+
+        Returns
+        -------
+        :class:`~.lib.units.Unit` or list
+           If ``output`` is of type :class:`~.lib.output.Output` then a 
+           :class:`~.lib.units.Unit` is returned in cgs units. If ``output`` is
+           of type :class:`~.lib.output.OutputIterator` then a list of 
+           :class:`~.lib.units.Unit` objects is returned.
+        
+        See Also
+        --------
+        :func:`~.lib.output.Output.get_core_particles`, :class:`~.lib.units.Unit`
+        """
+        import starsmashertools.lib.output
+        import starsmashertools.lib.units
+        
+        if mass_coordinate is not None and mass_coordinate < 0:
+            raise ValueError("Positional argument 'mass_coordinate' cannot be negative, but received %s" % str(mass_coordinate))
+        
+        if isinstance(output, starsmashertools.lib.output.OutputIterator):
+            result = []
+            for o in output:
+                result += [self.get_binding_energy(
+                    o,
+                    mass_coordinate = mass_coordinate,
+                )]
+            return result
+        
+        if mass_coordinate is None:
+            cores = output.get_core_particles()
+            if len(cores) > 1:
+                raise NotImplementedError("Found %d core particles, but expected at most 1" % len(cores))
+            if len(cores) == 0: mass_coordinate = 0
+            else: mass_coordinate = output['am'][cores[0]]
+        
+        xyz = np.column_stack((output['x'], output['y'], output['z']))
+        r2 = np.sum(xyz**2, axis=-1)
+        idx = np.argsort(r2)
+        
+        m = output['am']
+        mr = np.cumsum(m[idx])[np.argsort(idx)]
+        
+        keep = mr >= mass_coordinate
+        m = m[keep] * float(self.units['am'])
+        u = output['u'][keep] * float(self.units['u'])
+        r = np.sqrt(r2[keep]) * float(self.units.length)
+        mr = mr[keep] * float(self.units['am'])
+        
+        ret = np.sum((float(self.units.gravconst) * mr / r - u) * m)
+        return starsmashertools.lib.units.Unit(ret, self.units.energy.label)
+    
 
     class Profile(dict, object):
         @api

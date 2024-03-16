@@ -521,13 +521,20 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
     def get_primary_core_mass(self, cli : bool = False):
         """
         Return the mass of the core particle in the primary (usually the donor)
-        star, if it has a core particle.
+        star, if it has a core particle. The log files are checked first, which
+        is usually faster than checking the outputs. If something goes wrong 
+        with checking the log files, the first output file is checked instead,
+        using :func:`~.lib.output.Output.get_core_particles`.
 
         Returns
         -------
         float or None
             The mass of the core particle in the primary (usually the donor)
             star. If there is no core particle, returns `None`.
+
+        See Also
+        --------
+        :func:`~.get_secondary_core_mass`, :func:`~.lib.output.Output.get_core_particles`
         """
         import starsmashertools.helpers.path
         import starsmashertools.lib.logfile
@@ -555,27 +562,33 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
                 raise FileNotFoundError("Cannot get the primary's core mass because there is more than 1 particle for the primary star and the simulation has no log files, no output files, and the sph.start1u file is missing, in '%s'" % self.directory)
             output = starsmashertools.lib.output.Output(start1u, self)
 
-        with starsmashertools.mask(output, self.get_primary_IDs()) as masked:
-            idx = masked['u'] == 0
-        
-            sumidx = sum(idx)
-            if sumidx == 0: return None
-            if sumidx == 1: return masked['am'][idx][0]
-            else:
-                raise Exception("The primary star has multiple core particles, which doesn't make sense.")
-
+        cores = output.get_core_particles()
+        if len(cores) == 0: return None
+        primary_IDs = self.get_primary_IDs()
+        for c in cores:
+            if c not in primary_IDs: continue
+            return output['am'][c]
+        raise NotImplementedError("The primary star has multiple core particles")
+    
     @api
     @cli('starsmashertools')
     def get_secondary_core_mass(self, cli : bool = False):
         """
         Return the mass of the core particle in the secondary (usually the
-        accretor) star, if it has a core particle.
+        companion) star, if it has a core particle. The log files are checked 
+        first, which is usually faster than checking the outputs. If something 
+        goes wrong with checking the log files, the first output file is checked
+        instead, using :func:`~.lib.output.Output.get_core_particles`.
 
         Returns
         -------
         float or None
             The mass of the core particle in the secondary (usually the
-            accretor) star. If there is no core particle, returns `None`.
+            companion) star. If there is no core particle, returns `None`.
+        
+        See Also
+        --------
+        :func:`~.get_primary_core_mass`, :func:`~.lib.output.Output.get_core_particles`
         """
         import starsmashertools.helpers.path
         import starsmashertools.lib.output
@@ -596,11 +609,11 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
                 raise FileNotFoundError("Cannot get the secondary's core mass because there is more than 1 particle for the secondary star, the simulation has no output files, and the sph.start2u file is missing, in '%s'" % self.directory)
             output = starsmashertools.lib.output.Output(start2u, self)
 
-        with starsmashertools.mask(output, self.get_secondary_IDs()) as masked:
-            idx = masked['u'] == 0
-        
-            sumidx = sum(idx)
-            if sumidx == 0: return None
-            if sumidx == 1: return masked['am'][idx][0]
-            else:
-                raise Exception("The secondary star has multiple core particles, which doesn't make sense.")
+        cores = output.get_core_particles()
+        if len(cores) == 0: return None
+        secondary_IDs = self.get_secondary_IDs()
+        for c in cores:
+            if c not in secondary_IDs: continue
+            return output['am'][c]
+        raise NotImplementedError("The secondary star has multiple core particles")
+
