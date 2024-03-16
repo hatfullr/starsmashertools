@@ -1017,70 +1017,39 @@ class Reader(object):
                     raise Reader.UnexpectedFileFormatError
         return ret
 
-    def _read_header(self, buffer, return_headers, filesize):
+    def _read_header(self, buffer):
         import starsmashertools.helpers.readonlydict
-        import starsmashertools.helpers.path
         
-        try:
-            header = self._read(
-                buffer=buffer,
-                shape=1,
-                dtype=self._dtype['header'],
-                offset=4,
-                strides=self._stride['header'],
-            )
-        except Exception as e:
-            raise Reader.CorruptedFileError("This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories.") from e
-
-        ntot = header['ntot'][0]
-
-        # Check for corrupted files
-        try:
-            ntot_check = self._read(
-                buffer=buffer,
-                shape=1,
-                dtype='<i4',
-                offset=filesize - 8,
-                strides=8,
-            )[0]
-        except Exception as e:
-            raise Reader.CorruptedFileError("This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories.") from e
-
-        if ntot != ntot_check:
-            raise Reader.CorruptedFileError(filename)
-
-        #if return_headers:
-        #    new_header = {}
-        #    for name in header[0].dtype.names:
-        #        new_header[name] = np.array(header[name])[0]
-        #    header = starsmashertools.helpers.readonlydict.ReadOnlyDict(new_header)
+        header = self._read(
+            buffer=buffer,
+            shape=1,
+            dtype=self._dtype['header'],
+            offset=4,
+            strides=self._stride['header'],
+        )
+        
         new_header = {}
         for name in header[0].dtype.names:
             new_header[name] = np.array(header[name])[0]
         header = starsmashertools.helpers.readonlydict.ReadOnlyDict(new_header)
         return header
 
-
     def _read_data(self, buffer, ntot):
         import starsmashertools.helpers.readonlydict
         # There are 'ntot' particles to read
-        try:
-            data = self._read(
-                buffer=buffer,
-                shape=ntot,
-                dtype=self._dtype['data'],
-                offset=self._stride['header'] + self._EOL_size + 4,
-                strides=self._stride['data'] + self._EOL_size,
-            )
-        except Exception as e:
-            raise Reader.CorruptedFileError("This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories.") from e
+        data = self._read(
+            buffer=buffer,
+            shape=ntot,
+            dtype=self._dtype['data'],
+            offset=self._stride['header'] + self._EOL_size + 4,
+            strides=self._stride['data'] + self._EOL_size,
+        )
         
         # Now organize the data into Pythonic structures
         new_data = {}
         for name in data[0].dtype.names:
             new_data[name] = np.array(data[name])
         return starsmashertools.helpers.readonlydict.ReadOnlyDict(new_data)
-    
 
     def read(
             self,
@@ -1090,29 +1059,65 @@ class Reader(object):
             verbose=False,
     ):
         import starsmashertools.helpers.file
+        import starsmashertools.helpers.path
         import mmap
         
         if verbose: print(filename)
-
+        
         if True not in [return_headers, return_data]:
             raise ValueError("One of 'return_headers' or 'return_data' must be True")
+        try:
+            with starsmashertools.helpers.file.open(
+                    filename, 'rb', lock = False,
+            ) as f:
+                # We always need to check ntot at beginning and end of file
+                f.seek(4) # Garbage in front (Fortran issue?)
+                ntot_buffer = f.read(8)
 
-        filesize = starsmashertools.helpers.path.getsize(filename)
-        
-        with starsmashertools.helpers.file.open(filename, 'rb', lock = False) as f:
-            # This speeds up reading significantly.
-            buffer = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
-        
-        header = self._read_header(buffer, return_headers, filesize)
-            
-        if return_headers and not return_data:
-            return header
+                if return_data:
+                    # This speeds up reading significantly when reading data,
+                    # but it's about 2x slower when reading the header only.
+                    buffer = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
+                else: # Return header only
+                    f.seek(0)
+                    buffer = f.read(self._stride['header'] + 4)
 
-        data = self._read_data(buffer, header['ntot'])
-        
-        if return_headers: return data, header
-        else: return data
+                f.seek(-8, 2) # Go to 8th byte before the end
+                ntot_check_buffer = f.read(8) # Specifying 8 here goes faster
             
+            ntot = self._read(
+                buffer = ntot_buffer,
+                shape = 1,
+                dtype = '<i4',
+                offset = 0,
+                strides = 8,
+            )[0]
+            
+            ntot_check = self._read(
+                buffer = ntot_check_buffer,
+                shape = 1,
+                dtype = '<i4',
+                offset = 0,
+                strides = 8,
+            )[0]
+        except Exception as e:
+            raise Reader.CorruptedFileError("This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories: '%s'" % filename) from e
+        
+        if ntot != ntot_check:
+            raise Reader.CorruptedFileError("ntot != ntot_check. This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories: '%s'" % filename)
+        
+        try:
+            if return_headers:
+                header = self._read_header(buffer)
+            
+            if return_headers and not return_data: return header
+            # return_data == True here
+            data = self._read_data(buffer, ntot)
+            
+            if return_headers: return data, header
+            else: return data # If return_headers == False
+        except Exception as e:
+            raise Reader.CorruptedFileError("This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories: '%s'" % filename) from e
         
     # This method returns instructions on how to read the data files
     @staticmethod
