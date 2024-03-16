@@ -229,6 +229,8 @@ pattern_matches = collections.OrderedDict()
 # Given the path to a file, search search_directory for the first duplicate file.
 #@profile
 def find_duplicate_file(filepath, search_directory, pattern="out*.sph", throw_error=False):
+    import starsmashertools.helpers.file
+    
     filepath = realpath(filepath)
 
     isRemote = starsmashertools.helpers.ssh.isRemote(filepath)

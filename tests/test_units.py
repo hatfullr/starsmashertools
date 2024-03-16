@@ -78,17 +78,17 @@ class TestUnits(basetest.BaseTest):
         self.assertEqual(L.long, '1/cm')
         self.assertEqual(L.short, '1/cm')
 
-        l0 = starsmashertools.lib.units.Unit.Label('cm*g*g/s*s')
+        l0 = starsmashertools.lib.units.Unit.Label('cm*cm*g/s*s')
         self.assertEqual(l0.short, 'erg')
         
-        l0 = starsmashertools.lib.units.Unit.Label('cm*g/s*s')
+        l0 = starsmashertools.lib.units.Unit.Label('cm*cm/s*s')
         self.assertEqual(l0.short, 'erg/g')
         
-        l0 = starsmashertools.lib.units.Unit.Label('cm*g*g/s*s*s')
+        l0 = starsmashertools.lib.units.Unit.Label('cm*cm*g/s*s*s')
         self.assertEqual(l0.short, 'erg/s')
         
-        l0 = starsmashertools.lib.units.Unit.Label('cm/s')
-        l1 = starsmashertools.lib.units.Unit.Label('g*g/s')
+        l0 = starsmashertools.lib.units.Unit.Label('cm*cm/s')
+        l1 = starsmashertools.lib.units.Unit.Label('g/s')
         L = l0 * l1
         self.assertEqual(L.short, 'erg')
         
@@ -117,16 +117,16 @@ class TestUnits(basetest.BaseTest):
         self.assertEqual(l, 'cm/s')
 
 
-        l = starsmashertools.lib.units.Unit.Label('cm*g*g/s*s')
+        l = starsmashertools.lib.units.Unit.Label('cm*cm*g/s*s')
         l = l.convert('cm', 'm')
-        self.assertEqual(l, 'm*g*g/s*s')
+        self.assertEqual(l, 'm*m*g/s*s')
         
         l = l.convert('m', 'cm')
         self.assertEqual(l.short, 'erg')
 
         l = starsmashertools.lib.units.Unit.Label('erg')
         self.assertEqual(l.short, 'erg')
-        self.assertEqual(l.long, 'cm*g*g/s*s')
+        self.assertEqual(l.long, 'cm*cm*g/s*s')
 
     def test_integers(self):
         u = starsmashertools.lib.units.Unit(1, 's')

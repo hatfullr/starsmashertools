@@ -918,7 +918,9 @@ class ParticleIterator(OutputIterator, object):
         positions = [header_stride + EOL_size + data_stride * ID for ID in IDs]
         
         _buffer = bytearray(len(IDs) * data_stride)
-        with starsmashertools.helpers.file.open(filename, 'rb', lock = False) as f:
+        with starsmashertools.helpers.file.open(
+                filename, 'rb', lock = False, verbose = False,
+        ) as f:
             buffer = mmap.mmap(f.fileno(),0,access=mmap.ACCESS_READ)
         # Grab the headers so we can record the times
         try:
@@ -1019,6 +1021,30 @@ class Reader(object):
 
         self._EOL_size = sum([Reader.EOL.count(str(num))*num for num in [1, 2, 4, 6, 8]])
 
+    def read_from_header(self, key : str, filename : str):
+        import starsmashertools.helpers.file
+        names = self._dtype['header'].names
+        if key not in names:
+            raise KeyError("No key '%s' in the dtypes" % key)
+
+        index = names.index(key)
+        size = self._dtype['header'][index].itemsize
+        others = names[:index]
+        location = 4 + sum([self._dtype['header'][name].itemsize for name in others])
+        
+        with starsmashertools.helpers.file.open(
+                filename, 'rb', lock = False, verbose = False,
+        ) as f:
+            f.seek(location)
+            content = f.read(size)
+        return self._read(
+            buffer = content,
+            shape = 1,
+            dtype = self._dtype['header'][key],
+            offset = 0,
+            strides = size,
+        )[0]
+        
     def _read(self, *args, **kwargs):
         ret = np.ndarray(*args, **kwargs)
         if ret.dtype.names is not None:
@@ -1085,7 +1111,7 @@ class Reader(object):
             raise ValueError("One of 'return_headers' or 'return_data' must be True")
         try:
             with starsmashertools.helpers.file.open(
-                    filename, 'rb', lock = False,
+                    filename, 'rb', lock = False, verbose = False,
             ) as f:
                 # We always need to check ntot at beginning and end of file
                 f.seek(4) # Garbage in front (Fortran issue?)
@@ -1159,7 +1185,9 @@ class Reader(object):
         
         # Read the output.f file
         subroutine_text = ""
-        with starsmashertools.helpers.file.open(writerfile, 'r', lock = False) as f:
+        with starsmashertools.helpers.file.open(
+                writerfile, 'r', lock = False, verbose = False,
+        ) as f:
             for line in f:
                 if len(line.strip()) == 0 or line[0] in starsmashertools.helpers.file.fortran_comment_characters:
                     continue
@@ -1188,7 +1216,9 @@ class Reader(object):
                 # On 'include' lines, we find the file that is being included
                 dname = starsmashertools.helpers.path.dirname(writerfile)
                 fname = starsmashertools.helpers.path.join(dname, ls.replace('include','').replace('"','').replace("'", '').strip())
-                with starsmashertools.helpers.file.open(fname, 'r', lock = False) as f:
+                with starsmashertools.helpers.file.open(
+                        fname, 'r', lock = False, verbose = False,
+                ) as f:
                     for key, val in starsmashertools.helpers.string.get_fortran_variable_types(f.read(), data_types).items():
                         if key not in vtypes.keys(): vtypes[key] = val
                         else: vtypes[key] += val

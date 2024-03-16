@@ -198,7 +198,7 @@ defaults = {
         # the Unit.Label class in starsmashertools/lib/units.py for details.
         'label conversions' : [
             ['erg', 'cm*cm*g/s*s'], # Don't remove this
-            ['erg/g', 'cm/s*s'], # Don't remove this
+            ['erg/g', 'cm*cm/s*s'], # Don't remove this
         ],
     },
 # ------------------------------------------------------------------------------

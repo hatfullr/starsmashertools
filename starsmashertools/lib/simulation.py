@@ -576,9 +576,8 @@ class Simulation(object):
         order, times = [], []
         for simulation, _list in simulation_matches.items():
             for m in _list:
-                output = starsmashertools.lib.output.Output(m, simulation)
                 order += [m]
-                times += [output.header['t']]
+                times += [self.reader.read_from_header('t', m)]
         
         # Sort by simulation times
         return [x for _,x in sorted(zip(times, order), key=lambda pair:pair[0])]

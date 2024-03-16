@@ -1,9 +1,14 @@
 import starsmashertools.helpers.argumentenforcer
+import starsmashertools.helpers.string
+import starsmashertools.helpers.path
+import starsmashertools.helpers.asynchronous
 import contextlib
 import builtins
 import numpy as np
 import typing
 import atexit
+import zipfile
+import os
 
 fortran_comment_characters = ['c','C','!','*']
 
@@ -13,6 +18,8 @@ modes = {
     'readonly' : ['r', 'rb'],
     'write' : ['w', 'a', 'w+', 'r+', 'wb', 'wb+', 'rb+', 'ab', 'x'],
 }
+all_modes = []
+for v in modes.values(): all_modes += v
 
 class FileModeError(Exception, object): pass
 
@@ -175,8 +182,7 @@ class Lock(object):
 def open(
         path : str,
         mode : str,
-        #lock : bool = True,
-        lock = None,
+        lock : bool = True,
         method : typing.Callable | type(None) = None,
         timeout : int | float | np.generic | type(None) = None,
         verbose : bool = True,
@@ -186,40 +192,35 @@ def open(
 ):
     # File IO can take a long time, so we use some helper functions to tell the
     # user what is going on
-    import starsmashertools.helpers.path
-    import zipfile
-    import os
-    import starsmashertools.helpers.string
-    import starsmashertools.helpers.asynchronous
 
-    for _list in modes.values():
-        if mode in _list: break
-    else:
+    if mode not in all_modes:
         raise NotImplementedError("Unsupported file mode '%s'" % mode)    
 
-    if not starsmashertools.helpers.asynchronous.is_main_process():
-        verbose = False
-    
-    if method is None: method = builtins.open
-    
-    writable = mode in modes['write']
-    if not writable and not starsmashertools.helpers.path.isfile(path):
-        raise FileNotFoundError(path)
-    
     if verbose:
+        verbose = starsmashertools.helpers.asynchronous.is_main_process()
         short_path = starsmashertools.helpers.string.shorten(
             path, 40, where = 'left',
         )
     
-    # Always lock no matter what
-    _lock = Lock(path, mode, timeout = timeout)
-    if _lock.timeout > 0:
-        if not verbose: _lock.wait()
-        else:
-            with starsmashertools.helpers.string.loading_message(
-                    "Waiting for '%s'" % short_path, delay = 5,
-            ) as loading_message:
-                _lock.wait()
+    if method is None: method = builtins.open
+
+    # Do we really need this??
+    #writable = mode in modes['write']
+    #if not writable and not starsmashertools.helpers.path.isfile(path):
+    #    raise FileNotFoundError(path)
+    
+    # Always lock no matter what, unless we have been told explicitly that we
+    # don't need to
+    _lock = None
+    if lock:
+        _lock = Lock(path, mode, timeout = timeout)
+        if _lock.timeout > 0:
+            if not verbose: _lock.wait()
+            else:
+                with starsmashertools.helpers.string.loading_message(
+                        "Waiting for '%s'" % short_path, delay = 5,
+                ) as loading_message:
+                    _lock.wait()
     
     f = None
                 
@@ -229,7 +230,7 @@ def open(
         if not verbose: yield f
         else:
             if message is None:
-                if writable: message = "Writing '%s'" % short_path
+                if mode in modes['write']: message = "Writing '%s'" % short_path
                 else: message = "Reading '%s'" % short_path
                 
             if progress_max > 0:
@@ -245,7 +246,7 @@ def open(
                     yield f
     except:
         if f is not None: f.close()
-        _lock.unlock()
+        if _lock is not None: _lock.unlock()
         _lock = None
         raise
     finally:
@@ -254,10 +255,6 @@ def open(
         _lock = None
         f = None
 
-    if f is not None: f.close()
-    if _lock is not None: _lock.unlock()
-    f = None
-    _lock = None
 
 
 # Check if the file at the given path is a MESA file
