@@ -153,7 +153,9 @@ class Output(dict, object):
     def _clear_cache(self):
         import starsmashertools
         import copy
-        self._cache = copy.copy(starsmashertools.preferences.get('Output', 'cache'))
+        self._cache = copy.copy(starsmashertools.preferences.get(
+            'Output', 'cache',
+        ))
         # If no cache is defined in preferences
         if self._cache is None: self._cache = {}
 
@@ -259,6 +261,8 @@ class Output(dict, object):
             mask = np.asarray(mask)
         if mask.dtype.type == np.bool_ and len(mask) != self['ntot']:
             raise Exception("The given mask does not contain particle IDs but its length (%d) != the number of particles (%d) in the output file '%s'" % (len(mask), self['ntot'], str(self.path)))
+
+        self._clear_cache()
 
         self._original_data = {}
         for key, val in self.items():

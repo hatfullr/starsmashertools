@@ -37,6 +37,8 @@ class TestOutput(basetest.BaseTest):
 
     def testMask(self):
         import copy
+        import starsmashertools
+        
         output = self.simulation.get_output(0)
         ntot = output['ntot']
         mask = np.full(ntot, False, dtype=bool)
@@ -59,6 +61,19 @@ class TestOutput(basetest.BaseTest):
                 self.assertTrue(np.array_equal(val, output[key]))
             else:
                 self.assertAlmostEqual(val, output[key])
+
+        
+        def v2(output):
+            vxyz = np.column_stack((output['vx'], output['vy'], output['vz']))
+            return np.sum(vxyz**2, axis=-1)
+        output._cache['v2'] = v2
+
+        # Accessing the cache before masking should not cause problems
+        output['unbound']
+        with starsmashertools.mask(output, [0, 1, 2, 3]) as masked:
+            self.assertEqual(4, len(masked['v2']))
+        
+        
 
     def test_condense(self):
         import numpy as np
