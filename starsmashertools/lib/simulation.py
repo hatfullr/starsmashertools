@@ -1150,6 +1150,7 @@ class Simulation(object):
             if logx: _x = np.log10(_x)
             if logy: _y = np.log10(_y)
             artist.set_offsets(np.column_stack((_x, _y)))
+            
             label.set_text(str(output))
             time = (output.header['t'] * self.units['t']).convert(tunit)
             time_label.set_text('t = %10g %s' % (time.value, tunit))
@@ -1185,7 +1186,7 @@ class Simulation(object):
             ax.set_ylabel(ylabel)
 
             all_output = self.get_output()
-                
+            
             artists = []
             output = all_output[0] #self.get_output(0)
             total = len(self.get_outputfiles())

@@ -606,6 +606,7 @@ class Output(dict, object):
                 rasterized : bool = True,
                 s : float | int = 1,
                 marker = '.',
+                core_marker = 'o',
                 color = 'k',
                 linewidth = 0.,
                 **kwargs
@@ -636,7 +637,10 @@ class Output(dict, object):
                 The size of the points. A good value is 1.
 
             marker : default = '.'
-                The Matplotlib marker to use.
+                The Matplotlib marker to use for the non-core particles.
+
+            core_marker : default = 'o'
+                The Matplotlib marker to use for the core particles.
 
             color : default = 'k'
                 The color to make the scatter plot.
@@ -652,14 +656,20 @@ class Output(dict, object):
             -------
             The same return value as ``matplotlib.axes.Axes.scatter``.
             """
-            kwargs['s'] = s
+            xdata = self[x]
+            ydata = self[y]
+            
             kwargs['marker'] = marker
             kwargs['rasterized'] = rasterized
             kwargs['color'] = color
             kwargs['linewidth'] = linewidth
+                
+            cores = self.get_core_particles()
 
-            xdata = self[x]
-            ydata = self[y]
+            if not isinstance(s, (list, tuple, np.ndarray)):
+                s = [s]*len(xdata)
+            for i in cores: s[i] = 100
+            kwargs['s'] = s
 
             return ax.scatter(xdata, ydata, **kwargs)
 
