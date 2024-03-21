@@ -115,7 +115,14 @@ def _check_version():
         elif latest_version != __version__:
             starsmashertools.helpers.warnings.warn("Current starsmashertools version is '%s', while latest version on GitHub is '%s'. If you just downloaded the latest version make sure you also run the install script." % (__version__, latest_version))
 
-_check_version()
+try:
+    _check_version()
+except Exception as e:
+    import starsmashertools.helpers.warnings
+    # Allow code execution even if this fails
+    starsmashertools.helpers.warnings.warn(str(e))
+    del starsmashertools.helpers.warnings
+
 
         
 @starsmashertools.helpers.argumentenforcer.enforcetypes
