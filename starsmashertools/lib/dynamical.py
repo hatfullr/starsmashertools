@@ -261,7 +261,14 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
             import numpy as np
             import matplotlib.patches
             import matplotlib.lines
+            import starsmashertools.helpers.warnings
 
-            binary = self.get_children()[0]
+            try:
+                binary = self.get_children()[0]
+            except Exception as e:
+                try:
+                    starsmashertools.helpers.warnings.warn(str(e))
+                except: pass
+                return
             binary._animation_update(output, artist, *args, **kwargs)
     
