@@ -118,10 +118,12 @@ def _check_version():
 try:
     _check_version()
 except Exception as e:
-    import starsmashertools.helpers.warnings
-    # Allow code execution even if this fails
-    starsmashertools.helpers.warnings.warn(str(e))
-    del starsmashertools.helpers.warnings
+    try:
+        import starsmashertools.helpers.warnings
+        # Allow code execution even if this fails
+        starsmashertools.helpers.warnings.warn(str(e))
+        del starsmashertools.helpers.warnings
+    except: pass
 
 
         
