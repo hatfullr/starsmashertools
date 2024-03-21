@@ -35,6 +35,8 @@ class LoadingMessage(object):
         
         self._index = 0
 
+        self._didprint = False
+    
     def __enter__(self):
         if self.ticker is not None:
             if not self.ticker.is_alive():
@@ -44,14 +46,15 @@ class LoadingMessage(object):
     def __exit__(self, exc_type, exc_val, exc_tb):
         import copy
         
-        print_done_message = False
+        #print_done_message = False
         if self.ticker is not None:
-            print_done_message = copy.deepcopy(self.ticker.completed)
+            #print_done_message = copy.deepcopy(self.ticker.completed)
             self.ticker.cancel()
 
         if exc_type is not None: raise
         
-        if print_done_message: self.print_done_message()
+        #if print_done_message: self.print_done_message()
+        if self._didprint: self.print_done_message()
         
         return True
 
@@ -98,6 +101,8 @@ class LoadingMessage(object):
         if self._index >= len(self.suffixes):
             self._index = 0
 
+        self._didprint = True
+
 class ProgressMessage(LoadingMessage, object):
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     def __init__(
@@ -136,6 +141,11 @@ class ProgressMessage(LoadingMessage, object):
 
     def increment(self, amount : int = 1):
         self._progress += amount
+
+    def print_done_message(self, *args, **kwargs):
+        self._progress = self._max
+        self.print_message()
+        super(ProgressMessage, self).print_done_message(*args, **kwargs)
 
 @contextlib.contextmanager
 def loading_message(*args, **kwargs):
