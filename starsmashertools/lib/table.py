@@ -7,6 +7,8 @@ class Table(object):
     Contains a 2D array of data and supplies methods for looking up values,
     including interpolation.
     """
+
+    class ReadError(Exception): pass
     
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     def __init__(
@@ -18,7 +20,10 @@ class Table(object):
         if not starsmashertools.helpers.path.isfile(filename):
             raise FileNotFoundError(filename)
 
-        self.content = self.read_table(filename)
+        try:
+            self.content = self.read_table(filename)
+        except Exception as e:
+            raise Table.ReadError("Failed to read file '%s'. You may want to check to make sure the file is formatted correctly and hasn't been corrupted.") from e
 
     def read_table(self, filename : str):
         raise NotImplementedError

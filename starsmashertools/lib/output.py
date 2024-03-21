@@ -787,7 +787,7 @@ class OutputIterator(object):
         self.simulation = simulation
         self.asynchronous = asynchronous
         self.kwargs = kwargs
-
+        
         for m in self.onFlush:
             if not callable(m):
                 raise TypeError("Callbacks in keyword 'onFlush' must be callable, but received '%s'" % str(m))
