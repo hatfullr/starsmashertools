@@ -442,8 +442,8 @@ class Archive(object):
     def __repr__(self): return Archive.to_repr(self.filename)
     
     def _on_quit(self):
-        if self.readonly or not self.auto_save: return
-        self.save()
+        if not self.readonly and self.auto_save:
+            self.save()
         atexit.unregister(self._on_quit)
     
     @property
