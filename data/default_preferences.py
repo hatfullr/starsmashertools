@@ -37,10 +37,6 @@ defaults = {
         },
     },
 # ------------------------------------------------------------------------------
-    'Dynamical' : {
-        'original initial restartrad' : 'restartrad.sph.orig',
-    },
-# ------------------------------------------------------------------------------
     'Figure' : {
         'stylesheet directories' : [
             # The starsmashertools default directory
@@ -115,6 +111,12 @@ defaults = {
 # ------------------------------------------------------------------------------
     'Simulation' : {
         'search directory' : '~/data/',
+
+        # The name of the file which is used to restart a simulation from the
+        # output of some other simulation. This file should always be identical
+        # to an output file from some other simulation, if used at all.
+        'start file' : 'restartrad.sph.orig',
+        
         # Used to identify the directories which contain the StarSmasher source
         # code
         'src identifiers' : [

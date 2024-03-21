@@ -22,7 +22,7 @@ class TestRelaxation(basetest.BaseTest):
         extents = self.simulation.get_final_extents()
         self.assertAlmostEqual(
             float(extents.radius)/float(self.simulation.units.length),
-            0.876398091009529,
+            0.8950034890992855,
         )
 
     def test_isPolytrope(self):

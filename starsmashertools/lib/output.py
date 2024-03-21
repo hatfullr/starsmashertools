@@ -241,7 +241,7 @@ class Output(dict, object):
 
         if read_header: self._isRead['header'] = True
         if read_data: self._isRead['data'] = True
-        
+
     @api
     def from_cache(self, key):
         if key in self._cache.keys():

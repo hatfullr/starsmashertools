@@ -49,7 +49,7 @@ class TestSimulation(basetest.BaseTest):
 
         # Not allowed to join 2 of the same simulations together
         with sim1.archive.nosave():
-            with self.assertRaises(ValueError):
+            with self.assertRaises(starsmashertools.lib.simulation.Simulation.JoinError):
                 sim1.join(sim1)
 
         self.assertEqual(0, len(sim1.joined_simulations))
@@ -57,7 +57,7 @@ class TestSimulation(basetest.BaseTest):
 
         # Just to make sure...
         with sim2.archive.nosave():
-            with self.assertRaises(ValueError):
+            with self.assertRaises(starsmashertools.lib.simulation.Simulation.JoinError):
                 sim2.join(sim2)
 
         self.assertEqual(0, len(sim1.joined_simulations))
@@ -141,7 +141,8 @@ class TestSimulation(basetest.BaseTest):
             with sim2.archive.nosave():
                 sim1.join(sim2)
 
-                self.assertEqual(sim1.get_initialfile(), sim2.get_initialfile())
+                self.assertEqual('out000.sph', os.path.basename(sim1.get_start_file()))
+                self.assertEqual('restartrad.sph.orig', os.path.basename(sim2.get_start_file()))
                 self.assertEqual(sim1.get_output(), sim2.get_output())
 
                 # Make sure both simulations correctly detect the same output

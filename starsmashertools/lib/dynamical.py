@@ -11,28 +11,11 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
         import starsmashertools.lib.binary
         
         search_directory = self.get_search_directory(throw_error = True)
-        restartradfile = self.get_initialfile()
+        restartradfile = self.get_start_file()
         duplicate = starsmashertools.helpers.path.find_duplicate_file(
             restartradfile, search_directory, throw_error=True)
         dirname = starsmashertools.helpers.path.dirname(duplicate)
         return [starsmashertools.lib.binary.Binary(dirname)]
-
-    @api
-    def get_initialfile(self):
-        # We assume a dynamical run always begins from a restartrad.sph file,
-        # and that the file was copied from a restartrad.sph.orig file.
-        import starsmashertools.helpers.path
-        import starsmashertools
-        filename = starsmashertools.helpers.path.join(
-            self.directory,
-            starsmashertools.preferences.get(
-                'Dynamical',
-                'original initial restartrad',
-            ),
-        )
-        if not starsmashertools.helpers.path.isfile(filename):
-            raise FileNotFoundError(filename)
-        return filename
     
     @api
     @cli('starsmashertools')

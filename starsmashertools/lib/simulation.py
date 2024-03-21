@@ -147,9 +147,7 @@ class Simulation(object):
                 return s.split('=')[1].replace("'",'').replace('"','')
 
         raise Exception("Something went wrong while parsing the Fortran code to find the init file name in '%s'" % initfile)
-            
-            
-    
+
 
 
 
@@ -173,7 +171,19 @@ class Simulation(object):
                 message = "Output is not a member of simulation: '%s' for simulation '%s'" % (output.path, simulation.directory)
             super(Simulation.OutputNotInSimulationError, self).__init__(message)
 
-
+    class JoinError(Exception):
+        def __init__(self, simulation, message=None):
+            import starsmashertools
+            if message is None:
+                start_file = starsmashertools.preferences.get(
+                    'Simulation', 'start file', throw_error = True,
+                )
+                message = "Cannot join simulation '{sim1:s}' and '{sim2:s}' because neither simulations were started from one another. That is, '{start_file:s}' in one or both of these simulations does not originate from an output file in one of these simulations.".format(
+                    sim1 = self.directory,
+                    sim2 = simulation.directory,
+                    start_file = start_file,
+                )
+            super(Simulation.JoinError, self).__init__(message)
     
     ###
     # Object functionality
@@ -491,6 +501,137 @@ class Simulation(object):
             return "\n".join(string)
         return children
 
+    @api
+    def get_start_file(self):
+        """
+        Return the path to the output file that this simulation started from,
+        as identified by 'Simulation/start file' in 
+        :property:`~starsmashertools.preferences`. If this simulation doesn't
+        have a file matching that name, instead return the first output file 
+        this simulation produced. If this simulation has not produced any output
+        files, a :py:class:`FileNotFoundError` is raised.
+
+        Returns
+        -------
+        str
+            The path to the output file this simulation started from.
+        """
+        import starsmashertools.helpers.path
+        import starsmashertools
+        start_file_identifier = starsmashertools.preferences.get(
+            'Simulation', 'start file', throw_error = True,
+        )
+        filename = self.get_file(start_file_identifier)
+        if len(filename) != 1:
+            outputfiles = self.get_outputfiles(include_joined = False)
+            if outputfiles: return outputfiles[0]
+            raise FileNotFoundError("Cannot get start file because simulation has no output files and no file named '%s': '%s'" % (start_file_identifier, self.directory))
+        return filename[0]
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def get_start_time(
+            self,
+            include_joined : bool = True,
+    ):
+        """
+        Other Parameters
+        ----------------
+        include_joined : bool, default = True
+            If `True` then the simulations which are joined to this simulation
+            will be considered. Otherwise only this simulation will be 
+            considered.
+        
+        Returns
+        -------
+        :class:`~.lib.units.Unit`
+            The simulation time in seconds when this simulation started running.
+        """
+        import starsmashertools.lib.units
+        files = self.get_outputfiles(include_joined = include_joined)
+        if not files:
+            raise FileNotFoundError("Simulation has no output files: '%s'" % self.directory)
+        return starsmashertools.lib.units.Unit(
+            self.reader.read_from_header('t', files[0])*float(self.units['t']),
+            's',
+        )
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def get_stop_time(
+            self,
+            use_logfiles : bool = False,
+            include_joined : bool = True,
+    ):
+        """
+        Other Parameters
+        ----------------
+        use_logfiles : bool, default = False
+            If `True`, only the simulation's log files are used, which will in
+            general return larger time values than when using just the output
+            files. If `False`, this method is equivalent to the value of 't' in
+            the header of the very last output file which was written in this
+            simulation.
+
+        include_joined : bool, default = True
+            If `True` then the simulations which are joined to this simulation
+            will be considered. Otherwise only this simulation will be 
+            considered.
+
+        Returns
+        -------
+        :class:`~.lib.units.Unit`
+            The simulation time in seconds when this simulation stopped running.
+        """
+        import starsmashertools.lib.units
+
+        if use_logfiles:
+            stop_time = 0
+            for logfile in self.get_logfiles(include_joined = include_joined):
+                stop_time = max(stop_time, logfile.get_stop_time())
+        else:
+            files = self.get_outputfiles(include_joined = include_joined)
+            stop_time = self.reader.read_from_header('t', files[-1])
+        
+        stop_time *= float(self.units['t'])
+        return starsmashertools.lib.units.Unit(stop_time, 's')
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def started_from(self, simulation : 'Simulation'):
+        """
+        Returns
+        -------
+        bool
+            `True` if this simulation was started from ``simulation``, in the 
+            sense that this simulation both has a "start file" (returned by
+            :meth:`~.get_start_file`) and the start file is identical to one of
+            the output files in ``simulation``.
+
+        See Also
+        --------
+        :meth:`~.get_file`
+        """
+        import starsmashertools
+        import starsmashertools.helpers.path
+        import filecmp
+
+        path = self.get_file(
+            starsmashertools.preferences.get(
+                'Simulation', 'start file', throw_error = True,
+            )
+        )
+        if len(path) != 1: return False
+        path = path[0]
+
+        outputfiles = simulation.get_outputfiles(include_joined = False)
+        size1 = starsmashertools.helpers.path.getsize(path)
+        for _file in outputfiles:
+            size2 = starsmashertools.helpers.path.getsize(_file)
+            if size1 != size2: continue
+            if filecmp.cmp(path, _file, shallow = False): return True
+        return False
+        
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def get_file(
@@ -521,8 +662,12 @@ class Simulation(object):
         """
         import starsmashertools.helpers.path
         import glob
-        if recursive: _path = starsmashertools.helpers.path.join(self.directory, '**', filename_or_pattern)
-        else: _path = starsmashertools.helpers.path.join(self.directory, filename_or_pattern)
+        if recursive: _path = starsmashertools.helpers.path.join(
+                self.directory, '**', filename_or_pattern,
+        )
+        else: _path = starsmashertools.helpers.path.join(
+                self.directory, filename_or_pattern,
+        )
         return glob.glob(_path, recursive=recursive)
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
@@ -537,6 +682,30 @@ class Simulation(object):
         joined simulations, then each of those simulations' output file paths
         are returned as well. The result is sorted by simulation times.
 
+        For joined simulations, it is possible that one or more of the joined
+        simulations are a "continuation" of this current simulation, or this
+        current simulation is a "continuation" of one of its joined simulations.
+        Here, a "continuation" is a simulation which was started by copying an
+        output file from another simulation and calling it 
+        "restartrad.sph.orig", without changing the simulation type ("nrelax" in
+        sph.input). Only the joined simulations will be checked for a file which
+        is identical to this simulation's "restartrad.sph.orig" file (the actual
+        name depends on the user's preferences, in 
+        :property:`~starsmashertools.preferences`).
+
+        For example, consider that simulation ``A`` produced output files 
+        ``'A/out0000.sph'``, ``'A/out0001.sph'``, and ``'A/out0002.sph'``. Then,
+        simulation ``B`` was created by copying ``'A/out0001.sph'`` and renaming
+        it as ``'B/restartrad.sph.orig'``, and then ``'B/restartrad.sph.orig'``
+        was copied to ``'B/restartrad.sph'`` before starting simulation ``B``. 
+        Suppose then that simulation ``B`` creates output files 
+        ``'B/out0001.sph'``, ``'B/out0002.sph'``, and ``'B/out0003.sph'`` and 
+        that simulations ``A`` and ``B`` are joined. The expected output of this
+        function would be ``['A/out0000.sph', 'B/out0001.sph', 'B/out0002.sph',
+        'B/out0003.sph']``. Note that the actual files simulation ``B`` would 
+        create depends on its input parameters, such as "dtout" in 
+        ``'B/sph.input'``.
+        
         Parameters
         ----------
         pattern : str, None, default = None
@@ -554,48 +723,92 @@ class Simulation(object):
         """
         import starsmashertools
         import starsmashertools.helpers.path
-        import starsmashertools.lib.output
-        import time
+        import starsmashertools.helpers.midpoint
+        import copy
         
         if pattern is None:
             pattern = starsmashertools.preferences.get(
                 'Simulation', 'output files', throw_error=True,
             )
-        matches = self.get_file(pattern)
-        
-        simulation_matches = {self : matches}
-        if include_joined:
-            for simulation in self.joined_simulations:
-                simulation_matches[simulation] = simulation.get_outputfiles(
-                    pattern = pattern,
-                    include_joined = False, # Prevent infinite recursion
-                )
-        
-        # We need to order our matches by simulation times, then save to the
-        # simulation archive.
-        order, times = [], []
-        for simulation, _list in simulation_matches.items():
-            for m in _list:
-                order += [m]
-                times += [self.reader.read_from_header('t', m)]
-        
-        # Sort by simulation times
-        return [x for _,x in sorted(zip(times, order), key=lambda pair:pair[0])]
-    
-    # The initial file is always the one that was written first.
-    @api
-    def get_initialfile(self, **kwargs):
-        """
-        Obtain the output file which was written first, as a 
-        :class:`~.lib.output.Output` object. Equivalent to calling
-        :meth:`~.get_outputfiles` and getting the first index.
 
-        Other Parameters
-        ----------------
-        kwargs
-            Keyword arguments are passed directly to :meth:`~.get_outputfiles`.
-        """
-        return self.get_outputfiles(**kwargs)[0]
+        # We always need to get our own files first
+        matches = self.get_file(pattern)
+
+        # Always order our own files by their modification times, which should
+        # correspond exactly with ordering by simulation times, except we don't
+        # need to read the actual files this way.
+        times = [starsmashertools.helpers.path.getmtime(m) for m in matches]
+        matches = [x for _,x in sorted(zip(times, matches), key=lambda pair:pair[0])]
+        
+        if not include_joined: return matches
+        
+        # To simplify the thought process: consider we are simulation A, with
+        # output files A/out0000.sph, A/out0001.sph, and A/out0002.sph, and we
+        # are joined with simulation B, which has
+        # restartrad.sph.orig == A/out0001.sph and output files B/out0001.sph,
+        # B/out0002.sph, and B/out0003.sph. We want to return
+        # [A/out0000.sph, B/out0001.sph, B/out0002.sph, B/out0003.sph].
+        #
+        # If simulation B doesn't originate from A, then we need to simply
+        # return files in the order of the joined simulations. This will be done
+        # only after the originating joined simulations have been handled first.
+
+        # Because the output files are always written sequentially, the very
+        # first match will have the smallest modification time. We use this fact
+        # to determine the ordering of the joined simulations that did not
+        # originate from us
+
+        # Handle the joined simulations which originate from us
+        we_started_from = [
+            s for s in self.joined_simulations if self.started_from(s)
+        ]
+        started_from_us = [
+            s for s in self.joined_simulations if s.started_from(self)
+        ]
+
+        # If there are any joined simulations which do not start from this
+        # simulation, or which this simulation does not start from, then there
+        # is a problem with the list of joined simulations.
+        for simulation in self.joined_simulations:
+            if simulation in we_started_from: continue
+            if simulation in started_from_us: continue
+            raise Simulation.JoinError(simulation)
+
+        all_paths = []
+        simulations = we_started_from + [self] + started_from_us
+        if simulations:
+            paths = []
+            times = []
+            for simulation in simulations:
+                ms = simulation.get_file(pattern)
+                ts = [starsmashertools.helpers.path.getmtime(m) for m in ms]
+                ms = [x for _,x in sorted(zip(ts, ms), key=lambda pair:pair[0])]
+
+                paths += [ms]
+                times += [simulation.get_start_time(
+                    include_joined = False,
+                )]
+
+            # Sorted by start times
+            simulations = [x for _,x in sorted(zip(times, simulations), key = lambda pair: pair[0])]
+            paths = [x for _,x in sorted(zip(times, paths), key=lambda pair:pair[0])]
+            times = sorted(times)
+
+            for i, (ps, s, t) in enumerate(zip(paths, simulations, times)):
+                if i == len(simulations) - 1:
+                    all_paths += ps
+                else:
+                    tahead = times[i + 1]
+                    
+                    m = starsmashertools.helpers.midpoint.Midpoint(ps)
+                    m.set_criteria(
+                        lambda p: s.reader.read_from_header('t', p) * s.units['t'] < tahead,
+                        lambda p: s.reader.read_from_header('t', p) * s.units['t'] == tahead,
+                        lambda p: s.reader.read_from_header('t', p) * s.units['t'] > tahead,
+                    )
+                    my_p, idx = m.get(favor = 'low', return_index = True)
+                    all_paths += ps[:idx+1]
+        return all_paths
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
@@ -1248,6 +1461,11 @@ class Simulation(object):
         :meth:`~.get_logfiles`, :meth:`~.get_energyfiles`, and 
         :meth:`~.get_energy`.
 
+        The "restartrad.sph.orig" file (or equivalent from 
+        :property:`starsmashertools.preferences`) must originate from ``other``,
+        or ``other`` must have a "restartrad.sph.orig" file which originates
+        from this simulation. Otherwise, a :class:`~.JoinError` is raised.
+
         To undo this operation, use :meth:`~.split`.
         
         Parameters
@@ -1271,10 +1489,13 @@ class Simulation(object):
             other = starsmashertools.get_simulation(other)
 
         if self == other:
-            message = "Cannot join simulations %s and %s because they are the same simulation" % (self, other)
+            message = "Cannot join simulations '%s' and '%s' because they are the same simulation" % (self.directory, other.directory)
             if cli: return message
-            raise ValueError(message)
+            raise Simulation.JoinError(other, message = message)
 
+        if not self.started_from(other) and not other.started_from(self):
+            raise Simulation.JoinError(other)
+        
         other_path = starsmashertools.helpers.path.relpath(
             other.directory,
             start = self.directory,
