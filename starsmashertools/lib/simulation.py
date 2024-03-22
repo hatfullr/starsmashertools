@@ -1345,29 +1345,7 @@ class Simulation(object):
                 fig.show()
                 return ""
             return fig
-
-        def _animation_update(
-                self,
-                output,
-                artist,
-                x,
-                y,
-                label,
-                time_label,
-                tunit,
-                logx : bool = False,
-                logy : bool = False,
-        ):
-            _x = output[x]
-            _y = output[y]
-            if logx: _x = np.log10(_x)
-            if logy: _y = np.log10(_y)
-            artist.set_offsets(np.column_stack((_x, _y)))
             
-            label.set_text(str(output))
-            time = (output.header['t'] * self.units['t']).convert(tunit)
-            time_label.set_text('t = %10g %s' % (time.value, tunit))
-
         @api
         @cli('starsmashertools')
         def plot_animation(
@@ -1379,13 +1357,11 @@ class Simulation(object):
                 cli : bool = False,
         ):
             import starsmashertools.mpl.figure
-            import matplotlib.animation
-            import starsmashertools.helpers.string
             import starsmashertools.mpl.animation
-            import matplotlib.text
             import copy
 
             fig, ax = starsmashertools.mpl.figure.subplots()
+
             if x in ['x','y','z'] and y in ['x','y','z']:
                 ax.set_aspect('equal')
 
@@ -1400,11 +1376,14 @@ class Simulation(object):
 
             all_output = self.get_output()
             
-            artists = []
-            output = all_output[0] #self.get_output(0)
-            total = len(self.get_outputfiles())
+            artist = all_output[0].plot(
+                ax,
+                x = x,
+                y = y,
+                logx = logx,
+                logy = logy,
+            )
             
-            artist = output.plot(ax, x=x, y=y)
             label = fig.text(
                 0.01, 0.01,
                 '',
@@ -1419,23 +1398,31 @@ class Simulation(object):
             )
 
             # determine the appropriate unit to use
-            tunit = (self.get_output(-1).header['t'] * self.units['t']).auto().label
-            def update(i):
-                self._animation_update(
-                    all_output[min(max(i,0), len(all_output) - 1)],
-                    artist,
-                    x,
-                    y,
-                    label,
-                    time_label,
-                    tunit,
-                    logx = logx,
-                    logy = logy,
+            t = None
+            try:
+                t = self.get_stop_time(
+                    use_logfiles = True, include_joined = False,
                 )
+            except:
+                try:
+                    t = self.get_stop_time(
+                        use_logfiles = False, include_joined = False
+                    )
+                except: pass
+                    
+            if t is None: tunit = self.units['t'].auto().label
+            else: tunit = t.auto().label
+            def update(i):
+                output = all_output[min(max(i,0), len(all_output) - 1)]
+                artist.set_output(output)
+
+                label.set_text(str(output))
+                time = (output.header['t'] * self.units['t']).convert(tunit)
+                time_label.set_text('t = %10g %s' % (time.value, tunit))
             
             update(0)
             ani = starsmashertools.mpl.animation.Player(
-                fig, update, maxi=total, interval = 1./120.
+                fig, update, maxi=len(all_output), interval = 1./30.
             )
             
             if cli:

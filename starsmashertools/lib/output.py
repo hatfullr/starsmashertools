@@ -297,11 +297,24 @@ class Output(dict, object):
         Returns
         -------
         :class:`numpy.ndarray`
-           A NumPy array of IDs of the core particles in this output file, if 
-           there are any. Note that the IDs are zero'th indexed, unlike the
-           particle IDs in StarSmasher, which start at index 1 instead of 0.
+            A NumPy array of IDs of the core particles in this output file, if 
+            there are any. Note that the IDs are zero'th indexed, unlike the
+            particle IDs in StarSmasher, which start at index 1 instead of 0.
         """
-        return np.arange(self['ntot'], dtype = int)[self['u'] == 0]
+        return np.where(self['u'] == 0)[0]
+
+    @api
+    def get_non_core_particles(self):
+        """
+        Similar to :func:`~.get_core_particles`, but instead returns the IDs of
+        the particles which are not identified as being core particles.
+        
+        Returns
+        -------
+        :class:`numpy.ndarray`
+            A NumPy array of non-core-particle IDs.
+        """
+        return np.where(self['u'] != 0)[0]
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
@@ -603,12 +616,6 @@ class Output(dict, object):
                 ax : matplotlib.axes.Axes,
                 x : str = 'x',
                 y : str = 'y',
-                rasterized : bool = True,
-                s : float | int = 1,
-                marker = '.',
-                core_marker = 'o',
-                color = 'k',
-                linewidth = 0.,
                 **kwargs
         ):
             """
@@ -628,50 +635,26 @@ class Output(dict, object):
 
             Other Parameters
             ----------------
-            rasterized : bool, default = True
-                Creates a non-vector image if `True`. Vector images typically 
-                take up a lot of memory when there are many objects on a plot,
-                causing the plot to be slow to respond and use.
-
-            s : float, int, default = 1
-                The size of the points. A good value is 1.
-
-            marker : default = '.'
-                The Matplotlib marker to use for the non-core particles.
-
-            core_marker : default = 'o'
-                The Matplotlib marker to use for the core particles.
-
-            color : default = 'k'
-                The color to make the scatter plot.
-
-            linewidth : default = 0.
-                The linewidth of the scatter plot. Suggested value is 0.
-
             kwargs
-                Other keyword parameters are passed directly to
-                ``matplotlib.axes.Axes.scatter``.
+                Keyword arguments are passed directly to 
+                :class:`starsmashertools.mpl.artists.OutputPlot` .
             
             Returns
             -------
-            The same return value as ``matplotlib.axes.Axes.scatter``.
+            :class:`starsmashertools.mpl.artists.OutputPlot`
+                A Matplotlib ``Artist``.
+
+            See Also
+            --------
+            :property:`starsmashertools.preferences` ('Plotting'), 
+            :class:`starsmashertools.mpl.artists.OutputPlot`
             """
-            xdata = self[x]
-            ydata = self[y]
-            
-            kwargs['marker'] = marker
-            kwargs['rasterized'] = rasterized
-            kwargs['color'] = color
-            kwargs['linewidth'] = linewidth
-                
-            cores = self.get_core_particles()
-
-            if not isinstance(s, (list, tuple, np.ndarray)):
-                s = [s]*len(xdata)
-            for i in cores: s[i] = 100
-            kwargs['s'] = s
-
-            return ax.scatter(xdata, ydata, **kwargs)
+            import starsmashertools.mpl.artists
+            ret = starsmashertools.mpl.artists.OutputPlot(
+                ax, x, y, **kwargs
+            )
+            ret.set_output(self)
+            return ret
 
 
 

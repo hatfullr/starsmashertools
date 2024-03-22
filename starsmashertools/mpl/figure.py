@@ -53,7 +53,6 @@ class Figure(matplotlib.figure.Figure, object):
            Other keyword arguments are passed directly to 
            ``matplotlib.figure.Figure``.
         """
-
         scale = np.asarray(scale)
         idx = scale < 0
         if idx.any():
@@ -76,6 +75,10 @@ class Figure(matplotlib.figure.Figure, object):
         super(Figure, self).set_size_inches(figsize)
         self._scale = value
 
+    #def close(self):
+    #    plt.pause(1)
+    #    plt.close(fig = self)
+
     def set_size_inches(self, *args, **kwargs):
         ret = super(Figure, self).set_size_inches(*args, **kwargs)
         self._original_size = np.asarray(self.get_size_inches())
@@ -85,12 +88,12 @@ class Figure(matplotlib.figure.Figure, object):
         """ Display the figure without blocking the code execution if the CLI is
         being used. """
         import starsmashertools.bintools.cli
-
+        
         plt.figure(num = self.number) # Focus this figure
 
         if starsmashertools.bintools.cli.CLI.instance is not None:
             # Using the CLI
-            plt.ion()
+            if not plt.isinteractive(): plt.ion()
             ret = plt.show(*args, **kwargs)
             plt.draw()
             plt.pause(0.001)

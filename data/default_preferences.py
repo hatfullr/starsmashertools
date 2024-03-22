@@ -94,7 +94,7 @@ defaults = {
             'unbound' : lambda obj: obj['etot'] >= 0,
             'angularmomentum' : lambda obj: obj['am'] * np.sqrt(obj['r2'] * obj['v2']),
             'mejecta' : lambda obj: np.sum(obj['am'][obj['unbound']]) if np.any(obj['unbound']) else 0.,
-
+            
             # Add your own functions here. The keys need to be written as though
             # they were variable names, so that Output.condense works properly.
         },
@@ -107,6 +107,73 @@ defaults = {
 # ------------------------------------------------------------------------------
     'OutputIterator' : {
         'max buffer size' : 100,
+    },
+# ------------------------------------------------------------------------------
+    'Plotting' : {
+        # The given kwargs below override the settings here
+        'defaults' : {
+            'color'      :  'k', # Color of particles
+            's'          :    1, # Size of particles
+            'marker'     :  '.', # Particle markers
+            'linewidth'  :    0, # Width of marker outlines
+            'rasterized' : True, # Make a non-vectorized plot, which is faster
+        },
+        
+        # This determines the keywords to use in the plots. They are accessed
+        # in-order while plotting. For example, the first item determines the
+        # kwargs for the primary star and the second item for the secondary
+        # star. If additional information is plotted after the list has run out
+        # of items, it uses the default values only thereafter.
+        'kwargs' : [
+            # Star 1
+            {
+                'label'  : 'Primary',
+            }, # Use defaults
+            # Star 2
+            {
+                'color'  : 'r',
+                'label'  : 'Secondary',
+            },
+        ],
+        
+        # For core particles only. These override all other settings above. As
+        # in, these settings are applied "last".
+        'core kwargs' : [
+            { # Star 1
+                's'         :  50,
+                'marker'    : 'o',
+                'color'     : 'none',
+                'edgecolor' : 'k',
+                'linewidth' : 1,
+                'label'     : 'Primary Cores',
+                'zorder'    : float('inf'), # Put on top of everything
+            },
+            { # Star 2
+                's'         : 50,
+                'marker'    : 'o',
+                'color'     : 'none',
+                'edgecolor' : 'r',
+                'linewidth' : 1,
+                'label'     : 'Secondary Cores',
+                'zorder'    : float('inf'), # Put on top of everything
+            },
+        ],
+        
+        'legend' : {
+            'loc' : 'lower left',
+            'bbox_to_anchor' : (0, 1.0, 1, 0.2),
+            'borderaxespad' : 0,
+            'handletextpad' : 0,
+            'ncol' : 5,
+            'borderpad' : 0.1,
+            'frameon' : False,
+            'labelspacing' : 0,
+
+            # This is a special option that doesn't get used by Matplotlib.
+            # Instead, we manually adjust the legend handles to give them a
+            # fixed size so that the markers are always clearly visible.
+            'markersize' : 50,
+        },
     },
 # ------------------------------------------------------------------------------
     'Simulation' : {
@@ -205,19 +272,3 @@ defaults = {
     },
 # ------------------------------------------------------------------------------
 }
-
-
-
-def get(name, default_name, throw_error=False):
-    if not isinstance(name, str): name = type(name).__name__
-    if name in defaults.keys():
-        if default_name in defaults[name].keys():
-            return defaults[name][default_name]
-        
-    if throw_error:
-        raise Exception("Missing field {field:s} in {key:s} in {filename:s}".format(
-            field = default_name,
-            key = name,
-            filename = os.path.basename(__file__),
-        ))
-    

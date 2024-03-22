@@ -28,7 +28,7 @@ class CLI(object):
         
         if CLI.instance is not None:
             raise Exception("Only one CLI instance is permitted per process")
-        
+
         self.name = name
         self.description = description
         
@@ -250,7 +250,7 @@ class CLI(object):
     def reset(self):
         if self._mainmenu is not None:
             self.navigate(self._mainmenu.identifier)
-        else: quit()
+        else: self._quit()
 
     # str to use as identifier
     def remove_page(
@@ -348,7 +348,7 @@ class CLI(object):
         try:
             curses.wrapper(main)
         except KeyboardInterrupt:
-            quit()
+            self._quit()
 
     @staticmethod
     def scroll(offset, refresh=True):
@@ -386,6 +386,20 @@ class CLI(object):
             CLI.position[0],
             0, 0, height - 1, width - 1,
         )
+
+    @staticmethod
+    def _quit():
+        try:
+            import matplotlib.pyplot as plt
+            # Destroy the window of each opened figure manually
+            for fignum in plt.get_fignums():
+                plt.figure(fignum)
+                try:
+                    plt.gcf().canvas.get_tk_widget().destroy()
+                except: pass
+        except: pass
+        quit()
+    
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     def add_simulation(

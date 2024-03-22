@@ -71,7 +71,7 @@ class Page(object):
             self.back()
             return True
         if self._quit and _input in ['q', 'quit']:
-            quit()
+            self.cli._quit()
         return False
 
     def get_header(self):
@@ -370,7 +370,7 @@ class ArgumentPage(Page, object):
             return True
         
         if self._quit and _input in ['q', 'quit']:
-            quit()
+            self.cli._quit()
         
         if type(_input) in self.inputtypes:
             self.argument.value = _input
@@ -778,7 +778,7 @@ class SimulationControlsPage(List, object):
             if self._back is not None and _input in ['b', 'back']:
                 self.cli.navigate(self._back.identifier)
             if self._quit and _input in ['q', 'quit']:
-                quit()
+                self.cli._quit()
                 
             try:
                 simulation = starsmashertools.get_simulation(_input)
@@ -1090,7 +1090,7 @@ class MultiPage(Page, object):
             self.back()
             return True
         if self._quit and _input in ['q', 'quit']:
-            quit()
+            self.cli._quit()
         return False
     
     def show(self, **kwargs):

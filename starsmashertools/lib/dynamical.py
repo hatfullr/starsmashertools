@@ -250,25 +250,3 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
         
         if len(outputs) == 1: return Eorbtheta[0], Eorbphi[0]
         return Eorbtheta, Eorbphi
-
-
-    # This is a special override for plot_animation
-    def _animation_update(self, output, artist, *args, **kwargs):
-        ret = super(Dynamical, self)._animation_update(output, artist, *args, **kwargs)
-        
-        if artist.get_array() is None:
-            import matplotlib.colors
-            import numpy as np
-            import matplotlib.patches
-            import matplotlib.lines
-            import starsmashertools.helpers.warnings
-
-            try:
-                binary = self.get_children()[0]
-            except Exception as e:
-                try:
-                    starsmashertools.helpers.warnings.warn(str(e))
-                except: pass
-                return
-            binary._animation_update(output, artist, *args, **kwargs)
-    
