@@ -107,7 +107,8 @@ class TestArchive(basetest.BaseTest):
             0,
         )
         self.archive._buffers['add']['test'] = value
-
+        self.assertIn(value, self.archive)
+        self.assertEqual(value, self.archive['test'])
         self.assertEqual(value, self.archive.values()[0])
 
     def test_items(self):
@@ -131,6 +132,7 @@ class TestArchive(basetest.BaseTest):
         self.assertEqual(1, len(d.keys()))
         self.assertEqual(1, len(d.values()))
         self.assertEqual('test', list(d.keys())[0])
+        
         self.assertEqual(value, d['test'])
 
     def test_delitem(self):
@@ -327,7 +329,7 @@ class TestArchive(basetest.BaseTest):
         )
         other.add('test', 1, 'filename', mtime = 6)
         other.add('test2', -1, 'ff', mtime=0)
-        
+
         self.archive.auto_save = False
         self.archive.combine(other)
 

@@ -248,6 +248,73 @@ class ArchiveValue(object):
         )
 
 
+class ArchiveItems(object):
+    """ An iterator to help with reading an Archive. """
+    def __init__(self, archive, verbose : bool = False):
+        self.verbose = verbose
+
+        self._file = None
+        self._keys = archive.keys()
+
+        # Reading all the contents of an Archive usually isn't what takes
+        # the most time. It's the deserializing that is costly.
+        self._values = archive.get(self._keys, deserialize = False)
+        if not isinstance(self._values, list):
+            self._values = [self._values]
+        
+        self._iterator = None
+        self._process = None
+
+    def __len__(self): return len(self._keys)
+    def __iter__(self): return self
+
+    def __next__(self):
+        if self._iterator is None: self.start()
+        try:
+            if self._process is None: # Serial
+                key, value = next(self._iterator)
+            else: # Multiprocessing
+                index, archive_value = next(self._iterator)
+                key, value = archive_value.identifier, archive_value
+            return key, self.do_deserialize(key, value)
+        except StopIteration:
+            self.stop()
+            raise
+    
+    def do_deserialize(self, key, value):
+        if not isinstance(value, ArchiveValue):
+            return ArchiveValue.deserialize(key, value)
+        return value
+
+    def start(self):
+        import starsmashertools.helpers.asynchronous
+
+        nprocs = min(
+            starsmashertools.helpers.asynchronous.max_processes,
+            len(self._keys),
+        )
+        self._process = None
+        
+        if nprocs == 1 or not starsmashertools.helpers.asynchronous.is_main_process():
+            # Run in serial
+            self._iterator = zip(self._keys, self._values)
+        else:
+            arguments = [[key, value] for key, value in zip(self._keys, self._values)]
+            self._process = starsmashertools.helpers.asynchronous.ParallelFunction(
+                target = self.do_deserialize,
+                args = arguments,
+                nprocs = nprocs,
+                start = True,
+            )
+            self._iterator = self._process.get_output(sort = False)
+    
+    def stop(self):
+        import starsmashertools.helpers.asynchronous
+        if self._process is not None:
+            del self._process
+            self._process = None
+        self._iterator = None
+
 
 def REPLACE_OLD(
         old_value : ArchiveValue,
@@ -335,6 +402,7 @@ class Archive(object):
     class CorruptFileError(Exception, object): pass
     class MissingIdentifierError(Exception, object): pass
     class FormatError(Exception, object): pass
+            
     
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
@@ -519,19 +587,15 @@ class Archive(object):
         )
         
         
-    @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
-    def __contains__(
-            self,
-            key : str | ArchiveValue,
-    ):
+    def __contains__(self, key):
         """ If an :class:`~.ArchiveValue` is specified, calls 
         :py:meth:`~.values`, which reads the entire Archive file and can be 
         quite I/O intensive. Use sparingly. Otherwise, if a str is given then
         the string is checked against the keys, which is faster. """
-        if isinstance(key, str): return key in self.keys()
-        else: return key in self.values()
-
+        if isinstance(key, ArchiveValue): key = key.identifier
+        return key in self.keys()
+    
     def __delitem__(self, key):
         """ Remove the given key from the Archive. If auto save is enabled, the
         Archive file will be modified. """
@@ -571,22 +635,13 @@ class Archive(object):
     def items(self):
         """ Return all keys and values in the Archive. This is I/O intensive, 
         so use it sparingly. """
-        import starsmashertools.helpers.path
-        import starsmashertools.helpers.string
-        keys = self.keys()
-        values = self.get(keys)
-        if isinstance(values, ArchiveValue): values = [values]
-        return zip(keys, values)
+        return ArchiveItems(self, verbose = self.verbose)
     
     @api
     def values(self):
         """ Return all the values in the Archive. This reads the entire Archive
         file, so use it sparingly. """
-
-        values = []
-        for key, value in self.items():
-            values += [value]
-        return values
+        return [value for key, value in self.items()]
     
     @api
     @cli('ssarchive')
@@ -835,6 +890,7 @@ class Archive(object):
     def get(
             self,
             keys : str | list | tuple,
+            deserialize : bool = True,
     ):
         """
         Obtain the key or keys given. This is useful for if you want to retrieve
@@ -848,6 +904,13 @@ class Archive(object):
             a `list` or `tuple`, each element must be type `str`. Then the
             archive is opened and the values for the given keys are returned in
             the same order as ``keys``.
+
+        Other Parameters
+        ----------------
+        deserialize : bool, default = True
+            If `True`, the values in the :class:`~.Archive` are converted from
+            their raw format as stored in the file on the system into Python
+            objects. Otherwise, the raw values are returned.
 
         Returns
         -------
@@ -903,12 +966,13 @@ class Archive(object):
         for i, key in to_deserialize:
             keys_to_deserialize += [key]
             vals_to_deserialize += [values[i]]
-            
-        deserialized_vals = self._deserialize(
-            keys_to_deserialize, vals_to_deserialize,
-        )
-        for i, key in to_deserialize:
-            values[i] = deserialized_vals[i]
+
+        if deserialize:
+            deserialized_vals = self._deserialize(
+                keys_to_deserialize, vals_to_deserialize,
+            )
+            for i, key in to_deserialize:
+                values[i] = deserialized_vals[i]
         
         if len(values) == 1: return values[0]
         return values

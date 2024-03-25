@@ -105,7 +105,7 @@ class ParallelFunction(object):
 
         # Don't spawn more processes than we need to
         nprocs = min(nprocs, len(args))
-                
+        
         manager = multiprocessing.Manager()
         self._input_queue = manager.Queue()
         self._output_queue = manager.Queue()
