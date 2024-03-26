@@ -945,7 +945,7 @@ class Archive(object):
         to_deserialize = []
         with self.open(
                 'r',
-                message = "Loading keys in %s" % self,
+                message = "Loading values in %s" % self,
                 progress_max = len(remaining_keys),
         ) as zfile:
             try:
@@ -1104,7 +1104,32 @@ class Archive(object):
         else: ret = func()
         return ret
 
-    
+    def find_old_values(self):
+        """
+        Using :property:`~.replacement_flags`, locate the 
+        :class:`~.ArchiveValue` objects whose origins have a newer modification
+        time than that which is currently saved in the :class:`~.Archive`. This
+        is useful for detecting which values need to be updated in an Archive.
+        
+        Ignores any :class:`~.ArchiveValue` object with an origin that is not 
+        currently on the file system or whose origin is `None`, or whose mtime
+        value is `None`.
+
+        Returns
+        -------
+        list
+            A list of :class:`~.ArchiveValue` objects that are out-of-date
+            compared to the files currently on the system.
+        """
+        import starsmashertools.helpers.path
+        old_values = []
+        for value in self.values():
+            if value.origin is None: continue
+            if value.mtime is None: continue
+            if not starsmashertools.helpers.path.exists(value.origin): continue
+            current_mtime = starsmashertools.helpers.path.getmtime(value.origin)
+            if current_mtime > value.mtime: old_values += [value]
+        return old_values
 
 
 

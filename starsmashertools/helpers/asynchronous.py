@@ -138,14 +138,16 @@ class ParallelFunction(object):
 
     def func(self, input_queue, output_queue, error_queue, error_queue_lock):
         import sys
-        
-        while not input_queue.empty():
-            index, args, kwargs = input_queue.get()
-            try:
+
+        try:
+            while not input_queue.empty():
+                index, args, kwargs = input_queue.get()
                 output_queue.put([index, self._target(*args, **kwargs)])
-            except Exception as e:
-                # Print the first exception only one time. This will show where
-                # the original exception came from.
+        except Exception as e:
+            # Print the first exception only one time. This will show where
+            # the original exception came from.
+            try:
+                if isinstance(e, (BrokenPipeError, ConnectionResetError)): raise
                 with error_queue_lock:
                     if error_queue.qsize() == 0:
                         import starsmashertools.helpers.stacktrace
@@ -155,7 +157,15 @@ class ParallelFunction(object):
                         ))
                         print(type(e).__qualname__ + ": " + str(e))
                         error_queue.put([e, index, args, kwargs])
-                sys.exit(1)
+            except (BrokenPipeError, ConnectionResetError):
+                import starsmashertools.helpers.stacktrace
+                print(starsmashertools.helpers.stacktrace.format_exc(
+                    exception = e,
+                    for_raise = True,
+                ))
+                print(type(e).__qualname__ + ": " + str(e))
+                sys.stderr.close()
+            sys.exit(1)
     
     def get_progress(self):
         if self._expected_outputs > 0:
@@ -163,8 +173,11 @@ class ParallelFunction(object):
         return 0.
     
     def start(self):
-        for process in self._processes:
-            process.start()
+        try:
+            for process in self._processes:
+                process.start()
+        except (BrokenPipeError, ConnectionResetError):
+            quit()
 
     def terminate(self):
         # If we terminate without joining, the queue becomes corrupted and
