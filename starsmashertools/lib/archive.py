@@ -695,8 +695,9 @@ class Archive(object):
 
         if key in self.keys():
             # Check all the replacement flag functions. If any fail, do nothing.
-            if not all([flag(self[key], value) for flag in self.replacement_flags]):
-                return
+            val = self[key]
+            for flag in self.replacement_flags:
+                if not flag(val, value): return
         
         # Either add a new key or overwrite an old key
         self._buffers['add'][key] = value
