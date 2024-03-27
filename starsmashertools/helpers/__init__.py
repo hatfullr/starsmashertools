@@ -11,8 +11,8 @@ def defer_keyboardinterrupt(message : str = "Deferring KeyboardInterrupt. Raise 
         @functools.wraps(f)
         def wrapper(*args, **kwargs):
 
-            if not starsmashertools.helpers.asynchronous.is_main_process():
-                return f(*args, **kwargs)
+            #if not starsmashertools.helpers.asynchronous.is_main_process():
+            #    return f(*args, **kwargs)
             
             previous_handler = original_handler
             if hasattr(f, '_signal_handler'):
