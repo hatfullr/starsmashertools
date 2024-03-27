@@ -438,7 +438,9 @@ class Ticker(threading.Thread):
         import time
         self.ran = False
         self.completed = False
+        while self.paused: pass
         self._stopEvent.wait(max(self.delay - self.interval, 0))
+        while self.paused: pass
 
         timer = 0.
         t0 = time.time()
