@@ -826,7 +826,7 @@ class Archive(object):
             self.save(*args, **kwargs)
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
-    @starsmashertools.helpers.defer_keyboardinterrupt(message = "KeyboardInterrupt raised, but stopping execution might corrupt an archive. Raise KeyboardInterrupt again to stop execution.")
+    #@starsmashertools.helpers.defer_keyboardinterrupt(message = "KeyboardInterrupt raised, but stopping execution might corrupt an archive. Raise KeyboardInterrupt again to stop execution.")
     @api
     def save(
             self,
