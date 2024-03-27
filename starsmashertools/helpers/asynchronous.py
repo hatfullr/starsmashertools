@@ -406,6 +406,7 @@ class Ticker(threading.Thread):
         self._cycle = None
         self.ran = False
         self.completed = False
+        self.paused = False
     
     def cancel(self):
         self._stopEvent.set()
@@ -430,6 +431,9 @@ class Ticker(threading.Thread):
         if isinstance(kwargs, dict): kwargs = [kwargs]*length
         self._cycle = [[self.target, a, k] for a,k in zip(args, kwargs)]
 
+    def pause(self): self.paused = True
+    def resume(self): self.paused = False
+
     def run(self):
         import time
         self.ran = False
@@ -441,6 +445,7 @@ class Ticker(threading.Thread):
         iteration = 0
         first = True
         while not self._stopEvent.wait(self.interval):
+            while self.paused: pass
             if first:
                 if self.after_delay is not None:
                     self.after_delay(*self.after_delay_args, **self.after_delay_kwargs)
