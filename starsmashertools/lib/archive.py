@@ -254,7 +254,9 @@ class ArchiveItems(object):
         self.verbose = verbose
 
         self._file = None
-        self._keys = archive.keys()
+
+        if archive.thread_safe: self._keys = archive.keys()
+        else: self._keys = archive._keys
 
         # Reading all the contents of an Archive usually isn't what takes
         # the most time. It's the deserializing that is costly.
@@ -414,6 +416,7 @@ class Archive(object):
             readonly : bool = False,
             verbose : bool = True,
             max_buffer_size : int | type(None) = None,
+            thread_safe : bool = False,
     ):
         """
         Constructor for :class:`~.Archive`.
@@ -454,9 +457,18 @@ class Archive(object):
             The maximum allowed size in bytes that the buffer can have when auto
             save is disabled. When the buffer exceeds this value the archive is
             saved.
+
+        thread_safe : bool, default = False
+            If `True` then we will try to make thread-safe assumptions about 
+            the state of the archive, such as reading the file on the system to
+            determine its contents whenever a value is modified. If `False`,
+            then it is assumed that this archive was created on the main
+            process, such that we can use faster operations for determining the
+            current state of the archive.
         """
         import starsmashertools.helpers.path
         import starsmashertools
+        import starsmashertools.helpers.asynchronous
 
         self._previous_mtime = None
         
@@ -476,9 +488,16 @@ class Archive(object):
         self.readonly = readonly
         self.verbose = verbose
         self._max_buffer_size = max_buffer_size
+        self.thread_safe = thread_safe
+
+        if (not self.thread_safe and
+            not starsmashertools.helpers.asynchronous.is_main_process()):
+            raise Exception("Cannot open an Archive on processes which aren't the main process when keyword 'thread_safe' is True")
+        
+        self._keys = []
         
         super(Archive, self).__init__()
-
+        
         if starsmashertools.helpers.path.isfile(self.filename):
             self._check_and_update_format()
         
@@ -520,15 +539,6 @@ class Archive(object):
         if not starsmashertools.helpers.path.exists(self.filename): return False
         current_mtime = starsmashertools.helpers.path.getmtime(self.filename)
         return current_mtime > self._previous_mtime
-
-    @property
-    def _loading_name(self):
-        import starsmashertools.helpers.string
-        return starsmashertools.helpers.string.shorten(
-            self.filename,
-            50,
-            where = 'left',
-        )
     
     def __copy__(self, *args, **kwargs):
         raise NotImplementedError
@@ -555,6 +565,10 @@ class Archive(object):
         context will first save the Archive. Then, saving is disabled until the
         context is exited, even if auto save is enabled. Upon exiting, the 
         buffers are cleared. """
+        import copy
+
+        if not self.thread_safe:
+            previous_keys = copy.deepcopy(self._keys)
         
         # This clears the buffers
         self.save()
@@ -565,6 +579,7 @@ class Archive(object):
         finally:
             # Clear the buffers
             self._clear_buffers()
+            if not self.thread_safe: self._keys = previous_keys
             self._nosave_holders -= 1
     
     def open(
@@ -586,7 +601,6 @@ class Archive(object):
             **Archive.open_method_kwargs
         )
         
-        
     @api
     def __contains__(self, key):
         """ If an :class:`~.ArchiveValue` is specified, calls 
@@ -599,33 +613,40 @@ class Archive(object):
     def __delitem__(self, key):
         """ Remove the given key from the Archive. If auto save is enabled, the
         Archive file will be modified. """
-        
+
         if key not in self.keys(): raise KeyError(key)
         value = self._buffers['add'].pop(key, None)
         if value is not None:
             self._buffer_size -= value.size
         self._buffers['remove'] += [key]
+        
+        if not self.thread_safe: self._keys.remove(key)
+        
         if self.auto_save: self.save()
     
     @api
     def keys(self):
         """ Return a list of Archive identifiers from the file. """
         import starsmashertools.helpers.path
+        import copy
 
         keys = []
-        if starsmashertools.helpers.path.exists(self.filename):
+        if not self.thread_safe: keys = copy.deepcopy(self._keys)
+        elif starsmashertools.helpers.path.exists(self.filename):
             try:
-                with self.open('r', message = 'Loading keys in %s' % self) as zfile:
+                with self.open(
+                        'r', message = 'Loading keys in %s' % self
+                ) as zfile:
                     keys = zfile.namelist()
             except Exception as e:
                 raise Archive.CorruptFileError("Failed to load keys from the archive file. Perhaps it did not save correctly. All data in this archive is lost. Please delete the file and try again: '%s'" % self.filename) from e
-            
-            while 'file info' in keys: keys.remove('file info')
 
+            while 'file info' in keys: keys.remove('file info')
+        
         for key in self._buffers['remove']:
             if key not in keys: continue
             keys.remove(key)
-
+        
         for key in self._buffers['add'].keys():
             if key not in keys: keys += [key]
         
@@ -649,13 +670,13 @@ class Archive(object):
     def clear(self, cli : bool = False):
         """ Clears all contents from the archive and deletes the file if auto
         save is enabled. """
-        
-        to_remove = self.keys()
         for key in self.keys():
             if key in self._buffers['remove']: continue
             self._buffers['remove'] += [key]
         self._buffers['add'] = {}
         self._buffer_size = 0
+        
+        if not self.thread_safe: self._keys = []
         
         if self.auto_save: self.save()
 
@@ -671,6 +692,7 @@ class Archive(object):
         specified in :py:func:`~.__init__` are checked. If all the functions 
         return `True` then the value is overwritten. Otherwise, nothing 
         happens. """
+
         if key in self.keys():
             # Check all the replacement flag functions. If any fail, do nothing.
             if not all([flag(self[key], value) for flag in self.replacement_flags]):
@@ -680,15 +702,17 @@ class Archive(object):
         self._buffers['add'][key] = value
         self._buffer_size += value.size
         if key in self._buffers['remove']: self._buffers['remove'].remove(key)
+
+        if not self.thread_safe:
+            self._keys += [key]
         
         if self.auto_save and self._buffer_size >= self._max_buffer_size:
             self.save()
     
     def __getitem__(self, key):
         """ Obtain the value corresponding with the given key. """
-        # If we don't have the key, check the file itself
-        #if key not in self.keys():
-        #    raise KeyError(key)
+        if not self.thread_safe and key not in self._keys:
+            raise KeyError(key)
         
         # If we do have the key in the buffer, fetch its value
         if key in self._buffers['remove']:
@@ -696,14 +720,16 @@ class Archive(object):
         if key in self._buffers['add'].keys():
             return self._buffers['add'][key]
 
-        # Otherwise, check the archive
+        # Check the archive
         try:
             with self.open(
                     'r',
                     message = "Loading key '%s' in %s" % (str(key), self)
             ) as zfile:
-                keys = zfile.namelist()
-                while 'file info' in keys: keys.remove('file info')
+                if self.thread_safe:
+                    keys = zfile.namelist()
+                    while 'file info' in keys: keys.remove('file info')
+                else: keys = self._keys
                 if key not in keys: raise KeyError(key)
                 value = zfile.read(key)
         except Exception as e:
@@ -927,7 +953,6 @@ class Archive(object):
                 raise TypeError("Argument 'keys' must contain only elements of type 'str', not '%s'" % type(key).__name__)
         else: keys = [keys]
 
-
         remaining_keys = []
         values = [None] * len(keys)
         # Search the buffers first before loading the file values
@@ -959,7 +984,6 @@ class Archive(object):
                 values[i] = zfile.read(key)
                 to_deserialize += [[i, key]]
                 zfile.progress.increment()
-
 
         keys_to_deserialize = []
         vals_to_deserialize = []
@@ -1010,7 +1034,12 @@ class Archive(object):
             this Archive will be affected.
         """
         import copy
-        if isinstance(other, str): other = Archive(other)
+        if isinstance(other, str): other = Archive(
+                other,
+                thread_safe = self.thread_safe,
+                readonly = True,
+                auto_save = False,
+        )
         previous_auto_save = copy.deepcopy(self.auto_save)
         self.auto_save = False
         for key, val in other.items():

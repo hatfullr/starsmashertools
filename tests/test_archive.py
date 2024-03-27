@@ -63,9 +63,18 @@ class TestArchive(basetest.BaseTest):
         
         self.assertIn('test', self.archive)
         self.assertIn(value, self.archive)
+        
+
+        # We have to manually reflect the change. The user is not meant to ever
+        # use _clear_buffers()
+        if not self.archive.thread_safe:
+            for key in self.archive._buffers['add'].keys():
+                if key in self.archive._buffers['remove']: continue
+                if key not in self.archive._keys: continue
+                self.archive._keys.remove(key)
 
         self.archive._clear_buffers()
-
+        
         self.assertNotIn('test', self.archive)
         self.assertNotIn(value, self.archive)
 
@@ -107,6 +116,8 @@ class TestArchive(basetest.BaseTest):
             0,
         )
         self.archive._buffers['add']['test'] = value
+        self.archive._keys += ['test']
+        self.assertIn('test', self.archive)
         self.assertIn(value, self.archive)
         self.assertEqual(value, self.archive['test'])
         self.assertEqual(value, self.archive.values()[0])
@@ -117,6 +128,7 @@ class TestArchive(basetest.BaseTest):
             0,
         )
         self.archive._buffers['add']['test'] = value
+        self.archive._keys += ['test']
         
         d = {key:val for key, val in self.archive.items()}
         
@@ -357,7 +369,7 @@ class TestArchive(basetest.BaseTest):
     #"""
     def test_parallel(self):
         import multiprocessing
-        
+
         def func(filename):
             import starsmashertools.lib.archive
             import time
@@ -365,6 +377,7 @@ class TestArchive(basetest.BaseTest):
             
             archive = starsmashertools.lib.archive.Archive(
                 filename,
+                thread_safe = True,
             )
             alot_of_data = {}
             for key, val in enumerate(range(100000)):
