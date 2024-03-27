@@ -697,10 +697,6 @@ class Archive(object):
             # Check all the replacement flag functions. If any fail, do nothing.
             val = self[key]
             for flag in self.replacement_flags:
-                print(val.mtime, value.mtime)
-                print(type(val.mtime), type(value.mtime))
-                print(val.mtime > value.mtime)
-                print(flag)
                 if not flag(val, value): return
         
         # Either add a new key or overwrite an old key
@@ -708,8 +704,7 @@ class Archive(object):
         self._buffer_size += value.size
         if key in self._buffers['remove']: self._buffers['remove'].remove(key)
 
-        if not self.thread_safe:
-            self._keys += [key]
+        if not self.thread_safe: self._keys += [key]
         
         if self.auto_save and self._buffer_size >= self._max_buffer_size:
             self.save()
