@@ -111,8 +111,6 @@ def _remove_zipfile_member(zfile, member):
     # doesn't match the actual entry order
     from operator import attrgetter
 
-    print("Removing member '%s'" % member)
-    
     if isinstance(member, str):
         member = zfile.getinfo(member)
     
