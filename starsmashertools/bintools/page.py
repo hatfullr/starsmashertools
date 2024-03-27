@@ -150,7 +150,7 @@ class Page(object):
                     inputmanager = self.inputmanager,
                     indent = self.indent,
                     simulation_controls = self.simulation_controls,
-                    back = self.back,
+                    back = self._back,
                     _quit = self._quit,
                     callback = self.callback,
                 )
