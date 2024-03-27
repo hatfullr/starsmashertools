@@ -1,9 +1,11 @@
 import starsmashertools.helpers.argumentenforcer
 from starsmashertools.helpers.apidecorator import api
 from starsmashertools.helpers.clidecorator import cli, clioptions
+import starsmashertools.helpers
 import contextlib
 import zipfile
 import atexit
+import sys
 
 def get_file_info():
     import starsmashertools.helpers.jsonfile
@@ -113,6 +115,10 @@ def _remove_zipfile_member(zfile, member):
 
     if isinstance(member, str):
         member = zfile.getinfo(member)
+
+    # We need to replace the system excepthook such that whenever an exception
+    # is thrown, we finish modifying the file and then throw the exception
+    # afterwards.
     
     fp = zfile.fp
     entry_offset = 0
@@ -818,8 +824,9 @@ class Archive(object):
     def _auto_save(self, *args, **kwargs):
         if self.auto_save and self._buffer_size >= self._max_buffer_size:
             self.save(*args, **kwargs)
-    
+
     @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @starsmashertools.helpers.defer_keyboardinterrupt(message = "KeyboardInterrupt raised, but stopping execution might corrupt an archive. Raise KeyboardInterrupt again to stop execution.")
     @api
     def save(
             self,
@@ -837,7 +844,7 @@ class Archive(object):
         import starsmashertools.helpers.path
         import starsmashertools.helpers.asynchronous
         import starsmashertools.helpers.warnings
-
+        
         if not starsmashertools.helpers.asynchronous.is_main_process():
             starsmashertools.helpers.warnings.warn("Archive.save() is being called by a process that is not the main process. Archive.save() is not thread safe, so make sure you are calling Archive.save() from a single process only. You can suppress this warning with warnings.filterwarnings(action = 'ignore').")
         
