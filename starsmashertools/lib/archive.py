@@ -631,7 +631,11 @@ class Archive(object):
         import copy
 
         keys = []
-        if not self.thread_safe: keys = copy.deepcopy(self._keys)
+        if not self.thread_safe:
+            # Obtain a copy so that we do not accidentally hand the user
+            # our _keys list. This prevents the user from accidentally
+            # editing the _keys list.
+            keys = copy.deepcopy(self._keys)
         elif starsmashertools.helpers.path.exists(self.filename):
             try:
                 with self.open(
