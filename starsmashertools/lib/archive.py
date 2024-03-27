@@ -404,6 +404,7 @@ class Archive(object):
     class CorruptFileError(Exception, object): pass
     class MissingIdentifierError(Exception, object): pass
     class FormatError(Exception, object): pass
+    class ThreadSafeError(Exception, object): pass
             
     
     @starsmashertools.helpers.argumentenforcer.enforcetypes
@@ -492,7 +493,7 @@ class Archive(object):
 
         if (self.thread_safe and
             not starsmashertools.helpers.asynchronous.is_main_process()):
-            raise Exception("Cannot open an Archive on processes which aren't the main process when keyword 'thread_safe' is True")
+            raise Archive.ThreadSafeError("Cannot open an Archive on processes which aren't the main process when keyword 'thread_safe' is True")
         
         super(Archive, self).__init__()
         
@@ -514,6 +515,10 @@ class Archive(object):
         if not hasattr(self, '_keys_internal'):
             self._keys_internal = self._get_keys_from_file()
         return self._keys_internal
+
+    @_keys.setter
+    def _keys(self, value):
+        self._keys_internal = value
     
     @staticmethod
     def to_str(filename : str):
@@ -560,8 +565,8 @@ class Archive(object):
     
     def _clear_buffers(self):
         self._buffers['add'].clear()
-        self._buffer_size = 0
         self._buffers['remove'] = []
+        self._buffer_size = 0
     
     @contextlib.contextmanager
     def nosave(self):
@@ -619,9 +624,12 @@ class Archive(object):
         Archive file will be modified. """
 
         if key not in self.keys(): raise KeyError(key)
+
+        # Move the key out of the 'add' buffer and into the 'remove' buffer.
+        # Note that this doesn't change the overall buffer size. Thus, when
+        # the 'remove' buffer becomes large enough the archive will be saved
+        # on the file system.
         value = self._buffers['add'].pop(key, None)
-        if value is not None:
-            self._buffer_size -= value.size
         self._buffers['remove'] += [key]
         
         if not self.thread_safe: self._keys.remove(key)
@@ -630,6 +638,9 @@ class Archive(object):
 
     def _get_keys_from_file(self):
         """ Return a list of keys as read from the file on the system. """
+        import starsmashertools.helpers.path
+        # If the file doesn't exist yet, then it has no keys!
+        if not starsmashertools.helpers.path.exists(self.filename): return []
         try:
             with self.open(
                     'r', message = 'Loading keys in %s' % self
@@ -683,11 +694,13 @@ class Archive(object):
     def clear(self, cli : bool = False):
         """ Clears all contents from the archive and deletes the file if auto
         save is enabled. """
+        # We can allow the 'remove' buffer to go over max_buffer_size here,
+        # because we kinda have to.
         for key in self.keys():
             if key in self._buffers['remove']: continue
             self._buffers['remove'] += [key]
+            
         self._buffers['add'] = {}
-        self._buffer_size = 0
         
         if not self.thread_safe: self._keys = []
         
@@ -714,8 +727,10 @@ class Archive(object):
         
         # Either add a new key or overwrite an old key
         self._buffers['add'][key] = value
-        self._buffer_size += value.size
-        if key in self._buffers['remove']: self._buffers['remove'].remove(key)
+        if key in self._buffers['remove']: # Move from 'remove' into 'add'
+            self._buffers['remove'].remove(key)
+        else: # Only add to 'add'
+            self._buffer_size += value.size
 
         if not self.thread_safe: self._keys += [key]
         

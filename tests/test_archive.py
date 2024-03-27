@@ -374,10 +374,15 @@ class TestArchive(basetest.BaseTest):
             import starsmashertools.lib.archive
             import time
             import warnings
-            
+
+            with self.assertRaises(starsmashertools.lib.archive.Archive.ThreadSafeError):
+                archive = starsmashertools.lib.archive.Archive(
+                    filename,
+                    thread_safe = True,
+                )
             archive = starsmashertools.lib.archive.Archive(
                 filename,
-                thread_safe = True,
+                thread_safe = False,
             )
             alot_of_data = {}
             for key, val in enumerate(range(100000)):
