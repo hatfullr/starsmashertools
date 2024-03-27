@@ -697,7 +697,7 @@ class Archive(object):
             # Check all the replacement flag functions. If any fail, do nothing.
             val = self[key]
             for flag in self.replacement_flags:
-                print(val, value)
+                print(val.mtime, value.mtime)
                 if not flag(val, value): return
         
         # Either add a new key or overwrite an old key
