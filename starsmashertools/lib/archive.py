@@ -698,6 +698,9 @@ class Archive(object):
             val = self[key]
             for flag in self.replacement_flags:
                 print(val.mtime, value.mtime)
+                print(type(val.mtime), type(value.mtime))
+                print(val.mtime > value.mtime)
+                print(flag)
                 if not flag(val, value): return
         
         # Either add a new key or overwrite an old key
