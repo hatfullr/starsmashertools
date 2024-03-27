@@ -494,8 +494,6 @@ class Archive(object):
             not starsmashertools.helpers.asynchronous.is_main_process()):
             raise Exception("Cannot open an Archive on processes which aren't the main process when keyword 'thread_safe' is True")
         
-        self._keys = []
-        
         super(Archive, self).__init__()
         
         if starsmashertools.helpers.path.isfile(self.filename):
@@ -511,6 +509,12 @@ class Archive(object):
         self._buffer_size = 0
         self._nosave_holders = 0
 
+    @property
+    def _keys(self):
+        if not hasattr(self, '_keys_internal'):
+            self._keys_internal = self._get_keys_from_file()
+        return self._keys_internal
+    
     @staticmethod
     def to_str(filename : str):
         import starsmashertools.helpers.string
@@ -623,7 +627,20 @@ class Archive(object):
         if not self.thread_safe: self._keys.remove(key)
         
         if self.auto_save: self.save()
-    
+
+    def _get_keys_from_file(self):
+        """ Return a list of keys as read from the file on the system. """
+        try:
+            with self.open(
+                    'r', message = 'Loading keys in %s' % self
+            ) as zfile:
+                keys = zfile.namelist()
+        except Exception as e:
+            raise Archive.CorruptFileError("Failed to load keys from the archive file. Perhaps it did not save correctly. All data in this archive is lost. Please delete the file and try again: '%s'" % self.filename) from e
+
+        while 'file info' in keys: keys.remove('file info')
+        return keys
+        
     @api
     def keys(self):
         """ Return a list of Archive identifiers from the file. """
@@ -637,15 +654,7 @@ class Archive(object):
             # editing the _keys list.
             keys = copy.deepcopy(self._keys)
         elif starsmashertools.helpers.path.exists(self.filename):
-            try:
-                with self.open(
-                        'r', message = 'Loading keys in %s' % self
-                ) as zfile:
-                    keys = zfile.namelist()
-            except Exception as e:
-                raise Archive.CorruptFileError("Failed to load keys from the archive file. Perhaps it did not save correctly. All data in this archive is lost. Please delete the file and try again: '%s'" % self.filename) from e
-
-            while 'file info' in keys: keys.remove('file info')
+            keys = self._get_keys_from_file()
         
         for key in self._buffers['remove']:
             if key not in keys: continue
