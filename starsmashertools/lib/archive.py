@@ -538,8 +538,8 @@ class Archive(object):
     def __repr__(self): return Archive.to_repr(self.filename)
     
     def _on_quit(self):
-        if not self.readonly and self.auto_save:
-            self.save()
+        if not self.readonly:
+            self._auto_save()
         atexit.unregister(self._on_quit)
     
     @property
@@ -634,7 +634,7 @@ class Archive(object):
         
         if not self.thread_safe: self._keys.remove(key)
         
-        if self.auto_save: self.save()
+        self._auto_save()
 
     def _get_keys_from_file(self):
         """ Return a list of keys as read from the file on the system. """
@@ -704,7 +704,7 @@ class Archive(object):
         
         if not self.thread_safe: self._keys = []
         
-        if self.auto_save: self.save()
+        self._auto_save()
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
@@ -733,9 +733,8 @@ class Archive(object):
             self._buffer_size += value.size
 
         if not self.thread_safe: self._keys += [key]
-        
-        if self.auto_save and self._buffer_size >= self._max_buffer_size:
-            self.save()
+
+        self._auto_save()
     
     def __getitem__(self, key):
         """ Obtain the value corresponding with the given key. """
@@ -814,6 +813,10 @@ class Archive(object):
             if not user_allowed: raise Archive.FormatError(message)
             starsmashertools.helpers.warnings.warn(message)
             update_archive_version(self.filename, verbose = self.verbose)
+
+    def _auto_save(self, *args, **kwargs):
+        if self.auto_save and self._buffer_size >= self._max_buffer_size:
+            self.save(*args, **kwargs)
     
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
@@ -1073,7 +1076,7 @@ class Archive(object):
         for key, val in other.items():
             self[key] = val
         self.auto_save = previous_auto_save
-        if self.auto_save: self.save()
+        self._auto_save()
 
     # Some convenience methods for the CLI only
     @starsmashertools.helpers.argumentenforcer.enforcetypes
