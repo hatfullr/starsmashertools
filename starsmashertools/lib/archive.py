@@ -844,9 +844,6 @@ class Archive(object):
         import starsmashertools.helpers.path
         import starsmashertools.helpers.asynchronous
         import starsmashertools.helpers.warnings
-        import time
-
-        time.sleep(1e8)
         
         if not starsmashertools.helpers.asynchronous.is_main_process():
             starsmashertools.helpers.warnings.warn("Archive.save() is being called by a process that is not the main process. Archive.save() is not thread safe, so make sure you are calling Archive.save() from a single process only. You can suppress this warning with warnings.filterwarnings(action = 'ignore').")
