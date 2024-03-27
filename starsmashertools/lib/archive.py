@@ -490,7 +490,7 @@ class Archive(object):
         self._max_buffer_size = max_buffer_size
         self.thread_safe = thread_safe
 
-        if (not self.thread_safe and
+        if (self.thread_safe and
             not starsmashertools.helpers.asynchronous.is_main_process()):
             raise Exception("Cannot open an Archive on processes which aren't the main process when keyword 'thread_safe' is True")
         
