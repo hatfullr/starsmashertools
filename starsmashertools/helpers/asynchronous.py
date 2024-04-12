@@ -21,6 +21,11 @@ class Process(multiprocessing.Process, object):
     def _execute_target(self, *args, **kwargs):
         if self._original_target is not None:
             self._original_target(*args, **kwargs)
+
+
+
+        
+        
         
 class ParallelFunction(object):
     """
@@ -113,28 +118,35 @@ class ParallelFunction(object):
         
         self._error_queue_lock = manager.Lock()
 
+        self._expected_outputs = 0
         for i, (a, k) in enumerate(zip(args, kwargs)):
             self._input_queue.put([i, a, k])
-
-        self._expected_outputs = self._input_queue.qsize()
-
+            self._expected_outputs += 1
+        
         self._target = target
+        args = [
+            self._input_queue,
+            self._output_queue,
+            self._error_queue,
+            self._error_queue_lock,
+        ]
         self._processes = []
-        for i in range(nprocs):
-            self._processes += [Process(
-                target = self.func,
-                args = (
-                    self._input_queue,
-                    self._output_queue,
-                    self._error_queue,
-                    self._error_queue_lock,
-                ),
-                **kw
-            )]
+        self._create_processes(nprocs, self.func, args, **kw)
         
         self._do = []
         
         if start: self.start()
+
+    def _create_processes(self, nprocs, target, args, **kw):
+        if self._processes:
+            raise Exception("Cannot call _create_processes more than one time")
+        
+        for i in range(nprocs):
+            self._processes += [Process(
+                target = target,
+                args = args,
+                **kw
+            )]
 
     def func(self, input_queue, output_queue, error_queue, error_queue_lock):
         import sys
@@ -142,7 +154,8 @@ class ParallelFunction(object):
         try:
             while not input_queue.empty():
                 index, args, kwargs = input_queue.get()
-                output_queue.put([index, self._target(*args, **kwargs)])
+                result = self._target(*args, **kwargs)
+                output_queue.put([index, result])
         except Exception as e:
             # Print the first exception only one time. This will show where
             # the original exception came from.
@@ -304,12 +317,15 @@ class ParallelFunction(object):
                 indices += [index]
             
             # Close the queues
-            queues = [self._input_queue,self._output_queue,self._error_queue]
-            for queue in queues:
-                while not queue.empty(): queue.get()
+            self.close_queues()
             
             # Return sorted by input indices
             return [x for _, x in sorted(zip(indices, outputs))]
+
+    def close_queues(self):
+        queues = [self._input_queue,self._output_queue,self._error_queue]
+        for queue in queues:
+            while not queue.empty(): queue.get()
 
     class ResultIterator(object):
         def __init__(
@@ -372,7 +388,96 @@ class ParallelFunction(object):
             if self.onFinished is not None:
                 self.onFinished()
             raise StopIteration
-                
+
+
+
+class ParallelIterator(ParallelFunction, object):
+    """
+    Perhaps a more simple concept than in :class:`~.ParallelFunction`. This
+    class spawns processes and then works as an iterator. You feed it with a
+    function and the arguments and keywords you want it to process. When you
+    start iteration, the processes start running, moving along the queue in
+    ascending order. An iteration step is taken whenever the corresponding 
+    results are ready.
+    """
+
+    def __init__(
+            self,
+            *args,
+            buffer_size : int = 10,
+            **kwargs
+    ):
+        self.buffer_size = buffer_size
+        self._index = 0
+        self._started = False
+        self._buffer = []
+        kwargs['start'] = False
+        super(ParallelIterator, self).__init__(*args, **kwargs)
+
+    def get_output(self, *args, **kwargs):
+        raise NotImplementedError
+
+    def _create_processes(self, nprocs, target, args, **kw):
+        if self._processes:
+            raise Exception("Cannot call _create_processes more than one time")
+        
+        self._processes = []
+        for i in range(nprocs):
+            self._processes += [Process(
+                target = target,
+                args = args + [self.buffer_size],
+                **kw
+            )]
+    
+    def func(self, input_queue, output_queue, error_queue, error_queue_lock, buffer_size):
+        import time
+        # Wait for the buffer to stop being full
+        while output_queue.qsize() >= buffer_size:
+            time.sleep(1.e-6)
+        
+        return super(ParallelIterator, self).func(
+            input_queue, output_queue, error_queue, error_queue_lock
+        )
+
+    def start(self, *args, **kwargs):
+        self._started = True
+        return super(ParallelIterator, self).start(*args, **kwargs)
+    
+    def __iter__(self): return self
+    
+    def __next__(self):
+        import time
+        
+        if self._index == 0 and not self._started:
+            self.start()
+
+        if self._index >= self._expected_outputs:
+            self.terminate()
+            self.close_queues()
+            raise StopIteration()
+        
+        toremove = None
+        while toremove is None:
+            time.sleep(1.e-4)
+            
+            if not self._output_queue.empty():
+                # Catch the output in the buffer
+                self._buffer += [self._output_queue.get()]
+
+            if self._buffer:
+                # Check the buffer for the index we are seeking
+                for i, result in enumerate(self._buffer):
+                    index, output = result
+                    if index != self._index: continue
+                    # Found the right index
+                    toremove = result
+                    break
+        
+        index, output = toremove
+        self._buffer.remove(toremove) # Remove it from the buffer
+        self._index += 1 # Move to the next index
+        return output
+        
         
             
 class Ticker(threading.Thread):

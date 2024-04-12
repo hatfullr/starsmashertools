@@ -860,7 +860,8 @@ class OutputIterator(object):
         o.read(**self.kwargs)
         return o
 
-
+    def tolist(self):
+        return [Output(filename, self.simulation) for filename in self.filenames]
 
 
 

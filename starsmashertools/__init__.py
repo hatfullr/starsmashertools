@@ -1,5 +1,5 @@
 # Add functions here to perform actions just before the program exits.
-import starsmashertools.lib.output
+#import starsmashertools.lib.output
 import starsmashertools.helpers.argumentenforcer
 from starsmashertools.helpers.apidecorator import api
 import numpy as np
@@ -24,7 +24,7 @@ if not os.path.isdir(LOCK_DIRECTORY): os.makedirs(LOCK_DIRECTORY)
 
 class preferences(object):
     @staticmethod
-    def get(name, default_name, throw_error = False):
+    def get(name, default_name = None, throw_error = False):
         import sys, os, copy
         orig_path = copy.deepcopy(sys.path)
         sys.path.insert(1, DATA_DIRECTORY)
@@ -42,10 +42,11 @@ class preferences(object):
         sys.path = orig_path
 
         # Overwrite defaults
-        defaults.update(user_defaults)
+        defaults = preferences.deep_update(defaults, user_defaults)
         
         if not isinstance(name, str): name = type(name).__name__
         if name in defaults.keys():
+            if default_name is None: return defaults[name]
             if default_name in defaults[name].keys():
                 return defaults[name][default_name]
 
@@ -55,7 +56,30 @@ class preferences(object):
                 key = name,
             ))
 
-
+    @staticmethod
+    def deep_update(dict1, dict2):
+        """
+        Update the values in dict1 with the values in dict2, where appropriate.
+        """
+        
+        def update_object(obj1, obj2):
+            if type(obj1) is not type(obj2): return obj2
+            if isinstance(obj1, list):
+                for i, o in enumerate(obj2):
+                    if i < len(obj1): obj1[i] = update_object(obj1[i], o)
+                    else: obj1 += [o]
+            elif isinstance(obj1, dict):
+                for key, val in obj2.items():
+                    if key not in obj1.keys(): obj1[key] = val
+                    else:
+                        obj1[key] = update_object(obj1[key], val)
+            elif isinstance(obj1, tuple):
+                obj1 = tuple(update_object(list(obj1), list(obj2)))
+            else: return obj2
+            return obj1
+        
+        return update_object(dict1, dict2)
+    
 
 # Check if some version string is older than the current version
 def _is_version_older(version, other = None):
@@ -306,7 +330,7 @@ def iterator(*args, **kwargs):
 @starsmashertools.helpers.argumentenforcer.enforcetypes
 @api
 def get_particles(
-        output : starsmashertools.lib.output.Output,
+        output : 'starsmashertools.lib.output.Output',
         particles : np.ndarray | list | tuple,
 ):
     """
@@ -396,7 +420,7 @@ def trace_particles(
 @starsmashertools.helpers.argumentenforcer.enforcetypes
 @api
 def mask(
-        output : starsmashertools.lib.output.Output,
+        output : 'starsmashertools.lib.output.Output',
         mask : np.ndarray | list | tuple,
 ):
     """
@@ -470,6 +494,7 @@ def interpolate(
         ``ValueError`` if the input time is out of bounds of the interpolation.
     """
     import starsmashertools.math
+    import starsmashertools.lib.units
     import numpy as np
     
     if len(outputs) < 2:
@@ -788,9 +813,6 @@ try: del metadata
 except: pass
 
 try: del util
-except: pass
-
-try: del starsmashertools
 except: pass
 
 try: del os # The most terrifying syntax...

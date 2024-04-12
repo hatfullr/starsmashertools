@@ -40,10 +40,10 @@ class TestRelaxation(basetest.BaseTest):
         output = self.simulation.get_output(0)
         Ebind = self.simulation.get_binding_energy(output)
         self.assertTrue(isinstance(Ebind, starsmashertools.lib.units.Unit))
-        self.assertEqual(5.463207228488362e+46, Ebind.value)
+        self.assertEqual(5.463534665652748e+46, Ebind.value)
         self.assertEqual(Ebind.label, 'cm*cm*g/s*s')
 
-        G = float(self.simulation.units.gravconst)
+        G = float(self.simulation.units.constants['G'])
 
         units = self.simulation.units
         IDs = np.arange(output['ntot'])

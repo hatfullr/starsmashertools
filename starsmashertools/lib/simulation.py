@@ -1303,7 +1303,39 @@ class Simulation(object):
                 result[key] = val[idx]
         
         return result
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def get_flux(
+            self,
+            outputs : starsmashertools.lib.output.Output | list | tuple | starsmashertools.lib.output.OutputIterator,
+            parallel : bool = True,
+            **kwargs
+    ):
+        import starsmashertools.lib.flux
+        import starsmashertools.helpers.asynchronous
         
+        if isinstance(outputs, starsmashertools.lib.output.Output):
+            return starsmashertools.lib.flux.get(outputs, **kwargs)
+        
+        if isinstance(outputs, (list, tuple)):
+            for i, output in enumerate(outputs):
+                if not isinstance(output, starsmashertools.lib.output.Output):
+                    raise TypeError("All elements of the given outputs iterable must be of type 'starsmashertools.lib.output.Output', but received '%s' at element %d" % (type(output).__name__, i))
+
+        if not parallel:
+            results = []
+            for output in outputs:
+                results += [starsmashertools.lib.flux.get(output, **kwargs)]
+            return results
+
+        if isinstance(outputs, starsmashertools.lib.output.OutputIterator):
+            outputs = outputs.tolist()
+        return starsmashertools.helpers.asynchronous.ParallelIterator(
+            starsmashertools.lib.flux.get,
+            [[output] for output in outputs],
+            kwargs = [kwargs],
+        )
 
 
     if has_matplotlib:

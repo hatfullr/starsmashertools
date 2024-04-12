@@ -128,6 +128,56 @@ class TestUnits(basetest.BaseTest):
         self.assertEqual(l.short, 'erg')
         self.assertEqual(l.long, 'cm*cm*g/s*s')
 
+        # Ordering of labels should not matter.
+        labels = [
+            starsmashertools.lib.units.Unit.Label('cm*s*g'),
+            starsmashertools.lib.units.Unit.Label('cm*g*s'),
+            starsmashertools.lib.units.Unit.Label('g*cm*s'),
+            starsmashertools.lib.units.Unit.Label('s*cm*g'),
+            starsmashertools.lib.units.Unit.Label('cm*s*g'),
+            starsmashertools.lib.units.Unit.Label('g*s*cm'),
+        ]
+        for label in labels:
+            self.assertEqual(label.long, 'cm*g*s')
+            for label2 in labels:
+                self.assertEqual(label, label2)
+
+    def test_conversions(self):
+        # Simple conversions
+        u = starsmashertools.lib.units.Unit(1, 's')
+        u.convert('min')
+        self.assertEqual(u.label, 's')
+        self.assertEqual(u.value, 1)
+        
+        u = u.convert('min')
+        self.assertEqual(u.label, 'min')
+        self.assertAlmostEqual(u.value, 1./60)
+        
+        u = u.convert('s')
+        self.assertEqual(u.label, 's')
+        self.assertAlmostEqual(u.value, 1)
+        
+        with self.assertRaises(TypeError):
+            u.convert(new_label = None, to = None)
+        
+        # A more complex conversion
+        u = starsmashertools.lib.units.Unit(1, 'cm/s')
+        u = u.convert('km/hr')
+        self.assertEqual(u.label, 'km/hr')
+        self.assertAlmostEqual(u.value, 1. / 1e5 * 3600)
+        
+        # Conversion of only specific units
+        u = starsmashertools.lib.units.Unit(1, 'cm*cm/g*s')
+        u = u.convert(to = ['km', 'hr'])
+        self.assertEqual(u.label, 'km*km/g*hr')
+        self.assertAlmostEqual(u.value, (1/1e5) * (1/1e5) / (1/3600))
+
+        # Lsun conversion
+        u = starsmashertools.lib.units.Unit(1, 'Lsun')
+        base = u.get_base()
+        self.assertEqual(base.label, 'cm*cm*g/s*s*s')
+        self.assertEqual(u.get_base().value, starsmashertools.lib.units.constants['Lsun'])
+    
     def test_integers(self):
         u = starsmashertools.lib.units.Unit(1, 's')
 
@@ -273,7 +323,7 @@ class TestUnits(basetest.BaseTest):
         u = np.sqrt(u)
         self.assertEqual(u.label, 's')
         self.assertAlmostEqual(float(u), np.sqrt(expected))
-        
+
 
     def test_units(self):
         import starsmashertools.helpers.readonlydict

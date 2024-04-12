@@ -1,6 +1,5 @@
 # Included here are useful common functions
 import numpy as np
-import starsmashertools.lib.units
 from starsmashertools.helpers.apidecorator import api
 
 # Given the mass of a collection of particles and coordinates in args, return
@@ -24,7 +23,8 @@ def center_of_particles(*args):
 
 @api
 def period(m1,m2,separation):
-    G = float(starsmashertools.lib.units.gravconst)
+    import starsmashertools.lib.units
+    G = float(starsmashertools.lib.units.constants['G'])
     return np.sqrt(4 * np.pi**2 / (G * (m1 + m2)) * separation**3)
 
 

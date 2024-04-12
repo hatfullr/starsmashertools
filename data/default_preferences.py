@@ -250,6 +250,13 @@ defaults = {
                 'conversions' : [
                     ['m' , 1e2],
                     ['km', 1e5],
+                    ['Rsun', 6.9599e10],
+                ],
+            },
+            {
+                'base' : 'g',
+                'conversions' : [
+                    ['Msun', 1.9891e33],
                 ],
             },
             {
@@ -259,6 +266,13 @@ defaults = {
                     ['hr' , 3600],
                     ['day', 3600*24],
                     ['yr' , 3600*24*365.25],
+                ],
+            },
+            {
+                'base' : 'cm*cm*g/s*s*s',
+                'conversions' : [
+                    # Comes from 'constants' in lib/units.py
+                    ['Lsun', 3.828e33],
                 ],
             },
         ],
@@ -271,4 +285,46 @@ defaults = {
         ],
     },
 # ------------------------------------------------------------------------------
+    # Settings for obtaining the radiative flux of output files which originate
+    # from simulations that use radiative cooling in Hatfull et al. (in prep).
+    'Flux' : {
+        # Image
+        'resolution' : [400, 400],
+        'theta' : 0, # Viewing angle (polar)
+        'phi' : 0,   # Viewing angle (azimuthal)
+        'fluffy' : False,
+        'rays' : True,
+
+        # Limits
+        # Flux contributions are not considered beyond this optical depth.
+        'tau_s' : 20.,
+        # Particles with tau < tau_skip are ignored entirely.
+        'tau_skip' : 1.e-5,
+        # Particles with Teff <= teff_cut are excluded in surf_br_v.
+        'teff_cut' : 3500.,
+
+        # Dust
+        # Give a value in cm^2/g, or None to turn off artificial dust.
+        'dust_opacity' : 1,
+        # The temperature range in which to use artificial dust. Give None for
+        # either value to turn off the lower/upper limits.
+        'dust_Trange' : [100, 1000],
+
+        # Spectrum
+        'spectrum_size' : 1000,
+        'lmax' : 3000, # nm, stand for 1000K, no resolving below
+        'dl_il' : 3., # nm resolution of boxes
+        'dl' : 10,
+        'nbox' : 10,
+        'nboxh' : 5,
+        'l_range' : [10, 3000],
+        'factor1' : 1.191045e-05, # for the Plank function integrations
+        'factor2' : 1.438728e+00,
+        'filters' : {
+            # Use None to turn off lower/upper bounds
+            'V' : [500, 600], # nm
+            'R' : [590, 730], # nm
+            'I' : [720, 880], # nm
+        },
+    },
 }

@@ -1,4 +1,6 @@
-import numpy as np
+"""
+See the bottom of this file for definitions of constants.
+"""
 import starsmashertools.helpers.readonlydict
 import starsmashertools.helpers.argumentenforcer
 from starsmashertools.helpers.apidecorator import api
@@ -47,12 +49,15 @@ class Unit(object):
         '__lt__'       : [float, int, 'Unit', np.generic],
         '__le__'       : [float, int, 'Unit', np.generic],
     }
-
+    
+    # Extra conversions which can be 'registered' to
+    conversions = []
+    
     class InvalidLabelError(Exception, object): pass
     class InvalidTypeConversionError(Exception, object): pass
     
     @api
-    def __init__(self, *args, base=['cm', 'g', 's']):
+    def __init__(self, *args, base = ['cm', 'g', 's', 'K']):
         import starsmashertools.helpers.argumentenforcer
 
         # Fix the string values in operation_types above
@@ -84,13 +89,21 @@ class Unit(object):
             self.label = Unit.Label(label, self.base)
         else: self.label = label
         self.value = value
-        
+
+    @staticmethod
+    def get_conversions():
+        import starsmashertools
+        conversions = starsmashertools.preferences.get(
+            'Units', 'unit conversions', throw_error = False,
+        )
+        if conversions is None: conversions = []
+        return Unit.conversions + conversions
 
     # Decide on units that give the cleanest value
     @api
-    def auto(self, threshold=100, conversions=None):
-        import starsmashertools
+    def auto(self, threshold=100, conversions = None):
         import copy
+        import starsmashertools
         
         starsmashertools.helpers.argumentenforcer.enforcetypes({
             'threshold' : [float, int],
@@ -99,10 +112,10 @@ class Unit(object):
         
         # Get all the available conversions
         if conversions is None:
-            conversions = starsmashertools.preferences.get('Units', 'unit conversions')
-        if conversions is None: return self
+            conversions = Unit.get_conversions()
+            if not conversions: return self
         
-        base = self.get_base(conversions=conversions)
+        base = self.get_base(conversions = conversions)
         if float(base) < threshold: return base
 
         # Get a list of all the possible conversions
@@ -129,23 +142,23 @@ class Unit(object):
         return possible_results[0]
 
     @api
-    def get_conversion_factor(self, new_label, conversions=None):
-        import starsmashertools
-        
+    def get_conversion_factor(self, new_label, conversions = None):
         # Convert this Unit into a compatible new Unit
         starsmashertools.helpers.argumentenforcer.enforcetypes({
             'new_label' : [str, Unit.Label],
         })
         if isinstance(new_label, str): new_label = Unit.Label(new_label)
+        
         if conversions is None:
-            conversions = starsmashertools.preferences.get('Units', 'unit conversions', throw_error=True)
-
+            conversions = Unit.get_conversions()
+            if not conversions: conversions = None
+        
         # In the comments we consider the case of converting '10 km/hr' to
         # 'm/min', where our current unit is 'km/hr' and the new_label='m/min'.
         # The correct answer is '166.666667 m/min'.
 
         # Convert from '10 km/hr' to '277.7778 cm/s'
-        base = self.get_base(conversions=conversions)
+        base = self.get_base(conversions = conversions)
         
         # Search the conversions to get from '277.7778 cm/s' to '166.6667 m/min'
         # First we work with the left-side labels and then we work with the
@@ -187,26 +200,39 @@ class Unit(object):
         return factor
     
     @api
-    def convert(self, new_label, **kwargs):
+    def convert(
+            self,
+            new : str | type(None) = None,
+            to : list | tuple | type(None) = None,
+            **kwargs
+    ):
         """
-        Return a copy of this Unit converted to a new unit.
-
-        Parameters
-        ----------
-        new_label : str, Unit.Label
-            The label to change to. If it is a `Unit.Label` then it is converted
-            to a `str`.
+        Return a copy of this :class:`~.Unit` converted to a new unit.
         
         Other Parameters
-        ----------------
+        ----------
+        new : str, :class:`~.Unit.Label`, :class:`~.Unit`, None, default = None
+            If a :py:class:`str` is given it will be converted to a 
+            :class:`~.Unit.Label`. If a :class:`~.Unit` is given, it must have
+            the same dimensions as this Unit. If `None`, you must specify 
+            keyword ``to`` (see below).
+        
+        to : list, tuple, :class:`~.Units`, None, default = None
+            An iterable of :py:class:`str` unit labels. For each given string, 
+            the :class:`~.Unit.Label` is searched for matches. Then, each match
+            is converted to the base units (cgs) before being converted into the
+            unit of the given string. If `None`, you must specify keyword 
+            ``new`` (see above).
+        
         **kwargs
-            Extra keywords to pass to Unit.get_conversion_factor
-
+            Keywords arguments are passed directly to 
+            :meth:`~.Unit.get_conversion_factor`.
+        
         Returns
         -------
-        Unit
+        :class:`~.Unit`
             The newly converted unit.
-
+        
         Examples
         --------
         This example converts 1 cm/s to 1 km/hr::
@@ -214,30 +240,75 @@ class Unit(object):
             >>> unit = Unit(1, 'cm/s')
             >>> unit.convert('km/hr')
             Unit(0.036, km/hr)
-
-
+        
+        
         See Also
         --------
-        `.get_conversion_factor`
+        :meth:`~.get_conversion_factor`
         """
-        starsmashertools.helpers.argumentenforcer.enforcetypes({
-            'new_label' : [str, Unit.Label],
-        })
-        if isinstance(new_label, str): new_label = Unit.Label(new_label)
-        if not self.label.is_compatible(new_label):
-            raise Unit.InvalidLabelError("Cannot convert unit because labels '%s' and '%s' are incompatible" % (self.label, new_label))
-        #if isinstance(new_label, Unit.Label): new_label = str(new_label)
-        factor = self.get_conversion_factor(new_label, **kwargs)
-        return Unit(self.value * factor, new_label)
+        import copy
+        import starsmashertools
+        
+        if to is None:
+            starsmashertools.helpers.argumentenforcer.enforcetypes({
+                'new' : [str, Unit.Label, Unit],
+            })
+        elif new is None:
+            starsmashertools.helpers.argumentenforcer.enforcetypes({
+                'to' : [list, tuple],
+            })
+            for t in to:
+                if not isinstance(t, str):
+                    raise TypeError("Keyword argument 'to' must contain only str types. Received '%s' type." % type(t).__name__)
+        else:
+            raise TypeError("One of keywords 'new' or 'to' must be None")
+        if to is None and new is None:
+            raise TypeError("One of keywords 'new' or 'to' must not be None")
+        
+        if new is None:
+            conversions = Unit.get_conversions()
+            all_bases = [c['base'] for c in conversions]
+            all_names = [[c[0] for c in conversion['conversions']] for conversion in conversions]
+            base = self.get_base()
+            new = copy.deepcopy(base.label)
+            for conversion in conversions:
+                # If the base label doesn't contain this base name ('cm', 'g',
+                # 's', etc.), then we can skip it.
+                bname = conversion['base']
+                if bname not in base.label.left + base.label.right: continue
+                
+                for name, value in conversion['conversions']:
+                    if name not in to: continue
+                    
+                    # We get here if the conversion name is included in the "to"
+                    # list. Now we need to replace the corresponding base name
+                    # in the new label with the value in the "to" list.
+                    for i, item in enumerate(new.left):
+                        if item != bname: continue
+                        new.left[i] = name
+                    for i, item in enumerate(new.right):
+                        if item != bname: continue
+                        new.right[i] = name
+        
+        if isinstance(new, str): new = Unit.Label(new)
+        elif isinstance(new, Unit): label = new.label
+        else: label = new
+        if not self.label.is_compatible(label):
+            raise Unit.InvalidLabelError("Cannot convert unit because labels '%s' and '%s' are incompatible" % (self.label, label))
+        factor = self.get_conversion_factor(label, **kwargs)
+        if isinstance(new, Unit): factor /= new.value
+        return Unit(self.value * factor, label)
+                    
+                
 
     # Returns a copy of this object in its base units
     @api
-    def get_base(self, conversions=None):
-        import starsmashertools
+    def get_base(self, conversions = None):
         import copy
+        import starsmashertools
         
         if conversions is None:
-            conversions = starsmashertools.preferences.get('Units', 'unit conversions', throw_error=True)
+            conversions = Unit.get_conversions()
         
         ret = copy.deepcopy(self)
         for conversion in conversions:
@@ -468,12 +539,10 @@ class Unit(object):
         #       repeated in a Label and all symbols after it are considered
         #       division.
         #    2. All labels must contain only units 'cm', 'g', 's', or '1' in the
-        #       long forms, and can have only operations '*' and '/'. Each of
-        #       'cm', 'g', and 's' must be written in that order ('cgs') on
-        #       other sides of the '/' symbol if there is one. The value '1' can
-        #       only be written on the
-        #       left side of the '/' if there are no other symbols there.
-        #    3. Only multiplication and division is allowed on Labels.
+        #       long forms, and can have only operations '*' and '/'. The value
+        #       '1' can only be written on the left side of the '/' if there are
+        #       no other symbols there.
+        #    3. Only *, /, and ** are allowed on Labels.
         #    4. Whenever a long form is changed, it is then simplified. For
         #       example, if Label a has long form 'cm/s' and Label b has 's'
         #       then multiplying a with b gives 'cm*s/s'. Then we count the
@@ -490,7 +559,7 @@ class Unit(object):
         #       and 2 'g' on the left side of the '/' and for 2 's' on the right
         #       side. If we find enough of such symbols then we remove those
         #       symbols and insert 'erg' on the left-most side, 'erg * cm'.
-        def __init__(self, value, base=['cm','g','s']):
+        def __init__(self, value, base = ['cm','g','s','K']):
             self.base = base
             self.left = []
             self.right = []
@@ -511,17 +580,28 @@ class Unit(object):
             if lhs: lhs = lhs.split('*')
             if rhs: rhs = rhs.split('*')
             return lhs, rhs
+
+        @staticmethod
+        def get_conversions():
+            import starsmashertools
+            
+            conversions = starsmashertools.preferences.get(
+                'Units', 'label conversions', throw_error = False,
+            )
+            if conversions is not None: return conversions
+            return []
+        
         
         @property
         def short(self):
             import copy
-            import starsmashertools
             
             new_left = copy.deepcopy(self.left)
             new_right = copy.deepcopy(self.right)
             
             # Search for unit conversions and then apply those conversions
-            conversions = starsmashertools.preferences.get('Units', 'label conversions')
+            conversions = Unit.Label.get_conversions()
+            
             if conversions is not None:
                 for short, values in conversions:
                     short_lhs, short_rhs = Unit.Label.split(short)
@@ -573,13 +653,16 @@ class Unit(object):
             Label.
             """
             import copy
+            import starsmashertools
             starsmashertools.helpers.argumentenforcer.enforcetypes({
                 'other' : [str, Unit.Label],
             })
             if isinstance(other, str): other = Unit.Label(other)
             if len(self.left) != len(other.left): return False
             if len(self.right) != len(other.right): return False
-            conversions = starsmashertools.preferences.get("Units", "unit conversions")
+            conversions = starsmashertools.preferences.get(
+                'Units', 'unit conversions',
+            )
             cpy = copy.deepcopy(self)
             othercpy = copy.deepcopy(other)
             
@@ -631,7 +714,7 @@ class Unit(object):
             self.left, self.right = Unit.Label.split(string)
 
             # Break down conversions as needed
-            conversions = starsmashertools.preferences.get('Units', 'label conversions')
+            conversions = Unit.Label.get_conversions()
             if conversions is not None:
                 for short, value in conversions:
                     lhs, rhs = Unit.Label.split(value)
@@ -675,14 +758,18 @@ class Unit(object):
         def __repr__(self): return self.long
 
         def __eq__(self, other):
-            starsmashertools.helpers.argumentenforcer.enforcetypes({'other' : [Unit.Label, str]})
+            starsmashertools.helpers.argumentenforcer.enforcetypes(
+                {'other' : [Unit.Label, str]}
+            )
             if isinstance(other, Unit.Label):
                 return self.long == other.long
             return self.long == other
 
         def __mul__(self, other):
             import copy
-            starsmashertools.helpers.argumentenforcer.enforcetypes({'other' : [Unit.Label, int]})
+            starsmashertools.helpers.argumentenforcer.enforcetypes(
+                {'other' : [Unit.Label, int]}
+            )
             ret = copy.deepcopy(self)
             if isinstance(other, Unit.Label):
                 if self.base != other.base:
@@ -701,7 +788,9 @@ class Unit(object):
 
         def __truediv__(self, other):
             import copy
-            starsmashertools.helpers.argumentenforcer.enforcetypes({'other' : [Unit.Label]})
+            starsmashertools.helpers.argumentenforcer.enforcetypes(
+                {'other' : [Unit.Label]}
+            )
             if self.base != other.base:
                 raise Exception("Cannot combine Unit.Labels of different bases: '%s' and '%s'" % (str(self.base), str(other.base)))
             ret = copy.deepcopy(self)
@@ -716,7 +805,9 @@ class Unit(object):
         def __rtruediv__(self, other):
             import copy
             
-            starsmashertools.helpers.argumentenforcer.enforcetypes({'other' : [Unit.Label, int]})
+            starsmashertools.helpers.argumentenforcer.enforcetypes(
+                {'other' : [Unit.Label, int]}
+            )
             if isinstance(other, int) and other != 1:
                 raise Exception("When dividing an 'int' by a 'Unit.Label', the int must be equal to '1', not '%d'" % other)
 
@@ -735,7 +826,9 @@ class Unit(object):
             return ret
         
         def __pow__(self, value):
-            starsmashertools.helpers.argumentenforcer.enforcetypes({'value' : [int, float]})
+            starsmashertools.helpers.argumentenforcer.enforcetypes(
+                {'value' : [int, float]}
+            )
             ret = ""
             if isinstance(value, float):
                 num, denom = value.as_integer_ratio()
@@ -771,8 +864,7 @@ class Unit(object):
 
 
 
-# This comes from src/starsmasher.h
-gravconst = Unit(6.67390e-08, 'cm*cm*cm/g*s*s')
+
 
 
 
@@ -781,22 +873,27 @@ gravconst = Unit(6.67390e-08, 'cm*cm*cm/g*s*s')
         
 
 class Units(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
+    """
+    This class represents the units which a :class:`~.lib.simulation.Simulation`
+    uses, as set in the StarSmasher code.
+    """
+    
     @api
     def __init__(self, simulation):
         import starsmashertools
+        import starsmashertools.lib.simulation
+        import copy
         
         # Make sure the given simulation argument is of the right type
-        import starsmashertools.lib.simulation
         starsmashertools.helpers.argumentenforcer.enforcetypes({
-            'simulation' : starsmashertools.lib.simulation.Simulation,
+            'simulation' : [str, starsmashertools.lib.simulation.Simulation],
         })
+        if isinstance(simulation, str):
+            simulation = starsmashertools.get_simulation(simulation)
         
-        self.gravconst = gravconst
         self.simulation = simulation
+        self.constants = copy.deepcopy(constants)
         
-        #self.length = simulation['runit']
-        #self.mass = simulation['munit']
-
         obj = {
             # Header units
             'hco' : self.length,
@@ -813,9 +910,7 @@ class Units(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
             'displacex' : self.length,
             'displacey' : self.length,
             'displacez' : self.length,
-
             
-
             # Output file units
             'x' : self.length,
             'y' : self.length,
@@ -837,14 +932,12 @@ class Units(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
             'divv' : self.velocity / self.length, # If this is divergence of velocity
             'ueq' : self.specificenergy,
             'tthermal' : self.time,
-
-
             
             # Extra units. You can add your own here if you want more units, but
             # it's probably best to use the preferences.py file instead.
             'popacity' : self.opacity,
             'uraddot' : self.specificluminosity,
-            'temperature' : 1,
+            'temperatures' : self.temperature,
             'tau' : 1,
             'dEemergdt' : self.luminosity,
             'dEdiffdt' : self.luminosity,
@@ -867,6 +960,22 @@ class Units(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
         
         super(Units, self).__init__(obj)
 
+    # Pickling stuff:
+    def __reduce__(self):
+        # https://docs.python.org/3/library/pickle.html#object.__reduce__
+        return (Units, (self.simulation.directory,),self.__getstate__(),)
+    
+    def __setstate__(self, state):
+        self.__init__(state['simulation directory'])
+        self.constants = state['constants']
+    
+    def __getstate__(self):
+        return {
+            'simulation directory' : self.simulation.directory,
+            'constants' : self.constants,
+        }
+    
+    # Simulation units
     @property
     def length(self): return Unit(self.simulation['runit'], 'cm')
 
@@ -877,8 +986,8 @@ class Units(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
     def temperature(self): return Unit(1., 'K')
         
     @property
-    def time(self): return (self.length**3 / (gravconst * self.mass))**0.5
-
+    def time(self): return (self.length**3 / (self.constants['G'] * self.mass))**0.5
+    
     @property
     def frequency(self): return 1. / self.time
 
@@ -889,7 +998,7 @@ class Units(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
     def volume(self): return self.area * self.length
     
     @property
-    def energy(self): return gravconst * self.mass * self.mass / self.length
+    def energy(self): return self.constants['G'] * self.mass * self.mass / self.length
 
     @property
     def velocity(self): return self.length / self.time
@@ -921,20 +1030,51 @@ class Units(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
     @property
     def specificluminosity(self): return self.luminosity / self.mass
 
-    @property
-    def c(self): return 299792458 * 100 / self.length * self.time
 
-    @property
-    def planck(self): return 6.62607015e-27 / (self.energy * self.time)
 
-    @property
-    def planck_reduced(self): return self.planck / (2 * np.pi)
 
-    @property
-    def boltzmann(self): return 1.380649e-16 / self.energy * self.temperature
+# A few fundamental physical constants are defind here. Derived constants which
+# rely on these constants are defined in the Units class.
+#
+# NOTE: Each Units class has its own version of this dictionary, automatically
+#       converted to cgs where needed.
+#
+
+constants = {
+    # The following are from NIST Database 121. Last Update to Data Content: May
+    # 2019. https://physics.nist.gov/cuu/Constants/index.html
     
-    @property
-    def sigmaSB(self): return 2 * np.pi**5 * self.boltzmann**4 / (15 * self.c**2 * self.planck**3)
+    # Gravitational constant
+    'G' : Unit(
+        6.67430e-8,      # Standard uncertainty = 0.00015 x 10-11 m^3 kg^-1 s^-2
+        'cm*cm*cm/g*s*s',
+    ),
     
-    @property
-    def a(self): return 4 * self.sigmaSB / self.c
+    # Planck constant
+    'planck' : Unit(
+        6.62607015e-27,  # Standard uncertainty = (exact)
+        'cm*cm*g/s',     # erg*s
+    ),
+    
+    # Speed of light
+    'c' : Unit(
+        2.99792458e10,   # Standard uncertainty = (exact)
+        'cm/s',
+    ),
+    
+    # Boltzmann constant
+    'boltzmann' : Unit(
+        1.380649e-16,    # Standard uncertainty = (exact)
+        'cm*cm*g/s*s*K', # erg/K
+    ),
+
+    # The following is from IAU 2015 Resolution B3 (10.48550/arXiv.1510.07674)
+    'Lsun' : Unit(
+        3.828e33,
+        'cm*cm*g/s*s*s', # erg/s
+    ),
+}
+constants['sigmaSB'] = 2 * np.pi**5 * constants['boltzmann']**4 / \
+    (15 * constants['c']**2 * constants['planck']**3)
+constants['a'] = 4 * constants['sigmaSB'] / constants['c']
+

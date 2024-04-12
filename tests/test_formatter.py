@@ -6,8 +6,8 @@ expected = """Output('out000.sph')
       ntot =            1038       nnopt =              27      nrelax =               1               
       nout =               0         nit =               1         ngr =               3               
   ncooling =               0        erad =   0.0000000E+00 erg/g                                       
-         t =   1.2681773E-03 day           dt =   8.4564990E-04 day        dtout =   4.4267382E+00 hr  
-        tf =   1.8444743E+01 day       trelax =   2.6560429E+31 min   tjumpahead =   2.6560429E+31 min 
+         t =   1.2681393E-03 day           dt =   8.4562456E-04 day        dtout =   4.4266056E+00 hr  
+        tf =   1.8444190E+01 day       trelax =   2.6559634E+31 min   tjumpahead =   2.6559634E+31 min 
 
      alpha =   1.0000000E+00
       beta =   2.0000000E+00

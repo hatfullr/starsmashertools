@@ -192,7 +192,7 @@ class Relaxation(starsmashertools.lib.simulation.Simulation, object):
         r = np.sqrt(r2[keep]) 
         mr = mr[keep]
 
-        G = float(self.units.gravconst)
+        G = float(starsmashertools.lib.units.constants['G'])
         
         ret = np.sum((G * mr / r - u) * m)
         return starsmashertools.lib.units.Unit(ret, self.units.energy.label)
@@ -300,11 +300,13 @@ class Relaxation(starsmashertools.lib.simulation.Simulation, object):
         # energy comparison, and the specific gravitational potential
         # energy comparison.
         def energy_comparison(self, output, minterest=None):
+            import starsmashertools.lib.units
+            
             if not isinstance(output.simulation, starsmashertools.lib.relaxation.Relaxation):
                 raise TypeError("Can only do an energy comparison on output files from a Relaxation. Received an output file from a '%s'." % (type(outputfile.simulation).__name__))
 
 
-            G = starsmashertools.lib.units.gravconst
+            G = starsmashertools.lib.units.constants['G']
             rsun = output.simulation.units.length
             msun = output.simulation.units.mass
 
