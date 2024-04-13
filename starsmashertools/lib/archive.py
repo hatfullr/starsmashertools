@@ -1,3 +1,4 @@
+import starsmashertools.preferences
 import starsmashertools.helpers.argumentenforcer
 from starsmashertools.helpers.apidecorator import api
 from starsmashertools.helpers.clidecorator import cli, clioptions
@@ -361,7 +362,7 @@ def REPLACE_NEQ(
     return new_value.value != old_value.value
 
         
-
+@starsmashertools.preferences.use
 class Archive(object):
     """
     An Archive object stores :class:`ArchiveValue`s in a single file for quick 
@@ -439,14 +440,12 @@ class Archive(object):
         replacement_flags : list, tuple, None, default = None
             A list of flags to use to determine if a replacement should happen
             in the archive whenever a new :class:`ArchiveValue` is about to be
-            written to a pre-existing identifier. If `None` then the default
-            from :py:property:`starsmashertools.preferences.defaults` under 
-            'Archive' and 'replacement flags' will be used.
-            Each element of in `replacement_flags` must be a function which
-            accepts two arguments, each is :class:`~.ArchiveValue`. The first
-            argument is the old value and the second the new value. Each 
-            function must return a bool-like value which will be evaluated by
-            an "if" statement.
+            written to a pre-existing identifier. If `None` then the user 
+            preferences are used. Each element of in `replacement_flags` must be
+            a function which accepts two arguments, each is 
+            :class:`~.ArchiveValue`. The first argument is the old value and the
+            second the new value. Each function must return a bool-like value 
+            which will be evaluated by an "if" statement.
 
         auto_save : bool, default = True
             If `True`, values will automatically be written to the file on the
@@ -475,20 +474,15 @@ class Archive(object):
             current state of the archive.
         """
         import starsmashertools.helpers.path
-        import starsmashertools
         import starsmashertools.helpers.asynchronous
 
         self._previous_mtime = None
         
         if replacement_flags is None:
-            replacement_flags = starsmashertools.preferences.get(
-                'Archive', 'replacement flags', throw_error = True,
-            )
-
+            replacement_flags = self.preferences.get('replacement flags')
+        
         if max_buffer_size is None:
-            max_buffer_size = starsmashertools.preferences.get(
-                'Archive', 'max buffer size', throw_error = True,
-            )
+            max_buffer_size = self.preferences.get('max buffer size')
         
         self.filename = filename
         self.replacement_flags = replacement_flags
@@ -772,7 +766,6 @@ class Archive(object):
         return ArchiveValue.deserialize(key, value)
     
     def _check_and_update_format(self):
-        import starsmashertools
         import starsmashertools.helpers.warnings
         import starsmashertools.helpers.path
 
@@ -803,11 +796,7 @@ class Archive(object):
             should_update = True
             old_version = info['__version__']
 
-        user_allowed = starsmashertools.preferences.get(
-            'Archive',
-            'auto update format',
-            throw_error = True,
-        )
+        user_allowed = self.preferences.get('auto update format')
 
         if old_version is not None:
             message = "%s was written by starsmashertools version '%s', but the current version is '%s'. This Archive will be updated to the latest format."
@@ -1203,7 +1192,7 @@ class Archive(object):
 
 
 
-
+@starsmashertools.preferences.use
 class SimulationArchive(Archive, object):
     """
     When working with data from a :class:`~.lib.simulation.Simulation`, it is
@@ -1245,14 +1234,9 @@ class SimulationArchive(Archive, object):
             directory.
         """
         import starsmashertools.helpers.path
-        import starsmashertools
-
-        basename = starsmashertools.preferences.get(
-            'Simulation',
-            'archive filename',
-            throw_error = True,
-        )
-
+        
+        basename = self.preferences.get('filename')
+        
         if isinstance(simulation, str):
             if starsmashertools.helpers.path.isdir(simulation):
                 # It's a simulation directory

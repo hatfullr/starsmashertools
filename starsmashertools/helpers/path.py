@@ -267,7 +267,7 @@ def find_duplicate_file(filepath, search_directory, pattern="out*.sph", throw_er
 
 
 def get_src(directory, throw_error=False):
-    import starsmashertools
+    import starsmashertools.lib.simulation
     
     if not isdir(directory):
         raise FileNotFoundError("Directory does not exist: '%s'" % str(directory))
@@ -276,8 +276,10 @@ def get_src(directory, throw_error=False):
         raise Exception("A search for the StarSmasher source directory extended to the root directory and thus we failed to find the source directory. Please make sure there is a copy of the StarSmasher source code in your simulation directory.")
     #print("get_src",directory)
     directory = realpath(directory)
-    
-    src_identifiers = starsmashertools.preferences.get('Simulation', 'src identifiers', throw_error=True)
+
+    src_identifiers = starsmashertools.lib.simulation.Simulation.preferences.get(
+        'src identifiers',
+    )
 
     if starsmashertools.helpers.ssh.isRemote(directory):
         address, remote_path = starsmashertools.helpers.ssh.split_address(directory)

@@ -1,3 +1,4 @@
+import starsmashertools.preferences
 import starsmashertools.helpers.argumentenforcer
 import starsmashertools.helpers.string
 import starsmashertools.helpers.path
@@ -23,6 +24,7 @@ for v in modes.values(): all_modes += v
 
 class FileModeError(Exception, object): pass
 
+@starsmashertools.preferences.use
 class Lock(object):
     """
     If a file is being read, writing is not allowed.
@@ -41,9 +43,7 @@ class Lock(object):
         import copy
         
         if timeout is None:
-            timeout = starsmashertools.preferences.get(
-                'IO', 'Lock', throw_error = True,
-            ).get('timeout', float('inf'))
+            timeout = self.preferences.get('timeout')
         
         self.path = starsmashertools.helpers.path.realpath(path)
         self.mode = mode

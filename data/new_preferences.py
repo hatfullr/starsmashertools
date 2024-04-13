@@ -1,26 +1,18 @@
 """
-This file can be overwritten whenever starsmashertools is updated. You can 
-create a copy of this file and call it 'preferences.py' in the same directory to
-make your own preferences that will not be overwritten. The 'preferences.py' 
-file must be in the same directory as 'default_preferences.py' and it is your 
-responsibility to update it whenever 'default_preferences.py' is updated. Values
-that are missing from 'preferences.py' will be skipped and the corresponding
-values from this file will be used instead.
+This file is overwritten whenever starsmashertools is updated. You can create a
+copy of this file and call it 'preferences.py' in the same directory to make
+your own preferences that will not be overwritten. The 'preferences.py' file
+must be in the same directory as 'default_preferences.py' and it is your 
+responsibility to update it whenever 'default_preferences.py' is updated.
 
-To completely exclude default values, in your 'preferences.py' file, you can do:
-
-    default = {...}
-    exclude = [
-        'lib.units.Unit.conversions.Msun
-    ]
-
-For example. Each '.' is a delimiter for the keys to follow in the dict.
+If your 'preferences.py' file is missing a preference required by
+starsmashertools, an error will be raised saying "Missing field [X] in [Y] in 
+preferences.py". Open 'default_preferences.py' and find key X in the defaults
+dictionary. Copy its value ("Y") into your 'preferences.py' to update your file.
 """
 
 import os
 import numpy as np
-from starsmashertools.lib.archive import REPLACE_OLD, REPLACE_NEQ
-
 
 default = {
     
@@ -205,7 +197,7 @@ default = {
 
                 'output files' : 'out*.sph',
 
-                'search directory' : '/',
+                'search directory' : '~/data/',
 
                 # Used to identify the directories which contain the StarSmasher
                 # source code
@@ -235,34 +227,53 @@ default = {
         }, # 'simulation'
 
         'units' : {
+            'Label' : {
+                # Add items to this list to create additional abbreviations for
+                # unit labels. The conversions are queried in-order from top to
+                # bottom. See the Unit.Label class in
+                # starsmashertools/lib/units.py for details.
+                'conversions' : [
+                    ['erg', 'cm*cm*g/s*s'], # Don't remove this
+                    ['erg/g', 'cm*cm/s*s'], # Don't remove this
+                ],
+            }, # 'Label'
             'Unit' : {
                 # Items in this dict decide how units are converted from one to
                 # another.
-                'conversions' : {
-                    'm' : '1e2 cm',
-                    'km' : '1e5 cm',
-                    'Rsun' : '6.9599e10 cm',
-                    'Msun' : '1.9891e33 g',
-                    'min' : '60 s',
-                    'hr' : '3600 s',
-                    'day' : '86400 s',
-                    'yr' : '31557600 s',
-                    # Comes from 'constants' in lib/units.py
-                    'Lsun' : '3.828e33 cm*cm*g/s*s*s',
-                }, # 'conversions'
-                'Label' : {
-                    # Add items to this list to create additional abbreviations
-                    # for unit labels. The conversions are queried in-order from
-                    # top to bottom. See the Unit.Label class in
-                    # starsmashertools/lib/units.py for details.
-                    'conversions' : {
-                        'cm*cm*g/s*s' : 'erg', # Don't remove this
-                        'cm*cm/s*s' : 'erg/g', # Don't remove this
-                        #['erg', 'cm*cm*g/s*s'], # Don't remove this
-                        #['erg/g', 'cm*cm/s*s'], # Don't remove this
+                'conversions' : [
+                    {
+                        'base' : 'cm',
+                        'conversions' : [
+                            ['m' , 1e2],
+                            ['km', 1e5],
+                            ['Rsun', 6.9599e10],
+                        ],
                     },
-                }, # 'Label'
+                    {
+                        'base' : 'g',
+                        'conversions' : [
+                            ['Msun', 1.9891e33],
+                        ],
+                    },
+                    {
+                        'base' : 's',
+                        'conversions' : [
+                            ['min', 60],
+                            ['hr' , 3600],
+                            ['day', 3600*24],
+                            ['yr' , 3600*24*365.25],
+                        ],
+                    },
+                    {
+                        'base' : 'cm*cm*g/s*s*s',
+                        'conversions' : [
+                            # Comes from 'constants' in lib/units.py
+                            ['Lsun', 3.828e33],
+                        ],
+                    },
+                ],
             }, # 'Unit'
+
             # Note that currently the setting of values 'gram', 'sec', 'cm', and
             # 'kelvin' in src/starsmasher.h is not supported. We expect all
             # these values to equal 1.d0 for now.

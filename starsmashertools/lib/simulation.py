@@ -1,6 +1,7 @@
 # These need to be imported at the top because they are used in parts of
 # parameter annotations. Everything else should be loaded dynamically to avoid
 # errors.
+import starsmashertools.preferences
 import starsmashertools.lib.units
 import starsmashertools.helpers.argumentenforcer
 from starsmashertools.helpers.apidecorator import api
@@ -14,6 +15,7 @@ try:
 except ImportError:
     has_matplotlib = False
 
+@starsmashertools.preferences.use
 class Simulation(object):
     ############################################################################
     # private attributes
@@ -173,11 +175,8 @@ class Simulation(object):
 
     class JoinError(Exception):
         def __init__(self, simulation, message=None):
-            import starsmashertools
             if message is None:
-                start_file = starsmashertools.preferences.get(
-                    'Simulation', 'start file', throw_error = True,
-                )
+                start_file = Simulation.preferences.get('start file')
                 message = "Cannot join simulation '{sim1:s}' and '{sim2:s}' because neither simulations were started from one another. That is, '{start_file:s}' in one or both of these simulations does not originate from an output file in one of these simulations.".format(
                     sim1 = self.directory,
                     sim2 = simulation.directory,
@@ -240,16 +239,9 @@ class Simulation(object):
         return starsmashertools.helpers.compressiontask.CompressionTask.isCompressedFile(filename)
         
     @api
-    def get_search_directory(self, **kwargs):
+    def get_search_directory(self):
         """
-        Get the default search directory from
-        :py:property:`starsmashertools.preferences.defaults`.
-        
-        Other Parameters
-        ----------------
-        **kwargs
-            Keywords are passed directly to
-            :func:`starsmashertools.preferences.get`.
+        Get the default search directory from the preferences.
 
         Returns
         -------
@@ -257,13 +249,8 @@ class Simulation(object):
             The "realpath" (:func:`os.path.realpath`) of the default search
             directory.
         """
-        import starsmashertools
         import starsmashertools.helpers.path
-        search_directory = starsmashertools.preferences.get(
-            'Simulation',
-            'search directory',
-            **kwargs,
-        )
+        search_directory = self.preferences.get('search directory')
         return starsmashertools.helpers.path.realpath(search_directory)
     
     @api
@@ -506,7 +493,7 @@ class Simulation(object):
         """
         Return the path to the output file that this simulation started from,
         as identified by 'Simulation/start file' in 
-        :property:`~starsmashertools.preferences`. If this simulation doesn't
+        :py:mod:`~starsmashertools.preferences`. If this simulation doesn't
         have a file matching that name, instead return the first output file 
         this simulation produced. If this simulation has not produced any output
         files, a :py:class:`FileNotFoundError` is raised.
@@ -517,10 +504,7 @@ class Simulation(object):
             The path to the output file this simulation started from.
         """
         import starsmashertools.helpers.path
-        import starsmashertools
-        start_file_identifier = starsmashertools.preferences.get(
-            'Simulation', 'start file', throw_error = True,
-        )
+        start_file_identifier = self.preferences.get('start file')
         filename = self.get_file(start_file_identifier)
         if len(filename) != 1:
             outputfiles = self.get_outputfiles(include_joined = False)
@@ -612,15 +596,10 @@ class Simulation(object):
         --------
         :meth:`~.get_file`
         """
-        import starsmashertools
         import starsmashertools.helpers.path
         import filecmp
 
-        path = self.get_file(
-            starsmashertools.preferences.get(
-                'Simulation', 'start file', throw_error = True,
-            )
-        )
+        path = self.get_file(self.preferences.get('start file'))
         if len(path) != 1: return False
         path = path[0]
 
@@ -691,7 +670,7 @@ class Simulation(object):
         sph.input). Only the joined simulations will be checked for a file which
         is identical to this simulation's "restartrad.sph.orig" file (the actual
         name depends on the user's preferences, in 
-        :property:`~starsmashertools.preferences`).
+        :py:mod:`~starsmashertools.preferences`).
 
         For example, consider that simulation ``A`` produced output files 
         ``'A/out0000.sph'``, ``'A/out0001.sph'``, and ``'A/out0002.sph'``. Then,
@@ -721,16 +700,13 @@ class Simulation(object):
             A list of output file paths belonging to this simulation and any
             joined simulations, unsorted.
         """
-        import starsmashertools
         import starsmashertools.helpers.path
         import starsmashertools.helpers.midpoint
         import copy
         
         if pattern is None:
-            pattern = starsmashertools.preferences.get(
-                'Simulation', 'output files', throw_error=True,
-            )
-
+            pattern = self.preferences.get('output files')
+        
         # We always need to get our own files first
         matches = self.get_file(pattern)
 
@@ -836,8 +812,7 @@ class Simulation(object):
         
         patterns : list, None, default = None
             File name patterns to include in the compression. If `None`, uses 
-            the "state files" value in 
-            :py:property:`starsmashertools.preferences.defaults`.
+            the "state files" value in :py:mod:`starsmashertools.preferences`.
 
         recursive : bool, default = True
             If `True`, subdirectories are also searched for files matching the
@@ -862,17 +837,14 @@ class Simulation(object):
         --------
         :func:`decompress`
         :func:`~.helpers.compressiontask.CompressionTask.compress`
-        :py:property:`starsmashertools.preferences.defaults`
+        :py:mod:`starsmashertools.preferences`
         """
-        import starsmashertools
         import starsmashertools.helpers.path
         import starsmashertools.helpers.compressiontask
 
         # Obtain the file names to be compressed.
         if patterns is None:
-            patterns = starsmashertools.preferences.get(
-                'Simulation', 'state files', throw_error = True
-            )
+            patterns = self.preferences.get('state files')
         
         files = []
         for pattern in patterns:
@@ -1080,6 +1052,7 @@ class Simulation(object):
             stop : int | type(None) = None,
             step : int | type(None) = None,
             times : int | float | starsmashertools.lib.units.Unit | list | tuple | np.ndarray | type(None) = None,
+            time_range : list | tuple | type(None) = None,
             indices : list | tuple | np.ndarray | type(None) = None,
             include_joined : bool = True,
             cli : bool = False,
@@ -1104,6 +1077,11 @@ class Simulation(object):
             If given, returns the output files that are closest to the given
             simulation time or collection of times. This can possibly include
             duplicate items.
+
+        time_range : list, tuple, None, default = None
+            If not `None`, this must be an iterable of 2 elements, the first 
+            being the lower time bound and the second being the upper time 
+            bound. If either bounds are `None` then only one bound will be used.
         
         indices : list, tuple, np.ndarray, default = None
             If given, returns the output files at each index from the result of
@@ -1120,15 +1098,28 @@ class Simulation(object):
             only a single item, that item is returned instead.
         """
         import starsmashertools.lib.output
+        import starsmashertools.helpers.string
         filenames = self.get_outputfiles(include_joined = include_joined)
         filenames = np.asarray(filenames, dtype = object)
-        if times is not None:
-            starsmashertools.helpers.argumentenforcer.enforcevalues({
-                'start' : [None],
-                'stop' : [None],
-                'step' : [None],
-                'indices' : [None],
-            })
+
+        # We accept the input if only either
+        #    - (start, stop, step) are valid and not None, or
+        #    - Exactly one of times, time_range, or indices are not None
+        modes = {
+            'times' : times is not None,
+            'time_range' : time_range is not None,
+            'indices' : indices is not None,
+        }
+
+        num_used = sum([1 if item else 0 for item in modes.values()])
+        if num_used == 0: # Use slicing
+            if start is not None and stop is None and step is None:
+                # User is intending to just get a single index
+                if start != -1:
+                    stop = start + 1
+            s = slice(start, stop, step)
+            filenames = filenames.tolist()[s]
+        elif modes['times']:
             if hasattr(times, '__iter__'):
                 ret = [self.get_output_at_time(
                     time,
@@ -1141,22 +1132,28 @@ class Simulation(object):
                     times,
                     include_joined = include_joined,
                 )
-        elif indices is not None:
-            starsmashertools.helpers.argumentenforcer.enforcevalues({
-                'start' : [None],
-                'stop' : [None],
-                'step' : [None],
-                'times' : [None],
-            })
+        elif modes['indices']:
             indices = np.asarray(indices, dtype=int)
             filenames = filenames[indices]
+        elif modes['time_range']:
+            tlo, thi = time_range
+            idx0, idx1 = 0, -1
+            if tlo is not None:
+                o = self.get_output_at_time(
+                    tlo,
+                    include_joined = include_joined
+                )
+                idx0 = filenames.tolist().index(o.path)
+            if thi is not None:
+                o = self.get_output_at_time(
+                    thi,
+                    include_joined = include_joined
+                )
+                idx1 = filenames.tolist().index(o.path)
+            if idx0 == idx1: filenames = [filenames[0]]
+            filenames = filenames[idx0:idx1]
         else:
-            if start is not None and stop is None and step is None:
-                # User is intending to just get a single index
-                if start != -1:
-                    stop = start + 1
-            s = slice(start, stop, step)
-            filenames = filenames.tolist()[s]
+            raise ValueError("No mode specified. Check your keyword arguments.")
         
         ret = [starsmashertools.lib.output.Output(filename, self) for filename in filenames]
 
@@ -1308,7 +1305,7 @@ class Simulation(object):
     @api
     def get_flux(
             self,
-            outputs : starsmashertools.lib.output.Output | list | tuple | starsmashertools.lib.output.OutputIterator,
+            outputs : 'starsmashertools.lib.output.Output | list | tuple | starsmashertools.lib.output.OutputIterator',
             parallel : bool = True,
             **kwargs
     ):
@@ -1481,7 +1478,7 @@ class Simulation(object):
         :meth:`~.get_energy`.
 
         The "restartrad.sph.orig" file (or equivalent from 
-        :property:`starsmashertools.preferences`) must originate from ``other``,
+        :py:mod:`starsmashertools.preferences`) must originate from ``other``,
         or ``other`` must have a "restartrad.sph.orig" file which originates
         from this simulation. Otherwise, a :class:`~.JoinError` is raised.
 
@@ -1683,9 +1680,7 @@ class State(object):
     def get(self):
         # Get the modification times of all the files that we expect for
         # StarSmasher to produce. This will set this unique state.
-        patterns_list = starsmashertools.preferences.get(
-            'Simulation', 'state files', throw_error = True,
-        )
+        patterns_list = self.preferences.get('state files')
         self.mtimes = {}
         for pattern in patterns_list:
             for f in self.simulation.get_file(pattern):

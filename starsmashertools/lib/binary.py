@@ -1,3 +1,4 @@
+import starsmashertools.preferences
 import starsmashertools.lib.simulation
 import starsmashertools.lib.output
 from starsmashertools.helpers.apidecorator import api
@@ -5,6 +6,7 @@ from starsmashertools.helpers.clidecorator import cli
 import starsmashertools.helpers.argumentenforcer
 import numpy as np
 
+@starsmashertools.preferences.use
 class Binary(starsmashertools.lib.simulation.Simulation, object):
     def __init__(self, *args, **kwargs):
         super(Binary, self).__init__(*args, **kwargs)
@@ -99,10 +101,11 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
             verbose : bool = False,
     ):
         import starsmashertools.lib.relaxation
-        import starsmashertools
+        import starsmashertools.lib.simulation
         import starsmashertools.helpers.path
-        
-        search_directory = starsmashertools.preferences.get('Simulation', 'search directory')
+        search_directory = starsmashertools.lib.simulation.Simulation.preferences.get(
+            'search directory',
+        )
         search_directory = starsmashertools.helpers.path.realpath(search_directory)
 
         if self.isPrimaryPointMass():
@@ -312,7 +315,6 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
         import starsmashertools.helpers.midpoint
         import starsmashertools.helpers.string
         import os
-        import starsmashertools
         
         starsmashertools.helpers.argumentenforcer.enforcevalues({
             'which' : ['primary', 'secondary', 'both'],
@@ -348,10 +350,7 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
         
         if cli:
             # Give some additional fRLOF values in the vicinity of the found output files
-            window = starsmashertools.preferences.get(
-                'CLI', 'Binary', throw_error = True,
-            )['get_RLOF']['output window']
-            
+            window = self.preferences.get('get_RLOF CLI output window')
             outputs = self.get_output()
 
             # Get all the output files we will be using

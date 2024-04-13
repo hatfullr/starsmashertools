@@ -1,6 +1,7 @@
 """
 See the bottom of this file for definitions of constants.
 """
+import starsmashertools.preferences
 import starsmashertools.helpers.readonlydict
 import starsmashertools.helpers.argumentenforcer
 from starsmashertools.helpers.apidecorator import api
@@ -8,11 +9,7 @@ import numpy as np
 
 
 def get_all_labels():
-    import starsmashertools
-    conversions = starsmashertools.preferences.get(
-        'Units', 'unit conversions',
-        throw_error=True,
-    )
+    conversions = Unit.get_conversions()
     labels = []
     for conversion in conversions:
         for key, val in conversion.items():
@@ -26,7 +23,7 @@ def get_all_labels():
                 raise NotImplementedError("Unrecognized type in 'unit conversions' in preferences.py: '%s'" % type(val).__name__)
     return labels
 
-
+@starsmashertools.preferences.use
 class Unit(object):
     exception_message = "Operation '%s' is disallowed on 'Unit' type objects. Please convert to 'float' first using, e.g., 'float(unit)'."
 
@@ -49,9 +46,6 @@ class Unit(object):
         '__lt__'       : [float, int, 'Unit', np.generic],
         '__le__'       : [float, int, 'Unit', np.generic],
     }
-    
-    # Extra conversions which can be 'registered' to
-    conversions = []
     
     class InvalidLabelError(Exception, object): pass
     class InvalidTypeConversionError(Exception, object): pass
@@ -92,13 +86,39 @@ class Unit(object):
 
     @staticmethod
     def get_conversions():
-        import starsmashertools
-        conversions = starsmashertools.preferences.get(
-            'Units', 'unit conversions', throw_error = False,
-        )
-        if conversions is None: conversions = []
-        return Unit.conversions + conversions
+        # Get the user's conversions
+        user = {}
+        try:
+            user = Unit.preferences.get_user('conversions')
+        except: pass
+        
+        # Get the default conversions
+        default = Unit.preferences.get_default('conversions')
 
+        # Collect all the conversions we can find
+        default.update(user)
+
+        # These are all the possible keys, which we will now fetch individually
+        # to allow keys to be omitts
+        all_keys = list(default.keys())
+
+        conversions = []
+        for key in all_keys:
+            c = Unit.preferences.get('conversions.%s' % key)
+            value, base = c.split()
+            value = float(value)
+
+            for obj in conversions:
+                if obj['base'] == base:
+                    obj['conversions'] += [[key, value]]
+                    break
+            else:
+                conversions += [{
+                    'base' : base,
+                    'conversions' : [[key, value]],
+                }]
+        return conversions
+            
     # Decide on units that give the cleanest value
     @api
     def auto(self, threshold=100, conversions = None):
@@ -164,11 +184,10 @@ class Unit(object):
         # First we work with the left-side labels and then we work with the
         # right-side labels
         factor = 1. #base.value
-
+        
         all_bases = [c['base'] for c in conversions]
         all_names = [[c[0] for c in conversion['conversions']] for conversion in conversions]
         all_values = [[c[1] for c in conversion['conversions']] for conversion in conversions]
-
 
         for _base, names, values in zip(all_bases, all_names, all_values):
             for item, new_item in zip(self.label.left, new_label.left):
@@ -291,7 +310,7 @@ class Unit(object):
                         new.right[i] = name
         
         if isinstance(new, str): new = Unit.Label(new)
-        elif isinstance(new, Unit): label = new.label
+        if isinstance(new, Unit): label = new.label
         else: label = new
         if not self.label.is_compatible(label):
             raise Unit.InvalidLabelError("Cannot convert unit because labels '%s' and '%s' are incompatible" % (self.label, label))
@@ -530,7 +549,7 @@ class Unit(object):
     def real(self, *args, **kwargs):
         raise Exception(Unit.exception_message % 'real')
 
-
+    @starsmashertools.preferences.use
     class Label(object):
         # Principles:
         #    1. A Label has both a 'long' form and a 'short' form. For example,
@@ -583,14 +602,10 @@ class Unit(object):
 
         @staticmethod
         def get_conversions():
-            import starsmashertools
-            
-            conversions = starsmashertools.preferences.get(
-                'Units', 'label conversions', throw_error = False,
-            )
-            if conversions is not None: return conversions
-            return []
-        
+            conversions = []
+            for key, val in Unit.Label.preferences.get('conversions').items():
+                conversions += [[val, key]]
+            return conversions
         
         @property
         def short(self):
@@ -653,16 +668,14 @@ class Unit(object):
             Label.
             """
             import copy
-            import starsmashertools
             starsmashertools.helpers.argumentenforcer.enforcetypes({
                 'other' : [str, Unit.Label],
             })
             if isinstance(other, str): other = Unit.Label(other)
             if len(self.left) != len(other.left): return False
             if len(self.right) != len(other.right): return False
-            conversions = starsmashertools.preferences.get(
-                'Units', 'unit conversions',
-            )
+
+            conversions = Unit.get_conversions()
             cpy = copy.deepcopy(self)
             othercpy = copy.deepcopy(other)
             
@@ -871,7 +884,7 @@ class Unit(object):
 
 
         
-
+@starsmashertools.preferences.use
 class Units(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
     """
     This class represents the units which a :class:`~.lib.simulation.Simulation`
@@ -950,13 +963,13 @@ class Units(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
         for attr in dir(self):
             _locals[attr] = getattr(self, attr)
         
-        for key, val in starsmashertools.preferences.get('Units', 'extra').items():
+        for key, val in self.preferences.get('extra').items():
             if isinstance(val, (float, int)):
                 obj[key] = val
             elif isinstance(val, str):
                 obj[key] = eval(val, {}, _locals)
             else:
-                raise TypeError("All values declared in preferences.py in defaults['Units']['extras'] must be type 'float', 'int', or 'str', not '%s'" % type(val).__name__)
+                raise NotImplementedError
         
         super(Units, self).__init__(obj)
 

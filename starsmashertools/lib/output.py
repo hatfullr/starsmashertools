@@ -1,3 +1,4 @@
+import starsmashertools.preferences
 import starsmashertools.helpers.argumentenforcer
 from starsmashertools.helpers.apidecorator import api
 import numpy as np
@@ -9,6 +10,7 @@ try:
 except ImportError:
     has_matplotlib = False
 
+@starsmashertools.preferences.use
 class Output(dict, object):
     """
     A container for StarSmasher binary output data, usually appearing as
@@ -151,11 +153,8 @@ class Output(dict, object):
             self.read(return_headers=not self._isRead['header'], return_data=not self._isRead['data'])
 
     def _clear_cache(self):
-        import starsmashertools
         import copy
-        self._cache = copy.copy(starsmashertools.preferences.get(
-            'Output', 'cache',
-        ))
+        self._cache = copy.copy(self.preferences.get('cache'))
         # If no cache is defined in preferences
         if self._cache is None: self._cache = {}
 
@@ -334,10 +333,10 @@ class Output(dict, object):
         future.
         
         Values stored in the simulation archive will be erased when "max stored
-        condense results" in :property:`starsmashertools.preferences` is
-        reached, per output file. If this value is changed, the stored results
-        will be updated automatically the next time this function is called, but
-        only for this output object. The identifiers which were accessed most
+        condense results" in :py:mod:`starsmashertools.preferences` is reached,
+        per output file. If this value is changed, the stored results will be 
+        updated automatically the next time this function is called, but only 
+        for this output object. The identifiers which were accessed most 
         recently are kept.
         
         It is good practice to ensure the value returned by your ``func`` 
@@ -367,7 +366,7 @@ class Output(dict, object):
            :py:func:`exec` call. In this case, variables will be accessible as
            the names of the keys in this :class:`~.Output` object, such as 'x',
            'rho', etc., including keys which are in 
-           :py:property:`starsmashertools.preferences`. The string must set a
+           :py:mod:`starsmashertools.preferences`. The string must set a
            variable called "result", the contents of which will be saved in the
            simulation archive.
 
@@ -405,7 +404,6 @@ class Output(dict, object):
         The value returned depends on the contents of positional argument 
         ``func``, and/or the contents of the simulation archive.
         """
-        import starsmashertools
         import time
             
         archive_key = 'Output.condense'
@@ -418,12 +416,12 @@ class Output(dict, object):
         archive_value[relpath] = archive_value.get(relpath, {})
 
         # Make sure the size is right
-        max_stored_condense_results = starsmashertools.preferences.get(
-            'Output', 'max stored condense results',
-        )
-        if max_stored_condense_results is None:
-            max_stored_condense_results = 10000
-
+        try:
+            max_stored_condense_results = self.preferences.get(
+                'max stored condense results',
+            )
+        except: max_stored_condense_results = 10000
+        
         if len(archive_value[relpath].keys()) > max_stored_condense_results:
             # Reduce the number of stored values
             keys = list(archive_value[relpath].keys())
@@ -589,8 +587,7 @@ class Output(dict, object):
         ----------------
         format_sheet : str, None, default = None
             The format sheet to use when converting. If `None`, the default 
-            sheet specified in :py:property:`starsmasherotols.preferences` is 
-            used.
+            sheet specified in :py:mod:`starsmasherotols.preferences` is used.
 
         Returns
         -------
@@ -598,13 +595,8 @@ class Output(dict, object):
             The formatted string.
         """
         import starsmashertools.helpers.formatter
-        import starsmashertools
         if format_sheet is None:
-            format_sheet = starsmashertools.preferences.get(
-                'Output',
-                'string format sheet',
-                throw_error = True,
-            )
+            format_sheet = self.preferences.get('string format sheet')
         return starsmashertools.helpers.formatter.Formatter(
             format_sheet,
         ).format_output(self)
@@ -646,7 +638,7 @@ class Output(dict, object):
 
             See Also
             --------
-            :property:`starsmashertools.preferences` ('Plotting'), 
+            :py:mod:`starsmashertools.preferences` ('Plotting'), 
             :class:`starsmashertools.mpl.artists.OutputPlot`
             """
             import starsmashertools.mpl.artists
@@ -715,8 +707,9 @@ class Output(dict, object):
 
 
 
-        
+
 # Asynchronous output file reading
+@starsmashertools.preferences.use
 class OutputIterator(object):
     """
     An iterator which can be used to iterate through Output objects efficiently.
@@ -740,13 +733,13 @@ class OutputIterator(object):
         filenames : list, tuple, np.ndarray
             The list of file names to iterate through.
 
-        simulation : `~starsmashertools.lib.simulation.Simulation`
+        simulation : :class:`~starsmashertools.lib.simulation.Simulation`
             The simulation that the given file names belong to.
 
         onFlush : list, tuple, np.ndarray, default = []
-            A list of functions to be called in the `~.flush` method. If one of
-            the methods returns `'break'` then iteration is stopped and no other
-            `onFlush` functions are called.
+            A list of functions to be called in the :meth:`~.flush` method. If 
+            one of the methods returns ``'break'`` then iteration is stopped and
+            no other ``onFlush`` functions are called.
 
         max_buffer_size : int, NoneType, default = None
             The maximum size of the buffer for reading Output ahead-of-time.
@@ -760,11 +753,10 @@ class OutputIterator(object):
         ----------------
         **kwargs
             Other optional keyword arguments that are passed to the
-            `.Output.read` function.
+            :meth:`~.Output.read` function.
         """
-        import starsmashertools
-        
-        if max_buffer_size is None: max_buffer_size = starsmashertools.preferences.get('OutputIterator', 'max buffer size')
+        if max_buffer_size is None:
+            max_buffer_size = self.preferences.get('max buffer size')
         self.max_buffer_size = max_buffer_size
         self.onFlush = onFlush
         self.simulation = simulation

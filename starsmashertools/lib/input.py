@@ -1,7 +1,9 @@
+import starsmashertools.preferences
 from starsmashertools.helpers.apidecorator import api
 import starsmashertools.helpers.argumentenforcer
 import starsmashertools.helpers.readonlydict
 
+@starsmashertools.preferences.use
 class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
     """
     This class holds information about inputs that are sent to a StarSmasher
@@ -38,12 +40,11 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
         Obtain the "init.f" file that StarSmasher uses to initialize the
         simulation.
         """
-        import starsmashertools
         import starsmashertools.helpers.path
         return starsmashertools.helpers.path.realpath(
             starsmashertools.helpers.path.join(
                 self.src,
-                starsmashertools.preferences.get(self, 'src init filename', throw_error=True),
+                self.preferences.get('src init filename'),
             ),
         )
 

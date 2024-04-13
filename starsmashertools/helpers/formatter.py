@@ -1,3 +1,4 @@
+import starsmashertools.preferences
 import starsmashertools.lib.output
 import starsmashertools.lib.units
 import starsmashertools.bintools.page
@@ -12,10 +13,8 @@ def sheet_name_to_path(name : str):
         starsmashertools.SOURCE_DIRECTORY,
         'format_sheets',
     )
-
-    directories = starsmashertools.preferences.get(
-        'FormatSheet', 'directories',
-    )
+    
+    directories = FormatSheet.preferences.get('directories')
     directories += [default_directory]
 
     for directory in directories:
@@ -29,7 +28,7 @@ def sheet_name_to_path(name : str):
 
 
 
-
+@starsmashertools.preferences.use
 class FormatSheet(object):
     """
     Contains information about a format sheet.

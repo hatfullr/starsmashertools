@@ -54,7 +54,6 @@ class InputManager(object):
     def parse(self, string, _types):
         import starsmashertools.lib.units
         import starsmashertools.helpers.string
-        import starsmashertools
         import numpy as np
         
         string = string.strip()
@@ -85,7 +84,7 @@ class InputManager(object):
                             all_labels,
                             join = 'or',
                         )
-                        raise InputManager.InvalidInputError("Input of type 'Unit' must have syntax 'Unit(value, label)', where 'label' is %s. To add more units, edit '%s'" % (label_str, starsmashertools.preferences.__file__))
+                        raise InputManager.InvalidInputError("Input of type 'Unit' must have syntax 'Unit(value, label)', where 'label' is %s. To add more units, edit your preferences in starsmashertools/data/preferences.py, or create a new file" % label_str)
 
         if None in _types: # Accept any generic input
             return starsmashertools.helpers.string.parse(string)

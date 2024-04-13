@@ -1,4 +1,5 @@
 # I hate how this is written, but at least it works specifically for us...
+import starsmashertools.preferences
 import math
 import numpy as np
 import starsmashertools.lib.output
@@ -7,7 +8,7 @@ import warnings
 
 class Null(object): pass
 
-#@profile
+@starsmashertools.preferences.use
 def get(
         output : starsmashertools.lib.output.Output,
         weighted_averages : list | tuple = [],
@@ -52,7 +53,7 @@ def get(
 
     import starsmashertools
     
-    prefs = starsmashertools.preferences.get('Flux', throw_error = True)
+    prefs = get.preferences.get('options')
     for key, val in kwargs.items():
         if isinstance(val, Null):
             if key in prefs.keys(): kwargs[key] = prefs[key]

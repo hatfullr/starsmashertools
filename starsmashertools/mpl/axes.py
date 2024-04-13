@@ -9,11 +9,12 @@ import starsmashertools.helpers.argumentenforcer
 
 @starsmashertools.helpers.argumentenforcer.enforcetypes
 def make_legend(axes : matplotlib.axes._axes.Axes):
-    import starsmashertools
-    legend_kwargs = starsmashertools.preferences.get(
-        'Plotting', 'legend'
-    )
-    if legend_kwargs is None: legend_kwargs = {}
+    import starsmashertools.mpl.artists
+    legend_kwargs = {}
+    try:
+        legend_kwargs = starsmashertools.mpl.artists.PlottingPreferences.preferences.get('legend')
+    except: pass
+    
     markersize = legend_kwargs.pop('markersize', None)
     legend = axes.legend(**legend_kwargs)
     if markersize is not None:

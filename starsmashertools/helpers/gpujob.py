@@ -1,3 +1,5 @@
+import starsmashertools.preferences
+
 try:
     import starsmashertools.helpers.argumentenforcer
     import starsmashertools.lib.output
@@ -10,7 +12,7 @@ try:
     import warnings
     import math
 
-
+    @starsmashertools.preferences.use
     class GPUJob(object):
         """
         A base class for utilizing the GPU.
@@ -54,8 +56,8 @@ try:
             import starsmashertools
             
             if threadsperblock is None:
-                threadsperblock = starsmashertools.preferences.get("GPUJob", "threadsperblock", throw_error=True)
-
+                threadsperblock = self.preferences.get('threadsperblock')
+            
             # Send inputs to the GPU
             inputs = []
             for i in range(len(self.inputs)):

@@ -4,6 +4,7 @@ import matplotlib.artist
 import matplotlib.axes
 import numpy as np
 import starsmashertools.helpers.argumentenforcer
+import starsmashertools.preferences
 
 
 class ColoredPlot(matplotlib.collections.LineCollection, object):
@@ -218,19 +219,18 @@ class OutputPlot(object):
             
         self._previous_simulation = output.simulation
 
-
+@starsmashertools.preferences.use
 class PlottingPreferences(object):
     def __init__(self):
-        import starsmashertools
         import copy
         
-        self._default = starsmashertools.preferences.get('Plotting', 'defaults')
+        self._default = self.preferences.get('Plotting', 'defaults')
         if self._default is None: self._default = {}
 
-        self.cores = starsmashertools.preferences.get('Plotting', 'core kwargs')
+        self.cores = self.preferences.get('Plotting', 'core kwargs')
         if self.cores is None: self.cores = []
         
-        self._items = starsmashertools.preferences.get('Plotting', 'kwargs')
+        self._items = self.preferences.get('Plotting', 'kwargs')
         if self._items is None: self._items = []
         
         self._index = -1

@@ -1,3 +1,4 @@
+import starsmashertools.preferences
 import starsmashertools.helpers.argumentenforcer
 from starsmashertools.helpers.apidecorator import api
 from glob import glob
@@ -5,6 +6,7 @@ import numpy as np
 import mmap
 import collections
 
+@starsmashertools.preferences.use
 @starsmashertools.helpers.argumentenforcer.enforcetypes
 @api
 def find(
@@ -12,11 +14,10 @@ def find(
         pattern : str | type(None) = None,
         throw_error : bool = False,
 ):
-    import starsmashertools
     import starsmashertools.helpers.path
     
     if pattern is None:
-        pattern = starsmashertools.preferences.get('LogFile', 'file pattern', throw_error=True)
+        pattern = find.preferences.get('file pattern')
     direc = starsmashertools.helpers.path.realpath(directory)
     tosearch = starsmashertools.helpers.path.join(
         direc,

@@ -21,66 +21,6 @@ LOCK_DIRECTORY = os.path.join(DATA_DIRECTORY, 'locks')
 if not os.path.isdir(DATA_DIRECTORY): os.makedirs(DATA_DIRECTORY)
 if not os.path.isdir(LOCK_DIRECTORY): os.makedirs(LOCK_DIRECTORY)
 
-
-class preferences(object):
-    @staticmethod
-    def get(name, default_name = None, throw_error = False):
-        import sys, os, copy
-        orig_path = copy.deepcopy(sys.path)
-        sys.path.insert(1, DATA_DIRECTORY)
-        
-        try:
-            from default_preferences import defaults
-        except ImportError as e:
-            raise FileNotFoundError("Failed to find either '%s' or '%s'. Your installation might be corrupt if you are missing default_preferences.py." % (os.path.join(DATA_DIRECTORY, 'preferences.py'), os.path.join(DATA_DIRECTORY, 'default_preferences.py'))) from e
-        
-        user_defaults = {}
-        try:
-            from preferences import defaults as user_defaults
-        except ImportError: pass
-        
-        sys.path = orig_path
-
-        # Overwrite defaults
-        defaults = preferences.deep_update(defaults, user_defaults)
-        
-        if not isinstance(name, str): name = type(name).__name__
-        if name in defaults.keys():
-            if default_name is None: return defaults[name]
-            if default_name in defaults[name].keys():
-                return defaults[name][default_name]
-
-        if throw_error:
-            raise Exception("Missing field {field:s} in {key:s} in preferences".format(
-                field = default_name,
-                key = name,
-            ))
-
-    @staticmethod
-    def deep_update(dict1, dict2):
-        """
-        Update the values in dict1 with the values in dict2, where appropriate.
-        """
-        
-        def update_object(obj1, obj2):
-            if type(obj1) is not type(obj2): return obj2
-            if isinstance(obj1, list):
-                for i, o in enumerate(obj2):
-                    if i < len(obj1): obj1[i] = update_object(obj1[i], o)
-                    else: obj1 += [o]
-            elif isinstance(obj1, dict):
-                for key, val in obj2.items():
-                    if key not in obj1.keys(): obj1[key] = val
-                    else:
-                        obj1[key] = update_object(obj1[key], val)
-            elif isinstance(obj1, tuple):
-                obj1 = tuple(update_object(list(obj1), list(obj2)))
-            else: return obj2
-            return obj1
-        
-        return update_object(dict1, dict2)
-    
-
 # Check if some version string is older than the current version
 def _is_version_older(version, other = None):
     if other is None: other = __version__

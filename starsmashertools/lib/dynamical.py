@@ -10,7 +10,7 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
         import starsmashertools.helpers.path
         import starsmashertools.lib.binary
         
-        search_directory = self.get_search_directory(throw_error = True)
+        search_directory = self.get_search_directory()
         restartradfile = self.get_start_file()
         duplicate = starsmashertools.helpers.path.find_duplicate_file(
             restartradfile, search_directory, throw_error=True)

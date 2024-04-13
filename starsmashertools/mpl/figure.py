@@ -1,3 +1,4 @@
+import starsmashertools.preferences
 import matplotlib.figure
 import matplotlib
 import matplotlib.pyplot as plt
@@ -8,11 +9,12 @@ import matplotlib.artist
 def update_style_sheet_directories():
     """ Locate the style sheets listed in the preferences. """
     import starsmashertools
+
+    directories = []
+    try:
+        directories = Figure.preferences('stylesheet directories')
+    except: pass
     
-    directories = starsmashertools.preferences.get(
-        'Figure', 'stylesheet directories',
-    )
-    if directories is None: directories = []
     for directory in directories:
         directory = directory.format(**starsmashertools.__dict__)
         if directory in plt.style.core.USER_LIBRARY_PATHS: continue
@@ -20,7 +22,7 @@ def update_style_sheet_directories():
     plt.style.core.reload_library()
 
 
-
+@starsmashertools.preferences.use
 class Figure(matplotlib.figure.Figure, object):
     """
     Used internally to create Matplotlib figures. This normalizes the process
