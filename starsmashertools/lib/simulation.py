@@ -1658,7 +1658,7 @@ class Simulation(object):
         state.get()
         return state
 
-
+@
 class State(object):
     """
     Contains information about a :class:`~.Simulation` which can be used to
@@ -1680,7 +1680,7 @@ class State(object):
     def get(self):
         # Get the modification times of all the files that we expect for
         # StarSmasher to produce. This will set this unique state.
-        patterns_list = self.preferences.get('state files')
+        patterns_list = self.simulation.preferences.get('state files')
         self.mtimes = {}
         for pattern in patterns_list:
             for f in self.simulation.get_file(pattern):
