@@ -1658,7 +1658,7 @@ class Simulation(object):
         state.get()
         return state
 
-@
+
 class State(object):
     """
     Contains information about a :class:`~.Simulation` which can be used to
