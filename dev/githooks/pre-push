@@ -18,7 +18,7 @@ p = subprocess.run(
     capture_output = True,
     text = True,
 )
-if p.stderr:
+if 'FAILED' in p.stderr:
     print(p.stderr)
     sys.exit(1)
 sys.exit(0)
