@@ -5,7 +5,8 @@ test_directory = os.path.join(
     'data_test',
 )
 def remove_test_directory():
-    shutil.rmtree(test_directory)
+    if os.path.isdir(test_directory):
+        shutil.rmtree(test_directory)
 atexit.register(remove_test_directory)
 
 
@@ -58,7 +59,7 @@ class TestCompression(basetest.BaseTest):
         self.orig_files = ['log0.sph', 'out000.sph', 'sph.eos']
         self.orig_files = [os.path.join(orig_directory, f) for f in self.orig_files]
         
-        if os.path.isdir(test_directory): remove_test_directory()
+        remove_test_directory()
         
         copydir(orig_directory, test_directory)
 
