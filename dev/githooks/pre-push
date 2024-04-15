@@ -12,7 +12,12 @@ test_dir = os.path.join(
 
 curdir = os.getcwd()
 os.chdir(test_dir)
-p = subprocess.Popen(['python3', 'run_all_tests.py'])
-p.wait()
-
+p = subprocess.run(
+    ['python3', 'run_all_tests.py'],
+    check = True,
+    capture_output = True,
+    text = True,
+)
+if p.stderr: sys.exit(1)
 sys.exit(0)
+
