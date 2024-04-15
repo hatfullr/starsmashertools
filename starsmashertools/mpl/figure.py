@@ -12,7 +12,7 @@ def update_style_sheet_directories():
 
     directories = []
     try:
-        directories = Figure.preferences('stylesheet directories')
+        directories = Figure.preferences.get('stylesheet directories')
     except: pass
     
     for directory in directories:
