@@ -18,6 +18,8 @@ p = subprocess.run(
     capture_output = True,
     text = True,
 )
-if p.stderr: sys.exit(1)
+if p.stderr:
+    print(p.stderr)
+    sys.exit(1)
 sys.exit(0)
 
