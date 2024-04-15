@@ -3,6 +3,9 @@ import starsmashertools.preferences
 import math
 import numpy as np
 import starsmashertools.lib.output
+import starsmashertools.helpers.readonlydict
+from starsmashertools.helpers.apidecorator import api
+import starsmashertools.helpers.argumentenforcer
 import copy
 import warnings
 
@@ -670,7 +673,7 @@ def get(
         print("Heating L = %12.4E"% (Lheat*msun))
         print("udot L = %12.4E"% (Lurad*msun))
     
-    results = {
+    return FluxResult({
         'output' : current.path,
         'kwargs' : kwargs,
 
@@ -706,7 +709,65 @@ def get(
             'output' : spectrum_output,
             'teff' : teff_spectrum,
         },
-    }
-    
-    return results
+    })
 
+
+
+
+class FluxResult(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def save(
+            self,
+            filename : str | type(None) = None,
+    ):
+        """
+        Save the results to disk in a compressed JSON format. If the given 
+        ``filename`` does not have a file extension, it will be given the
+        extension ``'.flux.zip'`` automatically. Otherwise, if ``filename`` has
+        a file extension which does not end in ``'.zip'``, the file will not be
+        compressed.
+
+        Other Parameters
+        ----------
+        filename : str, None, default = None
+            The name of the file to save to. If no file extension is detected,
+            ``'.flux.zip'`` will be appended to the end of the string. 
+            Otherwise, the file will not be compressed unless the extension is 
+            ``'.zip'``.
+            
+            If `None`, the file will be saved in the current working directory
+            with name ``basename.f
+
+        See Also
+        --------
+        :meth:`~.load`
+        """
+        import starsmashertools.helpers.jsonfile
+        import starsmashertools.helpers.path
+        if filename is None:
+            filename = starsmashertools.helpers.path.basename(self['output']).replace('.sph', '.flux.zip')
+        basename = starsmashertools.helpers.path.basename(filename)
+        if '.' not in basename: filename += '.flux.zip'
+        starsmashertools.helpers.jsonfile.save(filename, self)
+    
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    @staticmethod
+    def load(filename : str):
+        """
+        Load results from disk which were saved by :meth:`~.save`.
+
+        Parameters
+        ----------
+        filename : str
+            The location of the file on the disk to load.
+
+        See Also
+        --------
+        :meth:`~.save`
+        """
+        import starsmashertools.helpers.jsonfile
+        return FluxResult(starsmashertools.helpers.jsonfile.load(filename))
+        

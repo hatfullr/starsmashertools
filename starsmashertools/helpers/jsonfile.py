@@ -283,7 +283,7 @@ def save(filename, obj, encoder=Encoder, zname = 'data'):
     try:
         if filename.endswith('.gz'):
             content = save_bytes(obj, encoder=encoder)
-            with gzip.open(filename, 'w') as f:
+            with gzip.open(filename, 'wb') as f:
                 f.write(content)
 
         elif filename.endswith('.zip'):
