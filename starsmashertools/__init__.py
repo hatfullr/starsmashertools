@@ -635,6 +635,8 @@ def _get_decorators():
                     # the final '.' member and replace it with the class we just
                     # found.
 
+                    listening_for_def = False
+                    
                     if _class is None:
                         _class = l
                         _class_indent = indent
@@ -648,7 +650,9 @@ def _get_decorators():
                     continue
                 
                 if listening_for_def:
-                    if ls.startswith('def'):
+                    if ls.startswith('class'):
+                        listening_for_def = False
+                    elif ls.startswith('def'):
                         l = ls.replace('def', '').strip()
                         name = l[:l.index("(")]
                         full_name = get_full_function_name(_file, name, _class=_class)
