@@ -224,13 +224,13 @@ class PlottingPreferences(object):
     def __init__(self):
         import copy
         
-        self._default = self.preferences.get('Plotting', 'defaults')
+        self._default = self.preferences.get('defaults')
         if self._default is None: self._default = {}
 
-        self.cores = self.preferences.get('Plotting', 'core kwargs')
+        self.cores = self.preferences.get('core kwargs')
         if self.cores is None: self.cores = []
         
-        self._items = self.preferences.get('Plotting', 'kwargs')
+        self._items = self.preferences.get('kwargs')
         if self._items is None: self._items = []
         
         self._index = -1
