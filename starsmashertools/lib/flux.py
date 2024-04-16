@@ -702,6 +702,8 @@ def get(
             'surf_id' : surf_id,
             'surf_t' : surf_t,
             'extent' : [xmin, xmax, ymin, ymax],
+            'dx' : dx,
+            'dy' : dy,
             'weighted_averages' : weighted_average_arrays,
             'teff_aver' : teff_aver,
             'ltot' : ltot,
