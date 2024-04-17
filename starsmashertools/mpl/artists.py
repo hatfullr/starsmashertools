@@ -4,7 +4,38 @@ import matplotlib.artist
 import matplotlib.axes
 import numpy as np
 import starsmashertools.helpers.argumentenforcer
+from starsmashertools.helpers.apidecorator import api
 import starsmashertools.preferences
+import starsmashertools.lib.flux
+import copy
+
+
+@starsmashertools.preferences.use
+class PlottingPreferences(object):
+    def __init__(self):
+        self._default = self.preferences.get('defaults')
+        if self._default is None: self._default = {}
+
+        self.cores = self.preferences.get('core kwargs')
+        if self.cores is None: self.cores = []
+        
+        self._items = self.preferences.get('kwargs')
+        if self._items is None: self._items = []
+        
+        self._index = -1
+    
+    def __next__(self):
+        ret = copy.deepcopy(self._default)
+        if self._index + 1 < len(self._items):
+            self._index += 1
+            ret.update(self._items[self._index])
+        return ret
+
+    def get_core_preferences(self):
+        ret = copy.deepcopy(self._default)
+        if self._index < len(self._items): ret.update(self._items[self._index])
+        if self._index < len(self.cores): ret.update(self.cores[self._index])
+        return ret
 
 
 class ColoredPlot(matplotlib.collections.LineCollection, object):
@@ -219,33 +250,367 @@ class OutputPlot(object):
             
         self._previous_simulation = output.simulation
 
+
 @starsmashertools.preferences.use
-class PlottingPreferences(object):
-    def __init__(self):
-        import copy
-        
-        self._default = self.preferences.get('defaults')
-        if self._default is None: self._default = {}
-
-        self.cores = self.preferences.get('core kwargs')
-        if self.cores is None: self.cores = []
-        
-        self._items = self.preferences.get('kwargs')
-        if self._items is None: self._items = []
-        
-        self._index = -1
+class FluxPlot(object):
+    """
+    A class for easily performing Matplotlib plotting operations on a 
+    :class:`~.lib.flux.FluxResult`.
+    """
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    def __init__(
+            self,
+            axes : matplotlib.axes.Axes,
+            result : starsmashertools.lib.flux.FluxResult,
+    ):
+        self._axes = axes
+        self._result = result
+        self._image = None
+        self._highlight = None
+        self._outline = None
     
-    def __next__(self):
-        import copy
-        ret = copy.deepcopy(self._default)
-        if self._index + 1 < len(self._items):
-            self._index += 1
-            ret.update(self._items[self._index])
-        return ret
+    @api
+    def remove(self):
+        """
+        Remove all artists this object is responsible for from its axes.
+        """
+        artists = [
+            self._image,
+            self._highlight,
+            self._outline,
+        ]
+        for artist in artists:
+            if artist is not None: artist.remove()
 
-    def get_core_preferences(self):
-        import copy
-        ret = copy.deepcopy(self._default)
-        if self._index < len(self._items): ret.update(self._items[self._index])
-        if self._index < len(self.cores): ret.update(self.cores[self._index])
-        return ret
+        self._image = None
+        self._highlight = None
+        self._outline = None
+
+    @api
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    def imshow(
+            self,
+            key : str = 'flux',
+            weighted_average : int | type(None) = None,
+            log10 : bool = False,
+            extent : list | tuple | np.ndarray | type(None) = None,
+            **kwargs
+    ):
+        """
+        Plot a quantity on a Matplotlib :class:`matplotlib.axes.Axes`.
+
+        Other Parameters
+        ----------------
+        key : str, default = 'flux'
+            The dictionary key in the ``['image']`` :py:class:`dict` to obtain 
+            the data for plotting. The value of ``key`` must result in data of 
+            shape ``resolution`` given in :meth:`~.get`. If ``weighted_average``
+            is given, this argument is ignored.
+
+        weighted_average : int, None, default = None
+            The integer index of the array to plot from the 
+            ``weighted_averages`` key in the results. If `None`, keyword 
+            argument ``key`` is ignored.
+
+        log10 : bool, default = False
+            If `True`, the log10 operation will be done on the data.
+
+        extent : list, tuple, numpy.ndarray, None, default = None
+            See :meth:`matplotlib.axes.Axes.imshow`. If `None`, then the extents
+            from the flux results are used.
+
+        kwargs
+            Other keyword arguments are passed directly to 
+            :meth:`matplotlib.axes.Axes.imshow`. Note, keyword ``origin`` is
+            always be set to ``'lower'`` regardless of any value it has in
+            ``kwargs``. If keywords appear in the preferences, they will be used
+            unless specified here.
+
+        Returns
+        -------
+        :class:`matplotlib.axes.AxesImage`
+        """
+        import matplotlib.pyplot as plt
+        import starsmashertools.helpers.warnings
+
+        if self._image is not None:
+            raise Exception("An AxesImage has already been created for this FluxPlot instance: %s" % str(self._image))
+
+        try:
+            prefs = self.preferences.get('images')
+        except: prefs = {}
+        
+        prefs.update(kwargs)
+        kwargs = prefs
+
+        if weighted_average is not None:
+            data = self._result['image']['weighted_averages'][weighted_average]
+        else:
+            data = self._result['image'][key]
+
+        if log10:
+            idx = data < 0
+            if idx.any():
+                starsmashertools.helpers.warnings.warn(
+                    'Some data is <= 0 and log10 = True. The data which is <= 0 will be set to NaN.',
+                )
+            # It's common for the empty cells to have flux = 0, so we step
+            # around the warnings by checking for <= 0 here.
+            idx = data <= 0
+            data[idx] = np.nan
+            idx = np.isfinite(data)
+            data[idx] = np.log10(data[idx])
+            data[~idx] = np.nan
+        
+        if extent is None: extent = self._result['image']['extent']
+
+        kwargs['origin'] = 'lower'
+        self._image = self._axes.imshow(
+            np.swapaxes(data, 0, 1),
+            extent = extent,
+            **kwargs
+        )
+        return self._image
+    
+    @api
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    def highlight_particles(
+            self,
+            IDs : list | tuple | np.ndarray,
+            **kwargs
+    ):
+        """
+        There must be an image plotted with :meth:`~.imshow` first.
+
+        Parameters
+        ----------
+        IDs : list, tuple, np.ndarray
+            The particle IDs to highlight. IDs which are not in the
+            ``contributing_IDs`` list of the :class:`~.lib.flux.FluxResult` are
+            excluded.
+        
+        Other Parameters
+        ----------------
+        kwargs
+            Other keyword arguments are passed directly to 
+            :meth:`matplotlib.axes.Axes.imshow`.
+
+        Returns
+        -------
+        :class:`matplotlib.axes.AxesImage`
+        """
+        import matplotlib.colors
+        
+        if self._image is None:
+            raise Exception("An image must be plotted first with method imshow()")
+        if self._highlight is not None:
+            raise Exception("Cannot highlight more than once. Please remove the old highlight first.")
+
+        if not isinstance(IDs, np.ndarray): IDs = np.asarray(IDs)
+        
+        
+        try:
+            prefs = self.preferences.get('particle highlight')
+        except: prefs = {}
+
+        prefs.update(kwargs)
+        kwargs = prefs
+        kwargs['origin'] = 'lower'
+        
+        output = copy.deepcopy(self._result.output)
+        output.rotate(
+            xangle = self._result['kwargs']['theta'],
+            zangle = self._result['kwargs']['phi'],
+        )
+
+        contributors = self._result['particles']['contributing_IDs']
+        IDs = IDs[np.isin(IDs, contributors, assume_unique = True)]
+        
+        rloc = np.full(output['ntot'], np.nan)        
+        rloc[contributors] = self._result['particles']['rloc']
+
+        x = output['x'][IDs]
+        y = output['y'][IDs]
+        z = output['z'][IDs]
+        rloc = rloc[IDs]
+        
+        data = np.full(self._image.get_array().shape, False, dtype = bool)
+        
+        ntot = len(rloc)
+        resolution = data.shape
+        xmin, xmax, ymin, ymax = self._result['image']['extent']
+        dx, dy = self._result['image']['dx'], self._result['image']['dy']
+
+        ijloc_arr = np.column_stack((
+            ((x - xmin) / dx).astype(int), # iloc
+            ((y - ymin) / dy).astype(int), # jloc
+        ))
+
+        ijminmax_arr = np.column_stack((
+            # imin
+            np.maximum(
+                ((x - rloc - xmin) / dx).astype(int), # same as floor
+                np.zeros(ntot, dtype = int),
+            ),
+            # imax
+            np.minimum(
+                ((x + rloc - xmin) / dx).astype(int) + 1, # same as ceil
+                np.full(ntot, resolution[0], dtype = int),
+            ),
+            # jmin
+            np.maximum(
+                ((y - rloc - ymin) / dy).astype(int), # same as floor
+                np.zeros(ntot, dtype = int),
+            ),
+            # jmax
+            np.minimum(
+                ((y + rloc - ymin) / dy).astype(int) + 1, # same as ceil
+                np.full(ntot, resolution[1], dtype = int),
+            ),
+        ))
+
+        # Omit ijloc that are outside the image
+        inside_image = np.logical_and(
+            np.logical_and(ijloc_arr[:,0] >= 0, ijloc_arr[:,0] <= resolution[0]),
+            np.logical_and(ijloc_arr[:,1] >= 0, ijloc_arr[:,1] <= resolution[1]),
+        )
+        if inside_image.any():
+            for i, (iloc, jloc) in enumerate(ijloc_arr):
+                if inside_image[i]:
+                    imin, imax, jmin, jmax = ijminmax_arr[i]
+                    xloc_arr = xmin + dx * np.arange(imin, imax)
+                    yloc_arr = ymin + dy * np.arange(jmin, jmax)
+                    deltax2_arr = (xloc_arr - x[i])**2
+                    dist2_arr = deltax2_arr[:, None] + (yloc_arr - y[i])**2
+                    idx = dist2_arr <= rloc[i]**2
+                    if not idx.any(): continue
+                    data[imin:imax, jmin:jmax][idx] = True
+            
+        if 'color' in kwargs.keys():
+            color = matplotlib.colors.to_rgba(kwargs['color'])
+            _data = np.full((data.shape[0], data.shape[1], 4), np.nan)
+            _data[data] = color
+            data = _data
+            kwargs.pop('color')
+            
+        self._highlight = self._axes.imshow(
+            np.swapaxes(data, 0, 1),
+            extent = self._image.get_extent(),
+            **kwargs
+        )
+        return self._highlight
+
+    @api
+    def highlight_dusty_particles(self, **kwargs):
+        T_dust_min, T_dust = self._result['kwargs']['dust_Trange']
+        contributors = self._result['particles']['contributing_IDs']
+        IDs = np.arange(self._result.output['ntot'])
+        dusty = starsmashertools.lib.flux.find_dusty_particles(
+            self._result.output,
+            T_dust_min = T_dust_min,
+            T_dust_max = T_dust,
+            kappa_dust = self._result['kwargs']['dust_opacity'],
+        )
+        idx = np.logical_and(
+            dusty,
+            np.isin(IDs, contributors, assume_unique = True),
+        )
+        return self.highlight_particles(IDs[idx], **kwargs)
+
+    @api
+    def outline_particles(
+            self,
+            IDs : list | tuple | np.ndarray,
+            **kwargs
+    ):
+        """
+        There must be an image plotted with :meth:`~.imshow` first.
+
+        Parameters
+        ----------
+        IDs : list, tuple, np.ndarray
+            The particle IDs to outline. IDs which are not in the
+            ``contributing_IDs`` list of the :class:`~.lib.flux.FluxResult` are
+            excluded.
+        
+        Other Parameters
+        ----------------
+        kwargs
+            Other keyword arguments are passed directly to 
+            :meth:`matplotlib.collections.EllipseCollection`.
+
+        Returns
+        -------
+        :class:`matplotlib.collections.EllipseCollection`
+        """
+        import matplotlib.collections
+        
+        if self._image is None:
+            raise Exception("An image must be plotted first with method imshow()")
+        if self._outline is not None:
+            raise Exception("Cannot outline more than once. Please remove the old outline first.")
+
+        if not isinstance(IDs, np.ndarray): IDs = np.asarray(IDs)
+        
+        try:
+            prefs = self.preferences.get('particle outline')
+        except: prefs = {}
+
+        prefs.update(kwargs)
+        kwargs = prefs
+
+        output = copy.deepcopy(self._result.output)
+        output.rotate(
+            xangle = self._result['kwargs']['theta'],
+            zangle = self._result['kwargs']['phi'],
+        )
+
+        contributors = self._result['particles']['contributing_IDs']
+        IDs = IDs[np.isin(IDs, contributors, assume_unique = True)]
+        
+        rloc = np.full(output['ntot'], np.nan)        
+        rloc[contributors] = self._result['particles']['rloc']
+
+        x = output['x'][IDs]
+        y = output['y'][IDs]
+        rloc = rloc[IDs]
+
+        ext = self._axes.get_window_extent(renderer = self._axes.get_figure().canvas.get_renderer())
+        aspect = ext.width / ext.height
+
+        if aspect < 1:
+            width = 2 * rloc
+            height = width / aspect
+        else:
+            height = 2 * rloc
+            width = height * aspect
+
+        self._outline = self._axes.add_collection(
+            matplotlib.collections.EllipseCollection(
+                width, height,
+                offsets = np.column_stack((x, y)),
+                offset_transform = self._axes.transData,
+                units = 'x',
+                #units = 'xy',
+                angles = np.zeros(x.shape),
+                **kwargs
+            )
+        )
+        return self._outline
+
+    @api
+    def outline_dusty_particles(self, **kwargs):
+        T_dust_min, T_dust = self._result['kwargs']['dust_Trange']
+        contributors = self._result['particles']['contributing_IDs']
+        IDs = np.arange(self._result.output['ntot'])
+        dusty = starsmashertools.lib.flux.find_dusty_particles(
+            self._result.output,
+            T_dust_min = T_dust_min,
+            T_dust_max = T_dust,
+            kappa_dust = self._result['kwargs']['dust_opacity'],
+        )
+        idx = np.logical_and(
+            dusty,
+            np.isin(IDs, contributors, assume_unique = True),
+        )
+        return self.outline_particles(IDs[idx], **kwargs)

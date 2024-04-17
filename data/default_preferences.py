@@ -360,6 +360,22 @@ default = {
                     'markersize' : 50,
                 }, # 'legend'
             }, # 'PlottingPreferences'
+
+            'FluxPlot' : {
+                'images' : {
+                    'interpolation' : 'none',
+                    'cmap' : 'inferno',
+                }, # 'image'
+                'particle highlight' : {
+                    'interpolation' : 'none',
+                    'color' : 'c',
+                }, # 'particle highlight'
+                'particle outline' : {
+                    'facecolors' : 'none',
+                    'edgecolors' : 'c',
+                    'linewidths' : 1.,
+                }, # 'particle outline'
+            }, # 'FluxPlot'
         }, # 'artists'
 
         'axes' : {

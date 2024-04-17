@@ -245,24 +245,9 @@ def get(
     dy = (ymax-ymin)/resolution[1]
 
     if verbose: print("dx=%f dy=%f"%(dx,dy))
-
-    # Vectorized dust handling
+    
     if do_dust:
-        if T_dust is None and T_dust_min is not None:
-            idx = np.logical_and(temp > T_dust_min, kappa < kappa_dust)
-        elif T_dust is not None and T_dust_min is None:
-            idx = np.logical_and(temp < T_dust_min, kappa < kappa_dust)
-        elif T_dust is None and T_dust_min is None:
-            idx = kappa < kappa_dust
-        else:
-            idx = np.logical_and(
-                np.logical_and(temp < T_dust, temp > T_dust_min),
-                kappa < kappa_dust,
-            )
-        
-        if idx.any():
-            kappa[idx] = kappa_dust
-
+        kappa = set_dust(current, kappa_dust, temp, T_dust_min, T_dust)
 
     # Below is a much faster alternative to looping through particles to set
     # values.
@@ -330,10 +315,6 @@ def get(
 
     
     teff[~cores] = (flux_rad[~cores] / sigma_const)**0.25
-    teff4 = teff**4
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        invteff = 1. / teff
     
     spect_type[~cores] = 1 # black body
     i = np.logical_and(
@@ -516,8 +497,7 @@ def get(
         ray_n[:resolution[0],:resolution[1]],
         ray_id[:resolution[0],:resolution[1]],
     )
-
-    t_max = 0.
+    
     b_fulls = sigma_const / np.pi * teff**4
     lam5 = lam**5
         
@@ -541,8 +521,6 @@ def get(
                     weighted_average_arrays[_i][ii, jj] += A[ir] * f
 
                 # Do spectrum stuff
-                t_max = max(t_max, teff[ir])
-
                 expon = factor2 / (teff[ir] * lam)
                 idx = expon < 150
                 _b_l = factor1 / ((np.exp(expon[idx]) - 1) * lam5[idx])
@@ -580,7 +558,7 @@ def get(
 
     if verbose:
         print("rays sorting is completed")
-        print("maximum observed Teff", t_max)
+        print("maximum observed Teff", np.amax(teff[contributors]))
 
         if test_ray:
             print("final brigntess %e "%(surf_br[itr,jtr]))
@@ -690,7 +668,10 @@ def get(
         
         'particles' : {
             'contributing_IDs' : np.arange(len(contributors))[contributors],
-            'flux' : flux,
+            'rloc' : rloc[contributors],
+            'tau' : tau[contributors],
+            'kappa' : kappa[contributors],
+            'flux' : flux[contributors],
             'Lcool' : Lcool * msun,
             'Lheat' : Lheat * msun,
         },
@@ -720,10 +701,87 @@ def get(
     })
 
 
+# Vectorized dust handling
+def set_dust(output, kappa_dust, temp, T_dust_min, T_dust):
+    units = output.simulation.units
+    kappa = copy.deepcopy(output['popacity']) * float(units['popacity'])
+    idx = find_dusty_particles(
+        output,
+        T_dust_min = T_dust_min,
+        T_dust_max = T_dust,
+        kappa_dust = kappa_dust,
+    )
+    if idx.any():
+        kappa[idx] = kappa_dust
+    return kappa
+
+
+def find_dusty_particles(
+        output : starsmashertools.lib.output.Output,
+        T_dust_min : float | int | type(None) = None,
+        T_dust_max : float | int | type(None) = None,
+        kappa_dust : float | int | type(None) = None,
+):
+    units = output.simulation.units
+    kappa = output['popacity'] * float(units['popacity'])
+    T = output['temperatures'] * float(units['temperatures'])
+    
+    if kappa_dust is not None:
+        if T_dust_max is None and T_dust_min is not None:
+            return np.logical_and(T > T_dust_min, kappa < kappa_dust)
+        elif T_dust_max is not None and T_dust_min is None:
+            return np.logical_and(T < T_dust_max, kappa < kappa_dust)
+
+        if T_dust_max is None and T_dust_min is None: return kappa < kappa_dust
+        
+        return np.logical_and(
+            np.logical_and(T < T_dust_max, T > T_dust_min),
+            kappa < kappa_dust,
+        )
+
+    if T_dust_max is None and T_dust_min is not None: return T > T_dust_min
+    elif T_dust_max is not None and T_dust_min is None: return T < T_dust_max
+    
+    return np.full(False, T.shape, dtype = bool)
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 class FluxResult(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
+    def __init__(self, *args, **kwargs):
+        self._simulation = None
+        self._output = None
+        super(FluxResult, self).__init__(*args, **kwargs)
+    
+    @property
+    def simulation(self):
+        if self._simulation is None:
+            import starsmashertools
+            self._simulation = starsmashertools.get_simulation(self['simulation'])
+        return self._simulation
 
+    @property
+    def output(self):
+        if self._output is None:
+            self._output = starsmashertools.lib.output.Output(
+                self['output'], self.simulation,
+            )
+        return self._output
+    
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def save(
@@ -778,95 +836,49 @@ class FluxResult(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
         """
         import starsmashertools.helpers.jsonfile
         return FluxResult(starsmashertools.helpers.jsonfile.load(filename))
-        
-
+    
     if has_matplotlib:
         @starsmashertools.helpers.argumentenforcer.enforcetypes
         @api
         def plot(
                 self,
-                key : str | type(None) = 'flux',
-                weighted_average : int | type(None) = None,
                 ax : matplotlib.axes.Axes | type(None) = None,
-                log10 : bool = False,
-                interpolation : str = 'none',
-                extent : list | tuple | np.ndarray | type(None) = None,
                 **kwargs
         ):
             """
-            Plot a quantity on a Matplotlib :class:`matplotlib.axes.Axes`.
+            Creates a new :class:`~.mpl.artists.FluxPlot` and calls its 
+            :meth:`~.mpl.artists.FluxPlot.imshow` method on the given Matplotlib
+            :class:`matplotlib.axes.Axes`.
             
             Other Parameters
             ----------------
-            key : str, None, default = None
-                The dictionary key in the ``['image']`` :py:class:`dict` to 
-                obtain the data for plotting. If `None`, you must supply a value
-                for keyword ``weighted_average``. The value of ``key`` must 
-                result in data of shape ``resolution`` given in :meth:`~.get`.
-            
-            weighted_average : int, None, default = None
-                The integer index of the array to plot from the 
-                ``weighted_averages`` key in the results. If `None`, keyword
-                argument ``key`` must not be `None`.
-
             ax : :class:`matplotlib.axes.Axes`, None, default = None
                 The Matplotlib :class:`matplotlib.axes.Axes` to plot on. If 
                 `None`, the plot is created on the axes returned by
                 ``plt.gca()``.
-
-            log10 : bool, default = False
-                If `True`, the log10 operation will be done on the data.
-
-            interpolation : str, default = 'none'
-                See :meth:`matplotlib.axes.Axes.imshow`.
-
-            extent : list, tuple, numpy.ndarray, None, default = None
-                See :meth:`matplotlib.axes.Axes.imshow`. If `None`, then the
-                extents from the flux results are used.
             
             kwargs
                 Other keyword arguments are passed directly to 
-                :meth:`matplotlib.axes.Axes.imshow`.
+                :meth:`~.mpl.artists.FluxPlot.imshow`. Note, keyword ``origin`` 
+                is always set to ``'lower'`` regardless of any value it has in
+                ``kwargs``.
 
             Returns
             -------
-            :class:`matplotlib.image.AxesImage`
-                The image generated by Matplotlib on the given axes.
+            :class:`matplotlib.axes.AxesImage`, :class:`~.mpl.artists.FluxPlot`
+                The :class:`matplotlib.axes.AxesImage` object created by 
+                :meth:`~.mpl.artists.FluxPlot.imshow` and the 
+                :class:`~.mpl.artists.FluxPlot` object which created it.
+            
+            See Also
+            --------
+            :class:`~.mpl.artists.FluxPlot`
             """
+            import starsmashertools.mpl.artists
             import matplotlib.pyplot as plt
-            import starsmashertools.helpers.warnings
-
-            if key is None and weighted_average is None:
-                raise ValueError("One of keyword arguments 'key' or 'weighted_average' must not be None")
-            if key is not None and weighted_average is not None:
-                raise ValueError("Keyword arguments 'key' and 'weighted_average' cannot both be non-None values. Received: %s, %s" % (str(key), str(weighted_average)))
             
             if ax is None: ax = plt.gca()
 
-            if key is not None: data = self['image'][key]
-            if weighted_average is not None:
-                data = self['image']['weighted_averages'][weighted_average]
-
-            if log10:
-                idx = data < 0
-                if idx.any():
-                    starsmashertools.helpers.warnings.warn(
-                        'Some data is <= 0 and log10 = True. The data which is <= 0 will be set to NaN.',
-                    )
-                # It's common for the empty cells to have flux = 0, so we step
-                # around the warnings by checking for <= 0 here.
-                idx = data <= 0
-                data[idx] = np.nan
-                idx = np.isfinite(data)
-                data[idx] = np.log10(data[idx])
-                data[~idx] = np.nan
-
-            if extent is None: extent = self['image']['extent']
-            
-            return ax.imshow(
-                np.swapaxes(data, 0, 1),
-                extent = extent,
-                interpolation = interpolation,
-                **kwargs
-            )
-            
+            ret = starsmashertools.mpl.artists.FluxPlot(ax, self)
+            im = ret.imshow(**kwargs)
+            return ret, im
