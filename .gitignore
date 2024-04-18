@@ -7,10 +7,10 @@
 *#
 .#*
 
-data/user/
+data/user/*
+!data/user/format_sheets
 
 data/locks/
-data/preferences.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
