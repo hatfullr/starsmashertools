@@ -18,7 +18,8 @@ if not has_matplotlib:
 
 if has_matplotlib:
     class TestAxes(basetest.BaseTest):
-        figsize = (8, 8)
+        def setUp(self):
+            plt.close('all')
             
         def tearDown(self):
             # Check if the test failed
