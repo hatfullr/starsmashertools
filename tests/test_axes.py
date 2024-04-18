@@ -1,19 +1,20 @@
 import unittest
 import os
-import starsmashertools.mpl.axes
-import starsmashertools.mpl.figure
-import starsmashertools.mpl.debug
 import numpy as np
 import basetest
 import warnings
 
-
-
 try:
-    import matplotlib.pyplot as plt
     import matplotlib
-
     matplotlib.use('TkAgg')
+    import matplotlib.pyplot as plt
+    
+
+    import starsmashertools.mpl.axes
+    import starsmashertools.mpl.figure
+    import starsmashertools.mpl.debug
+
+    
     has_matplotlib = True
 except ImportError:
     has_matplotlib = False
