@@ -28,9 +28,9 @@ class TestAxes(basetest.BaseTest):
 
     def testIsBound(self):
         import matplotlib.pyplot as plt
-        import starsmashertools.mpl.figure
+        import starsmashertools.mpl
         import string
-        fig, ax = starsmashertools.mpl.figure.subplots(debug = True)
+        fig, ax = starsmashertools.mpl.subplots(debug = True)
         plt.subplots_adjust(
             left = 0,
             right = 1,

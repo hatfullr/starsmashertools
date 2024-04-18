@@ -9,20 +9,12 @@ def sheet_name_to_path(name : str):
     import starsmashertools
     import starsmashertools.helpers.path
 
-    default_directory = starsmashertools.helpers.path.join(
-        starsmashertools.SOURCE_DIRECTORY,
-        'format_sheets',
-    )
+    sheets = starsmashertools.get_format_sheets()
+    for sheet in sheets:
+        basename = starsmashertools.helpers.path.basename(sheet)
+        if basename.replace('.format','') == name:
+            return sheet
     
-    directories = FormatSheet.preferences.get('directories')
-    directories += [default_directory]
-
-    for directory in directories:
-        for filename in starsmashertools.helpers.path.listdir(directory):
-            if not filename.endswith('.format'): continue
-            if filename.replace('.format','') == name:
-                return starsmashertools.helpers.path.join(directory, filename)
-
     raise FormatSheet.FormatSheetNotFoundError(name)
 
 

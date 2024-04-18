@@ -1,14 +1,13 @@
 import starsmashertools.preferences
-import matplotlib.figure
-import matplotlib
-import matplotlib.pyplot as plt
 import starsmashertools.helpers.argumentenforcer
 import numpy as np
 import matplotlib.artist
+import matplotlib.figure
 
 def update_style_sheet_directories():
     """ Locate the style sheets listed in the preferences. """
     import starsmashertools
+    import matplotlib.pyplot as plt
 
     directories = []
     try:
@@ -64,6 +63,8 @@ class Figure(matplotlib.figure.Figure, object):
            Other keyword arguments are passed directly to 
            :class:`matplotlib.figure.Figure`.
         """
+        import matplotlib.patches
+        
         scale = np.asarray(scale)
         idx = scale < 0
         if idx.any():
@@ -133,6 +134,7 @@ class Figure(matplotlib.figure.Figure, object):
         """ Display the figure without blocking the code execution if the CLI is
         being used. """
         import starsmashertools.bintools.cli
+        import matplotlib.pyplot as plt
         
         plt.figure(num = self.number) # Focus this figure
 
@@ -148,6 +150,7 @@ class Figure(matplotlib.figure.Figure, object):
         return plt.show(*args, **kwargs)
 
     def savefig(self, *args, **kwargs):
+        import matplotlib.pyplot as plt
         plt.figure(num = self.number) # Focus this figure
         return super(Figure, self).savefig(*args, **kwargs)
 
@@ -184,6 +187,8 @@ class Figure(matplotlib.figure.Figure, object):
         super(Figure, self).subplots_adjust(**kwargs)
     
     def get_axes_bounds(self, *args, **kwargs):
+        import matplotlib.text
+        import matplotlib.transforms
         ret = {}
         for ax in self.axes:
             bbox = ax.get_window_extent(*args, **kwargs)
@@ -295,7 +300,7 @@ class Figure(matplotlib.figure.Figure, object):
     def get_artists(self, artist_type : type = matplotlib.artist.Artist):
         """ Obtain all artists of the given type. If the given type is None, 
         this returns all artists in the figure. """
-
+        
         # Recursive get
         def get(artist, total = []):
             if not isinstance(artist, artist_type): return total
@@ -308,37 +313,6 @@ class Figure(matplotlib.figure.Figure, object):
             return total
         
         return get(self)
-        
-
-def subplots(
-        *args,
-        FigureClass = Figure,
-        style : str = 'starsmashertools',
-        AxesClass : str | type(None) = 'starsmashertools.mpl.axes.Axes',
-        subplot_kw = None,
-        **kwargs
-):
-    import starsmashertools.mpl.axes # This registers the Axes classes for projections
-    # See https://stackoverflow.com/a/48593767
-    
-    update_style_sheet_directories()
-    plt.style.use(style)
-    if AxesClass is not None:
-        if subplot_kw is None: subplot_kw = dict(projection=AxesClass)
-        else: subplot_kw['projection'] = AxesClass
-    fig, ax = plt.subplots(
-        *args,
-        FigureClass = Figure,
-        subplot_kw = subplot_kw,
-        **kwargs
-    )
-    fig.draw(renderer = fig.canvas.get_renderer())
-    return fig, ax
-    
-
-
-
-
 
 
 class PanelGridFigure(Figure, object):
@@ -350,3 +324,22 @@ class PanelGridFigure(Figure, object):
             self,
     ):
         pass
+
+
+
+
+
+
+
+
+
+
+
+
+# Store all the available Figure classes and subclasses for lookup later
+import sys, inspect
+class_names = {}
+for name, _class in inspect.getmembers(sys.modules[__name__], inspect.isclass):
+    if issubclass(_class, Figure):
+        _class.name = '.'.join([_class.__module__, _class.__qualname__])
+        class_names[_class.name] = _class

@@ -347,7 +347,10 @@ def get_phrase(
         phrase : str,
         end : str = '\n',
 ):
-    """Return instances of the given phrase in the given file as a list of strings where each element is the contents of the file after the phrase appears, up to the specified `end`, or the next instance of the phrase.
+    """
+    Return instances of the given phrase in the given file as a list of strings
+    where each element is the contents of the file after the phrase appears, up
+    to the specified `end`, or the next instance of the phrase.
     
     Parameters
     ----------
@@ -401,7 +404,8 @@ def get_phrase(
 def sort_by_mtimes(
         files : list
 ):
-    """Sort the given files by their modification times.
+    """
+    Sort the given files by their modification times.
 
     Parameters
     ----------

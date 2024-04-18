@@ -18,8 +18,15 @@ else:
 
 DATA_DIRECTORY = os.path.join(SOURCE_DIRECTORY, 'data')
 LOCK_DIRECTORY = os.path.join(DATA_DIRECTORY, 'locks')
-if not os.path.isdir(DATA_DIRECTORY): os.makedirs(DATA_DIRECTORY)
-if not os.path.isdir(LOCK_DIRECTORY): os.makedirs(LOCK_DIRECTORY)
+DEFAULTS_DIRECTORY = os.path.join(DATA_DIRECTORY, 'defaults')
+USER_DIRECTORY = os.path.join(DATA_DIRECTORY, 'user')
+for directory in [
+        DATA_DIRECTORY,
+        DEFAULTS_DIRECTORY,
+        LOCK_DIRECTORY,
+        USER_DIRECTORY,
+]:
+    if not os.path.isdir(directory): os.makedirs(directory)
 
 # Check if some version string is older than the current version
 def _is_version_older(version, other = None):
@@ -503,10 +510,90 @@ def interpolate(
     return interp
 
 
+@starsmashertools.helpers.argumentenforcer.enforcetypes
+@api
+def get_data_files(path : list | tuple):
+    """
+    Search the defaults and user directories for a file. Raises a 
+    :py:class:`FileNotFoundError` if the given path cannot be found in either
+    the defaults or user directories.
+
+    Parameters
+    ----------
+    path : list, tuple
+        Each element is a `str` which is the name of a file or subdirectory in
+        the ``starsmashertools/data/defaults`` and/or
+        ``starsmashertools/data/user`` directories. For example, if there is a 
+        file located at ``starsmashertools/data/user/subdir1/subdir2/file.py``,
+        it can be accessed with ``['subdir1', 'subdir2', 'file.py']``. If there
+        is also a file located at 
+        ``starsmashertools/data/defaults/subdir1/subdir2/file.py``, then the
+        same path will return the corresponding file in the defaults directory
+        and the file in the user directory.
+
+        You can use wildcard patterns as supported by :py:mod:`fnmatch`, but if
+        multiple matches are found during the search then an 
+        :py:class:`Exception` will be raised. If the last element in the list is
+        a wildcard pattern, all respective matches will be returned.
+
+    Returns
+    -------
+    default : list
+        A list of full paths to the file(s) in the defaults directory.
+
+    user : list
+        A list of full paths to the file(s) in the user directory.
+    """
+    import starsmashertools.helpers.path
+    import fnmatch
+
+    def search(base):
+        matches = []
+        curdir = base
+        # Go through subdirectories
+        for item in path[:-1]:
+            for f in starsmashertools.helpers.path.scandir(curdir):
+                if not fnmatch.fnmatch(f.name, item): continue
+                curdir = starsmashertools.helpers.path.join(curdir, f.name)
+        
+        # Search the subdirectory for the name
+        for f in starsmashertools.helpers.path.scandir(curdir):
+            if not fnmatch.fnmatch(f.name, path[-1]): continue
+            matches += [starsmashertools.helpers.path.join(curdir, f.name)]
+        
+        return matches
+
+    return search(DEFAULTS_DIRECTORY), search(USER_DIRECTORY)
 
 
+@api
+def get_format_sheets():
+    """
+    Returns
+    -------
+    sheets : list
+        A :py:class:`list` of :py:class:`str` paths to format sheets.
+    """
 
+    import starsmashertools.helpers.formatter
+    import starsmashertools.helpers.path
 
+    
+    
+    directories = starsmashertools.helpers.formatter.FormatSheet.preferences.get('directories')
+
+    defaults, user = get_data_files(['format_sheets', '*.format'])
+
+    sheets = [] + defaults + user
+    for directory in directories:
+        for filename in starsmashertools.helpers.path.listdir(directory):
+            if not filename.endswith('.format'): continue
+            sheets += [
+                starsmashertools.helpers.path.realpath(
+                    starsmashertools.helpers.path.join(directory, filename),
+                )
+            ]
+    return sheets
 
 
 

@@ -154,7 +154,7 @@ def text(
 
 
 class Axes(matplotlib.axes.Axes, object):
-    name = 'starsmashertools.mpl.axes.Axes'
+    #name = 'starsmashertools.mpl.axes.Axes'
     
     def _get_all_children(self):
         def get(obj, children = []):
@@ -174,8 +174,10 @@ class Axes(matplotlib.axes.Axes, object):
 # This is part of the solution for overriding the default Matplotlib Axes,
 # https://stackoverflow.com/a/48593767
 import sys, inspect
+class_names = {}
 for name, _class in inspect.getmembers(sys.modules[__name__], inspect.isclass):
     if issubclass(_class, Axes):
         _class.name = '.'.join([_class.__module__, _class.__qualname__])
+        class_names[_class.name] = _class
         matplotlib.projections.register_projection(_class)
 

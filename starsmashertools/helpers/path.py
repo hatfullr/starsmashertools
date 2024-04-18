@@ -4,7 +4,6 @@ import starsmashertools.helpers.argumentenforcer
 import glob
 import starsmashertools.helpers.ssh
 import numpy as np
-import fnmatch
 import collections
 import warnings
 import starsmashertools.helpers.string

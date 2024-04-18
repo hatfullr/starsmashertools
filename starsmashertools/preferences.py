@@ -51,8 +51,8 @@ class Preferences(object):
     --------
     Suppose the preference dictionaries are defined as follows:
     
-        # preferences.py
-        user = {
+        # data/user/preferences.py
+        prefs = {
             'module' : {
                 'Class' : {
                     'foo' : 'bar',
@@ -76,8 +76,8 @@ class Preferences(object):
             'module.Class2.obj.i2',
         ]
 
-        # default_preferences.py
-        default = {
+        # data/defaults/preferences.py
+        prefs = {
             'module' : {
                 'Class' : {
                     'foo' : 0,
@@ -155,41 +155,44 @@ class Preferences(object):
     @staticmethod
     def _get_user_dict():
         import sys, os, starsmashertools
-        orig_path = copy.deepcopy(sys.path)
-        sys.path.insert(1, starsmashertools.DATA_DIRECTORY)
-        default = {}
-        try:
-            from preferences import default
-        except ImportError as e: pass
-        sys.path = orig_path
-        return default
+        import starsmashertools.helpers.path
+        prefs = {}
+        default, user = starsmashertools.get_data_files(['preferences.py'])
+        if user:
+            orig_path = copy.deepcopy(sys.path)
+            sys.path.insert(1, starsmashertools.helpers.path.dirname(user[0]))
+            from preferences import prefs
+            sys.path = orig_path
+        return prefs
     
     @staticmethod
     def _get_exclude():
         import sys, os, starsmashertools
-        orig_path = copy.deepcopy(sys.path)
-        sys.path.insert(1, starsmashertools.DATA_DIRECTORY)
+        import starsmashertools.helpers.path
         exclude = []
-        try:
-            from preferences import exclude
-        except ImportError as e: pass
-        sys.path = orig_path
+        default, user = starsmashertools.get_data_files(['preferences.py'])
+        if user:
+            orig_path = copy.deepcopy(sys.path)
+            sys.path.insert(1, starsmashertools.helpers.path.dirname(user[0]))
+            try:
+                from preferences import exclude
+            except ImportError as e: pass
+            sys.path = orig_path
         return exclude
     
     @staticmethod
     def _get_default_dict():
         import sys, os, starsmashertools
+        import starsmashertools.helpers.path
+        prefs = {}
+        default, user = starsmashertools.get_data_files(['preferences.py'])
+        if not default:
+            raise FileNotFoundError("Failed to find 'starsmashertools/data/defaults/preferences.py'. Your installation might be corrupt.")
         orig_path = copy.deepcopy(sys.path)
-        sys.path.insert(1, starsmashertools.DATA_DIRECTORY)
-        try:
-            from default_preferences import default
-        except ImportError as e:
-            filename = os.path.join(
-                starsmashertools.DATA_DIRECTORY, 'default_preferences.py',
-            )
-            raise FileNotFoundError("Failed to find '%s'. Your installation might be corrupt." % filename) from e
+        sys.path.insert(1, starsmashertools.helpers.path.dirname(default[0]))
+        from preferences import prefs
         sys.path = orig_path
-        return default
+        return prefs
     
     def _traverse(self, dictionary : dict, identifier : str):
         def do(obj):

@@ -1,15 +1,13 @@
 """
 This file can be overwritten whenever starsmashertools is updated. You can 
-create a copy of this file and call it 'preferences.py' in the same directory to
-make your own preferences that will not be overwritten. The 'preferences.py' 
-file must be in the same directory as 'default_preferences.py' and it is your 
-responsibility to update it whenever 'default_preferences.py' is updated. Values
-that are missing from 'preferences.py' will be skipped and the corresponding
-values from this file will be used instead.
+create a copy of this file in the user directory to make your own preferences 
+that will not be overwritten. It is your responsibility to keep your own 
+preferences.py file up-to-date. Values that are missing will be skipped and the
+corresponding values from the defaults will be used.
 
-To completely exclude default values, in your 'preferences.py' file, you can do:
+To completely exclude default values, you can do:
 
-    default = {...}
+    prefs = {...}
     exclude = [
         'lib.units.Unit.conversions.Msun
     ]
@@ -22,7 +20,7 @@ import numpy as np
 from starsmashertools.lib.archive import REPLACE_OLD, REPLACE_NEQ
 
 
-default = {
+prefs = {
     
     ############################################################################
     

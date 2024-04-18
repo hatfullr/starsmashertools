@@ -12,7 +12,7 @@ Perform various operations on a StarSmasher simulation directory.
 outtotxt
 --------
 
-Convert an out*.sph file to a text file using a format sheet in the starsmashertools/format_sheets directory.
+Convert an out*.sph file to a text file using a format sheet in the starsmashertools/data/user/format_sheets directory.
 
 
 timing
