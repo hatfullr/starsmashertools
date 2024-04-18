@@ -318,6 +318,7 @@ def subplots(
         subplot_kw = None,
         **kwargs
 ):
+    import starsmashertools.mpl.axes # This registers the Axes classes for projections
     # See https://stackoverflow.com/a/48593767
     
     update_style_sheet_directories()
