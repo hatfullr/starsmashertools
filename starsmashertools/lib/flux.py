@@ -843,6 +843,9 @@ class FluxResult(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
         def plot(
                 self,
                 ax : matplotlib.axes.Axes | type(None) = None,
+                key : str = 'flux',
+                weighted_average : int | type(None) = None,
+                log10 : bool = False,
                 **kwargs
         ):
             """
@@ -856,6 +859,20 @@ class FluxResult(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
                 The Matplotlib :class:`matplotlib.axes.Axes` to plot on. If 
                 `None`, the plot is created on the axes returned by
                 ``plt.gca()``.
+
+            key : str, default = 'flux'
+            The dictionary key in the ``['image']`` :py:class:`dict` to obtain 
+            the data for plotting. The value of ``key`` must result in data of 
+            shape ``resolution`` given in :meth:`~.get`. If ``weighted_average``
+            is given, this argument is ignored.
+
+            weighted_average : int, None, default = None
+               The integer index of the array to plot from the 
+               ``weighted_averages`` key in the results. If `None`, keyword 
+               argument ``key`` is ignored.
+
+            log10 : bool, default = False
+               If `True`, the log10 operation will be done on the data.
             
             kwargs
                 Other keyword arguments are passed directly to 
@@ -879,6 +896,25 @@ class FluxResult(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
             
             if ax is None: ax = plt.gca()
 
+            if weighted_average is not None:
+                data = self['image']['weighted_averages'][weighted_average]
+            else:
+                data = self['image'][key]
+
+            if log10:
+                idx = data < 0
+                if idx.any():
+                    starsmashertools.helpers.warnings.warn(
+                        'Some data is <= 0 and log10 = True. The data which is <= 0 will be set to NaN.',
+                    )
+                # It's common for the empty cells to have flux = 0, so we step
+                # around the warnings by checking for <= 0 here.
+                idx = data <= 0
+                data[idx] = np.nan
+                idx = np.isfinite(data)
+                data[idx] = np.log10(data[idx])
+                data[~idx] = np.nan
+            
             ret = starsmashertools.mpl.artists.FluxPlot(ax, self)
-            im = ret.imshow(**kwargs)
+            im = ret.imshow(data, **kwargs)
             return ret, im

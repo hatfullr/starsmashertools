@@ -34,26 +34,35 @@ class Figure(matplotlib.figure.Figure, object):
             self,
             *args,
             scale : list | tuple | np.ndarray = (1., 1.),
+            bound : bool = True,
+            debug : bool = False,
             **kwargs
     ):
         """
         Initializer. Review the Matplotlib documentation for 
-        ``matplotlib.pyplot.subplots`` for details which are not documented 
+        :func:`matplotlib.pyplot.subplots` for details which are not documented 
         here.
         
         Other Parameters
         ----------------
         *args
            Other positional arguments are passed directly to 
-           ``matplotlib.figure.Figure``.
+           :class:`matplotlib.figure.Figure`.
 
         scale : list | tuple | np.ndarray, default = (1., 1.)
            A 2-element iterable which scales the figure size. Values cannot be
            negative.
 
+        bound : bool, default = True
+           If `True`, artists will be forced to stay within the figure limits
+           by adjusting the ``subplot_adjust`` properties.
+
+        debug : bool, default = False
+           If `True`, debug information will be drawn on the figure.
+
         **kwargs
            Other keyword arguments are passed directly to 
-           ``matplotlib.figure.Figure``.
+           :class:`matplotlib.figure.Figure`.
         """
         scale = np.asarray(scale)
         idx = scale < 0
@@ -68,6 +77,29 @@ class Figure(matplotlib.figure.Figure, object):
         self._scale = np.asarray([1., 1.])
         self.scale = scale
 
+        self._debug_bounds = matplotlib.patches.Rectangle(
+            (0, 0),
+            0, 0,
+            clip_on = False,
+            zorder = float('inf'),
+            edgecolor = 'r',
+            facecolor = 'none',
+            lw = 1,
+            ls = ':',
+            transform = self.transFigure,
+            visible = debug,
+        )
+        self.add_artist(self._debug_bounds)
+
+        self.bound = bound
+        self.debug = debug
+
+    @property
+    def debug(self): return self._debug_bounds.get_visible()
+
+    @debug.setter
+    def debug(self, value): self._debug_bounds.set_visible(value)
+
     @property
     def scale(self): return self._scale
 
@@ -77,15 +109,26 @@ class Figure(matplotlib.figure.Figure, object):
         super(Figure, self).set_size_inches(figsize)
         self._scale = value
 
-    #def close(self):
-    #    plt.pause(1)
-    #    plt.close(fig = self)
-
     def set_size_inches(self, *args, **kwargs):
         ret = super(Figure, self).set_size_inches(*args, **kwargs)
         self._original_size = np.asarray(self.get_size_inches())
         return ret
 
+    def draw(self, *args, **kwargs):
+        if self.debug: # Update the debug box bounds
+            ax_bounds = self.get_axes_bounds(renderer=self.canvas.get_renderer())
+            xmin, xmax = float('inf'), -float('inf')
+            ymin, ymax = float('inf'), -float('inf')
+            for ax, bbox in ax_bounds.items():
+                xmin = min(xmin, bbox.x0)
+                xmax = max(xmax, bbox.x1)
+                ymin = min(ymin, bbox.y0)
+                ymax = max(ymax, bbox.y1)
+            self._debug_bounds.set_bounds(xmin, ymin, xmax - xmin, ymax - ymin)
+        super(Figure, self).draw(*args, **kwargs)
+        if self.bound: self._fix_subplots_adjust()
+        super(Figure, self).draw(*args, **kwargs)
+    
     def show(self, *args, **kwargs):
         """ Display the figure without blocking the code execution if the CLI is
         being used. """
@@ -101,12 +144,76 @@ class Figure(matplotlib.figure.Figure, object):
             plt.pause(0.001)
             return ret
         # Not using the CLI
-        return super(Figure, self).show(*args, **kwargs)
-        #return plt.show(*args, **kwargs)
+        #return super(Figure, self).show(*args, **kwargs)
+        return plt.show(*args, **kwargs)
 
     def savefig(self, *args, **kwargs):
         plt.figure(num = self.number) # Focus this figure
-        return super(Figure, self).savefig(*args, **kwargs) #plt.savefig(*args, **kwargs)
+        return super(Figure, self).savefig(*args, **kwargs)
+
+    def subplots_adjust(self, **kwargs):
+        # Force any "bound" axes to stay within the figure
+        if self.bound:
+            self._fix_subplots_adjust(**kwargs)
+            self.canvas.draw_idle()
+        else: super(Figure, self).subplots_adjust(**kwargs)
+    
+    def _fix_subplots_adjust(
+            self,
+            left = None,
+            right = None,
+            bottom = None,
+            top = None,
+            **kwargs
+    ):
+        if left is None: left = self.subplotpars.left
+        if right is None: right = self.subplotpars.right
+        if bottom is None: bottom = self.subplotpars.bottom
+        if top is None: top = self.subplotpars.top
+
+        for ax, bounds in self.get_axes_bounds().items():
+            pos = ax.get_position()
+            left = max(left, pos.x0 - bounds.x0)
+            right = min(right, 1 - (bounds.x1 - pos.x1))
+            bottom = max(bottom, pos.y0 - bounds.y0)
+            top = min(top, 1 - (bounds.y1 - pos.y1))
+        kwargs['left'] = left
+        kwargs['right'] = right
+        kwargs['bottom'] = bottom
+        kwargs['top'] = top
+        super(Figure, self).subplots_adjust(**kwargs)
+    
+    def get_axes_bounds(self, *args, **kwargs):
+        ret = {}
+        for ax in self.axes:
+            bbox = ax.get_window_extent(*args, **kwargs)
+            xmin, xmax, ymin, ymax = bbox.x0, bbox.x1, bbox.y0, bbox.y1
+            for child in ax._get_all_children():
+                if not child.get_visible(): continue
+                ext = child.get_window_extent(*args, **kwargs)
+                if ext.width <= 0 or ext.height <= 0: continue
+                x0, x1, y0, y1 = ext.xmin, ext.xmax, ext.ymin, ext.ymax
+                if isinstance(child, matplotlib.text.Text):
+                    # The text can be wrongly sized by 1 pixel on any side, so here
+                    # we err on the side of caution
+                    text = child.get_text().strip()
+                    if not text: continue
+                    x0 -= 2
+                    x1 += 2
+                    y0 -= 2
+                    y1 += 2
+
+                xmin = min(xmin, x0)
+                xmax = max(xmax, x1)
+                ymin = min(ymin, y0)
+                ymax = max(ymax, y1)
+            ret[ax] = matplotlib.transforms.Bbox(
+                [
+                    [xmin, ymin],
+                    [xmax, ymax],
+                ],
+            ).transformed(self.transFigure.inverted())
+        return ret
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     def save(
@@ -201,22 +308,44 @@ class Figure(matplotlib.figure.Figure, object):
             return total
         
         return get(self)
-
-                
         
 
 def subplots(
         *args,
         FigureClass = Figure,
         style : str = 'starsmashertools',
+        AxesClass : str | type(None) = 'starsmashertools.mpl.axes.Axes',
+        subplot_kw = None,
         **kwargs
 ):
+    # See https://stackoverflow.com/a/48593767
+    
     update_style_sheet_directories()
     plt.style.use(style)
-    return plt.subplots(*args, FigureClass = Figure, **kwargs)
+    if AxesClass is not None:
+        if subplot_kw is None: subplot_kw = dict(projection=AxesClass)
+        else: subplot_kw['projection'] = AxesClass
+    fig, ax = plt.subplots(
+        *args,
+        FigureClass = Figure,
+        subplot_kw = subplot_kw,
+        **kwargs
+    )
+    fig.draw(renderer = fig.canvas.get_renderer())
+    return fig, ax
+    
 
 
 
 
 
 
+class PanelGridFigure(Figure, object):
+    """
+    This class represents a :class:`~.Figure` which has multiple axes, arranged
+    as a grid of panels. Each axes is positioned such that 
+    """
+    def __init__(
+            self,
+    ):
+        pass

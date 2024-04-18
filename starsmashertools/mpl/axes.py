@@ -3,8 +3,14 @@
 import matplotlib.axes
 import matplotlib.transforms
 import matplotlib.colorbar
+import matplotlib.path
+import matplotlib.patches
+import matplotlib.pyplot as plt
+import matplotlib.projections
+import matplotlib.text
 import numpy as np
 import starsmashertools.helpers.argumentenforcer
+import copy
 
 
 @starsmashertools.helpers.argumentenforcer.enforcetypes
@@ -145,3 +151,31 @@ def text(
         xycoords='axes fraction',
         **kwargs
     )
+
+
+class Axes(matplotlib.axes.Axes, object):
+    name = 'starsmashertools.mpl.axes.Axes'
+    
+    def _get_all_children(self):
+        def get(obj, children = []):
+            if obj not in children: children += [obj]
+            if hasattr(obj, 'get_children'):
+                for child in obj.get_children():
+                    for c in get(child, children = children):
+                        if c not in children: children += [c]
+            return children
+
+        children = []
+        for child in self.get_children():
+            children = get(child, children = children)
+        return children
+
+
+# This is part of the solution for overriding the default Matplotlib Axes,
+# https://stackoverflow.com/a/48593767
+import sys, inspect
+for name, _class in inspect.getmembers(sys.modules[__name__], inspect.isclass):
+    if issubclass(_class, Axes):
+        _class.name = '.'.join([_class.__module__, _class.__qualname__])
+        matplotlib.projections.register_projection(_class)
+

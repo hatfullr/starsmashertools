@@ -280,7 +280,10 @@ class FluxPlot(object):
             self._outline,
         ]
         for artist in artists:
-            if artist is not None: artist.remove()
+            if artist is not None:
+                try:
+                    artist.remove()
+                except: pass
 
         self._image = None
         self._highlight = None
@@ -290,31 +293,20 @@ class FluxPlot(object):
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     def imshow(
             self,
-            key : str = 'flux',
-            weighted_average : int | type(None) = None,
-            log10 : bool = False,
+            data : np.ndarray,
             extent : list | tuple | np.ndarray | type(None) = None,
             **kwargs
     ):
         """
         Plot a quantity on a Matplotlib :class:`matplotlib.axes.Axes`.
+        
+        Parameters
+        ----------
+        data : np.ndarray
+            The image to plot.
 
         Other Parameters
         ----------------
-        key : str, default = 'flux'
-            The dictionary key in the ``['image']`` :py:class:`dict` to obtain 
-            the data for plotting. The value of ``key`` must result in data of 
-            shape ``resolution`` given in :meth:`~.get`. If ``weighted_average``
-            is given, this argument is ignored.
-
-        weighted_average : int, None, default = None
-            The integer index of the array to plot from the 
-            ``weighted_averages`` key in the results. If `None`, keyword 
-            argument ``key`` is ignored.
-
-        log10 : bool, default = False
-            If `True`, the log10 operation will be done on the data.
-
         extent : list, tuple, numpy.ndarray, None, default = None
             See :meth:`matplotlib.axes.Axes.imshow`. If `None`, then the extents
             from the flux results are used.
@@ -342,28 +334,9 @@ class FluxPlot(object):
         
         prefs.update(kwargs)
         kwargs = prefs
-
-        if weighted_average is not None:
-            data = self._result['image']['weighted_averages'][weighted_average]
-        else:
-            data = self._result['image'][key]
-
-        if log10:
-            idx = data < 0
-            if idx.any():
-                starsmashertools.helpers.warnings.warn(
-                    'Some data is <= 0 and log10 = True. The data which is <= 0 will be set to NaN.',
-                )
-            # It's common for the empty cells to have flux = 0, so we step
-            # around the warnings by checking for <= 0 here.
-            idx = data <= 0
-            data[idx] = np.nan
-            idx = np.isfinite(data)
-            data[idx] = np.log10(data[idx])
-            data[~idx] = np.nan
         
         if extent is None: extent = self._result['image']['extent']
-
+        
         kwargs['origin'] = 'lower'
         self._image = self._axes.imshow(
             np.swapaxes(data, 0, 1),
