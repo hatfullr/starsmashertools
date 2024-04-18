@@ -7,8 +7,13 @@ import numpy as np
 import basetest
 import warnings
 
+
+
 try:
     import matplotlib.pyplot as plt
+    import matplotlib
+
+    matplotlib.use('TkAgg')
     has_matplotlib = True
 except ImportError:
     has_matplotlib = False
