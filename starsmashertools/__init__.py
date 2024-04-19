@@ -789,8 +789,26 @@ def _get_decorators():
 
 
 
+@api
+@starsmashertools.helpers.argumentenforcer.enforcetypes
+def report(simulations : list | tuple):
+    """
+    Generate a report for a list of given :class:`~.lib.simulation.Simulation`s.
+    The report appears as a table of values, where each row is a Simulation and
+    each column is a quantity related to that Simulation.
 
+    Parameters
+    ----------
+    simulations : list, tuple
+        A list of :class:`~.lib.simulation.Simulation` objects for which to
+        generate a report.
 
+    Returns
+    -------
+    report : :class:`~.lib.report.Report`
+    """
+    import starsmashertools.lib.report
+    return starsmashertools.lib.report.Report(simulations)
 
 
 

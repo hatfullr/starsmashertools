@@ -182,6 +182,40 @@ prefs = {
                 'max buffer size' : 100,
             }, # 'OutputIterator'
         }, # 'output'
+
+        'report' : {
+            'Report' : {
+                'columns' : [
+                    {
+                        'args' : (
+                            lambda sim: sim.directory,
+                        ),
+                        'kwargs' : {
+                            'header' : 'name',
+                            'formatter' : '{:20}',
+                            'shorten' : {
+                                'args' : (20,),
+                                'kwargs' : {
+                                    'where' : 'left',
+                                },
+                            },
+                        },
+                    },
+                    {
+                        'args' : (
+                            lambda sim: sim.get_output(0)['t']*sim.units['t'],
+                        ),
+                        'kwargs' : {'header' : 'start'},
+                    },
+                    {
+                        'args' : (
+                            lambda sim: sim.get_output(-1)['t']*sim.units['t'],
+                        ),
+                        'kwargs' : {'header' : 'end'},
+                    },
+                ], # 'columns'
+            }, # 'Report'
+        }, # 'report'
         
         'simulation' : {
             'Simulation' : {
