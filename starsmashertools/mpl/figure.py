@@ -1,8 +1,10 @@
 import starsmashertools.preferences
+from starsmashertools.helpers.apidecorator import api
 import starsmashertools.helpers.argumentenforcer
 import numpy as np
 import matplotlib.artist
 import matplotlib.figure
+import starsmashertools.lib.flux
 
 def update_style_sheet_directories():
     """ Locate the style sheets listed in the preferences. """
@@ -26,7 +28,13 @@ class Figure(matplotlib.figure.Figure, object):
     """
     Used internally to create Matplotlib figures. This normalizes the process
     for creating figures to ensure consistency.
+
+    ``Figure.name`` describes the class identifier string, which can be used,
+    e.g., as the argument for ``FigureClass`` in :func:`~.mpl.subplots`. The
+    value for this class is ``name = 'starsmashertools.mpl.figure.Figure'``.
     """
+    
+    name = 'Figure'
     
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     def __init__(
@@ -193,7 +201,7 @@ class Figure(matplotlib.figure.Figure, object):
         for ax in self.axes:
             bbox = ax.get_window_extent(*args, **kwargs)
             xmin, xmax, ymin, ymax = bbox.x0, bbox.x1, bbox.y0, bbox.y1
-            for child in ax._get_all_children():
+            for child in self.get_artists(artist = ax, artist_type = None):
                 if not child.get_visible(): continue
                 ext = child.get_window_extent(*args, **kwargs)
                 if ext.width <= 0 or ext.height <= 0: continue
@@ -297,13 +305,20 @@ class Figure(matplotlib.figure.Figure, object):
         return figure
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
-    def get_artists(self, artist_type : type = matplotlib.artist.Artist):
+    def get_artists(
+            self,
+            artist_type : type | type(None) = matplotlib.artist.Artist,
+            artist : matplotlib.artist.Artist | type(None) = None,
+    ):
         """ Obtain all artists of the given type. If the given type is None, 
-        this returns all artists in the figure. """
+        this returns all artists in the figure. The search begins at the given
+        artist. If the given artist is None, all artists are searched. """
+        if artist is None: artist = self
         
         # Recursive get
         def get(artist, total = []):
-            if not isinstance(artist, artist_type): return total
+            if artist_type is not None and not isinstance(artist, artist_type):
+                return total
             if artist in total: return total
             total += [artist]
             if hasattr(artist, 'get_children'):
@@ -312,34 +327,131 @@ class Figure(matplotlib.figure.Figure, object):
                     total = get(child, total = total)
             return total
         
-        return get(self)
+        return get(artist)
 
+@starsmashertools.preferences.use
+class FluxFigure(Figure, object):
+    """
+    Show any number of :class:`~.lib.flux.FluxResult`s on a Figure. The figure
+    appears as a collection of images, where each row represents one FluxResult.
+    The number of columns in each row is determined by the keys given in the 
+    constructor
+    """
+    
+    name = 'FluxFigure' # Cannot be used in starsmashertools.mpl.subplots()
 
-class PanelGridFigure(Figure, object):
-    """
-    This class represents a :class:`~.Figure` which has multiple axes, arranged
-    as a grid of panels. Each axes is positioned such that 
-    """
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
     def __init__(
             self,
+            *args,
+            values : list | tuple | type(None) = None,
+            **kwargs
     ):
-        pass
+        """
+        Parameters
+        ----------
+        *args
+            Positional arguments are passed directly to
+            :meth:`~.Figure.__init__`.
 
+        Other Parameters
+        ----------------
+        values : list, tuple, None, default = None
+            A list of ``str`` or functions which determine the quantities to be
+            shown. Each ``str`` must correspond with a key in the ``'image'``
+            dict of the FluxResult. If a function is given, it must accept a
+            FluxResult as input and give a 2D NumPy array and a dict as the 
+            output, where the 2D array is the image and the dict specify keyword
+            arguments to :func:`matplotlib.axes.Axes.imshow`.
 
+            If `None`, the preferences are used.
+            
+        **kwargs
+            Other keyword arguments are passed directly to 
+            :meth:`~.Figure.__init__`.
+        """
+        if values is None: values = self.preferences.get('values')
+        self._values = values
+        super(FluxFigure, self).__init__(*args, **kwargs)
+        self._toplot = []
+        self._subplots_kw = {}
+    
+    def subplots(
+            self,
+            *args,
+            sharex : bool = True,
+            sharey : bool = True,
+            **kwargs
+    ):
+        """
+        This function is called by :func:`~.mpl.subplots` to create the axes on
+        the figure.
+        """
+        self._subplots_kw = kwargs
+        self._subplots_kw['sharex'] = sharex
+        self._subplots_kw['sharey'] = sharey
+        return None
+    
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def add(
+            self,
+            result : str | starsmashertools.lib.flux.FluxResult,
+    ):
+        """
+        Add a :class:`~.lib.flux.FluxResult` to the figure.
 
+        Parameters
+        ----------
+        result : str, :class:`~.lib.flux.FluxResult`
+            The :class:`~.lib.flux.FluxResult` to add to the figure. If a `str`
+            is given, it must be a path to a valid FluxResult file.
 
+        values : list, tuple, None, default = None
+            The :py:class:`str` keys in the 'image' dict of the FluxResult which
+            will be plotted.
+        
+        Returns
+        -------
+        ax : list
+            A list of Axes which have been added to the figure.
+        """
+        import starsmashertools.lib.flux
+        if isinstance(result, str):
+            result = starsmashertools.lib.flux.FluxResult.load(result)
+        self._toplot += [result]
 
+    def show(
+            self,
+            *args,
+            flux_kw : dict | list | tuple = {},
+            **kwargs
+    ):
+        """ Create the actual plot. """
+        
+        nrows = len(self._toplot)
+        ncols = len(self._values)
+        self._subplots_kw['nrows'] = nrows
+        self._subplots_kw['ncols'] = ncols
+        axs = super(FluxFigure, self).subplots(**self._subplots_kw)
 
+        if not isinstance(flux_kw, (list, tuple)):
+            flux_kw = [flux_kw]*ncols
 
-
-
-
-
-
-# Store all the available Figure classes and subclasses for lookup later
-import sys, inspect
-class_names = {}
-for name, _class in inspect.getmembers(sys.modules[__name__], inspect.isclass):
-    if issubclass(_class, Figure):
-        _class.name = '.'.join([_class.__module__, _class.__qualname__])
-        class_names[_class.name] = _class
+        if nrows == 1:
+            for ax, value, kw in zip(axs, self._values, flux_kw):
+                self._toplot[0].plot(
+                    ax = ax,
+                    key = value,
+                    **kw
+                )
+        else:
+            for row, result in zip(axs, self._toplot):
+                for ax, value, kw in zip(row, self._values, flux_kw):
+                    result.plot(
+                        ax = ax,
+                        key = value,
+                        **kw
+                    )
+        return super(FluxFigure, self).show(*args, **kwargs)

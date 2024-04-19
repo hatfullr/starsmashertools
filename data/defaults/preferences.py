@@ -389,6 +389,18 @@ prefs = {
                     # files for use with Matplotlib.
                 ],
             }, # 'Figure'
+            'FluxFigure' : {
+                # These can be strings which refer to keys in the 'image' dict
+                # of a FluxResult, or they can be functions which accept a
+                # FluxResult as the input and return a 2D NumPy array.
+                'values' : [
+                    'rho_cell',
+                    'T_cell',
+                    'kappa_cell',
+                    'Teff_cell',
+                    'flux',
+                ],
+            }, # 'FluxFigure'
         }, # 'figure'
     }, # 'mpl'
 

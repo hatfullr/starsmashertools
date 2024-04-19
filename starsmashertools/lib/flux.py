@@ -3,11 +3,11 @@ import starsmashertools.preferences
 import math
 import numpy as np
 import starsmashertools.lib.output
-import starsmashertools.helpers.readonlydict
 from starsmashertools.helpers.apidecorator import api
 import starsmashertools.helpers.argumentenforcer
 import copy
 import warnings
+import typing
 
 try:
     import matplotlib.axes
@@ -215,7 +215,10 @@ def get(
     weighted_average_arrays = []
     for i in range(len(weighted_averages)):
         weighted_average_arrays += [np.zeros(surf_br.shape)]
-        
+
+    kappa_cell = np.zeros(shape, dtype = float)
+    rho_cell = np.zeros(shape, dtype = float)
+    T_cell = np.zeros(shape, dtype = float)
     surf_t = np.zeros(shape, dtype = float)
     flux = np.zeros(ntot, dtype = float)
     teff = np.zeros(ntot, dtype = float)
@@ -520,6 +523,10 @@ def get(
                 for _i, A in enumerate(weighted_averages):
                     weighted_average_arrays[_i][ii, jj] += A[ir] * f
 
+                kappa_cell[ii,jj] += kappa[ir] * f
+                rho_cell[ii,jj] += rho[ir] * f
+                T_cell[ii,jj] += temp[ir] * f
+                    
                 # Do spectrum stuff
                 expon = factor2 / (teff[ir] * lam)
                 idx = expon < 150
@@ -543,7 +550,11 @@ def get(
 
                 for _i, A in enumerate(weighted_averages):
                     weighted_average_arrays[_i][ii, jj] += A[i] * f
-                
+
+                kappa_cell[ii,jj] += kappa[i] * f
+                rho_cell[ii,jj] += rho[i] * f
+                T_cell[ii,jj] += temp[i] * f
+                    
                 contributors[i] = True
 
                 expon = factor2 / (teff[i] * lam)
@@ -568,10 +579,16 @@ def get(
     if np.any(idx):
         for _i in range(len(weighted_averages)):
             weighted_average_arrays[_i][idx] /= surf_br[idx]
+        kappa_cell[idx] /= surf_br[idx]
+        rho_cell[idx] /= surf_br[idx]
+        T_cell[idx] /= surf_br[idx]
             
     if np.any(~idx):
         for _i in range(len(weighted_averages)):
             weighted_average_arrays[_i][~idx] = 0
+        kappa_cell[~idx] = 0
+        rho_cell[~idx] = 0
+        T_cell[~idx] = 0
 
     # Vectorized:
     area_br = 0.25 * (\
@@ -580,20 +597,18 @@ def get(
         surf_br[1:resolution[0]  , :resolution[1]-1] + \
         surf_br[1:resolution[0]  ,1:resolution[1]])
 
-    surf_t = (area_br/sigma_const)**0.25 * area_br
+    surf_t = (area_br/sigma_const)**0.25
     flux_tot = np.sum(area_br)
-    ltot = np.sum(area_br)
-    l_v = np.sum(surf_br_v[:resolution[0]-1,:resolution[1]-1])
-    
+    flux_tot_v = np.sum(surf_br_v[:resolution[0]-1,:resolution[1]-1])
 
     # Vectorized:
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        teff_aver = np.sum(surf_t[:resolution[0]-1, :resolution[1]-1] / ltot)
+        teff_aver = np.sum(surf_t[:resolution[0]-1, :resolution[1]-1] * area_br / flux_tot)
 
     # Finish the ltot and l_v calculations
-    ltot *= 4 * dx * dy * rsun**2
-    l_v  *= 4 * dx * dy * rsun**2
+    ltot = 4 * dx * dy * rsun**2 * flux_tot
+    l_v  = 4 * dx * dy * rsun**2 * flux_tot_v
 
     # Finish spectrum calculations
     teff_spectrum = 0
@@ -681,7 +696,10 @@ def get(
             'flux_v' : surf_br_v,
             'surf_d' : surf_d,
             'surf_id' : surf_id,
-            'surf_t' : surf_t,
+            'Teff_cell' : surf_t,
+            'kappa_cell' : kappa_cell,
+            'rho_cell' : rho_cell,
+            'T_cell' : T_cell,
             'extent' : [xmin, xmax, ymin, ymax],
             'dx' : dx,
             'dy' : dy,
@@ -761,7 +779,7 @@ def find_dusty_particles(
 
 
 
-class FluxResult(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
+class FluxResult(dict, object):
     def __init__(self, *args, **kwargs):
         self._simulation = None
         self._output = None
@@ -843,7 +861,7 @@ class FluxResult(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
         def plot(
                 self,
                 ax : matplotlib.axes.Axes | type(None) = None,
-                key : str = 'flux',
+                key : str | typing.Callable = 'flux',
                 weighted_average : int | type(None) = None,
                 log10 : bool = False,
                 **kwargs
@@ -861,18 +879,20 @@ class FluxResult(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
                 ``plt.gca()``.
 
             key : str, default = 'flux'
-            The dictionary key in the ``['image']`` :py:class:`dict` to obtain 
-            the data for plotting. The value of ``key`` must result in data of 
-            shape ``resolution`` given in :meth:`~.get`. If ``weighted_average``
-            is given, this argument is ignored.
+                The dictionary key in the ``['image']`` :py:class:`dict` to 
+                obtain the data for plotting, or a function which accepts a 
+                FluxResult as input and returns a 2D NumPy array and a dict, 
+                where the 2D array is the image contents and the dict is the 
+                keywords to pass to :func:`matplotlib.axes.Axes.imshow`. If 
+                ``weighted_average`` is given, this argument is ignored.
 
             weighted_average : int, None, default = None
-               The integer index of the array to plot from the 
-               ``weighted_averages`` key in the results. If `None`, keyword 
-               argument ``key`` is ignored.
+                The integer index of the array to plot from the 
+                ``weighted_averages`` key in the results. If `None`, keyword 
+                argument ``key`` is ignored.
 
             log10 : bool, default = False
-               If `True`, the log10 operation will be done on the data.
+                If `True`, the log10 operation will be done on the data.
             
             kwargs
                 Other keyword arguments are passed directly to 
@@ -899,7 +919,12 @@ class FluxResult(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
             if weighted_average is not None:
                 data = self['image']['weighted_averages'][weighted_average]
             else:
-                data = self['image'][key]
+                if isinstance(key, str):
+                    data = self['image'][key]
+                elif callable(key):
+                    data, kwargs = key(self)
+                else:
+                    raise Exception("This should never be possible")
 
             if log10:
                 idx = data < 0

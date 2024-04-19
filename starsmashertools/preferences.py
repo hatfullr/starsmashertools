@@ -154,44 +154,50 @@ class Preferences(object):
     
     @staticmethod
     def _get_user_dict():
-        import sys, os, starsmashertools
+        import sys, starsmashertools
         import starsmashertools.helpers.path
+        import importlib.util
         prefs = {}
         default, user = starsmashertools.get_data_files(['preferences.py'])
         if user:
-            orig_path = copy.deepcopy(sys.path)
-            sys.path.insert(1, starsmashertools.helpers.path.dirname(user[0]))
-            from preferences import prefs
-            sys.path = orig_path
+            spec = importlib.util.spec_from_file_location('preferences', user[0])
+            module = importlib.util.module_from_spec(spec)
+            sys.modules['preferences'] = module
+            spec.loader.exec_module(module)
+            if hasattr(module, 'prefs'): prefs = module.prefs
+            del sys.modules['preferences']
         return prefs
     
     @staticmethod
     def _get_exclude():
-        import sys, os, starsmashertools
+        import sys, starsmashertools
         import starsmashertools.helpers.path
+        import importlib.util
         exclude = []
         default, user = starsmashertools.get_data_files(['preferences.py'])
         if user:
-            orig_path = copy.deepcopy(sys.path)
-            sys.path.insert(1, starsmashertools.helpers.path.dirname(user[0]))
-            try:
-                from preferences import exclude
-            except ImportError as e: pass
-            sys.path = orig_path
+            spec = importlib.util.spec_from_file_location('preferences', user[0])
+            module = importlib.util.module_from_spec(spec)
+            sys.modules['preferences'] = module
+            spec.loader.exec_module(module)
+            if hasattr(module, 'exclude'): exclude = module.exclude
+            del sys.modules['preferences']
         return exclude
     
     @staticmethod
     def _get_default_dict():
-        import sys, os, starsmashertools
+        import sys, starsmashertools
         import starsmashertools.helpers.path
-        prefs = {}
+        import importlib.util
         default, user = starsmashertools.get_data_files(['preferences.py'])
         if not default:
             raise FileNotFoundError("Failed to find 'starsmashertools/data/defaults/preferences.py'. Your installation might be corrupt.")
-        orig_path = copy.deepcopy(sys.path)
-        sys.path.insert(1, starsmashertools.helpers.path.dirname(default[0]))
-        from preferences import prefs
-        sys.path = orig_path
+        spec = importlib.util.spec_from_file_location('preferences', default[0])
+        module = importlib.util.module_from_spec(spec)
+        sys.modules['preferences'] = module
+        spec.loader.exec_module(module)
+        prefs = module.prefs
+        del sys.modules['preferences']
         return prefs
     
     def _traverse(self, dictionary : dict, identifier : str):
