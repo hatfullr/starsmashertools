@@ -851,12 +851,14 @@ class FluxResult(dict, object):
         import starsmashertools.lib.archive
         if filename is None: filename = 'flux.zip'
         archive = starsmashertools.lib.archive.Archive(filename, **kwargs)
-        for key, val in self.items():
-            archive.add(
-                key,
-                val,
-                origin = self['output'],
-            )
+        with archive.nosave():
+            for key, val in self.items():
+                archive.add(
+                    key,
+                    val,
+                    origin = self['output'],
+                )
+        archive.save()
         return archive
     
     @staticmethod
