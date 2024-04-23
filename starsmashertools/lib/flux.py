@@ -824,38 +824,41 @@ class FluxResult(dict, object):
     @api
     def save(
             self,
-            filename : str | type(None) = None,
+            filename : str = 'flux.zip',
+            **kwargs
     ):
         """
-        Save the results to disk in a compressed JSON format. If the given 
-        ``filename`` does not have a file extension, it will be given the
-        extension ``'.flux.zip'`` automatically. Otherwise, if ``filename`` has
-        a file extension which does not end in ``'.zip'``, the file will not be
-        compressed.
-
+        Save the results to disk as an :class:`~.lib.archive.Archive`.
+        
         Other Parameters
         ----------
-        filename : str, None, default = None
-            The name of the file to save to. If no file extension is detected,
-            ``'.flux.zip'`` will be appended to the end of the string. 
-            Otherwise, the file will not be compressed unless the extension is 
-            ``'.zip'``.
-            
-            If `None`, the file will be saved in the current working directory
-            with name ``basename.f
+        filename : str, default = 'flux.zip'
+            The name of the Archive.
+
+        **kwargs
+            Keyword arguments are passed directly to 
+            :meth:`~.lib.archive.Archive.__init__`.
+        
+        Returns
+        -------
+        archive : :class:`~.lib.archive.Archive`
+            The newly created Archive.
 
         See Also
         --------
         :meth:`~.load`
         """
-        import starsmashertools.helpers.jsonfile
-        import starsmashertools.helpers.path
-        if filename is None:
-            filename = starsmashertools.helpers.path.basename(self['output']).replace('.sph', '.flux.zip')
-        basename = starsmashertools.helpers.path.basename(filename)
-        if '.' not in basename: filename += '.flux.zip'
-        starsmashertools.helpers.jsonfile.save(filename, self)
-
+        import starsmashertools.lib.archive
+        if filename is None: filename = 'flux.zip'
+        archive = starsmashertools.lib.archive.Archive(filename, **kwargs)
+        for key, val in self.items():
+            archive.add(
+                key,
+                val,
+                origin = self['output'],
+            )
+        return archive
+    
     @staticmethod
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
@@ -868,12 +871,17 @@ class FluxResult(dict, object):
         filename : str
             The location of the file on the disk to load.
 
+        Returns
+        -------
+        :class:`~.FluxResult`
+
         See Also
         --------
         :meth:`~.save`
         """
-        import starsmashertools.helpers.jsonfile
-        return FluxResult(starsmashertools.helpers.jsonfile.load(filename))
+        import starsmashertools.lib.archive
+        archive = starsmashertools.lib.archive.Archive(filename)
+        return FluxResult(archive.get(archive.keys()))
     
     if has_matplotlib:
         @starsmashertools.helpers.argumentenforcer.enforcetypes

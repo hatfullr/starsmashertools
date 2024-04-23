@@ -8,7 +8,6 @@ import builtins
 import numpy as np
 import typing
 import atexit
-import zipfile
 import os
 
 fortran_comment_characters = ['c','C','!','*']
