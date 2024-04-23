@@ -25,6 +25,7 @@ def get(
         # Image
         resolution : list | tuple | type(Null) = Null(),
         extent : list | tuple | type(None) = None,
+        extent_limits : list | tuple | type(None) = None,
         theta : int | float | type(Null) = Null(),
         phi : int | float | type(Null) = Null(),
         fluffy : bool | type(Null) = Null(),
@@ -73,6 +74,7 @@ def get(
     
     resolution = kwargs['resolution']
     extent = kwargs['extent']
+    extent_limits = kwargs['extent_limits']
     theta = kwargs['theta']
     phi = kwargs['phi']
     
@@ -193,7 +195,14 @@ def get(
         if verbose: print("domain  max: %12.5f" %  max_coord)
     else:
         xmin, xmax, ymin, ymax = extent
-        
+    
+    if extent_limits is not None:
+        xminlim, xmaxlim, yminlim, ymaxlim = extent_limits
+        if xminlim is not None: xmin = max(xmin, xminlim)
+        if xmaxlim is not None: xmax = min(xmax, xmaxlim)
+        if yminlim is not None: ymin = max(ymin, yminlim)
+        if ymaxlim is not None: ymax = min(ymax, ymaxlim)
+    
     if verbose:
         print("xmin: %12.5f" % xmin)
         print("xmax: %12.5f" % xmax)
