@@ -883,7 +883,11 @@ class FluxResult(dict, object):
         """
         import starsmashertools.lib.archive
         archive = starsmashertools.lib.archive.Archive(filename)
-        return FluxResult(archive.get(archive.keys()))
+        keys = archive.keys()
+        _dict = {}
+        for key, val in zip(keys, archive.get(keys)):
+            _dict[key] = val
+        return FluxResult(_dict)
     
     if has_matplotlib:
         @starsmashertools.helpers.argumentenforcer.enforcetypes
