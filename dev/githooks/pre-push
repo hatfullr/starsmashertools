@@ -21,20 +21,6 @@ p = subprocess.run(
 if 'FAILED' in p.stderr:
     print(p.stderr)
     sys.exit(1)
-
-os.chdir(os.path.join(
-    starsmashertools.SOURCE_DIRECTORY,
-    'dev',
-))
-p = subprocess.run(
-    ['increment_version'],
-    check = True,
-    capture_output = True,
-    text = True,
-)
-if 'Traceback' in p.stderr:
-    print(p.stderr)
-    sys.exit(1)
     
 sys.exit(0)
 
