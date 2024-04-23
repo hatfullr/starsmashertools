@@ -17,6 +17,17 @@ except ImportError:
 
 class Null(object): pass
 
+def process_inputs(**kwargs):
+    prefs = get.preferences.get('options')
+    for key, val in kwargs.items():
+        if isinstance(val, Null):
+            if key in prefs.keys(): kwargs[key] = prefs[key]
+            elif key not in ['dust_opacity']:
+                raise ValueError("Keyword argument '%s' must be given if it is not featured in the preferences files" % key)
+    return kwargs
+
+
+
 @starsmashertools.preferences.use
 def get(
         output : starsmashertools.lib.output.Output,
@@ -63,14 +74,8 @@ def get(
     kwargs.pop('output')
 
     import starsmashertools
-    
-    prefs = get.preferences.get('options')
-    for key, val in kwargs.items():
-        if isinstance(val, Null):
-            if key in prefs.keys(): kwargs[key] = prefs[key]
-            elif key not in ['dust_opacity']:
-                raise ValueError("Keyword argument '%s' must be given if it is not featured in the preferences files" % key)
-    
+
+    kwargs = process_kwargs(**kwargs)
     
     resolution = kwargs['resolution']
     extent = kwargs['extent']
@@ -100,14 +105,12 @@ def get(
     factor1 = kwargs['factor1']
     factor2 = kwargs['factor2']
     filters = kwargs['filters']
-
+    
     # Avoid headaches with the weighted averages
     weighted_averages = [copy.deepcopy(w) for w in weighted_averages]
     
     current = copy.deepcopy(output)
-
-
-
+    
     # Set viewing angle
     current.rotate(
         xangle = theta,
@@ -688,6 +691,8 @@ def get(
         print("udot L = %12.4E"% (Lurad*msun))
     
     return FluxResult({
+        'version' : starsmashertools.__version__,
+        
         'output' : current.path,
         'kwargs' : kwargs,
 
