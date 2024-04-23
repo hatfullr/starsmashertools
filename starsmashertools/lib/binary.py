@@ -137,7 +137,6 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
     def get_COMs(self, output : starsmashertools.lib.output.Output | starsmashertools.lib.output.OutputIterator):
         import starsmashertools.math
         import starsmashertools.lib.simulation
-        import starsmashertools.lib.output
         
         if output not in self:
             raise starsmashertools.lib.simulation.Simulation.OutputNotInSimulationError(self, output)

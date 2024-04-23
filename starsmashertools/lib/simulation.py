@@ -8,6 +8,7 @@ from starsmashertools.helpers.apidecorator import api
 from starsmashertools.helpers.clidecorator import cli
 from starsmashertools.helpers.archiveddecorator import archived
 import numpy as np
+import typing
 
 try:
     import matplotlib
@@ -252,38 +253,6 @@ class Simulation(object):
         import starsmashertools.helpers.path
         search_directory = self.preferences.get('search directory')
         return starsmashertools.helpers.path.realpath(search_directory)
-    
-    @api
-    @starsmashertools.helpers.argumentenforcer.enforcetypes
-    @staticmethod
-    def compare_type(
-            sim1 : "type | starsmashertools.lib.simulation.Simulation",
-            sim2 : "type | starsmashertools.lib.simulation.Simulation",
-    ):
-        """
-        Return True if "sim1" is the same simulation type as "sim2", and False
-        otherwise.
-        
-        Parameters
-        ----------
-        sim1 : :class:`starsmashertools.lib.simulation.Simulation`
-        sim2 : :class:`starsmashertools.lib.simulation.Simulation`
-
-        Returns
-        -------
-        bool
-        """
-        t1 = sim1
-        t2 = sim2
-        if isinstance(t1, type) and not isinstance(t2, type):
-            return isinstance(t2, t1)
-        if not isinstance(t1, type) and isinstance(t2, type):
-            return isinstance(t1, t2)
-        if not isinstance(t1, type) and not isinstance(t2, type):
-            return isinstance(t1, type(t2))
-        if isinstance(t1, type) and isinstance(t2, type):
-            return t1 is t2
-        raise Exception("This should never happen")
     
     @api
     def get_compressed_properties(self):
@@ -582,7 +551,7 @@ class Simulation(object):
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
-    def started_from(self, simulation : 'Simulation'):
+    def started_from(self, simulation : 'starsmashertools.lib.simulation.Simulation'):
         """
         Returns
         -------
@@ -1305,12 +1274,21 @@ class Simulation(object):
     @api
     def get_flux(
             self,
-            outputs : 'starsmashertools.lib.output.Output | list | tuple | starsmashertools.lib.output.OutputIterator',
+            outputs,
             parallel : bool = True,
             **kwargs
     ):
         import starsmashertools.lib.flux
         import starsmashertools.helpers.asynchronous
+
+        starsmashertools.helpers.argumentenforcer.enforcetypes({
+            'outputs' : [
+                starsmashertools.lib.output.Output,
+                list,
+                tuple,
+                starsmashertools.lib.output.OutputIterator,
+            ]
+        })
         
         if isinstance(outputs, starsmashertools.lib.output.Output):
             return starsmashertools.lib.flux.get(outputs, **kwargs)

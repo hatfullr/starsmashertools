@@ -6,7 +6,7 @@ import collections
 import starsmashertools.lib.simulation
 import starsmashertools.lib.units
 import copy
-import io
+import _io
 
 @starsmashertools.preferences.use
 class Report(object):
@@ -37,7 +37,7 @@ class Report(object):
     @api
     def write(
             self,
-            stdout : io.TextIOWrapper | type(None) = None,
+            stdout : _io.TextIOWrapper | type(None) = None,
             column_separator : str = '  ',
             newline : str = '\n',
     ):

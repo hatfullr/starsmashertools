@@ -118,7 +118,6 @@ def rotate(
         by ``xangle``, ``yangle``, and ``zangle``.
     """
     import copy
-    import numpy as np
 
     x = copy.deepcopy(x)
     y = copy.deepcopy(y)

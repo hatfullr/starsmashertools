@@ -7,6 +7,7 @@ import contextlib
 import zipfile
 import atexit
 import sys
+import typing
 
 def get_file_info():
     import starsmashertools.helpers.jsonfile
@@ -1049,7 +1050,7 @@ class Archive(object):
     @api
     def combine(
             self,
-            other : 'str | Archive',
+            other : str | typing.Type['Archive'],
     ):
         """
         Merge the contents of 'other' with this Archive, according to this 
@@ -1216,7 +1217,7 @@ class SimulationArchive(Archive, object):
     @api
     def __init__(
             self,
-            simulation : "starsmashertools.lib.simulation.Simulation | str",
+            simulation : typing.Type['starsmashertools.lib.simulation.Simulation'] | str,
     ):
         """
         Constructor for a :class:`SimulationArchive`. Note that a

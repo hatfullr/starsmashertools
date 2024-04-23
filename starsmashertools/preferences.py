@@ -10,6 +10,8 @@ def use(_obj):
     ``self.preferences`` to work. This also works on functions. """
     
     _obj.preferences = Preferences(_obj)
+    if not hasattr(_obj, '_decorators'): _obj._decorators = []
+    _obj._decorators += ['starsmashertools.preferences.use']
     
     if not inspect.isclass(_obj):
         @functools.wraps(_obj)

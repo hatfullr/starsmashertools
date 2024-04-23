@@ -95,38 +95,47 @@ numpy_conversions = {
 def _check_type(obj, _types):
     # This is the only way to check for Union types...
     if isinstance(_types, types.UnionType) or hasattr(_types, "__args__"):
-        if isinstance(obj, np.ndarray) and np.ndarray in _types.__args__:
-            others = [a for a in _types.__args__ if a is not np.ndarray]
-            if not others: return _types.__args__
+        # Convert any typing.Type arguments in _types to whatever the expected
+        # actual types are
+        args = list(_types.__args__)
+        for i, t in enumerate(args):
+            if t is typing.Callable: continue
+            origin = typing.get_origin(t)
+            if not origin: continue
+            args[i] = typing.get_args(t)[0]
+        
+        if isinstance(obj, np.ndarray) and np.ndarray in args:
+            others = [a for a in args if a is not np.ndarray]
+            if not others: return args
             # Check if this type is included in any of the Union types
             for key, val in numpy_conversions.items():
-                if key in _types.__args__ or val in _types.__args__:
+                if key in args or val in args:
                     break
             else:
                 return None
             new_type = numpy_conversions.get(obj.dtype.type, None)
             if new_type is None:
-                return _types.__args__
-            if new_type not in _types.__args__:
+                return args
+            if new_type not in args:
                 return others
             return None
-
-        if isinstance(obj, _types.__args__): return None
+        
+        if isinstance(obj, tuple(args)): return None
 
         # If obj isn't a numpy array, then check if it is a numpy type that can
         # be converted to a base type
         if isinstance(obj, tuple(numpy_conversions.keys())):
             # It can be converted
             new_type = numpy_conversions.get(obj.dtype.type, None)
-            if new_type is None: return _types.__args__
-            if new_type not in _types.__args__:
-                return _types.__args__
+            if new_type is None: return args
+            if new_type not in args:
+                return args
             return None
         
         # This is the regular check
-        if (not isinstance(obj, _types.__args__) and
-            not any([issubclass(obj.__class__, t) for t in _types.__args__])):
-            return _types.__args__
+        if (not isinstance(obj, tuple(args)) and
+            not any([issubclass(obj.__class__, t) for t in args])):
+            return args
 
     else:
         if hasattr(_types, '__iter__') and not _types in [str, dict]:

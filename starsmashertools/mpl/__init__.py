@@ -107,8 +107,8 @@ def _register_axes(classes : list = []):
 @starsmashertools.helpers.argumentenforcer.enforcetypes
 @api
 def subplots(
-        FigureClass : str | typing.Type[matplotlib.figure.Figure] | type(None) = 'Figure',
-        AxesClass : str | typing.Type[matplotlib.axes.Axes] | type(None) = 'Axes',
+        FigureClass : str | type(None) = 'Figure',
+        AxesClass : str | type(None) = 'Axes',
         style : str | type(None) = 'starsmashertools',
         subplot_kw : dict | type(None) = None,
         **kwargs

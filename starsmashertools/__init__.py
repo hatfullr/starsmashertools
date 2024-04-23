@@ -277,7 +277,7 @@ def iterator(*args, **kwargs):
 @starsmashertools.helpers.argumentenforcer.enforcetypes
 @api
 def get_particles(
-        output : 'starsmashertools.lib.output.Output',
+        output,
         particles : np.ndarray | list | tuple,
 ):
     """
@@ -305,6 +305,12 @@ def get_particles(
     :func:`mask`
     """
     import copy
+    import starsmashertools.lib.output
+
+    starsmashertools.helpers.argumentenforcer.enforcetypes({
+        'output' : starsmashertools.lib.output.Output,
+    })
+    
     with mask(output, particles) as masked_output:
         return copy.deepcopy(masked_output)
 
@@ -367,7 +373,7 @@ def trace_particles(
 @starsmashertools.helpers.argumentenforcer.enforcetypes
 @api
 def mask(
-        output : 'starsmashertools.lib.output.Output',
+        output,
         mask : np.ndarray | list | tuple,
 ):
     """
@@ -403,6 +409,11 @@ def mask(
 
     
     """
+    import starsmashertools.lib.output
+    starsmashertools.helpers.argumentenforcer.enforcetypes({
+        'output' : [starsmashertools.lib.output.Output],
+    })
+    
     if output._mask is not None:
         raise Exception("Cannot mask output that is already masked: '%s'" % str(output.path))
 
@@ -417,7 +428,7 @@ def mask(
 @starsmashertools.helpers.argumentenforcer.enforcetypes
 @api
 def interpolate(
-        outputs : "list | tuple | starsmashertools.lib.output.OutputIterator",
+        outputs,
         values : list,
 ):
     """
@@ -443,6 +454,14 @@ def interpolate(
     import starsmashertools.math
     import starsmashertools.lib.units
     import numpy as np
+
+    starsmashertools.helpers.argumentenforcer.enforcetypes({
+        'outputs' : [
+            list,
+            tuple,
+            starsmashertools.lib.output.OutputIterator,
+        ],
+    })
     
     if len(outputs) < 2:
         raise ValueError("You must provide 2 or more outputs for interpolation")
@@ -615,6 +634,15 @@ def get_format_sheets():
 def _get_decorators():
     import os
     import ast
+    import re
+
+    comment_checks = [
+        # Remove # comments first
+        re.compile("(?<!['\"])#.*", flags = re.M),
+        # Then remove block comments (which can be commented out by #)
+        re.compile('(?<!\')(?<!\\\\)""".*?"""', flags = re.M | re.S),
+        re.compile("(?<!\")(?<!\\\\)'''.*?'''", flags = re.M | re.S),
+    ]
     
     tocheck = os.path.join(os.path.dirname(os.path.realpath(__file__)))
     files = []
@@ -626,18 +654,21 @@ def _get_decorators():
             
 
     def get_full_function_name(_file,  name, _class = None):
-        path = get_module_name(_file, name)
-        name = get_function_name(name, _class = _class)
-        return '%s.%s' % (path, name)
-
-    def get_module_name(_file, name):
+        path = get_module_name(_file)
+        if _class is None: function_name = name
+        else: function_name = '%s.%s' % (_class, name)
+        return '%s.%s' % (path, function_name)
+    
+    def get_module_name(_file):
         path = os.path.relpath(_file, SOURCE_DIRECTORY)
         return path.replace(".py",'').replace(os.sep, '.')
 
-    def get_function_name(name, _class = None):
-        path = get_module_name(_file, name)
-        if _class is None: return name
-        return '%s.%s' % (_class, name)
+    def get_full_class_name(_file, name, _class = None):
+        path = get_module_name(_file)
+        if _class is None: class_name = name
+        else: class_name = '%s.%s' % (_class, name)
+        return '%s.%s' % (path, class_name)
+            
 
     def get_modules(_file):
         class ImportNodeVisitor(ast.NodeVisitor):
@@ -674,117 +705,127 @@ def _get_decorators():
         if (basename.endswith("#") or basename.endswith("~") or
             basename.startswith("#") or basename.startswith(".#")): continue
         
-        
         with open(_file, 'r') as f:
-            modules, module_names = get_modules(_file)
+            content = f.read()
+
+        # Remove all comments
+        for check in comment_checks:
+            for match in check.findall(content):
+                content = content.replace(match, '')
+
+        lines = content.split('\n')
+
+        modules, module_names = get_modules(_file)
+
+        listening_for_func_or_class = False
+        detected_decorators = []
+        _class = None
+        _class_indent = None
+        
+        for line in lines:
+            ls = line.strip()
+            if not ls: continue # Skip empty lines
             
-            listening_for_def = False
-            detected_decorators = []
-            _class = None
-            _class_indent = None
-            in_comment_block = False
-            for line in f:
-                # Remove comments
-                ls = line.strip()
-                if not ls: continue
-                if '"""' in ls:
-                    in_comment_block = not in_comment_block
-                    continue
-                if in_comment_block: continue
-                if '#' in ls:
-                    ls = ls[:ls.index('#')]
-                    if not ls: continue
-                
-                indent = line.index(ls[0])
-
-                if _class is not None and indent <= _class_indent:
-                    # If the indentation has moved out of the class then we need
-                    # to fall back down 1 class level
-                    if _class.count('.') == 0:
-                        # No more nested classes
-                        _class = None
-                        _class_indent = None
-                    else:
-                        # Still in a class statement, dropping out of one level
-                        # of nested classes
-                        _class = '.'.join(_class.split('.')[:-1])
-                        _class_indent = indent
+            indent = line.index(ls[0])
             
-                if ls.startswith('class'):
-                    l = ls.replace('class', '').strip()
-                    if '(' in l: l = l[:l.index("(")]
-                    if ':' in l: l = l[:l.index(':')]
+            if _class is not None and indent <= _class_indent:
+                # If the indentation has moved out of the class then we need
+                # to fall back down 1 class level
+                if _class.count('.') == 0:
+                    # No more nested classes
+                    _class = None
+                    _class_indent = None
+                else:
+                    # Still in a class statement, dropping out of one level
+                    # of nested classes
+                    _class = '.'.join(_class.split('.')[:-1])
+                    _class_indent = indent
 
-                    # When we find a class, we need to add the '.stuff' syntax
-                    # to _class only if the current indentation level is greater
-                    # than the previous.
-                    # If we already have a '.' syntax, then we need to remove
-                    # the final '.' member and replace it with the class we just
-                    # found.
-
-                    listening_for_def = False
-                    
-                    if _class is None:
-                        _class = l
-                        _class_indent = indent
-                    else:
-                        if '.' in _class:
-                            if indent > _class_indent:
-                                _class = '.'.join([_class,l])
-                            else:
-                                _class = '.'.join(_class.split('.')[:-1] + [l])
-                            _class_indent = indent
-                    continue
-                
-                if listening_for_def:
-                    if ls.startswith('class'):
-                        listening_for_def = False
-                    elif ls.startswith('def'):
+            if listening_for_func_or_class:
+                if ls.startswith('def') or ls.startswith('class'):
+                    if ls.startswith('def'):
                         l = ls.replace('def', '').strip()
                         name = l[:l.index("(")]
                         full_name = get_full_function_name(_file, name, _class=_class)
-                        for detected_decorator in detected_decorators:
+                    elif ls.startswith('class'):
+                        l = ls.replace('class', '').strip()
+                        # Get the name of the class
+                        if '(' in l: l = l[:l.index('(')]
+                        if ':' in l: l = l[:l.index(':')]
+                        name = l
+                        full_name = get_full_class_name(_file, name, _class=_class)
+                    
+                    module = get_module_name(_file)
+                    for detected_decorator in detected_decorators:
+                        if modules:
+                            for key, val in modules.items():
+                                if detected_decorator == val:
+                                    detected_decorator = key
+                                    module = module_names[key]
+                                    break
 
-                            module = get_module_name(_file, name)
-                            if modules:
-                                for key, val in modules.items():
-                                    if detected_decorator == val:
-                                        detected_decorator = key
-                                        module = module_names[key]
-                                        break
-                            
-                            if detected_decorator not in functions.keys():
-                                functions[detected_decorator] = []
-                            functions[detected_decorator] += [{
-                                'full name' : full_name,
-                                'short name' : name,
-                                'module' : module,
-                                'class' : _class,
-                            }]
-                        detected_decorators = []
-                        listening_for_def = False
-                    elif ls.startswith("@"):
-                        l = ls.replace("@", '').strip()
-                        if '(' in l: l = l[:l.index("(")]
-                        if modules:
-                            for key, val in modules.items():
-                                if l == val:
-                                    l = key
-                                    break
-                        detected_decorators += [l]
-                    else:
-                        raise NotImplementedError("Detected decorators that are floating above a function definition or don't belong to any function definition in '%s'" % _file)
+                        if detected_decorator not in functions.keys():
+                            functions[detected_decorator] = []
+                        functions[detected_decorator] += [{
+                            'full name' : full_name,
+                            'short name' : name,
+                            'module' : module,
+                            'class' : _class,
+                        }]
+                    detected_decorators = []
+                    listening_for_func_or_class = False
+                elif ls.startswith('@'):
+                    l = ls.replace("@", '').strip()
+                    if '(' in l: l = l[:l.index("(")]
+                    if modules:
+                        for key, val in modules.items():
+                            if l == val:
+                                l = key
+                                break
+                    detected_decorators += [l]
                 else:
-                    if ls.startswith("@"):
-                        listening_for_def = True
-                        l = ls.replace("@",'').strip()
-                        if '(' in l: l = l[:l.index("(")]
-                        if modules:
-                            for key, val in modules.items():
-                                if l == val:
-                                    l = key
-                                    break
-                        detected_decorators += [l]
+                    print(line)
+                    string = ', '.join("'%s'" % s for s in detected_decorators)
+                    raise NotImplementedError("Detected decorators that are floating above a function or class definition or don't belong to any function or class definition in '%s': %s" % (_file, string))
+            else: # Not listening for function or class declaration
+                if ls.startswith("@"):
+                    listening_for_func_or_class = True
+                    l = ls.replace("@",'').strip()
+                    if '(' in l: l = l[:l.index("(")]
+                    if modules:
+                        for key, val in modules.items():
+                            if l == val:
+                                l = key
+                                break
+                    detected_decorators += [l]
+
+            # If the line is a class declaration
+            if ls.startswith('class'):
+                l = ' '.join(ls.split()[1:]) # Remove the 'class' word
+                # Get the name of the class
+                if '(' in l: l = l[:l.index('(')]
+                if ':' in l: l = l[:l.index(':')]
+                
+                # When we find a class, we need to add the '.stuff' syntax
+                # to _class only if the current indentation level is greater
+                # than the previous.
+                # If we already have a '.' syntax, then we need to remove
+                # the final '.' member and replace it with the class we just
+                # found.
+                
+                #listening_for_func_or_class = False
+                
+                if _class is None:
+                    _class = l
+                    _class_indent = indent
+                else:
+                    if '.' in _class:
+                        if indent > _class_indent:
+                            _class = '.'.join([_class,l])
+                        else:
+                            _class = '.'.join(_class.split('.')[:-1] + [l])
+                        _class_indent = indent
+                
     return functions
 
 
@@ -862,6 +903,9 @@ try: del metadata
 except: pass
 
 try: del util
+except: pass
+
+try: del starsmashertools
 except: pass
 
 try: del os # The most terrifying syntax...

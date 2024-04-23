@@ -6,6 +6,7 @@ from starsmashertools.helpers.apidecorator import api
 from starsmashertools.helpers.clidecorator import cli
 import starsmashertools.helpers.argumentenforcer
 import starsmashertools.math
+import starsmashertools.lib.output
 import numpy as np
 import copy
 
@@ -114,7 +115,7 @@ class Relaxation(starsmashertools.lib.simulation.Simulation, object):
     @cli('starsmashertools')
     def get_binding_energy(
             self,
-            output : "starsmashertools.lib.output.Output | starsmashertools.lib.output.OutputIterator",
+            output : starsmashertools.lib.output.Output | starsmashertools.lib.output.OutputIterator,
             mass_coordinate : int | float | type(None) = None,
             cli : bool = False,
     ):
