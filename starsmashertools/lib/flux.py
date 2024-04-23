@@ -850,14 +850,14 @@ class FluxResult(dict, object):
         """
         import starsmashertools.lib.archive
         if filename is None: filename = 'flux.zip'
+        kwargs['auto_save'] = False
         archive = starsmashertools.lib.archive.Archive(filename, **kwargs)
-        with archive.nosave():
-            for key, val in self.items():
-                archive.add(
-                    key,
-                    val,
-                    origin = self['output'],
-                )
+        for key, val in self.items():
+            archive.add(
+                key,
+                val,
+                origin = self['output'],
+            )
         archive.save()
         return archive
     
