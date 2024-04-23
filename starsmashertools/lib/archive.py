@@ -870,30 +870,30 @@ class Archive(object):
                     message = "Saving %s" % self,
                     progress_max = len(data.keys()),
             ) as zfile:
+                print("Here 1")
                 # Update the file info
                 while 'file info' in zfile.namelist():
                     try:
                         _remove_zipfile_member(zfile, 'file info')
                     except KeyError: break
-                
+                print("Here 2")
                 keys = zfile.namelist()
-                
+                print("Here 3")
                 zfile.writestr('file info', info)
-
+                print("here 4")
                 # Remove all keys that are going to change
                 for key in remove_keys:
                     if key not in keys: continue
                     _remove_zipfile_member(zfile, key)
-
+                print("Here 5")
                 # Add keys that need to be added
                 for key, val in data.items():
                     zfile.writestr(key, val)
-                    print("I really did write",key)
                     # Only true when verbose is True and in the main process. See
                     # helpers/file.py for details
                     if hasattr(zfile, 'progress'):
                         zfile.progress.increment()
-
+                print("Here 6")
                 current_keys = zfile.namelist()
         except Exception as e:
             print(e)
