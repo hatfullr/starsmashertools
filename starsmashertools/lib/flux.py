@@ -34,6 +34,7 @@ def get(
         teff_cut : float | int | type(Null) = Null(),
         dust_opacity : float | int | type(None) | type(Null) = Null(),
         dust_Trange : list | tuple | type(Null) = Null(),
+        flux_limit_min : int | float | type(None) | type(Null) = Null(),
 
         # Spectrum
         spectrum_size : int | float | type(Null) = Null(),
@@ -84,6 +85,7 @@ def get(
     teff_cut = kwargs['teff_cut']
     kappa_dust = kwargs['dust_opacity']
     T_dust_min, T_dust = kwargs['dust_Trange']
+    flux_limit_min = kwargs['flux_limit_min']
 
     spectrum_size = kwargs['spectrum_size']
     lmax = kwargs['lmax']
@@ -420,11 +422,15 @@ def get(
                     print("CHECK 2 %d %d %d z=%8.4e in [%8.4e; %8.4e] x==%8.4e y=%8.4e tau=%8.4e surface=%8.4e %8.4e"% (ic, ii, jj, z[ic], z[ic]-rloc[ic], z[ic]+rloc[ic], x[ic], y[ic], tau[ic],  surf_d[ii][jj], z[surf_id[ii][jj]]))
 
     tau_min=1
+
+    skip = tau < tau_skip
+    if flux_limit_min is not None:
+        skip = np.logical_or(skip, flux[i] <= flux_limit_min)
     
     for i, ((iloc, jloc), (imin,imax,jmin,jmax)) in enumerate(zip(ijloc_arr, ijminmax_arr)):
         if inside_image[i]:
-            if tau[i] < tau_skip: continue
-
+            if skip[i]: continue
+            
             idx = z[i] > surf_d[imin:imax, jmin:jmax]
             if not idx.any(): continue
 
