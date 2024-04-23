@@ -905,6 +905,7 @@ class Archive(object):
         self._clear_buffers()
 
         if not current_keys:
+            print("Is this happening?")
             starsmashertools.helpers.path.remove(self.filename)
     
     @starsmashertools.helpers.argumentenforcer.enforcetypes

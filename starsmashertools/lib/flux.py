@@ -858,8 +858,7 @@ class FluxResult(dict, object):
                 val,
                 origin = self['output'],
             )
-            print("Added",key)
-        archive.save(verbose = True)
+        archive.save()
         return archive
     
     @staticmethod
