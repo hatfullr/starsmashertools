@@ -840,9 +840,13 @@ class Archive(object):
         
         if self.readonly: raise Archive.ReadOnlyError(self.filename)
         if self._nosave_holders > 0: return
+
+        exists = starsmashertools.helpers.path.isfile(self.filename)
         
         # If nothing changed since the last time we saved
-        if not self._buffers['add'] and not self._buffers['remove']: return
+        if (exists and 
+            (not self._buffers['add'] and not self._buffers['remove'])
+            ): return
         
         # Serialize the data we will add
         data = {key:val.serialized for key, val in self._buffers['add'].items()}
@@ -853,39 +857,32 @@ class Archive(object):
         # These are the keys that will change in the file
         remove_keys = list(self._buffers['remove']) + list(data.keys())
 
-        exists = starsmashertools.helpers.path.isfile(self.filename)
-        dir_exists = starsmashertools.helpers.path.isdir(
-            starsmashertools.helpers.path.dirname(
-                starsmashertools.helpers.path.realpath(self.filename),
-            ),
+        directory = starsmashertools.helpers.path.dirname(
+            starsmashertools.helpers.path.realpath(self.filename),
         )
-
-        if not dir_exists: return
+        dir_exists = starsmashertools.helpers.path.isdir(directory)
+        
+        if not dir_exists: starsmashertools.helpers.path.makedirs(directory)
         
         current_keys = []
-        with self.open(
-                'a' if exists else 'w',
-                verbose = verbose,
-                message = "Saving %s" % self,
-                progress_max = len(data.keys()),
-        ) as zfile:
-            try:
-                print("Here 1")
+        try:
+            with self.open(
+                    'a' if exists else 'w',
+                    verbose = verbose,
+                    message = "Saving %s" % self,
+                    progress_max = len(data.keys()),
+            ) as zfile:
                 # Update the file info
                 while 'file info' in zfile.namelist():
                     try:
                         _remove_zipfile_member(zfile, 'file info')
                     except KeyError: break
-                print("Here 2")
                 keys = zfile.namelist()
-                print("Here 3")
                 zfile.writestr('file info', info)
-                print("here 4")
                 # Remove all keys that are going to change
                 for key in remove_keys:
                     if key not in keys: continue
                     _remove_zipfile_member(zfile, key)
-                print("Here 5")
                 # Add keys that need to be added
                 for key, val in data.items():
                     zfile.writestr(key, val)
@@ -893,11 +890,10 @@ class Archive(object):
                     # helpers/file.py for details
                     if hasattr(zfile, 'progress'):
                         zfile.progress.increment()
-                print("Here 6")
                 current_keys = zfile.namelist()
-            except Exception as e:
-                print(e)
-                raise Archive.CorruptFileError("Failed to save archive file. Perhaps it did not save correctly. All data in this archive is lost. Please delete the file and try again: '%s'" % self.filename) from e
+        except Exception as e:
+            print(e)
+            raise Archive.CorruptFileError("Failed to save archive file. Perhaps it did not save correctly. All data in this archive is lost. Please delete the file and try again: '%s'" % self.filename) from e
         
         while 'file info' in current_keys: current_keys.remove('file info')
 
@@ -905,7 +901,6 @@ class Archive(object):
         self._clear_buffers()
 
         if not current_keys:
-            print("Is this happening?")
             starsmashertools.helpers.path.remove(self.filename)
     
     @starsmashertools.helpers.argumentenforcer.enforcetypes
