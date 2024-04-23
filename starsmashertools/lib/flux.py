@@ -75,7 +75,7 @@ def get(
 
     import starsmashertools
 
-    kwargs = process_kwargs(**kwargs)
+    kwargs = process_inputs(**kwargs)
     
     resolution = kwargs['resolution']
     extent = kwargs['extent']
