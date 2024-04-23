@@ -886,7 +886,7 @@ class FluxResult(dict, object):
         keys = archive.keys()
         _dict = {}
         for key, val in zip(keys, archive.get(keys)):
-            _dict[key] = val
+            _dict[key] = val.value
         return FluxResult(_dict)
     
     if has_matplotlib:
