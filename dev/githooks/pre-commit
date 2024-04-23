@@ -18,11 +18,32 @@ try:
         stdout = subprocess.PIPE,
         stderr = subprocess.STDOUT,
     )
+    if p.stdout and 'Traceback' in p.stdout:
+        print(p.stdout)
+        sys.exit(1)
 except subprocess.CalledProcessError as e:
     print(e.returncode)
     print(e.output)
     sys.exit(1)
 
-if p.stdout and 'Traceback' in p.stdout:
-    print(p.stdout)
+
+
+# Add our changes to the current commit
+os.chdir(starsmashertools.SOURCE_DIRECTORY)
+try:
+    p = subprocess.run(
+        ['git', 'add', 'pyproject.toml', 'dev/version_data.json.zip'],
+        check = True,
+        text = True,
+        stdout = subprocess.PIPE,
+        stderr = subprocess.STDOUT,
+    )
+    if p.stdout and 'Traceback' in p.stdout:
+        print(p.stdout)
+        sys.exit(1)
+except subprocess.CalledProcessError as e:
+    print(e.returncode)
+    print(e.output)
     sys.exit(1)
+
+sys.exit(0)
