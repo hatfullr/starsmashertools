@@ -22,8 +22,10 @@ if 'FAILED' in p.stderr:
     print(p.stderr)
     sys.exit(1)
 
-os.chdir(curdir)
-os.chdir('dev')
+os.chdir(os.path.join(
+    starsmashertools.SOURCE_DIRECTORY,
+    'dev',
+))
 p = subprocess.run(
     ['increment_version'],
     check = True,
