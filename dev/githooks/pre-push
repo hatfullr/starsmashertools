@@ -20,7 +20,7 @@ try:
         stdout = subprocess.PIPE,
         stderr = subprocess.STDOUT,
     )
-    if p.stdout and 'FAILED' in p.stdout or 'Traceback' in p.stdout:
+    if p.stdout and ('FAILED' in p.stdout or 'Traceback' in p.stdout):
         print(p.stdout)
         sys.exit(1)
 except subprocess.CalledProcessError as e:
