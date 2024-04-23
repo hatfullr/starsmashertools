@@ -863,13 +863,13 @@ class Archive(object):
         if not dir_exists: return
         
         current_keys = []
-        try:
-            with self.open(
-                    'a' if exists else 'w',
-                    verbose = verbose,
-                    message = "Saving %s" % self,
-                    progress_max = len(data.keys()),
-            ) as zfile:
+        with self.open(
+                'a' if exists else 'w',
+                verbose = verbose,
+                message = "Saving %s" % self,
+                progress_max = len(data.keys()),
+        ) as zfile:
+            try:
                 print("Here 1")
                 # Update the file info
                 while 'file info' in zfile.namelist():
@@ -895,9 +895,9 @@ class Archive(object):
                         zfile.progress.increment()
                 print("Here 6")
                 current_keys = zfile.namelist()
-        except Exception as e:
-            print(e)
-            raise Archive.CorruptFileError("Failed to save archive file. Perhaps it did not save correctly. All data in this archive is lost. Please delete the file and try again: '%s'" % self.filename) from e
+            except Exception as e:
+                print(e)
+                raise Archive.CorruptFileError("Failed to save archive file. Perhaps it did not save correctly. All data in this archive is lost. Please delete the file and try again: '%s'" % self.filename) from e
         
         while 'file info' in current_keys: current_keys.remove('file info')
 
