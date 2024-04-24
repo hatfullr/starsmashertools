@@ -511,12 +511,14 @@ class Simulation(object):
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
-    def get_stop_time(
+    def get_current_time(
             self,
             use_logfiles : bool = False,
             include_joined : bool = True,
     ):
         """
+        Obtain the time which the Simulation is currently at.
+        
         Other Parameters
         ----------------
         use_logfiles : bool, default = False
@@ -539,15 +541,42 @@ class Simulation(object):
         import starsmashertools.lib.units
 
         if use_logfiles:
-            stop_time = 0
+            time = 0
             for logfile in self.get_logfiles(include_joined = include_joined):
-                stop_time = max(stop_time, logfile.get_stop_time())
+                time = max(time, logfile.get_current_time())
         else:
             files = self.get_outputfiles(include_joined = include_joined)
-            stop_time = self.reader.read_from_header('t', files[-1])
+            time = self.reader.read_from_header('t', files[-1])
         
-        stop_time *= float(self.units['t'])
-        return starsmashertools.lib.units.Unit(stop_time, 's')
+        time *= float(self.units['t'])
+        return starsmashertools.lib.units.Unit(time, 's')
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def get_stop_time(
+            self,
+            include_joined : bool = True,
+    ):
+        """
+        Obtain the time at which the Simulation is expected to stop running.
+        This is set by the ``tf`` parameter in the StarSmasher input file.
+        
+        Other Parameters
+        ----------------
+        include_joined : bool, default = True
+            If `True`, the joined simulations will be included.
+
+        Returns
+        -------
+        tf : :class:`~.lib.units.Unit`
+            The stop time for this Simulation.
+        """
+        import starsmashertools.lib.units
+        tf = self['tf'] * self.units.time
+        if include_joined:
+            for simulation in self.joined_simulations:
+                tf = max(tf, simulation['tf'] * simulation.units.time)
+        return tf
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
@@ -1407,12 +1436,12 @@ class Simulation(object):
             # determine the appropriate unit to use
             t = None
             try:
-                t = self.get_stop_time(
+                t = self.get_current_time(
                     use_logfiles = True, include_joined = False,
                 )
             except:
                 try:
-                    t = self.get_stop_time(
+                    t = self.get_current_time(
                         use_logfiles = False, include_joined = False
                     )
                 except: pass

@@ -203,7 +203,7 @@ prefs = {
                     },
                     {
                         'args' : (
-                            lambda sim: sim.get_output(0)['t']*sim.units['t'],
+                            lambda sim: sim.get_start_time(),
                         ),
                         'kwargs' : {
                             'header' : 'start',
@@ -212,10 +212,19 @@ prefs = {
                     },
                     {
                         'args' : (
-                            lambda sim: sim.get_output(-1)['t']*sim.units['t'],
+                            lambda sim: sim.get_current_time(),
                         ),
                         'kwargs' : {
-                            'header' : 'end',
+                            'header' : 'current',
+                            'formatter' : '{:7g}',
+                        },
+                    },
+                    {
+                        'args' : (
+                            lambda sim: sim.get_stop_time(),
+                        ),
+                        'kwargs' : {
+                            'header' : 'stop',
                             'formatter' : '{:7g}',
                         },
                     },
