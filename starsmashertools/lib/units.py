@@ -6,6 +6,7 @@ import starsmashertools.helpers.readonlydict
 import starsmashertools.helpers.argumentenforcer
 from starsmashertools.helpers.apidecorator import api
 import numpy as np
+import string
 
 
 def get_all_labels():
@@ -350,10 +351,10 @@ class Unit(object):
     def sqrt(self, *args, **kwargs):
         return Unit(self.value**0.5, self.label**0.5)
 
-    def __repr__(self):
-        string = self.__class__.__name__ + "(%g, %s)"
-        return string % (self.value, str(self.label))
-    def __str__(self): return '%g %s' % (self.value, str(self.label))
+    def __repr__(self): return self.__class__.__name__ + '(' + str(self) + ')'
+    def __str__(self): return '{:g}'.format(self)
+    def __format__(self, fmt):
+        return self.value.__format__(fmt) + ' ' + str(self.label)
     
     @api
     def __eq__(self, other):

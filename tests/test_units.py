@@ -337,5 +337,16 @@ class TestUnits(basetest.BaseTest):
         with self.assertRaises(starsmashertools.helpers.readonlydict.ReadOnlyDict.EditError):
             units['x'] = 0
 
+    def test_formatting(self):
+        u = starsmashertools.lib.units.Unit(1000, 'day')
+        s = '{:10.4f}'.format(u)
+        self.assertEqual(s, ' 1000.0000 day')
+        s = '{:<10.4f}'.format(u)
+        self.assertEqual(s, '1000.0000  day')
+        s = '{:5.1f}'.format(u)
+        self.assertEqual(s, '1000.0 day')
+
+
+
 if __name__ == "__main__":
     unittest.main(failfast=True)
