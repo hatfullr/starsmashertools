@@ -81,40 +81,43 @@ class RayCast(object):
     def __init__(
             self,
             ray : Ray,
-            x : list | tuple | np.ndarray,
-            y : list | tuple | np.ndarray,
-            z : list | tuple | np.ndarray,
-            r : list | tuple | np.ndarray,
+            *args,
     ):
+        if len(args) == 2:
+            xyz = np.asarray(args[0])
+        elif len(args) == 4:
+            xyz = np.column_stack(args[:-1])
+        else:
+            raise Exception("Arguments must be either 'x, y, z, r' or 'xyz, r'")
+        r = np.asarray(args[-1])
+        
         self.ray = ray
         self.points = np.asarray([])
         self.indices = np.asarray([])
-        
-        xyz = np.column_stack((x,y,z))
-        r = np.asarray(r)
-
         valid = np.logical_and(
-            np.logical_and(np.isfinite(x), np.isfinite(y)),
-            np.logical_and(np.isfinite(z), np.isfinite(r)),
+            np.isfinite(xyz).all(axis = 1),
+            np.isfinite(r),
         )
         if valid.any():
-            indices = np.arange(len(xyz), dtype = int)
-            xyz = xyz[valid]
-            r = r[valid]
-            indices = indices[valid]
+            indices = np.where(valid)[0]
             
-            D = xyz - self.ray.position # destination - origin
-            D_mag2 = np.sum(D**2, axis = 1)
+            # destination - origin
+            D = xyz[indices] - self.ray.position
+            # https://stackoverflow.com/a/19864047
+            D_mag2 = np.einsum('...j,...j->...', D, D) # Fastest I could find
             ahat = self.ray.direction
-            s_mag = np.dot(D, ahat)
+            s_mag = np.dot(D, ahat) # Also equals D_mag * cos(theta)
+            
             h_mag2 = D_mag2 - s_mag**2
             
-            r2 = r**2
+            r2 = r[indices]**2
             idx = h_mag2 < r2
             if idx.any():
-                n = sum(idx)
+                idx = np.where(idx)[0]
+                indices = indices[idx]
+                n = len(indices)
                 s_mag = s_mag[idx].reshape(n, 1)
-                b_mag2 = r2[idx].reshape(n, 1) - h_mag2[idx].reshape(n, 1)
+                b_mag2 = (r2[idx] - h_mag2[idx]).reshape(n, 1)
                 b_mag = np.sqrt(b_mag2)
                 
                 ahat_arr = np.tile(ahat, n).reshape(n, 3)
@@ -122,7 +125,7 @@ class RayCast(object):
                 p2 = self.ray.position + (s_mag + b_mag) * ahat_arr
                 
                 self.points = np.vstack((p1, p2))
-                self.indices = np.tile(indices[idx], 2)
+                self.indices = np.tile(indices, 2)
                 
                 sorted_indices = np.argsort(np.sum(self.points**2, axis = 1))
                 self.points = self.points[sorted_indices]
