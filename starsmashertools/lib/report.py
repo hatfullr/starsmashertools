@@ -52,6 +52,7 @@ class Report(object):
 
             
         with starsmashertools.helpers.string.progress_message(
+                message = 'Calculating rows',
                 max = len(self.rows),
         ) as progress:
             grid = []
