@@ -45,7 +45,7 @@ def get(
         tau_skip : float | int | type(Null) = Null(),
         teff_cut : float | int | type(Null) = Null(),
         dust_opacity : float | int | type(None) | type(Null) = Null(),
-        dust_Trange : list | tuple | type(Null) = Null(),
+        dust_Trange : list | tuple | type(None) | type(Null) = Null(),
         flux_limit_min : int | float | type(None) = None,
 
         # Spectrum
@@ -91,7 +91,9 @@ def get(
     tau_skip = kwargs['tau_skip']
     teff_cut = kwargs['teff_cut']
     kappa_dust = kwargs['dust_opacity']
-    T_dust_min, T_dust = kwargs['dust_Trange']
+    if kwargs['dust_Trange'] is not None:
+        T_dust_min, T_dust = kwargs['dust_Trange']
+    else: T_dust_min, T_dust = None, None
     flux_limit_min = kwargs['flux_limit_min']
 
     spectrum_size = kwargs['spectrum_size']
