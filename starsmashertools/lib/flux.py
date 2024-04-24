@@ -46,7 +46,7 @@ def get(
         teff_cut : float | int | type(Null) = Null(),
         dust_opacity : float | int | type(None) | type(Null) = Null(),
         dust_Trange : list | tuple | type(Null) = Null(),
-        flux_limit_min : int | float | type(None) | type(Null) = Null(),
+        flux_limit_min : int | float | type(None) = None,
 
         # Spectrum
         spectrum_size : int | float | type(Null) = Null(),
