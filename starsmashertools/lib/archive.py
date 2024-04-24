@@ -70,7 +70,7 @@ def update_archive_version(
             with starsmashertools.helpers.string.loading_message("Reading '%s'" % Archive.to_str(old_path)) as l:
                 content = zfile.read(namelist[0])
                 data = starsmashertools.helpers.jsonfile.load_bytes(content)
-        
+                del content
         else: # If we were not able to detect the old Archive format
             format_detected = False
 
@@ -81,6 +81,7 @@ def update_archive_version(
             origin = val['origin'],
             mtime = val['mtime'],
         ) for key, val in data.items()}
+        del data
     
     if not format_detected:
         with starsmashertools.helpers.file.open(
@@ -104,8 +105,12 @@ def update_archive_version(
         
         # Now change file names
         shutil.move(new_archive.filename, new_path)
-
+    
     atexit.unregister(do_atexit)
+
+    del new_archive
+    del format_detected
+    
 
 
 def _remove_zipfile_member(zfile, member):
@@ -207,6 +212,7 @@ class ArchiveValue(object):
         starsmashertools.helpers.argumentenforcer.enforcetypes({
             'value' : _types,
         })
+        del _types
 
         self._value = None
         self.serialized = None
@@ -249,12 +255,14 @@ class ArchiveValue(object):
         """
         import starsmashertools.helpers.jsonfile
         json = starsmashertools.helpers.jsonfile.load_bytes(obj)
-        return ArchiveValue(
+        ret = ArchiveValue(
             identifier,
             json['value'],
             json['origin'],
             json['mtime'],
         )
+        del json
+        return ret
 
 
 class ArchiveItems(object):
@@ -902,6 +910,15 @@ class Archive(object):
 
         if not current_keys:
             starsmashertools.helpers.path.remove(self.filename)
+
+        del exists
+        del data
+        del info
+        del remove_keys
+        del directory
+        del dir_exists
+        del current_keys
+        del keys
     
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
@@ -1023,6 +1040,11 @@ class Archive(object):
             )
             for i, key in to_deserialize:
                 values[i] = deserialized_vals[i]
+
+        del keys_to_deserialize
+        del vals_to_deserialize
+        del to_deserialize
+        del remaining_keys
         
         if len(values) == 1: return values[0]
         return values
@@ -1258,3 +1280,6 @@ class SimulationArchive(Archive, object):
             auto_save = True,
             readonly = False,
         )
+
+        del basename
+        del filename

@@ -257,6 +257,7 @@ class ViewEncoder(json.JSONEncoder):
         ret = str(obj)
         if o['starsmashertools conversion name'] not in ret:
             ret = '%s (%s)' % (ret, o['starsmashertools conversion name'])
+        del o
         return ret
 
 class Decoder(json.JSONDecoder):
@@ -293,11 +294,12 @@ def save(filename, obj, encoder=Encoder, zname = 'data'):
                     compression=zipfile.ZIP_DEFLATED, compresslevel=9
             ) as f:
                 f.writestr(zname, content)
-
+        
         else:
             content = json.dumps(obj, indent=4, cls=encoder)
             with starsmashertools.helpers.file.open(filename, 'w') as f:
                 f.write(content)
+        del content
     except Exception as e:
         if starsmashertools.helpers.path.isfile(filename):
             starsmashertools.helpers.path.remove(filename)
@@ -316,7 +318,9 @@ def load(filename, decoder=Decoder, zname = None):
     if filename.endswith('.gz'):
         with gzip.open(filename, 'r') as f:
             content = f.read()
-        return load_bytes(content, decoder=decoder)
+        ret = load_bytes(content, decoder=decoder)
+        del content
+        return ret
 
     elif filename.endswith('.zip'):
         with zipfile.ZipFile(
@@ -329,7 +333,9 @@ def load(filename, decoder=Decoder, zname = None):
             else:
                 if zname is None: zname = namelist[0]
                 content = f.read(zname)
-        return load_bytes(content, decoder=decoder)
+        ret = load_bytes(content, decoder=decoder)
+        del content, namelist
+        return ret
     else:
         try:
             with starsmashertools.helpers.file.open(filename, 'r') as f:
