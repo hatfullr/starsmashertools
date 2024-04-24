@@ -37,48 +37,64 @@ class Report(object):
     @api
     def write(
             self,
-            stdout : _io.TextIOWrapper | type(None) = None,
+            stdout : str | _io.TextIOWrapper | type(None) = None,
             column_separator : str = '  ',
             newline : str = '\n',
     ):
         import starsmashertools.helpers.string
-        grid = []
+        import starsmashertools.helpers.file
+        import starsmashertools.helpers.path
+        import starsmashertools.helpers.string
 
-        # Get all the rows first, so we can determine the column widths after
-        widths = [0]*len(self.columns.keys())
-        for simulation in self.rows:
-            row = []
-            for j, (_, column) in enumerate(self.columns.items()):
-                result = column['func'](simulation)
-                if isinstance(result, starsmashertools.lib.units.Unit):
-                    result = result.auto()
-                s = column['formatter'].format(result)
-                shorten = column.get('shorten', None)
-                if shorten is not None:
-                    s = starsmashertools.helpers.string.shorten(
-                        s, *shorten['args'], **shorten['kwargs'],
-                    )
-                        
-                widths[j] = max(widths[j], len(s))
-                row += [s]
-            grid += [row]
+        if isinstance(stdout, str):
+            if starsmashertools.helpers.path.isfile(stdout):
+                raise FileExistsError(stdout)
 
-        # Make the header, with the correct widths
-        header_row = []
-        for j, (header, column) in enumerate(self.columns.items()):
-            fmt = '{:>' + str(widths[j]) + '}'
-            header_row += [fmt.format(header)]
-        grid = [header_row] + grid
+            
+        with starsmashertools.helpers.string.progress_message(
+                max = len(self.rows),
+        ) as progress:
+            grid = []
 
-        # Now combine the grid into a single string
-        string = ""
-        rows = []
-        for row in grid:
-            rows += [column_separator.join(row)]
+            # Get all the rows first, so we can determine the column widths after
+            widths = [0]*len(self.columns.keys())
+            for simulation in self.rows:
+                row = []
+                for j, (_, column) in enumerate(self.columns.items()):
+                    result = column['func'](simulation)
+                    if isinstance(result, starsmashertools.lib.units.Unit):
+                        result = result.auto()
+                    s = column['formatter'].format(result)
+                    shorten = column.get('shorten', None)
+                    if shorten is not None:
+                        s = starsmashertools.helpers.string.shorten(
+                            s, *shorten['args'], **shorten['kwargs'],
+                        )
 
-        result = newline.join(rows)
-        if stdout is None: return result
-        else: stdout.write(result)
+                    widths[j] = max(widths[j], len(s))
+                    row += [s]
+                progress.increment()
+                grid += [row]
+
+            # Make the header, with the correct widths
+            header_row = []
+            for j, (header, column) in enumerate(self.columns.items()):
+                fmt = '{:>' + str(widths[j]) + '}'
+                header_row += [fmt.format(header)]
+            grid = [header_row] + grid
+
+            # Now combine the grid into a single string
+            string = ""
+            rows = []
+            for row in grid:
+                rows += [column_separator.join(row)]
+
+            result = newline.join(rows)
+            if stdout is None: return result
+            elif isinstance(stdout, str):
+                with starsmashertools.helpers.file.open(stdout, 'x') as f:
+                    f.write(result)
+            else: stdout.write(result)
     
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
