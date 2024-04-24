@@ -205,13 +205,19 @@ prefs = {
                         'args' : (
                             lambda sim: sim.get_output(0)['t']*sim.units['t'],
                         ),
-                        'kwargs' : {'header' : 'start'},
+                        'kwargs' : {
+                            'header' : 'start',
+                            'formatter' : '{:7.6g}',
+                        },
                     },
                     {
                         'args' : (
                             lambda sim: sim.get_output(-1)['t']*sim.units['t'],
                         ),
-                        'kwargs' : {'header' : 'end'},
+                        'kwargs' : {
+                            'header' : 'end',
+                            'formatter' : '{:7.6g}',
+                        },
                     },
                 ], # 'columns'
             }, # 'Report'
