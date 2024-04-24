@@ -207,7 +207,7 @@ prefs = {
                         ),
                         'kwargs' : {
                             'header' : 'start',
-                            'formatter' : '{:>7.5f}',
+                            'formatter' : '{:7g}',
                         },
                     },
                     {
@@ -216,7 +216,7 @@ prefs = {
                         ),
                         'kwargs' : {
                             'header' : 'end',
-                            'formatter' : '{:>7.5f}',
+                            'formatter' : '{:7g}',
                         },
                     },
                 ], # 'columns'
