@@ -271,12 +271,12 @@ class Report(object):
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
-    def set_column(self, header : str, **kwargs):
+    def set_column(self, header_string : str, **kwargs):
         if not self._columns:
             raise Exception("Columns can only be set after at least one column has been added")
         
         for column in self._columns:
-            if header != column.header: continue
+            if header_string != column.header: continue
             column.update(kwargs)
             break
         else:
