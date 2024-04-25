@@ -325,14 +325,6 @@ class Report(object):
                 break
             else: raise IndexError("No column found with function '%s'" % func)
             del self._columns[index]
-
-    def transpose(self):
-        new_columns = []
-        for column in self._columns[::-1]:
-            new_columns += [column]
-        for column in new_columns:
-            column._cells = column._cells[::-1]
-        self._columns = new_columns
         
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
