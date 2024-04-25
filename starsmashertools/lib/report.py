@@ -71,14 +71,16 @@ class Report(object):
                 formatter : str = '{}',
                 shorten : dict | type(None) = None,
         ):
-            if simulation is not None:
-                if isinstance(simulation, str):
-                    simulation = starsmashertools.get_simulation(simulation)
-            self.simulation = simulation
             self.formatter = formatter
             self.shorten = shorten
             self._func = func
             self._value = None
+            
+            if simulation is not None:
+                if isinstance(simulation, str):
+                    simulation = starsmashertools.get_simulation(simulation)
+            
+            self.simulation = simulation
         
         @property
         def func(self): return self._func
