@@ -46,7 +46,7 @@ class Report(object):
     def __iter__(self): return self
     def __next__(self):
         if not self._columns: raise StopIteration
-        if self._current >= len(self._columns[0]) - 1:
+        if self._current >= len(self._columns[0]):
             self._current = 0
             raise StopIteration
         row = [str(column[self._current]) for column in self._columns]
