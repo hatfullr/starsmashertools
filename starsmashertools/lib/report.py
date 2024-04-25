@@ -115,18 +115,15 @@ class Report(object):
             # Check if the function is a lambda function
             if self._value is None: self.update_value()
             state = self.__dict__.copy()
-            
-            state.pop('_func', None)
+            state['_func'] = None
             return state
 
         def __setstate__(self, state):
-            func = state.pop('_func', None)
-            if func is not None: state['_func'] = eval(func)
             self.__dict__.update(state)
 
         def update_value(self):
-            if None not in [self.simulation, self._func]:
-                self._value = self._func(self.simulation)
+            if None not in [self.simulation, self.func]:
+                self._value = self.func(self.simulation)
 
 
     class Header(Cell, object):
