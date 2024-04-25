@@ -307,10 +307,9 @@ prefs = {
                     # top to bottom. See the Unit.Label class in
                     # starsmashertools/lib/units.py for details.
                     'conversions' : {
-                        'cm*cm*g/s*s' : 'erg', # Don't remove this
-                        'cm*cm/s*s' : 'erg/g', # Don't remove this
-                        #['erg', 'cm*cm*g/s*s'], # Don't remove this
-                        #['erg/g', 'cm*cm/s*s'], # Don't remove this
+                        'cm*cm*g/s*s'   :   'erg', # Don't remove this
+                        'cm*cm/s*s'     : 'erg/g', # Don't remove this
+                        'cm*cm*g/s*s*s' : 'erg/s', # Don't remove this
                     },
                 }, # 'Label'
             }, # 'Unit'
