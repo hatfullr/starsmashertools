@@ -32,7 +32,7 @@ class Report(object):
             try: columns = self.preferences.get('columns')
             except: columns = []
 
-        self._current = -1
+        self._current = 0
 
         for obj in columns:
             self.add_column(*obj['args'], **obj['kwargs'])
@@ -47,10 +47,10 @@ class Report(object):
     def __next__(self):
         if not self._columns: raise StopIteration
         if self._current >= len(self._columns[0]) - 1:
-            self._current = -1
+            self._current = 0
             raise StopIteration
-        self._current += 1
         row = [str(column[self._current]) for column in self._columns]
+        self._current += 1
         return self.column_separator.join(row)
 
     def __eq__(self, other):
