@@ -277,6 +277,7 @@ class Report(object):
         
         for column in self._columns:
             if header_string != column.header: continue
+            kwargs['header'] = column.header
             column.update(kwargs)
             break
         else:
