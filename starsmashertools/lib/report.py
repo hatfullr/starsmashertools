@@ -271,21 +271,14 @@ class Report(object):
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
-    def set_column(
-            self,
-            header : str,
-            func : typing.Callable | type(None) = None,
-            **kwargs
-    ):
+    def set_column(self, header : str, **kwargs):
         if not self._columns:
             raise Exception("Columns can only be set after at least one column has been added")
-
-        if func is not None: kwargs['func'] = func
         
-        for i, column in enumerate(self._columns):
-            if header == column.header:
-                self._columns[i].update(kwargs)
-                break
+        for column in self._columns:
+            if header != column.header: continue
+            column.update(kwargs)
+            break
         else:
             raise Exception("Failed to find column")
     
