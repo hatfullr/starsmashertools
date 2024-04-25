@@ -34,13 +34,13 @@ class Report(object):
 
         for obj in columns:
             self.add_column(*obj['args'], **obj['kwargs'])
-        
+
         for simulation in simulations:
             self.add_row(simulation)
-
+    
     def __str__(self):
         return '\n'.join(iter(self))
-            
+    
     def __iter__(self):
         self._current = 0
         return self
@@ -52,7 +52,6 @@ class Report(object):
             raise StopIteration from e
         self._current += 1
         return self.column_separator.join(row)
-
 
     def __eq__(self, other):
         if not isinstance(other, self.__class__): return False
@@ -71,16 +70,16 @@ class Report(object):
                 formatter : str = '{}',
                 shorten : dict | type(None) = None,
         ):
-            self.formatter = formatter
-            self.shorten = shorten
-            self._func = func
-            self._value = None
-            
             if simulation is not None:
                 if isinstance(simulation, str):
                     simulation = starsmashertools.get_simulation(simulation)
-            
             self.simulation = simulation
+            
+            self._value = None
+            self.formatter = formatter
+            self.shorten = shorten
+            
+            self._func = func
         
         @property
         def func(self): return self._func
@@ -101,7 +100,12 @@ class Report(object):
             import starsmashertools.helpers.string
             
             if self._value is None: self.update_value()
-            if self._value is None: return ''
+            if self._value is None:
+                try:
+                    return self.formatter.format('')
+                except ValueError as e:
+                    if 'Invalid format specifier' in str(e): return ''
+                    raise
             
             string = self.formatter.format(self._value)
             if self.shorten is not None:
@@ -115,20 +119,20 @@ class Report(object):
             # Check if the function is a lambda function
             if self._value is None: self.update_value()
             state = self.__dict__.copy()
-            state['_func'] = None
+            state.pop('_func', None)
             return state
 
         def __setstate__(self, state):
             self.__dict__.update(state)
 
         def update_value(self):
-            if None not in [self.simulation, self.func]:
-                self._value = self.func(self.simulation)
+            if None not in [self.simulation, self._func]:
+                self._value = self._func(self.simulation)
 
 
     class Header(Cell, object):
         def __str__(self):
-            if self._value is None: return ''
+            if self._value is None: return self.formatter.format('')
             return self.formatter.format(self._value)
 
     class Column(object):
@@ -155,7 +159,7 @@ class Report(object):
 
         def __len__(self): return len(self._cells)
         def __iter__(self): return iter(self._cells)
-
+        
         def __eq__(self, other):
             if not isinstance(other, self.__class__): return False
             if len(self._cells) != len(other._cells): return False
@@ -294,7 +298,7 @@ class Report(object):
             shorten : dict | type(None) = None,
     ):
         column = Report.Column(
-            func = func,
+            func,
             header = header,
             formatter = formatter,
             header_formatter = header_formatter,
@@ -302,7 +306,8 @@ class Report(object):
         )
         if self._columns:
             for cell in self._columns[-1]:
-                column.add(cell.simulation)
+                if cell.simulation is not None:
+                    column.add(cell.simulation)
         self._columns += [column]
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
