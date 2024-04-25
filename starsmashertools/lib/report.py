@@ -32,27 +32,20 @@ class Report(object):
             try: columns = self.preferences.get('columns')
             except: columns = []
 
-        self._current = 0
-
         for obj in columns:
             self.add_column(*obj['args'], **obj['kwargs'])
         
         for simulation in simulations:
-            self.add_row(simulation)        
+            self.add_row(simulation)
 
     def __str__(self):
-        return '\n'.join(iter(self))
-            
-    def __iter__(self): return self
-    def __next__(self):
-        if not self._columns: raise StopIteration
-        if self._current >= len(self._columns[0]):
-            self._current = 0
-            raise StopIteration
-        row = [str(column[self._current]) for column in self._columns]
-        self._current += 1
-        return self.column_separator.join(row)
-
+        rows = [self.column_separator.join([str(r) for r in row]) for row in self]
+        return '\n'.join(rows)
+    
+    def __iter__(self):
+        if not self._columns: return []
+        return zip(*self._columns)
+    
     def __eq__(self, other):
         if not isinstance(other, self.__class__): return False
         if len(self._columns) != len(other._columns): return False
