@@ -32,8 +32,6 @@ class Report(object):
             try: columns = self.preferences.get('columns')
             except: columns = []
 
-        self._current = 0
-
         for obj in columns:
             self.add_column(*obj['args'], **obj['kwargs'])
         
@@ -43,15 +41,18 @@ class Report(object):
     def __str__(self):
         return '\n'.join(iter(self))
             
-    def __iter__(self): return self
+    def __iter__(self):
+        self._current = 0
+        return self
     def __next__(self):
-        if not self._columns: raise StopIteration
-        if self._current >= len(self._columns[0]):
-            self._current = 0
-            raise StopIteration
-        row = [str(column[self._current]) for column in self._columns]
+        try:
+            row = [str(column[self._current]) for column in self._columns]
+        except IndexError as e:
+            del self._current
+            raise StopIteration from e
         self._current += 1
         return self.column_separator.join(row)
+
 
     def __eq__(self, other):
         if not isinstance(other, self.__class__): return False
