@@ -284,7 +284,7 @@ class Report(object):
         
         for i, column in enumerate(self._columns):
             if header == column.header:
-                self._columns[i].update(**kwargs)
+                self._columns[i].update(kwargs)
                 break
         else:
             raise Exception("Failed to find column")
