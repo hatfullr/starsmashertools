@@ -101,7 +101,7 @@ class Report(object):
             import starsmashertools.helpers.string
             
             if self._value is None: self.update_value()
-            if self._value is None: return self.formatter.format('')
+            if self._value is None: return ''
             
             string = self.formatter.format(self._value)
             if self.shorten is not None:
