@@ -299,7 +299,7 @@ prefs = {
                     'day' : '86400 s',
                     'yr' : '31557600 s',
                     # Comes from 'constants' in lib/units.py
-                    'Lsun' : '3.828e33 cm*cm*g/s*s*s',
+                    'Lsun' : '3.828e33 erg/s',
                 }, # 'conversions'
                 'Label' : {
                     # Add items to this list to create additional abbreviations
