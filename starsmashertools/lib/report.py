@@ -36,7 +36,7 @@ class Report(object):
             self.add_column(*obj['args'], **obj['kwargs'])
         
         for simulation in simulations:
-            self.add_row(simulation)        
+            self.add_row(simulation)
 
     def __str__(self):
         return '\n'.join(iter(self))
@@ -294,13 +294,17 @@ class Report(object):
             header_formatter : str = '{}',
             shorten : dict | type(None) = None,
     ):
-        self._columns += [Report.Column(
+        column = Report.Column(
             func = func,
             header = header,
             formatter = formatter,
             header_formatter = header_formatter,
             shorten = shorten,
-        )]
+        )
+        if self._columns:
+            for cell in self._columns[-1]:
+                column.add(cell.simulation)
+        self._columns += [column]
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
