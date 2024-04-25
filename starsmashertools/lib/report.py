@@ -224,6 +224,25 @@ class Report(object):
 
         def __getitem__(self, index):
             return self._cells[index]
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def set_row(
+            self,
+            index : int,
+            simulation : str | starsmashertools.lib.simulation.Simulation,
+    ):
+        if not self._columns:
+            raise Exception("Rows can only be set after at least one column has been added")
+        
+        if isinstance(simulation, str):
+            simulation = starsmashertools.get_simulation(simulation)
+        
+        for column in self._columns:
+            for i, cell in enumerate(column):
+                if i != index: continue
+                cell.simulation = simulation
+                break
     
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
@@ -245,6 +264,41 @@ class Report(object):
     ):
         for column in self._columns:
             column.remove(simulation)
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def set_column(
+            self,
+            func : typing.Callable | type(None) = None,
+            header : str | type(None) = None,
+            **kwargs
+    ):
+        if not self._columns:
+            raise Exception("Columns can only be set after at least one column has been added")
+        
+        if func is None and header is None:
+            raise TypeError("One of arguments 'func' and 'header' must not be None")
+        if func is not None and header is not None:
+            raise TypeError("Arguments 'func' and 'header' cannot both be None")
+        
+        for i, column in enumerate(self._columns):
+            if ((func is not None and column.func is func) or
+                (header is not None and column.header == header)):
+                if column.func is func:
+                    self._columns[i] = Report.Column(
+                        func = func,
+                        header = column.header,
+                        **kwargs
+                    )
+                else:
+                    self._columns[i] = Report.Column(
+                        func = column.func,
+                        header = column.header,
+                        **kwargs
+                    )
+                break
+        else:
+            raise Exception("Failed to find column")
     
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
