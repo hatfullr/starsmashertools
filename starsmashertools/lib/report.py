@@ -128,7 +128,7 @@ class Report(object):
 
     class Header(Cell, object):
         def __str__(self):
-            if self._value is None: return self.formatter.format('')
+            if self._value is None: return ''
             return self.formatter.format(self._value)
 
     class Column(object):
