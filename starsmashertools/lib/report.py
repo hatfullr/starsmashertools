@@ -162,6 +162,9 @@ class Report(object):
             for c1, c2 in zip(self._cells, other._cells):
                 if c1 != c2: return False
             return True
+
+        def __getitem__(self, index):
+            return self._cells[index]
         
         @property
         def formatter(self): return self._formatter
@@ -222,9 +225,10 @@ class Report(object):
                     raise IndexError("No matching simulation found")
             del self._cells[index]
 
-        def __getitem__(self, index):
-            return self._cells[index]
-
+        def update(self, properties : dict):
+            for key, val in properties.items():
+                if hasattr(self, key): setattr(self, key, val)
+    
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def set_row(
@@ -269,33 +273,18 @@ class Report(object):
     @api
     def set_column(
             self,
+            header : str,
             func : typing.Callable | type(None) = None,
-            header : str | type(None) = None,
             **kwargs
     ):
         if not self._columns:
             raise Exception("Columns can only be set after at least one column has been added")
-        
-        if func is None and header is None:
-            raise TypeError("One of arguments 'func' and 'header' must not be None")
-        if func is not None and header is not None:
-            raise TypeError("Arguments 'func' and 'header' cannot both be None")
+
+        if func is not None: kwargs['func'] = func
         
         for i, column in enumerate(self._columns):
-            if ((func is not None and column.func is func) or
-                (header is not None and column.header == header)):
-                if column.func is func:
-                    self._columns[i] = Report.Column(
-                        func = func,
-                        header = column.header,
-                        **kwargs
-                    )
-                else:
-                    self._columns[i] = Report.Column(
-                        func = column.func,
-                        header = column.header,
-                        **kwargs
-                    )
+            if header == column.header:
+                self._columns[i].update(**kwargs)
                 break
         else:
             raise Exception("Failed to find column")
