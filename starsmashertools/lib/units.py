@@ -6,8 +6,7 @@ import starsmashertools.helpers.readonlydict
 import starsmashertools.helpers.argumentenforcer
 from starsmashertools.helpers.apidecorator import api
 import numpy as np
-import string
-
+import re
 
 def get_all_labels():
     conversions = Unit.get_conversions()
@@ -26,6 +25,42 @@ def get_all_labels():
 
 @starsmashertools.preferences.use
 class Unit(object):
+    """
+    To use string formatters with a Unit, you can either specify the usual
+    formatting as integer or float types, i.e., ``'{:5.3f}'``, or you can
+    specify a formatter for both the value and the label, i.e. ``'{:5.3f 6s}'``
+    (see examples below). Any whitespace between the value and label formatters 
+    is discarded during processing.
+    
+    Formatting Example
+    ------------------
+        
+        import starsmashertools.lib.units
+        u = starsmashertools.lib.units.Unit(1.234567, 'day')
+    
+        # Values only:
+        print('{:f}'.format(u))
+        # '1.234567'
+        print('{:10f}'.format(u))
+        # '  1.234567'    
+        print('{:10.2f}'.format(u))
+        # '      1.23'
+
+        # Values and labels
+        print('{:fs}'.format(u))
+        # '1.234567day'
+        print('{:f4s}'.format(u))
+        # '1.234567day '
+        print('{:f 4s}'.format(u))
+        # '1.234567day '
+        print('{:f>4s}'.format(u))
+        # '1.234567 day'
+        print('{:f >4s}'.format(u))
+        # '1.234567 day'
+        print('{:7.3f >4s}'.format(u))
+        # '  1.235 day'
+
+    """
     exception_message = "Operation '%s' is disallowed on 'Unit' type objects. Please convert to 'float' first using, e.g., 'float(unit)'."
 
     # This defines the allowed data types for the operations defined
@@ -47,6 +82,8 @@ class Unit(object):
         '__lt__'       : [float, int, 'Unit', np.generic],
         '__le__'       : [float, int, 'Unit', np.generic],
     }
+
+    _format_re = re.compile(r'[^[a-zA-Z]*[a-zA-Z]{1}')
     
     class InvalidLabelError(Exception, object): pass
     class InvalidTypeConversionError(Exception, object): pass
@@ -352,9 +389,12 @@ class Unit(object):
         return Unit(self.value**0.5, self.label**0.5)
 
     def __repr__(self): return self.__class__.__name__ + '(' + str(self) + ')'
-    def __str__(self): return '{:g}'.format(self)
-    def __format__(self, fmt):
-        return self.value.__format__(fmt) + ' ' + str(self.label)
+    def __str__(self): return '{:g}'.format(self.value) + ' ' + str(self.label)
+    def __format__(self, format_spec):
+        matches = Unit._format_re.findall(format_spec)
+        if not matches: return self.value.__format__(format_spec) + str(self.label)
+        if len(matches) == 1: return self.value.__format__(format_spec)
+        return self.value.__format__(matches[0]) + str(self.label).__format__(matches[1].lstrip())
     
     @api
     def __eq__(self, other):

@@ -2,13 +2,14 @@ import basetest
 import unittest
 import os
 import starsmashertools
+import starsmashertools.lib.report
 
 curdir = os.getcwd()
 
 # We have to update this whenever a change is made to the default formatting
-expected = """                name        start         end
-...rtools/tests/data  1.82612 min  8.86894 hr
-...rtools/tests/data  1.82612 min  8.86894 hr"""
+expected = """name                           start         current            stop
+...rtools/tests/data     1.82612 min     8.86894  hr     18.4442 day
+...rtools/tests/data     1.82612 min     8.86894  hr     18.4442 day"""
 
 
 class TestReport(basetest.BaseTest):
@@ -19,18 +20,22 @@ class TestReport(basetest.BaseTest):
             starsmashertools.get_simulation(path),
         ]
     def tearDown(self):
-        if os.path.isfile('test_report'): os.remove('test_report')
+        if os.path.isfile('test.report'): os.remove('test.report')
         del self.simulations
 
     def testMain(self):
         report = starsmashertools.report(self.simulations)
-        string = report.write()
-        self.assertEqual(string, expected)
-        with open('test_report', 'w') as f:
-            report.write(f)
-        self.assertTrue(os.path.isfile('test_report'))
-        with open('test_report', 'r') as f:
-            self.assertEqual(f.read(), expected)
+        self.assertEqual(str(report), expected)
+
+    def testSaveLoad(self):
+        report = starsmashertools.report(self.simulations)
+
+        report.save('test')
+        self.assertTrue(os.path.isfile('test.report'))
+        loaded_report = starsmashertools.lib.report.Report.load('test.report')
+        self.assertEqual(report, loaded_report)
+        
+        
 
 if __name__ == "__main__":
     unittest.main(failfast=True)

@@ -6,5 +6,3 @@ def pickle_object(obj):
 
 def unpickle_object(obj):
     return pickle.loads(base64.b64decode(obj))
-
-    

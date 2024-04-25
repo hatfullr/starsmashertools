@@ -4,9 +4,11 @@ from starsmashertools.helpers.apidecorator import api
 import typing
 import collections
 import starsmashertools.lib.simulation
-import starsmashertools.lib.units
 import copy
 import _io
+import numpy as np
+import ast
+import inspect
 
 @starsmashertools.preferences.use
 class Report(object):
@@ -20,106 +22,295 @@ class Report(object):
             self,
             simulations : list | tuple,
             columns : list | tuple | type(None) = None,
+            column_separator : str = '  ',
     ):
-        self.rows = []
-        self.columns = collections.OrderedDict()
+        self.column_separator = column_separator
 
+        self._columns = []
+        
         if columns is None:
             try: columns = self.preferences.get('columns')
             except: columns = []
+
+        self._current = -1
+
+        for obj in columns:
+            self.add_column(*obj['args'], **obj['kwargs'])
         
         for simulation in simulations:
-            self.row(simulation)
-        for obj in columns:
-            self.column(*obj['args'], **obj['kwargs'])
+            self.add_row(simulation)        
 
-    @starsmashertools.helpers.argumentenforcer.enforcetypes
-    @api
-    def write(
-            self,
-            stdout : str | _io.TextIOWrapper | type(None) = None,
-            column_separator : str = '  ',
-            newline : str = '\n',
-    ):
-        import starsmashertools.helpers.string
-        import starsmashertools.helpers.file
-        import starsmashertools.helpers.path
-        import starsmashertools.helpers.string
-
-        if isinstance(stdout, str):
-            if starsmashertools.helpers.path.isfile(stdout):
-                raise FileExistsError(stdout)
-
+    def __str__(self):
+        return '\n'.join(iter(self))
             
-        with starsmashertools.helpers.string.progress_message(
-                message = 'Calculating report',
-                max = len(self.rows),
-        ) as progress:
-            grid = []
+    def __iter__(self): return self
+    def __next__(self):
+        if not self._columns: raise StopIteration
+        if self._current >= len(self._columns[0]) - 1:
+            self._current = -1
+            raise StopIteration
+        self._current += 1
+        row = [str(column[self._current]) for column in self._columns]
+        return self.column_separator.join(row)
 
-            # Get all the rows first, so we can determine the column widths after
-            widths = [0]*len(self.columns.keys())
-            for simulation in self.rows:
-                row = []
-                for j, (_, column) in enumerate(self.columns.items()):
-                    result = column['func'](simulation)
-                    if isinstance(result, starsmashertools.lib.units.Unit):
-                        result = result.auto()
-                    s = column['formatter'].format(result)
-                    shorten = column.get('shorten', None)
-                    if shorten is not None:
-                        s = starsmashertools.helpers.string.shorten(
-                            s, *shorten['args'], **shorten['kwargs'],
-                        )
+    def __eq__(self, other):
+        if not isinstance(other, self.__class__): return False
+        if len(self._columns) != len(other._columns): return False
+        if self.column_separator != other.column_separator: return False
+        for c1, c2 in zip(self._columns, other._columns):
+            if c1 != c2: return False
+        return True
+    def __neq__(self, other): return not (self == other)
 
-                    widths[j] = max(widths[j], len(s))
-                    row += [s]
-                progress.increment()
-                grid += [row]
+    class Cell(object):
+        def __init__(
+                self,
+                simulation : str | starsmashertools.lib.simulation.Simulation | type(None) = None,
+                func : typing.Callable | type(None) = None,
+                formatter : str = '{}',
+                shorten : dict | type(None) = None,
+        ):
+            if simulation is not None:
+                if isinstance(simulation, str):
+                    simulation = starsmashertools.get_simulation(simulation)
+            self.simulation = simulation
+            self.formatter = formatter
+            self.shorten = shorten
+            self._func = func
+            self._value = None
+        
+        @property
+        def func(self): return self._func
+        @func.setter
+        def func(self, value):
+            self._value = None
+            self._func = value
 
-            # Make the header, with the correct widths
-            header_row = []
-            for j, (header, column) in enumerate(self.columns.items()):
-                fmt = '{:>' + str(widths[j]) + '}'
-                header_row += [fmt.format(header)]
-            grid = [header_row] + grid
+        def __eq__(self, other):
+            if not isinstance(other, self.__class__): return False
+            if self.simulation != other.simulation: return False
+            if self._value is None: self.update_value()
+            if other._value is None: other.update_value()
+            return self._value == other._value
+        def __neq__(self, other): return not (self == other)
 
-            # Now combine the grid into a single string
-            string = ""
-            rows = []
-            for row in grid:
-                rows += [column_separator.join(row)]
+        def __str__(self):
+            import starsmashertools.helpers.string
+            
+            if self._value is None: self.update_value()
+            if self._value is None: return self.formatter.format('')
+            
+            string = self.formatter.format(self._value)
+            if self.shorten is not None:
+                string = starsmashertools.helpers.string.shorten(
+                    string, *self.shorten['args'], **self.shorten['kwargs'],
+                )
+            return string
 
-            result = newline.join(rows)
-            if stdout is None: return result
-            elif isinstance(stdout, str):
-                with starsmashertools.helpers.file.open(stdout, 'x') as f:
-                    f.write(result)
-            else: stdout.write(result)
+        # For pickling
+        def __getstate__(self):
+            # Check if the function is a lambda function
+            if self._value is None: self.update_value()
+            state = self.__dict__.copy()
+            
+            state.pop('_func', None)
+            return state
+
+        def __setstate__(self, state):
+            func = state.pop('_func', None)
+            if func is not None: state['_func'] = eval(func)
+            self.__dict__.update(state)
+
+        def update_value(self):
+            if None not in [self.simulation, self._func]:
+                self._value = self._func(self.simulation)
+
+
+    class Header(Cell, object):
+        def __str__(self):
+            if self._value is None: return self.formatter.format('')
+            return self.formatter.format(self._value)
+
+    class Column(object):
+        def __init__(
+                self,
+                func : typing.Callable,
+                formatter : str = '{}',
+                header_formatter : str = '{}',
+                header : str | type(None) = None,
+                shorten : dict | type(None) = None,
+        ):
+            if header is None: header = func.__qualname__
+            
+            self._formatter = formatter
+            self._shorten = shorten
+            
+            cell = Report.Header(
+                formatter = header_formatter,
+                func = func,
+            )
+            cell._value = header
+            
+            self._cells = [cell]
+
+        def __len__(self): return len(self._cells)
+        def __iter__(self): return iter(self._cells)
+
+        def __eq__(self, other):
+            if not isinstance(other, self.__class__): return False
+            if len(self._cells) != len(other._cells): return False
+            for c1, c2 in zip(self._cells, other._cells):
+                if c1 != c2: return False
+            return True
+        
+        @property
+        def formatter(self): return self._formatter
+        @formatter.setter
+        def formatter(self, value):
+            for cell in self._cells[1:]: cell.formatter = value
+            self._formatter = value
+        @property
+        def header_formatter(self): return self._cells[0].formatter
+        @header_formatter.setter
+        def header_formatter(self, value): self._cells[0].formatter = value
+        @property
+        def func(self): return self._cells[0].func
+        @func.setter
+        def func(self, value):
+            for cell in self._cells: cell.func = value
+        @property
+        def header(self): return self._cells[0]._value
+        @header.setter
+        def header(self, value): self._cells[0]._value = value
+        @property
+        def shorten(self): return self._shorten
+        @shorten.setter
+        def shorten(self, value):
+            self._shorten = value
+            for cell in self._cells[1:]: cell.shorten = value
+        
+        def add(
+                self,
+                simulation : str | starsmashertools.lib.simulation.Simulation,
+        ):
+            if isinstance(simulation, str):
+                simulation = starsmashertools.get_simulation(simulation)
+
+            self._cells += [Report.Cell(
+                simulation = simulation,
+                func = self.func,
+                formatter = self.formatter,
+                shorten = self.shorten,
+            )]
+
+        def remove(
+                self,
+                simulation : int | str | starsmashertools.lib.simulation.Simulation,
+        ):
+            if isinstance(simulation, int):
+                index = simulation
+                if self._cells[index] == self._cells[0]: index += 1
+            else:
+                if isinstance(simulation, str):
+                    simulation = starsmashertools.get_simulation(simulation)
+                index = None
+                for i, cell in enumerate(self._cells[1:]):
+                    if cell.simulation != simulation: continue
+                    index = i + 1
+                    break
+                else:
+                    raise IndexError("No matching simulation found")
+            del self._cells[index]
+
+        def __getitem__(self, index):
+            return self._cells[index]
     
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
-    def row(
+    def add_row(
             self,
             simulation : str | starsmashertools.lib.simulation.Simulation,
     ):
-        if isinstance(simulation, str):
-            simulation = starsmashertools.get_simulation(simulation)
-        self.rows += [simulation]
+        if not self._columns:
+            raise Exception("Rows can only be added to a Report after at least one column has been added")
+        
+        for column in self._columns:
+            column.add(simulation)
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
-    def column(
+    def remove_row(
+            self,
+            simulation : int | str | starsmashertools.lib.simulation.Simulation,
+    ):
+        for column in self._columns:
+            column.remove(simulation)
+    
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def add_column(
             self,
             func : typing.Callable,
             header : str | type(None) = None,
             formatter : str = '{}',
+            header_formatter : str = '{}',
             shorten : dict | type(None) = None,
     ):
-        if header is None: header = func.__qualname__
+        self._columns += [Report.Column(
+            func = func,
+            header = header,
+            formatter = formatter,
+            header_formatter = header_formatter,
+            shorten = shorten,
+        )]
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def remove_column(
+            self,
+            func : int | typing.Callable,
+    ):
+        if isinstance(func, int): del self._columns[func]
+        else:
+            index = None
+            for i, column in enumerate(self._columns):
+                if column.func != func: continue
+                index = i
+                break
+            else: raise IndexError("No column found with function '%s'" % func)
+            del self._columns[index]
+    
         
-        self.columns[header] = {
-            'func' : func,
-            'formatter' : formatter,
-            'shorten' : shorten,
-        }
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def save(
+            self,
+            filename : str,
+    ):
+        import starsmashertools.helpers.file
+        import starsmashertools.helpers.pickler
+
+        if filename.endswith('.txt'):
+            with starsmashertools.helpers.file.open(filename, 'w') as f:
+                f.write(str(self))
+        else:
+            if not filename.endswith('.report'): filename += '.report'
+            obj = starsmashertools.helpers.pickler.pickle_object(self)
+            with starsmashertools.helpers.file.open(filename, 'wb') as f:
+                f.write(obj)
+
+    @staticmethod
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def load(filename : str):
+        import starsmashertools.helpers.file
+        import starsmashertools.helpers.pickler
+        
+        try:
+            with starsmashertools.helpers.file.open(filename, 'rb') as f:
+                obj = f.read()
+            return starsmashertools.helpers.pickler.unpickle_object(obj)
+        except Exception as e:
+            if not filename.endswith('.report'):
+                raise Exception("Report files can only be loaded if they were written with the '.report' file extension") from e
+            raise

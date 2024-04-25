@@ -193,6 +193,7 @@ prefs = {
                         'kwargs' : {
                             'header' : 'name',
                             'formatter' : '{:20}',
+                            'header_formatter' : '{:<20}',
                             'shorten' : {
                                 'args' : (20,),
                                 'kwargs' : {
@@ -203,29 +204,32 @@ prefs = {
                     },
                     {
                         'args' : (
-                            lambda sim: sim.get_start_time(),
+                            lambda sim: sim.get_start_time().auto(),
                         ),
                         'kwargs' : {
                             'header' : 'start',
-                            'formatter' : '{:7g}',
+                            'formatter' : '{:10g >4s}',
+                            'header_formatter' : '{:>14s}',
                         },
                     },
                     {
                         'args' : (
-                            lambda sim: sim.get_current_time(),
+                            lambda sim: sim.get_current_time().auto(),
                         ),
                         'kwargs' : {
                             'header' : 'current',
-                            'formatter' : '{:7g}',
+                            'formatter' : '{:10g >4s}',
+                            'header_formatter' : '{:>14s}',
                         },
                     },
                     {
                         'args' : (
-                            lambda sim: sim.get_stop_time(),
+                            lambda sim: sim.get_stop_time().auto(),
                         ),
                         'kwargs' : {
                             'header' : 'stop',
-                            'formatter' : '{:7g}',
+                            'formatter' : '{:10g >4s}',
+                            'header_formatter' : '{:>14s}',
                         },
                     },
                 ], # 'columns'

@@ -339,11 +339,11 @@ class TestUnits(basetest.BaseTest):
 
     def test_formatting(self):
         u = starsmashertools.lib.units.Unit(1000, 'day')
-        s = '{:10.4f}'.format(u)
+        s = '{:10.4f >4s}'.format(u)
         self.assertEqual(s, ' 1000.0000 day')
-        s = '{:<10.4f}'.format(u)
+        s = '{:<10.4f >4s}'.format(u)
         self.assertEqual(s, '1000.0000  day')
-        s = '{:5.1f}'.format(u)
+        s = '{:5.1f >4s}'.format(u)
         self.assertEqual(s, '1000.0 day')
 
 

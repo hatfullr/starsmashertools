@@ -55,15 +55,9 @@ class Simulation(object):
 
     def __json_view__(self):
         return self.directory
-    
-    """
-    # For pickling
-    def __getstate__(self):
-        return {'directory' : self.directory}
 
-    def __setstate__(self, data):
-        self.__init__(data['directory'])
-    """
+    def __reduce__(self): # For pickling
+        return (self.__class__, (self.directory,))
     
     @property
     def joined_simulations(self):
