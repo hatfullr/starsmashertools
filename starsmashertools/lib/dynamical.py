@@ -20,8 +20,20 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
     @api
     @cli('starsmashertools')
     def get_relaxations(self, cli : bool = False, **kwargs):
-        return self.get_children(**kwargs)[0].get_children(cli=cli, **kwargs)
-
+        binary = self.get_binary(**kwargs)
+        if binary is None: return []
+        return binary.get_children(cli = cli, **kwargs)
+    
+    @api
+    @cli('starsmashertools')
+    def get_binary(self, cli : bool = False, **kwargs):
+        import starsmashertools.lib.binary
+        children = self.get_children(**kwargs)
+        if len(children) != 1: return None
+        if not isinstance(children[0], starsmashertools.lib.binary.Binary):
+            return None
+        return children[0]
+    
     @archived
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
@@ -56,7 +68,6 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
             The plunge time. Returns `None` if there is not yet any plunge-in
             event in this simulation.
         """
-        import starsmashertools.lib.binary
         import starsmashertools.helpers.midpoint
         import starsmashertools.math
         import numpy as np
@@ -71,10 +82,10 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
             if threshold_frac <= 0 or threshold_frac > 1:
                 raise ValueError("Keyword 'threshold_frac' must be within range (0, 1], not '%g'" % threshold_frac)
         
-        children = self.get_children()
-        if not children or not isinstance(children[0], starsmashertools.lib.binary.Binary):
+        binary = self.get_binary()
+        if binary is None:
             raise Exception("Cannot obtain the plunge time for a dynamical simulation that did not originate from a Binary simulation: '%s'" % self.directory)
-        binary = children[0]
+
         primary, secondary = binary.get_children()
         
         primary_IDs = binary.get_primary_IDs()
