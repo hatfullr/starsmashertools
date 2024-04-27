@@ -151,7 +151,7 @@ prefs = {
                 # aware of at initialization. Each entry must be a function
                 # that accepts only an Output object as argument.
                 # To specify your own units edit the 'units' object in
-                # 'Simulation' above.
+                # 'Simulation'.
                 'cache' : {
                     'ID' : lambda obj: np.arange(obj['ntot']),
                     'xyz': lambda obj: np.column_stack((obj['x'], obj['y'], obj['z'])),

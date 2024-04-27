@@ -1322,18 +1322,18 @@ class Simulation(object):
                     raise TypeError("All elements of the given outputs iterable must be of type 'starsmashertools.lib.output.Output', but received '%s' at element %d" % (type(output).__name__, i))
 
         if not parallel:
-            results = []
+            #results = []
             for output in outputs:
-                results += [starsmashertools.lib.flux.get(output, **kwargs)]
-            return results
-
-        if isinstance(outputs, starsmashertools.lib.output.OutputIterator):
-            outputs = outputs.tolist()
-        return starsmashertools.helpers.asynchronous.ParallelIterator(
-            starsmashertools.lib.flux.get,
-            [[output] for output in outputs],
-            kwargs = [kwargs],
-        )
+                yield starsmashertools.lib.flux.get(output, **kwargs)
+            #return results
+        else:
+            if isinstance(outputs, starsmashertools.lib.output.OutputIterator):
+                outputs = outputs.tolist()
+            return starsmashertools.helpers.asynchronous.ParallelIterator(
+                starsmashertools.lib.flux.get,
+                [[output] for output in outputs],
+                kwargs = [kwargs],
+            )
 
 
     if has_matplotlib:
