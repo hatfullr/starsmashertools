@@ -32,7 +32,7 @@ def process_inputs(**kwargs):
 def get(
         output : starsmashertools.lib.output.Output,
         weighted_averages : list | tuple = [],
-
+        
         # Image
         resolution : list | tuple | type(Null) = Null(),
         extent : list | tuple | type(None) = None,
@@ -162,6 +162,8 @@ def get(
     cores = u == 0
 
 
+    # Store total flux contributions from all the particles
+    flux_from_contributors = np.zeros(ntot, dtype = float)
     
     # Spectrum setup
     spectrum = np.zeros(spectrum_size, dtype=float)
@@ -537,9 +539,10 @@ def get(
             # also faster than range(ray_n[ii][jj]-1, -1, -1).
             for ir in reversed(ray_id_iijj):
                 f = flux[ir] * math.exp(-tau_ray)
-                surf_br[ii,jj] += f #flux[ir] * np.exp(-tau_ray)
+                surf_br[ii,jj] += f
+                flux_from_contributors[ir] += f
                 contributors[ir] = True
-
+                
                 for _i, A in enumerate(weighted_averages):
                     weighted_average_arrays[_i][ii, jj] += A[ir] * f
 
@@ -567,7 +570,8 @@ def get(
             if i > 0:
                 f = flux[i] * math.exp(-tau_ray)
                 surf_br[ii,jj] += f #flux[i] * np.exp(-tau_ray)
-
+                flux_from_contributors[i] += f
+                
                 for _i, A in enumerate(weighted_averages):
                     weighted_average_arrays[_i][ii, jj] += A[i] * f
 
@@ -711,6 +715,7 @@ def get(
             'flux' : flux[contributors],
             'Lcool' : Lcool * msun,
             'Lheat' : Lheat * msun,
+            'flux_from_contributors' : flux_from_contributors[contributors],
         },
         
         'image' : {
