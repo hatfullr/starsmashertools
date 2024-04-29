@@ -4,6 +4,8 @@ import numpy as np
 import itertools
 import basetest
 
+class CustomType: pass
+
 # https://docs.python.org/3/library/stdtypes.html
 types = {
     'type(None)' : 'None',
@@ -28,6 +30,8 @@ types = {
     'frozenset' : 'frozenset()',
     # mapping
     'dict' : 'dict()',
+    # Custom classes
+    'CustomType' : 'CustomType()',
 }
 
 # NumPy types
@@ -90,7 +94,7 @@ starsmashertools.helpers.argumentenforcer.enforcetypes({{'a' : [{_type}]}})
         error = starsmashertools.helpers.argumentenforcer.ArgumentTypeError
         
         @starsmashertools.helpers.argumentenforcer.enforcetypes
-        def f(a : int | np.ndarray): return None
+        def f(a : int | np.ndarray): pass
         f(int())
         f(np.array([], dtype=int))
         with self.assertRaises(error):
@@ -100,12 +104,12 @@ starsmashertools.helpers.argumentenforcer.enforcetypes({{'a' : [{_type}]}})
             f(True)
 
         @starsmashertools.helpers.argumentenforcer.enforcetypes
-        def f(a : np.ndarray): return None
+        def f(a : np.ndarray): pass
         f(np.array([]))
         with self.assertRaises(error): f(int())
 
         @starsmashertools.helpers.argumentenforcer.enforcetypes
-        def f(a : np.int32 | np.int16 | np.ndarray): return None
+        def f(a : np.int32 | np.int16 | np.ndarray): pass
         f(np.int16())
         f(np.int32())
         with self.assertRaises(error):
@@ -113,7 +117,7 @@ starsmashertools.helpers.argumentenforcer.enforcetypes({{'a' : [{_type}]}})
             f(np.array([float()]))
 
         @starsmashertools.helpers.argumentenforcer.enforcetypes
-        def f(a : int | float | np.ndarray): return None
+        def f(a : int | float | np.ndarray): pass
         f(int())
         f(float())
         f(np.int32())
@@ -123,7 +127,7 @@ starsmashertools.helpers.argumentenforcer.enforcetypes({{'a' : [{_type}]}})
         #    f(np.float16())
 
         @starsmashertools.helpers.argumentenforcer.enforcetypes
-        def f(a : int | float | list | tuple | np.ndarray): return None
+        def f(a : int | float | list | tuple | np.ndarray): pass
         f(list())
         f(tuple())
         f(int())
@@ -138,30 +142,50 @@ starsmashertools.helpers.argumentenforcer.enforcetypes({{'a' : [{_type}]}})
             f(np.array([[]], dtype=list))
 
         @starsmashertools.helpers.argumentenforcer.enforcetypes
-        def f(a : int = 0): return None
+        def f(a : int = 0): pass
         with self.assertRaises(error): f(np.array([float()]))
 
         @starsmashertools.helpers.argumentenforcer.enforcetypes
-        def f(a : int | np.ndarray = 0): return None
+        def f(a : int | np.ndarray = 0): pass
         f()
         f(a=np.array([int()]))
         with self.assertRaises(error): f(np.array([float()]))
 
         @starsmashertools.helpers.argumentenforcer.enforcetypes
-        def f(a : int | np.ndarray | type(None) = None): return None
+        def f(a : int | np.ndarray | type(None) = None): pass
         f()
         f(a=int())
         f(a=np.array([int()]))
         with self.assertRaises(error): f(np.array([float()]))
 
         @starsmashertools.helpers.argumentenforcer.enforcetypes
-        def f(a : list | tuple | np.ndarray | type(None) = None): return None
+        def f(a : list | tuple | np.ndarray | type(None) = None): pass
         f()
         f(list())
         f(tuple())
         f(np.array([]))
         with self.assertRaises(error): f(True)
 
+        # Test custom types with NumPy arrays
+        class OtherType: pass
+        
+        @starsmashertools.helpers.argumentenforcer.enforcetypes
+        def f(a : list | tuple | CustomType | np.ndarray): pass
+        f(list())
+        f(tuple())
+        f(np.array([]))
+        f(np.asarray([CustomType()], dtype = object))
+        f(np.asarray([CustomType()], dtype = CustomType))
+        f(np.asarray([], dtype = object))
+        f(np.asarray([], dtype = CustomType))
+        with self.assertRaises(error): f(OtherType())
+        with self.assertRaises(error):
+            f(np.asarray([OtherType()], dtype = object))
+        with self.assertRaises(error):
+            f(np.asarray([OtherType()], dtype = OtherType))
+        with self.assertRaises(error):
+            f(np.asarray([CustomType(), OtherType()], dtype = object))
+        
     # This is just a basic test for now. I'm not sure how to automate the task
     # across all combinations of types
     def test_enforce_basic_values(self):
@@ -191,7 +215,6 @@ starsmashertools.helpers.argumentenforcer.enforcetypes({{'a' : [{_type}]}})
                 })
             with self.assertRaises(val_err):
                 func(None)
-        
 
 if __name__ == "__main__":
     unittest.main(failfast=True)

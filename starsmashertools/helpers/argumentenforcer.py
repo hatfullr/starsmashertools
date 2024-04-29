@@ -90,11 +90,16 @@ numpy_conversions = {
     np.uint16 : int,
     np.uint32 : int,
     np.uint64 : int,
+    np.object_ : object,
 }
 
 def _check_type(obj, _types):
+    """
+    Returns either a list of expected types or None. None indicates that the 
+    given object ``obj`` has a type included in ``_types``.
+    """
     # This is the only way to check for Union types...
-    if isinstance(_types, types.UnionType) or hasattr(_types, "__args__"):
+    if hasattr(_types, '__args__'):
         # Convert any typing.Type arguments in _types to whatever the expected
         # actual types are
         args = list(_types.__args__)
@@ -107,17 +112,26 @@ def _check_type(obj, _types):
         if isinstance(obj, np.ndarray) and np.ndarray in args:
             others = [a for a in args if a is not np.ndarray]
             if not others: return args
+            
             # Check if this type is included in any of the Union types
             for key, val in numpy_conversions.items():
                 if key in args or val in args:
                     break
             else:
+                # Check the types in the array against the allowed types in
+                # others.
+                try:
+                    if all([isinstance(o, tuple(others)) for o in obj.flatten()]):
+                        return None
+                    return others
+                except IndexError: # Empty array
+                    if obj.dtype.type in others: return None
+                
                 return None
+            
             new_type = numpy_conversions.get(obj.dtype.type, None)
-            if new_type is None:
-                return args
-            if new_type not in args:
-                return others
+            if new_type is None: return args
+            if new_type not in args: return others
             return None
         
         if isinstance(obj, tuple(args)): return None
