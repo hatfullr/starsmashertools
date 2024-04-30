@@ -1018,10 +1018,10 @@ class Simulation(object):
         if not isinstance(time, starsmashertools.lib.units.Unit):
             time *= self.units['t']
             #time = float(time.convert(self.units['t'].label))
-
+        
         outputs = self.get_output(include_joined = include_joined)
         if not outputs: raise ValueError("Cannot find output at time %f because there are no output files in simulation '%s'" % (time, str(self.directory)))
-
+        
         conversion = self.units['t'].convert(time.label)
         
         tend = outputs[-1]['t'] * conversion
@@ -1031,9 +1031,9 @@ class Simulation(object):
         
         m = starsmashertools.helpers.midpoint.Midpoint(outputs)
         m.set_criteria(
-            lambda output: output.header['t'] * conversion < time,
-            lambda output: output.header['t'] * conversion == time,
-            lambda output: output.header['t'] * conversion > time,
+            lambda output: output.simulation.reader.read_from_header('t', output) * conversion < time,
+            lambda output: output.simulation.reader.read_from_header('t', output) * conversion == time,
+            lambda output: output.simulation.reader.read_from_header('t', output) * conversion > time,
         )
         
         return m.get()
@@ -1165,7 +1165,7 @@ class Simulation(object):
         """
         Read all the headers of the output files in this simulation and return
         them as a dictionary.
-
+        
         Parameters
         ----------
         keys : list
