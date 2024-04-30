@@ -1031,9 +1031,9 @@ class Simulation(object):
         
         m = starsmashertools.helpers.midpoint.Midpoint(outputs)
         m.set_criteria(
-            lambda output: output.simulation.reader.read_from_header('t', output) * conversion < time,
-            lambda output: output.simulation.reader.read_from_header('t', output) * conversion == time,
-            lambda output: output.simulation.reader.read_from_header('t', output) * conversion > time,
+            lambda output: output.simulation.reader.read_from_header('t', output.path) * conversion < time,
+            lambda output: output.simulation.reader.read_from_header('t', output.path) * conversion == time,
+            lambda output: output.simulation.reader.read_from_header('t', output.path) * conversion > time,
         )
         
         return m.get()
