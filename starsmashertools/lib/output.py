@@ -719,7 +719,7 @@ class OutputIterator(object):
     def __init__(
             self,
             filenames : list | tuple | np.ndarray,
-            simulation : "starsmashertools.lib.simulation.Simulation",
+            simulation,
             onFlush : list | tuple | np.ndarray = [],
             max_buffer_size : int | type(None) = None,
             asynchronous : bool = True,
@@ -755,6 +755,12 @@ class OutputIterator(object):
             Other optional keyword arguments that are passed to the
             :meth:`~.Output.read` function.
         """
+        import starsmashertools.lib.simulation
+        
+        starsmashertools.helpers.argumentenforcer.enforcetypes({
+            'simulation' : [starsmashertools.lib.simulation.Simulation],
+        })
+        
         if max_buffer_size is None:
             max_buffer_size = self.preferences.get('max buffer size')
         self.max_buffer_size = max_buffer_size

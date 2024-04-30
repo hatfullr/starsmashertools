@@ -572,9 +572,8 @@ class Simulation(object):
                 tf = max(tf, simulation['tf'] * simulation.units.time)
         return tf
 
-    @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
-    def started_from(self, simulation : 'starsmashertools.lib.simulation.Simulation'):
+    def started_from(self, simulation):
         """
         Returns
         -------
@@ -590,6 +589,10 @@ class Simulation(object):
         """
         import starsmashertools.helpers.path
         import filecmp
+        
+        starsmashertools.helpers.argumentenforcer.enforcetypes({
+            'simulation' : [Simulation],
+        })
 
         path = self.get_file(self.preferences.get('start file'))
         if len(path) != 1: return False

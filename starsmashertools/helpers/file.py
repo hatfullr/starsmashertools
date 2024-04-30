@@ -182,7 +182,7 @@ def open(
         path : str,
         mode : str,
         lock : bool = True,
-        method : typing.Callable | type(None) = None,
+        method : type | typing.Callable | type(None) = None,
         timeout : int | float | np.generic | type(None) = None,
         verbose : bool = True,
         message : str | type(None) = None,

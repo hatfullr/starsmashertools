@@ -4,60 +4,21 @@ import inspect
 import functools
 import numpy as np
 
-# Use these functions as wrappers like so:
-#
-# @starsmashertools.helpers.argumentenforcer.enforcetypes
-# def myfunc(stuff : str):
-#     return stuff
-#
-# If the argument 'stuff' is detected as not of type 'str' then an error is
-# raised. Arguments that are an instance of a subclass of the specified type
-# pass the check.
-# 
-# If you want to constrain input arguments to specific values then you can add
-# the following to the beginning of your function:
-#
-# @starsmashertools.helpers.argumentenforcer.enforcetypes
-# def myfunc(stuff : str):
-#     starsmashertools.helpers.argumentenforcer.enforcevalues({
-#         'stuff' : ['things', 'nelly'],
-#     })
-#     return stuff
-#
-# An error will be raised if 'stuff' has any value other than 'things' or
-# 'nelly'.
-
-# Works as a wrapper by default, unless this function is called otherwise with a
-# dictionary object passed as input
 def enforcetypes(f):
-    # Dict behavior
-    if isinstance(f, dict):
-        return _enforcetypes(f)
-    
+    """
+    If this function is called, the input must be of type :py:class:`dict`.
+    Otherwise, this function is to be used as a wrapper.
+    """
+    if isinstance(f, dict): return _enforcetypes(f)
+
     # Wrapper behavior. We need to use functools here or else we get into
     # trouble with other wrappers.
     @functools.wraps(f)
-    def type_checker(*args, **kwargs):
-        hints = typing.get_type_hints(f)
-        all_args = kwargs.copy()
-        if hasattr(f, "__wrapped__"):
-            varnames = f.__wrapped__.__code__.co_varnames
-        else: varnames = f.__code__.co_varnames
-        all_args.update(dict(zip(varnames, args)))
-        for key in all_args.keys():
-            if key in hints.keys():
-                expected_types = hints[key]
-                arg = all_args[key]
-                types_for_error = _check_type(arg, expected_types)
-                if types_for_error is not None:
-                    raise ArgumentTypeError(
-                        given_name     = key,
-                        given_type     = type(arg) if not isinstance(arg, np.ndarray) else arg.dtype.type,
-                        expected_types = types_for_error,
-                    )
+    def wrapper(*args, **kwargs):
+        _check_types(f, args, kwargs)
         return f(*args, **kwargs)
-    
-    return type_checker
+    return wrapper
+
 
 @enforcetypes
 def _enforcetypes(obj : dict):
@@ -65,108 +26,77 @@ def _enforcetypes(obj : dict):
 
     for var_name, var_val in obj.items():
         value = variables[var_name]
-        types_for_error = _check_type(value, var_val)
-        if types_for_error is not None:
+        if not isinstance(value, tuple(var_val)):
             raise ArgumentTypeError(
-                given_name     = var_name,
-                given_type     = type(value),
+                given_name = var_name,
+                given_type = type(value),
                 expected_types = var_val,
             )
+        #value = variables[var_name]
+        #types_for_error = _check_type(value, var_val)
+        #if types_for_error is not None:
+        #    raise ArgumentTypeError(
+        #        given_name     = var_name,
+        #        given_type     = type(value),
+        #        expected_types = var_val,
+        #    )
 
 
-numpy_conversions = {
-    np.complex64 : complex,
-    np.complex128 : complex,
-    np.float16 : float,
-    np.float32 : float,
-    np.float64 : float,
-    np.int8 : int,
-    np.int16 : int,
-    np.int32 : int,
-    np.int64 : int,
-    np.bool_ : bool,
-    np.str_ : str,
-    np.uint8 : int,
-    np.uint16 : int,
-    np.uint32 : int,
-    np.uint64 : int,
-    np.object_ : object,
-}
+def _get_types_from_annotation(annotation):
+    if hasattr(annotation, '__args__'): # types.UnionType or typing.UnionType
+        return annotation.__args__
+    return [annotation]
 
-def _check_type(obj, _types):
-    """
-    Returns either a list of expected types or None. None indicates that the 
-    given object ``obj`` has a type included in ``_types``.
-    """
-    # This is the only way to check for Union types...
-    if hasattr(_types, '__args__'):
-        # Convert any typing.Type arguments in _types to whatever the expected
-        # actual types are
-        args = list(_types.__args__)
-        for i, t in enumerate(args):
-            if t is typing.Callable: continue
-            origin = typing.get_origin(t)
-            if not origin: continue
-            args[i] = typing.get_args(t)[0]
+def _check_types(f, args, kwargs):
+    signature = inspect.signature(f)
+    mismatched_types = []
+
+    parameters = signature.parameters
+    positional = [p for _,p in zip(args, parameters.values())]
+    
+    for i, parameter in enumerate(parameters.values()):
+        annotation = parameter.annotation
         
-        if isinstance(obj, np.ndarray) and np.ndarray in args:
-            others = [a for a in args if a is not np.ndarray]
-            if not others: return args
-            
-            # Check if this type is included in any of the Union types
-            for key, val in numpy_conversions.items():
-                if key in args or val in args:
-                    break
-            else:
-                # Check the types in the array against the allowed types in
-                # others.
-                try:
-                    if all([isinstance(o, tuple(others)) for o in obj.flatten()]):
-                        return None
-                    return others
-                except IndexError: # Empty array
-                    if obj.dtype.type in others: return None
-                
-                return None
-            
-            new_type = numpy_conversions.get(obj.dtype.type, None)
-            if new_type is None: return args
-            if new_type not in args: return others
-            return None
-        
-        if isinstance(obj, tuple(args)): return None
+        # Don't check empty annotations
+        if annotation is inspect._empty: continue
 
-        # If obj isn't a numpy array, then check if it is a numpy type that can
-        # be converted to a base type
-        if isinstance(obj, tuple(numpy_conversions.keys())):
-            # It can be converted
-            new_type = numpy_conversions.get(obj.dtype.type, None)
-            if new_type is None: return args
-            if new_type not in args:
-                return args
-            return None
-        
-        # This is the regular check
-        if (not isinstance(obj, tuple(args)) and
-            not any([issubclass(obj.__class__, t) for t in args])):
-            return args
+        if parameter in positional: arg = args[i]
+        else:
+            if parameter.name not in kwargs.keys(): continue
+            arg = kwargs[parameter.name]
 
-    else:
-        if hasattr(_types, '__iter__') and not _types in [str, dict]:
+        types = _get_types_from_annotation(annotation)
+
+        # If the given type is a NumPy generic, convert it to a Python type
+        if isinstance(arg, np.generic):
+            if type(arg) in types: continue
+            compare = arg.item()
+        else: compare = arg
+        
+        if type(compare) in types: continue
+
+        
+        # Check for subclasses only if compare is not a builtin type. The reason
+        # is because for some god-forsaken reason, bool is a subclass of int in
+        # Python...
+        if compare.__class__.__module__ not in ['builtins', '__builtins__']:
+            # Check for subclasses
             try:
-                _types = tuple(_types)
-            except TypeError as e:
-                if 'object is not iterable' not in str(e):
-                    raise
+                if issubclass(compare.__class__, tuple(types)): continue
+            except Exception as e:
+                print(types)
+                raise(e)
+
+        if typing.Callable in types:
+            if callable(arg): continue
         
-        if (type(obj) != _types and
-            not issubclass(obj.__class__, _types)):
-            return _types
-    return None
+        raise ArgumentTypeError(
+            given_name = parameter.name,
+            given_type = type(compare),
+            expected_types = types,
+        )
 
 
-    
-    
 
 def enforcevalues(obj):
     # Make sure the inputs are correct
@@ -174,7 +104,7 @@ def enforcevalues(obj):
         # if is non-str iterable
         if not hasattr(var_val, '__iter__') or isinstance(var_val, str):
             raise TypeError("You must specify a non-str iterable object to check variable values against. Received '%s'" % str(var_val))
-        
+    
     variables = _get_variables_in_context_from_dict(obj.keys())
     for var_name, var_val in obj.items():
         value = variables[var_name]
@@ -184,33 +114,6 @@ def enforcevalues(obj):
                 given_value     = str(value),
                 expected_values = var_val,
             )
-
-@enforcetypes
-def enforce_numpy_dtype(
-        array : np.ndarray,
-        expected_dtypes : list | tuple,
-):
-    dtype = array.dtype
-    for _type in expected_dtypes:
-        if np.issubdtype(dtype, _type): break
-    else:
-        varname = None
-        # Start with the caller of this function
-        frame = inspect.currentframe().f_back.f_back
-        while frame is not None:
-            varnames = frame.f_code.co_varnames
-            for name, value in frame.f_locals.items():
-                if value is array:
-                    varname = name
-                    break
-            if varname is not None: break
-            frame = frame.f_back
-        if varname is None: raise Exception("Failed to find the original name of argument 'array'")
-        raise ArgumentTypeError(
-            given_name = varname,
-            given_type = dtype,
-            expected_types = expected_dtypes,
-        )
 
 
 # Returns a dictionary with keys equal to the variable names and values equal to
@@ -253,10 +156,18 @@ def _get_variables_in_context_from_dict(name_list):
         ret[var_name] = val
     return ret
 
-class ArgumentTypeError(TypeError, object):
-    #__module__ = TypeError.__module__
-    def __init__(self, *args, given_name=None, given_type=None, expected_types=None, **kwargs):
 
+
+
+class ArgumentTypeError(TypeError, object):
+    def __init__(
+            self,
+            *args,
+            given_name = None,
+            given_type = None,
+            expected_types = None,
+            **kwargs
+    ):
         check = False
         for item in [given_name, given_type, expected_types]:
             if item is None:
@@ -280,9 +191,9 @@ class ArgumentTypeError(TypeError, object):
             fmt = "Argument '{name}' must be {types}, not {given_type}"
             given_type = ArgumentTypeError._get_type_string(given_type)
             args = (fmt.format(
-                name=given_name,
-                types=_types,
-                given_type=given_type,
+                name = given_name,
+                types = _types,
+                given_type = given_type,
             ),)
                     
         super(ArgumentTypeError, self).__init__(*args, **kwargs)
@@ -295,24 +206,23 @@ class ArgumentTypeError(TypeError, object):
         elif isinstance(obj, np.dtype):
             module = type(obj).__module__
             qualname = type(obj).__qualname__
-        
+        else:
+            raise Exception("Invalid annotation '%s'" % str(obj))
         if module == 'builtins':
             return "'%s'" % qualname
         else:
             return "'%s.%s'" % (module, qualname)
 
-    #def __getstate__(self):
-    #    return self.__dict__
-    #def __setstate__(self, obj):
-    #    self.__dict__.update(obj)
 
-
-
-
-        
 class ArgumentValueError(ValueError, object):
-    #__module__ = ValueError.__module__
-    def __init__(self, *args, given_name=None, given_value=None, expected_values=None, **kwargs):
+    def __init__(
+            self,
+            *args,
+            given_name = None,
+            given_value = None,
+            expected_values = None,
+            **kwargs
+    ):
         if not args and None not in [given_name, given_value, expected_values]:
             if not hasattr(expected_values, '__iter__') or isinstance(expected_values, str):
                 expected_values = [expected_values]
@@ -331,12 +241,3 @@ class ArgumentValueError(ValueError, object):
                 value = str(given_value),
             ),)
         super(ArgumentValueError, self).__init__(*args, **kwargs)
-
-    #def __getstate__(self, *args, **kwargs):
-    #    return self.__dict__
-    #def __setstate__(self, *args, **kwargs):
-    #    return super(ArgumentValueError, self).__setstate__(*args, **kwargs)
-    #def __getnewargs__(self, *args, **kwargs):
-    #    return super(ArgumentValueError, self).__getnewargs__(*args, **kwargs)
-    #def __reduce__(self, *args, **kwargs):
-    #    return super(ArgumentValueError, self).__reduce__(*args, **kwargs)

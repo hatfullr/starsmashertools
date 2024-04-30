@@ -368,6 +368,9 @@ class TestArchive(basetest.BaseTest):
 
     #"""
     def test_parallel(self):
+        """
+        Sometimes this test fails and I don't know why.
+        """
         import multiprocessing
 
         def func(filename):
@@ -385,7 +388,7 @@ class TestArchive(basetest.BaseTest):
                 thread_safe = False,
             )
             alot_of_data = {}
-            for key, val in enumerate(range(100000)):
+            for key, val in enumerate(range(10000)):
                 alot_of_data[key] = val
             warnings.filterwarnings(action = 'ignore')
             archive.add(

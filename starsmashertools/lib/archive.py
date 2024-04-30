@@ -7,7 +7,6 @@ import contextlib
 import zipfile
 import atexit
 import sys
-import typing
 
 def get_file_info():
     import starsmashertools.helpers.jsonfile
@@ -370,7 +369,7 @@ def REPLACE_NEQ(
 ):
     return new_value.value != old_value.value
 
-        
+
 @starsmashertools.preferences.use
 class Archive(object):
     """
@@ -1065,12 +1064,8 @@ class Archive(object):
         del self[key]
         if cli: return 'Success'
     
-    @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
-    def combine(
-            self,
-            other : str | typing.Type['Archive'],
-    ):
+    def combine(self, other):
         """
         Merge the contents of 'other' with this Archive, according to this 
         Archive's replacement flags.
@@ -1082,6 +1077,11 @@ class Archive(object):
             this Archive will be affected.
         """
         import copy
+
+        starsmashertools.helpers.argumentenforcer.enforcetypes({
+            'other' : [str, Archive],
+        })
+        
         if isinstance(other, str): other = Archive(
                 other,
                 thread_safe = self.thread_safe,
@@ -1209,9 +1209,6 @@ class Archive(object):
         return old_values
 
 
-
-
-
 @starsmashertools.preferences.use
 class SimulationArchive(Archive, object):
     """
@@ -1232,12 +1229,8 @@ class SimulationArchive(Archive, object):
     
     """
     
-    @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
-    def __init__(
-            self,
-            simulation : typing.Type['starsmashertools.lib.simulation.Simulation'] | str,
-    ):
+    def __init__(self, simulation):
         """
         Constructor for a :class:`SimulationArchive`. Note that a
         :class:`~.SimulationArchive` is not directly loaded or saved. This
@@ -1254,6 +1247,10 @@ class SimulationArchive(Archive, object):
             directory.
         """
         import starsmashertools.helpers.path
+
+        starsmashertools.helpers.argumentenforcer.enforcetypes({
+            'simulation' : [str, starsmashertools.lib.simulation.Simulation],
+        })
         
         basename = self.preferences.get('filename')
         

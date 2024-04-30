@@ -10,14 +10,16 @@ class EnergyFile(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
     
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
-    def __init__(
-            self,
-            logfile : "starsmashertools.lib.logfile.LogFile",
-            skip_rows : int | type(None) = None,
-    ):
+    def __init__(self, logfile, skip_rows = None):
         import starsmashertools.helpers.path
         import re
         import starsmashertools.helpers.warnings
+        import starsmashertools.lib.logfile
+
+        starsmashertools.helpers.argumentenforcer.enforcetypes({
+            'logfile' : [starsmashertools.lib.logfile.LogFile],
+            'skip_rows' : [int, type(None)],
+        })
 
         if skip_rows is None:
             skip_rows = 1000

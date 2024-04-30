@@ -34,15 +34,16 @@ def find(
 
     
 class LogFile(object):
-    @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
-    def __init__(
-            self,
-            path : str,
-            simulation : "starsmashertools.lib.simulation.Simulation",
-    ):
+    def __init__(self, path, simulation):
         import starsmashertools.helpers.path
         import starsmashertools.helpers.file
+        import starsmashertools.lib.simulation
+
+        starsmashertools.helpers.argumentenforcer.enforcetypes({
+            'path' : [str],
+            'simulation' : [starsmashertools.lib.simulation.Simulation],
+        })
         
         self.path = starsmashertools.helpers.path.realpath(path)
         self.simulation = simulation
@@ -408,12 +409,12 @@ class LogFile(object):
         specials = {}
 
 
-        @starsmashertools.helpers.argumentenforcer.enforcetypes
-        def __init__(
-                self, 
-                contents : bytes,
-                logfile : "LogFile",
-        ):
+        def __init__(self, contents, logfile):
+            starsmashertools.helpers.argumentenforcer.enforcetypes({
+                'contents' : [bytes],
+                'logfile' : [LogFile],
+            })
+            
             self.logfile = logfile
             contents = contents.decode('utf-8')
             lines = contents.split('\n')

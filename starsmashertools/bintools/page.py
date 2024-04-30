@@ -15,7 +15,7 @@ PAGEBREAK = newline + r'\f' + newline
 class Page(object):
     def __init__(
             self,
-            cli : "starsmashertools.bintools.cli.CLI",
+            cli,
             inputtypes,
             contents : str,
             header : str | type(None) = None,
@@ -24,7 +24,7 @@ class Page(object):
             inputmanager : starsmashertools.bintools.inputmanager.InputManager | type(None) = None,
             indent : int = 1,
             simulation_controls : bool = False,
-            back : "Page | type(None)" = None,
+            back = None,
             _quit : bool = True,
             callback = None,
     ):
@@ -190,8 +190,10 @@ class Page(object):
     # Connecting two pages informs the CLI how to navigate the pages. The
     # 'triggers' argument should be an iterable whose elements are possible user
     # inputs.
-    @starsmashertools.helpers.argumentenforcer.enforcetypes
-    def connect(self, other : "Page | str", triggers):
+    def connect(self, other, triggers):
+        starsmashertools.helpers.argumentenforcer.enforcetypes({
+            'other' : [Page, str],
+        })
         if not hasattr(triggers, '__iter__') or isinstance(triggers, str):
             raise TypeError("Argument 'triggers' must be a non-str iterable")
         if not isinstance(other, Page): # It's an identifier
@@ -202,8 +204,10 @@ class Page(object):
             self.triggers[trigger] = lambda: self.cli.navigate(other.identifier)
         self.connections[other] = triggers
 
-    @starsmashertools.helpers.argumentenforcer.enforcetypes
-    def disconnect(self, other : "Page | str"):
+    def disconnect(self, other):
+        starsmashertools.helpers.argumentenforcer.enforcetypes({
+            'other' : [Page, str],
+        })
         if not isinstance(other, Page): # It's an identifier
             other = self.cli.pages[other]
         if not self.connected(other):
@@ -212,7 +216,7 @@ class Page(object):
             self.triggers.pop(trigger)
         self.connections.pop(other)
 
-    def connected(self, other : "Page | str"):
+    def connected(self, other):
         if not isinstance(other, Page): # It's an identifier
             other = self.cli.pages[other]
         return other in self.connections.keys()
@@ -762,7 +766,7 @@ class SimulationControlsPage(List, object):
         
         super(SimulationControlsPage, self).show(*args, **kwargs)
 
-    def remove_simulation(self, simulation : 'starsmashertools.lib.simulation.Simulation'):
+    def remove_simulation(self, simulation):
         self.cli.remove_simulation(simulation)
 
         self.delete_remove_page()
