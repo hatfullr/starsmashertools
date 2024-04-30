@@ -1720,10 +1720,8 @@ class State(object):
         return state
     
     def __eq__(self, other):
-        import starsmashertools.helpers.argumentenforcer
-        starsmashertools.helpers.argumentenforcer.enforcetypes({
-            'other' : State,
-        })
+        if not isinstance(other, State):
+            if not isinstance(other, State): raise NotImplementedError
         
         if self.simulation != other.simulation:
             raise ValueError("State objects from two different simulations cannot be compared: %s and %s" % (self.simulation, other.simulation))
@@ -1740,6 +1738,7 @@ class State(object):
         # A State is 'greater than' another if it contains new or more recent
         # files than the other state. If the other state contains any new or
         # more recent files, this returns False.
+        if not isinstance(other, State): raise NotImplementedError
         if self == other: return False
         
         keys = self.mtimes.keys()
@@ -1755,6 +1754,7 @@ class State(object):
         return True
 
     def __lt__(self, other):
+        if not isinstance(other, State): raise NotImplementedError
         return (not self > other) and self != other
     def __ge__(self, other):
         return self == other or self > other
