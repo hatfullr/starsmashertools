@@ -22,25 +22,16 @@ def enforcetypes(f):
 
 @enforcetypes
 def _enforcetypes(obj : dict):
-    variables = _get_variables_in_context_from_dict(obj.keys())
-
-    for var_name, var_val in obj.items():
-        value = variables[var_name]
-        if not isinstance(value, tuple(var_val)):
+    variables, frame = _get_variables_in_context_from_dict(obj.keys())
+    for name, types in obj.items():
+        value = variables[name]
+        if not isinstance(value, tuple(types)):
             raise ArgumentTypeError(
-                given_name = var_name,
-                given_type = type(value),
-                expected_types = var_val,
+                given_name     = name,
+                given_type     = type(value),
+                expected_types = types,
+                frame          = frame,
             )
-        #value = variables[var_name]
-        #types_for_error = _check_type(value, var_val)
-        #if types_for_error is not None:
-        #    raise ArgumentTypeError(
-        #        given_name     = var_name,
-        #        given_type     = type(value),
-        #        expected_types = var_val,
-        #    )
-
 
 def _get_types_from_annotation(annotation):
     if hasattr(annotation, '__args__'): # types.UnionType or typing.UnionType
@@ -56,7 +47,7 @@ def _check_types(f, args, kwargs):
     
     for i, parameter in enumerate(parameters.values()):
         annotation = parameter.annotation
-        
+
         # Don't check empty annotations
         if annotation is inspect._empty: continue
 
@@ -89,7 +80,7 @@ def _check_types(f, args, kwargs):
 
         if typing.Callable in types:
             if callable(arg): continue
-        
+
         raise ArgumentTypeError(
             given_name = parameter.name,
             given_type = type(compare),
@@ -105,7 +96,7 @@ def enforcevalues(obj):
         if not hasattr(var_val, '__iter__') or isinstance(var_val, str):
             raise TypeError("You must specify a non-str iterable object to check variable values against. Received '%s'" % str(var_val))
     
-    variables = _get_variables_in_context_from_dict(obj.keys())
+    variables, frame = _get_variables_in_context_from_dict(obj.keys())
     for var_name, var_val in obj.items():
         value = variables[var_name]
         if value not in var_val:
@@ -113,6 +104,7 @@ def enforcevalues(obj):
                 given_name      = var_name,
                 given_value     = str(value),
                 expected_values = var_val,
+                frame           = frame,
             )
 
 
@@ -145,7 +137,7 @@ def _get_variables_in_context_from_dict(name_list):
             sorted(list(set(found))),
         )
         raise Exception("Failed to find the context that contains all the given variable names: %s.\nFound: %s" % (list_str, found_str))
-    
+
     _locals = frame.f_locals
     keys = _locals.keys()
     ret = {}
@@ -154,7 +146,7 @@ def _get_variables_in_context_from_dict(name_list):
             raise KeyError("'%s'" % var_name)
         val = _locals[var_name]
         ret[var_name] = val
-    return ret
+    return ret, frame
 
 
 
@@ -166,6 +158,7 @@ class ArgumentTypeError(TypeError, object):
             given_name = None,
             given_type = None,
             expected_types = None,
+            frame = None,
             **kwargs
     ):
         check = False
@@ -188,13 +181,31 @@ class ArgumentTypeError(TypeError, object):
                 last_type = _types[-1]
                 _types = "one of types " + ", ".join([t for t in _types[:-1]])
                 _types += " or %s" % last_type
-            fmt = "Argument '{name}' must be {types}, not {given_type}"
+
             given_type = ArgumentTypeError._get_type_string(given_type)
-            args = (fmt.format(
-                name = given_name,
-                types = _types,
-                given_type = given_type,
-            ),)
+            
+            if frame is None:
+                fmt = "Argument '{name}' must be {types}, not {given_type}"
+                args = (fmt.format(
+                    name = given_name,
+                    types = _types,
+                    given_type = given_type,
+                ),)
+            else:
+                fmt = "Argument '{name}' in '{function}' must be {types}, not {given_type}"
+                
+                function = inspect.getframeinfo(frame).function
+                _self = frame.f_locals.get('self', None)
+                if _self is not None:
+                    function = _self.__class__.__name__ + '.' + function
+                
+                args = (fmt.format(
+                    name = given_name,
+                    types = _types,
+                    given_type = given_type,
+                    function = function,
+                ),)
+            
                     
         super(ArgumentTypeError, self).__init__(*args, **kwargs)
 
