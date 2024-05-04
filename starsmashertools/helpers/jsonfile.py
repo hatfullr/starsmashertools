@@ -1,3 +1,4 @@
+import starsmashertools.preferences
 import json
 import gzip
 import zipfile
@@ -9,7 +10,9 @@ import starsmashertools.lib.relaxation
 import starsmashertools.lib.binary
 import starsmashertools.lib.dynamical
 import importlib
-#import starsmashertools.lib.output
+import inspect
+#import starsmashertools.helpers.pickler
+import types
 
 # Add your own serialization methods here to convert to/from JSON format.
 serialization_methods = {
@@ -165,6 +168,18 @@ serialization_methods = {
             lambda obj: np.asarray(obj), # From JSON
         ],
     },
+    starsmashertools.preferences.Pref : {
+        'name' : 'starsmashertools.preferences.Pref', 'conversions' : [
+            lambda obj: [obj.name, obj.default],
+            lambda obj: starsmashertools.preferences.Pref(obj[0], default = obj[1]),
+        ],
+    },
+    starsmashertools.preferences.NoDefaultPreference : {
+        'name' : 'starsmashertools.preferences.NoDefaultPreference', 'conversions' : [
+            lambda obj: None,
+            lambda obj: starsmashertools.preferences.NoDefaultPreference(),
+        ],
+    },
     starsmashertools.lib.units.Unit : {
         'name' : 'starsmashertools.lib.units.Unit', 'conversions' : [
             lambda obj: [float(obj), str(obj.label)], # To JSON
@@ -224,6 +239,7 @@ class Conversion:
 
     @staticmethod
     def encode(obj):
+        #print(obj)
         m = serialization_methods[type(obj)]
         name = m['name']
         return {

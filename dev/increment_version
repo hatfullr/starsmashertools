@@ -178,7 +178,11 @@ def from_json(obj):
                 if (not isinstance(annotation, types.UnionType) and
                     not annotation is typing.Union and
                     typing.get_origin(annotation) is not typing.Union):
-                    default = annotation(default)
+
+                    if type(default).__name__ == 'Pref':
+                        default = inspect._empty
+                    else:
+                        default = annotation(default)
             
             data[key] += [inspect.Parameter(name, kind, default=default, annotation=annotation)]
     return data, previous_version, previous_hashes

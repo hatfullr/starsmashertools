@@ -1,4 +1,5 @@
 import starsmashertools.preferences
+from starsmashertools.preferences import Pref
 import starsmashertools.helpers.argumentenforcer
 from starsmashertools.helpers.apidecorator import api
 import typing
@@ -21,17 +22,13 @@ class Report(object):
     def __init__(
             self,
             simulations : list | tuple,
-            columns : list | tuple | type(None) = None,
+            columns : list | tuple = Pref('columns', []),
             column_separator : str = '  ',
     ):
         self.column_separator = column_separator
 
         self._columns = []
         
-        if columns is None:
-            try: columns = self.preferences.get('columns')
-            except: columns = []
-
         for obj in columns:
             self.add_column(*obj['args'], **obj['kwargs'])
 

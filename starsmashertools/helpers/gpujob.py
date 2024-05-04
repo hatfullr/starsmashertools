@@ -1,4 +1,5 @@
 import starsmashertools.preferences
+from starsmashertools.preferences import Pref
 
 try:
     import starsmashertools.helpers.argumentenforcer
@@ -50,13 +51,10 @@ try:
         @starsmashertools.helpers.argumentenforcer.enforcetypes
         def run(
                 self,
-                threadsperblock : int | type(None) = None,
+                threadsperblock : int = Pref('run.threadsperblock'),
                 return_duration : bool = False,
         ):
             import starsmashertools
-            
-            if threadsperblock is None:
-                threadsperblock = self.preferences.get('threadsperblock')
             
             # Send inputs to the GPU
             inputs = []

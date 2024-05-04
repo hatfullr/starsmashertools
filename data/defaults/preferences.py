@@ -34,16 +34,11 @@ prefs = {
             }, # 'Lock'
         }, # 'file'
 
-        'formatter' : {
-            'FormatSheet' : {
-                # Directory paths to additional format sheets
-                'directories' : [],
-            }, # 'FormatSheet'
-        }, # 'formatter'
-
         'gpujob' : {
             'GPUJob' : {
-                'threadsperblock' : 512,
+                'run' : {
+                    'threadsperblock' : 512,
+                },
             },
         }, # 'gpujob'
     }, # 'helpers'
@@ -77,7 +72,9 @@ prefs = {
 
         'binary' : {
             'Binary' : {
-                'get_RLOF CLI output window' : 6,
+                'get_RLOF' : {
+                    'CLI output window' : 6,
+                },
             }, # 'Binary'
         }, # 'binary'
 
@@ -85,51 +82,52 @@ prefs = {
         # originate from simulations that use radiative cooling in Hatfull et
         # al. (in prep).
         'flux' : {
-            'get' : {
-                'options' : {
-                    # Image
-                    'resolution' : [400, 400],
-                    'theta' : 0, # Viewing angle (polar)
-                    'phi' : 0,   # Viewing angle (azimuthal)
-                    'fluffy' : False,
-                    'rays' : True,
+            'mytest' : {
+                'val' : 'hi',
+            },
+            'FluxFinder' : {
+                # Image
+                'resolution' : [400, 400],
+                'theta' : 0, # Viewing angle (polar)
+                'phi' : 0,   # Viewing angle (azimuthal)
+                'fluffy' : False,
+                'rays' : True,
 
-                    # Limits
-                    # Flux contributions are not considered beyond this optical
-                    # depth.
-                    'tau_s' : 20.,
-                    # Particles with tau < tau_skip are ignored entirely.
-                    'tau_skip' : 1.e-5,
-                    # Particles with Teff <= teff_cut are excluded in surf_br_v.
-                    'teff_cut' : 3500.,
+                # Limits
+                # Flux contributions are not considered beyond this optical
+                # depth.
+                'tau_s' : 20.,
+                # Particles with tau < tau_skip are ignored entirely.
+                'tau_skip' : 1.e-5,
+                # Particles with Teff <= teff_cut are excluded in surf_br_v.
+                'teff_cut' : 3500.,
 
-                    # Dust
-                    # Give a value in cm^2/g, or None to turn off artificial
-                    # dust.
-                    'dust_opacity' : 1,
-                    # The temperature range in which to use artificial dust.
-                    # Give None for either value to turn off the lower/upper
-                    # limits.
-                    'dust_Trange' : [100, 1000],
+                # Dust
+                # Give a value in cm^2/g, or None to turn off artificial
+                # dust.
+                'dust_opacity' : 1,
+                # The temperature range in which to use artificial dust.
+                # Give None for either value to turn off the lower/upper
+                # limits.
+                'dust_Trange' : [100, 1000],
 
-                    # Spectrum
-                    'spectrum_size' : 1000,
-                    'lmax' : 3000, # nm, stand for 1000K, no resolving below
-                    'dl_il' : 3., # nm resolution of boxes
-                    'dl' : 10,
-                    'nbox' : 10,
-                    'nboxh' : 5,
-                    'l_range' : [10, 3000],
-                    'factor1' : 1.191045e-05, # for Plank function integrations
-                    'factor2' : 1.438728e+00,
-                    'filters' : {
-                        # Use None to turn off lower/upper bounds
-                        'V' : [500, 600], # nm
-                        'R' : [590, 730], # nm
-                        'I' : [720, 880], # nm
-                    },
-                }, # 'options'
-            }, # 'get'
+                # Spectrum
+                'spectrum_size' : 1000,
+                'lmax' : 3000, # nm, stand for 1000K, no resolving below
+                'dl_il' : 3.,
+                'dl' : 10, # nm resolution of boxes
+                'nbox' : 10,
+                'nboxh' : 5,
+                'l_range' : [10, 3000],
+                'factor1' : 1.191045e-05, # for Plank function integrations
+                'factor2' : 1.438728e+00,
+                'filters' : {
+                    # Use None to turn off lower/upper bounds
+                    'V' : [500, 600], # nm
+                    'R' : [590, 730], # nm
+                    'I' : [720, 880], # nm
+                },
+            }, # 'FluxFinder'
         }, # 'flux'
         
         # StarSmasher source code input parameters
@@ -141,7 +139,7 @@ prefs = {
 
         'logfile' : {
             'find' : {
-                'file pattern' : 'log*.sph',
+                'pattern' : 'log*.sph',
             }, # 'find'
         }, # 'logfile'
 
@@ -171,11 +169,15 @@ prefs = {
                     # somewhere above outside this dict if it's needed.
                 },
                 
-                # The maximum number of results from Output.condense that is
-                # allowed to be stored in the simulation archives per output.
-                'max stored condense results' : 10000,
-                
-                'string format sheet' : 'cli.format',
+                'condense' : {
+                    # The maximum number of results from Output.condense that is
+                    # allowed to be stored in the simulation archives per output
+                    'max stored' : 10000,
+                },
+
+                'get_formatted_string' : {
+                    'format sheet' : 'cli.format',
+                },
             }, # 'Output'
 
             'OutputIterator' : {
@@ -254,7 +256,9 @@ prefs = {
                 # the oldest (first) call is replaced.
                 'max saved func args' : 100,
 
-                'output files' : 'out*.sph',
+                'get_outputfiles' : {
+                    'output files' : 'out*.sph',
+                },
 
                 'search directory' : '/',
 

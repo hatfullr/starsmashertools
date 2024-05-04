@@ -1,4 +1,5 @@
 import starsmashertools.preferences
+from starsmashertools.preferences import Pref
 import starsmashertools.lib.simulation
 import starsmashertools.lib.output
 from starsmashertools.helpers.apidecorator import api
@@ -263,11 +264,12 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
-    @cli('starsmashertools')#, which='both')
+    @cli('starsmashertools')
     def get_RLOF(
             self,
             which : str = 'primary',
             threshold : float | int = 1.,
+            CLI_output_window : int = Pref('get_RLOF.CLI output window', 6),
             cli : bool = False,
     ):
         """
@@ -289,6 +291,10 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
         threshold : float, int,  default = 1.
             The threshold for detecting Roche lobe overflow. This value is
             compared with fRLOF from `~.get_fRLOF`.
+
+        CLI_output_window : int, default = Pref('get_RLOF.CLI output window', 6)
+            How many output files to show in the CLI. Only applies when running
+            starsmashertools in CLI mode.
 
         Returns
         -------
@@ -349,7 +355,6 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
         
         if cli:
             # Give some additional fRLOF values in the vicinity of the found output files
-            window = self.preferences.get('get_RLOF CLI output window')
             outputs = self.get_output()
 
             # Get all the output files we will be using
@@ -358,21 +363,21 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
             bottoms = [None, None]
             if which in ['primary', 'both']:
                 idx = outputs.index(output1)
-                if idx + window/2 >= len(outputs):
+                if idx + CLI_output_window/2 >= len(outputs):
                     tops[0] = len(outputs)
-                    bottoms[0] = max(tops[0] - window - 1, 0)
-                elif idx - window/2 < 0:
+                    bottoms[0] = max(tops[0] - CLI_output_window - 1, 0)
+                elif idx - CLI_output_window/2 < 0:
                     bottoms[0] = 0
-                    tops[0] = min(window + 1, len(outputs))
+                    tops[0] = min(CLI_output_window + 1, len(outputs))
                 all_outputs += outputs[bottoms[0]:tops[0]]
             if which in ['secondary', 'both']:
                 idx = outputs.index(output2)
-                if idx + window/2 >= len(outputs):
+                if idx + CLI_output_window/2 >= len(outputs):
                     tops[1] = len(outputs)
-                    bottoms[1] = max(tops[1] - window - 1, 0)
-                elif idx - window/2 < 0:
+                    bottoms[1] = max(tops[1] - CLI_output_window - 1, 0)
+                elif idx - CLI_output_window/2 < 0:
                     bottoms[1] = 0
-                    tops[1] = min(window*2 + 1, len(outputs))
+                    tops[1] = min(CLI_output_window*2 + 1, len(outputs))
                 all_outputs += outputs[bottoms[1]:tops[1]]
             all_outputs = list(set(all_outputs))
             fRLOFs = {'primary':{}, 'secondary':{}}

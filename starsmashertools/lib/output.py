@@ -1,4 +1,5 @@
 import starsmashertools.preferences
+from starsmashertools.preferences import Pref
 import starsmashertools.helpers.argumentenforcer
 from starsmashertools.helpers.apidecorator import api
 import numpy as np
@@ -325,6 +326,7 @@ class Output(dict, object):
             kwargs : dict = {},
             mask : np.ndarray | list | tuple | type(None) = None,
             overwrite : bool = False,
+            max_stored : int = Pref('condense.max stored', 10000),
     ):
         """
         Perform an operation as defined by a string or function using this
@@ -399,6 +401,10 @@ class Output(dict, object):
            archive if it doesn't already exists, and replaces the value in the 
            archive if it does.
 
+        max_stored : int, default = Pref('condense.max stored', 10000)
+           The maximum number of results from Output.condense that is allowed to
+           be stored in the simulation archives per output.
+
         Returns
         -------
         The value returned depends on the contents of positional argument 
@@ -414,15 +420,8 @@ class Output(dict, object):
         relpath = self._get_relpath()
         # Make sure this output file exists in the archived values
         archive_value[relpath] = archive_value.get(relpath, {})
-
-        # Make sure the size is right
-        try:
-            max_stored_condense_results = self.preferences.get(
-                'max stored condense results',
-            )
-        except: max_stored_condense_results = 10000
         
-        if len(archive_value[relpath].keys()) > max_stored_condense_results:
+        if len(archive_value[relpath].keys()) > max_stored:
             # Reduce the number of stored values
             keys = list(archive_value[relpath].keys())
             values = []
@@ -432,7 +431,7 @@ class Output(dict, object):
             # Sort keys by oldest-to-newest access times
             keys = [x for _, x in sorted(zip(values, keys), key=lambda pair:pair[0]['access time'])]
 
-            ndel = len(archive_value[relpath].keys()) - max_stored_condense_results
+            ndel = len(archive_value[relpath].keys()) - max_stored
             keys = keys[ndel:]
             values = values[ndel:]
 
@@ -570,7 +569,7 @@ class Output(dict, object):
     @api
     def get_formatted_string(
             self,
-            format_sheet : str | type(None) = None,
+            format_sheet : str = Pref('get_formatted_string.format sheet'),
     ):
         """
         Convert an output file to a (mostly) human-readable string format. 
@@ -585,9 +584,8 @@ class Output(dict, object):
 
         Other Parameters
         ----------------
-        format_sheet : str, None, default = None
-            The format sheet to use when converting. If `None`, the default 
-            sheet specified in :py:mod:`starsmasherotols.preferences` is used.
+        format_sheet : str, None, default = Pref('get_formatted_string.format sheet')
+            The format sheet to use when converting.
 
         Returns
         -------
@@ -595,8 +593,6 @@ class Output(dict, object):
             The formatted string.
         """
         import starsmashertools.helpers.formatter
-        if format_sheet is None:
-            format_sheet = self.preferences.get('string format sheet')
         return starsmashertools.helpers.formatter.Formatter(
             format_sheet,
         ).format_output(self)
@@ -721,7 +717,7 @@ class OutputIterator(object):
             filenames : list | tuple | np.ndarray,
             simulation,
             onFlush : list | tuple | np.ndarray = [],
-            max_buffer_size : int | type(None) = None,
+            max_buffer_size : int = Pref('max buffer size', 100),
             asynchronous : bool = True,
             **kwargs,
     ):
@@ -741,7 +737,7 @@ class OutputIterator(object):
             one of the methods returns ``'break'`` then iteration is stopped and
             no other ``onFlush`` functions are called.
 
-        max_buffer_size : int, NoneType, default = None
+        max_buffer_size : int, default = Pref('max buffer size', 100)
             The maximum size of the buffer for reading Output ahead-of-time.
         
         asynchronous : bool, default = True
@@ -760,9 +756,6 @@ class OutputIterator(object):
         starsmashertools.helpers.argumentenforcer.enforcetypes({
             'simulation' : [starsmashertools.lib.simulation.Simulation],
         })
-        
-        if max_buffer_size is None:
-            max_buffer_size = self.preferences.get('max buffer size')
         self.max_buffer_size = max_buffer_size
         self.onFlush = onFlush
         self.simulation = simulation

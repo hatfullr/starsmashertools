@@ -563,22 +563,27 @@ def get_data_files(path : list | tuple):
     user : list
         A list of full paths to the file(s) in the user directory.
     """
-    import starsmashertools.helpers.path
+    import os
     import fnmatch
+
+    # Use the os library here rather than helpers.path. helpers.path is really
+    # intended just for use in the user-facing aspects. Here we are searching
+    # the starsmashertools source code, which we can always use os to find
+    # properly.
 
     def search(base):
         matches = []
         curdir = base
         # Go through subdirectories
         for item in path[:-1]:
-            for f in starsmashertools.helpers.path.scandir(curdir):
+            for f in os.scandir(curdir):
                 if not fnmatch.fnmatch(f.name, item): continue
-                curdir = starsmashertools.helpers.path.join(curdir, f.name)
+                curdir = os.path.join(curdir, f.name)
         
         # Search the subdirectory for the name
-        for f in starsmashertools.helpers.path.scandir(curdir):
+        for f in os.scandir(curdir):
             if not fnmatch.fnmatch(f.name, path[-1]): continue
-            matches += [starsmashertools.helpers.path.join(curdir, f.name)]
+            matches += [os.path.join(curdir, f.name)]
         
         return matches
 
@@ -593,26 +598,9 @@ def get_format_sheets():
     sheets : list
         A :py:class:`list` of :py:class:`str` paths to format sheets.
     """
-
-    import starsmashertools.helpers.formatter
-    import starsmashertools.helpers.path
-
-    
-    
-    directories = starsmashertools.helpers.formatter.FormatSheet.preferences.get('directories')
-
     defaults, user = get_data_files(['format_sheets', '*.format'])
+    return [] + defaults + user
 
-    sheets = [] + defaults + user
-    for directory in directories:
-        for filename in starsmashertools.helpers.path.listdir(directory):
-            if not filename.endswith('.format'): continue
-            sheets += [
-                starsmashertools.helpers.path.realpath(
-                    starsmashertools.helpers.path.join(directory, filename),
-                )
-            ]
-    return sheets
 
 
 
@@ -903,9 +891,6 @@ try: del metadata
 except: pass
 
 try: del util
-except: pass
-
-try: del starsmashertools
 except: pass
 
 try: del os # The most terrifying syntax...

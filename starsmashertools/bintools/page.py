@@ -456,16 +456,16 @@ class FunctionPage(List, object):
                 )
             return 'any'
     
-    @starsmashertools.helpers.argumentenforcer.enforcetypes
-    def __init__(
-            self,
-            cli : "starsmashertools.bintools.cli.CLI",
-            function : typing.Callable,
-            **kwargs
-    ):
+    def __init__(self, cli, function, **kwargs):
         import starsmashertools.helpers.clidecorator
         import starsmashertools.helpers.string
         import starsmashertools.bintools.inputmanager
+        import starsmashertools.bintools.cli
+
+        starsmashertools.helpers.argumentenforcer.enforcetypes({
+            'cli' : [starsmashertools.bintools.cli.CLI],
+            'function' : [typing.Callable],
+        })
         
         if FunctionPage.exposed_programs is None:
             FunctionPage.exposed_programs = starsmashertools.helpers.clidecorator.get_exposed_programs()
@@ -652,7 +652,7 @@ class ConfirmationPage(List, object):
     """
     def __init__(
             self, 
-            cli : "starsmashertools.bintools.cli.CLI",
+            cli,
             yes : str = 'yes',
             no : str = 'no',
             header : str = "Are you sure?"+newline,

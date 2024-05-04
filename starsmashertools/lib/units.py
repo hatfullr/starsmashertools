@@ -4,9 +4,11 @@ See the bottom of this file for definitions of constants.
 import starsmashertools.preferences
 import starsmashertools.helpers.readonlydict
 import starsmashertools.helpers.argumentenforcer
+import starsmashertools.helpers.string
 from starsmashertools.helpers.apidecorator import api
 import numpy as np
 import re
+import fractions
 
 def get_all_labels():
     conversions = Unit.get_conversions()
@@ -90,15 +92,12 @@ class Unit(object):
     
     @api
     def __init__(self, *args, base = ['cm', 'g', 's', 'K']):
-        import starsmashertools.helpers.argumentenforcer
-
         # Fix the string values in operation_types above
         for key, val in Unit.operation_types.items():
             if 'Unit' not in val: continue
             Unit.operation_types[key][val.index('Unit')] = Unit
         
         if len(args) == 1 and isinstance(args[0], str):
-            import starsmashertools.helpers.string
             # Convert string to Unit
             string = args[0]
             string = string.replace('Unit', '').replace('(','').replace(')','')
@@ -543,10 +542,18 @@ class Unit(object):
             'value' : Unit.operation_types['__pow__'],
         })
         return Unit(self.value**value, self.label**value)
+
+    @api
+    def __abs__(self):
+        return Unit(abs(self.value), self.label)
+
+    @api
+    def __neg__(self):
+        return Unit(-self.value, self.label)
     
     # Outright disallow the following magic methods
-    def __abs__(self, *args, **kwargs):
-        raise Exception(Unit.exception_message % 'abs')
+    #def __abs__(self, *args, **kwargs):
+    #    raise Exception(Unit.exception_message % 'abs')
     def __bool__(self, *args, **kwargs):
         raise Exception(Unit.exception_message % 'bool')
     def __ceil__(self, *args, **kwargs):
@@ -561,14 +568,12 @@ class Unit(object):
         raise Exception(Unit.exception_message % 'int')
     def __mod__(self, *args, **kwargs):
         raise Exception(Unit.exception_message % 'mod')
-    def __neg__(self, *args, **kwargs):
-        raise Exception(Unit.exception_message % 'neg')
+    #def __neg__(self, *args, **kwargs):
+    #    raise Exception(Unit.exception_message % 'neg')
     def __pos__(self, *args, **kwargs):
         raise Exception(Unit.exception_message % 'pos')
     def __rdivmod__(self, *args, **kwargs):
         raise Exception(Unit.exception_message % 'rdivmod')
-    def __pos__(self, *args, **kwargs):
-        raise Exception(Unit.exception_message % 'pos')
     def __rfloordiv__(self, *args, **kwargs):
         raise Exception(Unit.exception_message % 'rfloordiv')
     def __rmod__(self, *args, **kwargs):
@@ -885,10 +890,11 @@ class Unit(object):
             )
             ret = ""
             if isinstance(value, float):
-                num, denom = value.as_integer_ratio()
+                frac = fractions.Fraction(value).limit_denominator(16)
+                num, denom = frac.numerator, frac.denominator
 
-                if denom > 4:
-                    raise Exception("Cannot raise Unit.Label '%s' to the power of '%s'. The maximum whole number denominator is 4." % (str(self), str(value)))
+                if round(abs(num/denom - value), 7) > 0:
+                    raise Exception("(%s)**%s exponent has reduced fraction of %d/%d = %g. Consider changing the precision of the exponent." % (str(self), str(value), num, denom, num/denom))
                 
                 ret = 1
                 for i in range(num): ret *= self

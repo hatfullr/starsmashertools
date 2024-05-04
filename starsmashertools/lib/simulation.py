@@ -2,6 +2,7 @@
 # parameter annotations. Everything else should be loaded dynamically to avoid
 # errors.
 import starsmashertools.preferences
+from starsmashertools.preferences import Pref
 import starsmashertools.lib.units
 import starsmashertools.helpers.argumentenforcer
 from starsmashertools.helpers.apidecorator import api
@@ -648,7 +649,7 @@ class Simulation(object):
     @api
     def get_outputfiles(
             self,
-            pattern : str | type(None) = None,
+            pattern : str = Pref('get_outputfiles.output files', 'out*.sph'),
             include_joined : bool = True,
     ):
         """
@@ -682,7 +683,7 @@ class Simulation(object):
         
         Parameters
         ----------
-        pattern : str, None, default = None
+        pattern : str, default = Pref('get_outputfiles.output files', 'out*.sph')
             Passed directly to :meth:`~.get_file`.
         
         include_joined : bool, default = True
@@ -698,9 +699,6 @@ class Simulation(object):
         import starsmashertools.helpers.path
         import starsmashertools.helpers.midpoint
         import copy
-        
-        if pattern is None:
-            pattern = self.preferences.get('output files')
         
         # We always need to get our own files first
         matches = self.get_file(pattern)
@@ -786,7 +784,7 @@ class Simulation(object):
     def compress(
             self,
             filename : str | type(None) = None,
-            patterns : list | type(None) = None,
+            patterns : list = Pref('state files'),
             recursive : bool = True,
             delete : bool = True,
             delete_after : bool = True,
@@ -805,9 +803,8 @@ class Simulation(object):
             of the file will be the name of the simulation directory with
             '.zip' on the end.
         
-        patterns : list, None, default = None
-            File name patterns to include in the compression. If `None`, uses 
-            the "state files" value in :py:mod:`starsmashertools.preferences`.
+        patterns : list, default = Pref('state files')
+            File name patterns to include in the compression.
 
         recursive : bool, default = True
             If `True`, subdirectories are also searched for files matching the
@@ -836,10 +833,6 @@ class Simulation(object):
         """
         import starsmashertools.helpers.path
         import starsmashertools.helpers.compressiontask
-
-        # Obtain the file names to be compressed.
-        if patterns is None:
-            patterns = self.preferences.get('state files')
         
         files = []
         for pattern in patterns:

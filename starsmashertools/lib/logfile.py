@@ -1,4 +1,5 @@
 import starsmashertools.preferences
+from starsmashertools.preferences import Pref
 import starsmashertools.helpers.argumentenforcer
 from starsmashertools.helpers.apidecorator import api
 from glob import glob
@@ -6,18 +7,17 @@ import numpy as np
 import mmap
 import collections
 
-@starsmashertools.preferences.use
-@starsmashertools.helpers.argumentenforcer.enforcetypes
+
 @api
+@starsmashertools.helpers.argumentenforcer.enforcetypes
+@starsmashertools.preferences.use
 def find(
         directory : str,
-        pattern : str | type(None) = None,
+        pattern : str = Pref('pattern', 'log*.sph'),
         throw_error : bool = False,
 ):
     import starsmashertools.helpers.path
     
-    if pattern is None:
-        pattern = find.preferences.get('file pattern')
     direc = starsmashertools.helpers.path.realpath(directory)
     tosearch = starsmashertools.helpers.path.join(
         direc,

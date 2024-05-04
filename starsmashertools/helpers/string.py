@@ -108,7 +108,7 @@ class ProgressMessage(LoadingMessage, object):
     def __init__(
             self,
             *args,
-            suffixes : str = [
+            suffixes : list | tuple = [
                 '.   {current:d} / {total:d} ({progress:5.1f}%)',
                 '..  {current:d} / {total:d} ({progress:5.1f}%)',
                 '... {current:d} / {total:d} ({progress:5.1f}%)',

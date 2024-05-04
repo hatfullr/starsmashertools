@@ -15,7 +15,10 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
     """
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
-    def __init__(self, directory : str):
+    def __init__(
+            self,
+            directory : str,
+    ):
         self.directory = directory
         self._src = None
         self._initialized = False

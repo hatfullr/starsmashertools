@@ -1,11 +1,11 @@
 # Additional Matplotlib Artists for easier plotting
+import starsmashertools.preferences
 import matplotlib.collections
 import matplotlib.artist
 import matplotlib.axes
 import numpy as np
 import starsmashertools.helpers.argumentenforcer
 from starsmashertools.helpers.apidecorator import api
-import starsmashertools.preferences
 import starsmashertools.lib.flux
 import copy
 
@@ -171,11 +171,13 @@ class OutputPlot(object):
                 ))
             )
     
-    @starsmashertools.helpers.argumentenforcer.enforcetypes
-    def set_output(
-            self,
-            output : "starsmashertools.lib.output.Output",
-    ):
+    def set_output(self, output):
+        import starsmashertools.lib.output
+
+        starsmashertools.helpers.argumentenforcer.enforcetypes({
+            'output' : [starsmashertools.lib.output.Output],
+        })
+        
         x = output[self.x]
         y = output[self.y]
 

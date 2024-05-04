@@ -1,4 +1,5 @@
 import starsmashertools.preferences
+from starsmashertools.preferences import Pref
 import starsmashertools.helpers.argumentenforcer
 import starsmashertools.helpers.string
 import starsmashertools.helpers.path
@@ -34,15 +35,12 @@ class Lock(object):
             self,
             path : str,
             mode : str,
-            timeout : int | float | type(None) = None,
+            timeout : int | float = Pref('timeout'),
     ):
         import os
         import starsmashertools
         import starsmashertools.helpers.path
         import copy
-        
-        if timeout is None:
-            timeout = self.preferences.get('timeout')
         
         self.path = starsmashertools.helpers.path.realpath(path)
         self.mode = mode
@@ -212,7 +210,8 @@ def open(
     # don't need to
     _lock = None
     if lock:
-        _lock = Lock(path, mode, timeout = timeout)
+        if timeout is None: _lock = Lock(path, mode)
+        else: _lock = Lock(path, mode, timeout = timeout)
         if _lock.timeout > 0:
             if not verbose: _lock.wait()
             else:

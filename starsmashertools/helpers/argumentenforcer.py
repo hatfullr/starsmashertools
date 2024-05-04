@@ -4,12 +4,71 @@ import inspect
 import functools
 import numpy as np
 
+def _check_parameter(parameter, arg):
+    if parameter.annotation is inspect._empty: return
+    
+    types = _get_types_from_annotation(parameter.annotation)
+    
+    # If the given type is a NumPy generic, convert it to a Python type
+    if isinstance(arg, np.generic):
+        if type(arg) in types: return
+        compare = arg.item()
+    else: compare = arg
+
+    if type(compare) in types: return
+
+    # Check for subclasses only if compare is not a builtin type. The reason
+    # is because for some god-forsaken reason, bool is a subclass of int in
+    # Python...
+    if compare.__class__.__module__ not in ['builtins', '__builtins__']:
+        # Check for subclasses
+        try:
+            if issubclass(compare.__class__, tuple(types)): return
+        except Exception as e:
+            print(types)
+            raise(e)
+
+    if typing.Callable in types:
+        if callable(arg): return
+
+    raise ArgumentTypeError(
+            given_name = parameter.name,
+            given_type = type(compare),
+            expected_types = types,
+        )
+
+def _check_types(f, args, kwargs):
+    parameters = inspect.signature(f).parameters
+    for i, parameter in enumerate(parameters.values()):
+        if i < len(args): arg = args[i] # Positional
+        else: # Keyword
+            if parameter.name not in kwargs.keys(): continue
+            arg = kwargs[parameter.name]
+        _check_parameter(parameter, arg)
+
+def _check_default_arguments(f):
+    parameters = inspect.signature(f).parameters
+    for name, parameter in parameters.items():
+        if parameter.default is inspect._empty: continue
+        try:
+            _check_parameter(parameter, parameter.default)
+        except ArgumentTypeError as e:
+            module = inspect.getmodule(f)
+            func_name = '.'.join([module.__name__, f.__qualname__])
+            if str(type(parameter.default).__name__) == 'Pref':
+                import starsmashertools.preferences
+                if starsmashertools.preferences._execution_in_source: return
+                raise Exception("Default argument of type Pref for '%s' in function '%s' is used but the function decorators are in the wrong order. Make sure '@starsmashertools.preferences.use' is closest to the function definition." % (name, func_name))
+            raise Exception("Argument '%s' in function '%s' has a default value of the wrong type '%s'" % (name, func_name, str(type(parameter.default).__name__)))
+
 def enforcetypes(f):
     """
     If this function is called, the input must be of type :py:class:`dict`.
     Otherwise, this function is to be used as a wrapper.
     """
     if isinstance(f, dict): return _enforcetypes(f)
+    
+    _check_default_arguments(f)
 
     # Wrapper behavior. We need to use functools here or else we get into
     # trouble with other wrappers.
@@ -38,54 +97,7 @@ def _get_types_from_annotation(annotation):
         return annotation.__args__
     return [annotation]
 
-def _check_types(f, args, kwargs):
-    signature = inspect.signature(f)
-    mismatched_types = []
 
-    parameters = signature.parameters
-    positional = [p for _,p in zip(args, parameters.values())]
-    
-    for i, parameter in enumerate(parameters.values()):
-        annotation = parameter.annotation
-
-        # Don't check empty annotations
-        if annotation is inspect._empty: continue
-
-        if parameter in positional: arg = args[i]
-        else:
-            if parameter.name not in kwargs.keys(): continue
-            arg = kwargs[parameter.name]
-
-        types = _get_types_from_annotation(annotation)
-
-        # If the given type is a NumPy generic, convert it to a Python type
-        if isinstance(arg, np.generic):
-            if type(arg) in types: continue
-            compare = arg.item()
-        else: compare = arg
-        
-        if type(compare) in types: continue
-
-        
-        # Check for subclasses only if compare is not a builtin type. The reason
-        # is because for some god-forsaken reason, bool is a subclass of int in
-        # Python...
-        if compare.__class__.__module__ not in ['builtins', '__builtins__']:
-            # Check for subclasses
-            try:
-                if issubclass(compare.__class__, tuple(types)): continue
-            except Exception as e:
-                print(types)
-                raise(e)
-
-        if typing.Callable in types:
-            if callable(arg): continue
-
-        raise ArgumentTypeError(
-            given_name = parameter.name,
-            given_type = type(compare),
-            expected_types = types,
-        )
 
 
 
@@ -104,7 +116,6 @@ def enforcevalues(obj):
                 given_name      = var_name,
                 given_value     = str(value),
                 expected_values = var_val,
-                frame           = frame,
             )
 
 

@@ -1,4 +1,5 @@
 import starsmashertools.preferences
+from starsmashertools.preferences import Pref
 import starsmashertools.helpers.argumentenforcer
 from starsmashertools.helpers.apidecorator import api
 from starsmashertools.helpers.clidecorator import cli, clioptions
@@ -428,11 +429,11 @@ class Archive(object):
     def __init__(
             self,
             filename : str,
-            replacement_flags : list | tuple | type(None) = None,
+            replacement_flags : list | tuple = Pref('replacement flags'),
             auto_save : bool = True,
             readonly : bool = False,
             verbose : bool = True,
-            max_buffer_size : int | type(None) = None,
+            max_buffer_size : int = Pref('max buffer size', int(1e5)),
             thread_safe : bool = False,
     ):
         """
@@ -445,15 +446,14 @@ class Archive(object):
 
         Other Parameters
         ----------------
-        replacement_flags : list, tuple, None, default = None
+        replacement_flags : list, tuple, default = Pref('replacement flags')
             A list of flags to use to determine if a replacement should happen
             in the archive whenever a new :class:`ArchiveValue` is about to be
-            written to a pre-existing identifier. If `None` then the user 
-            preferences are used. Each element of in `replacement_flags` must be
-            a function which accepts two arguments, each is 
-            :class:`~.ArchiveValue`. The first argument is the old value and the
-            second the new value. Each function must return a bool-like value 
-            which will be evaluated by an "if" statement.
+            written to a pre-existing identifier. Each element of in 
+            `replacement_flags` must be a function which accepts two arguments, 
+            each is :class:`~.ArchiveValue`. The first argument is the old value
+            and the second the new value. Each function must return a bool-like 
+            value which will be evaluated by an "if" statement.
 
         auto_save : bool, default = True
             If `True`, values will automatically be written to the file on the
@@ -468,7 +468,7 @@ class Archive(object):
             If `False`, messages are suppressed. Otherwise messages are
             printed to the standard output.
 
-        max_buffer_size : int, None, default = None
+        max_buffer_size : int, default = Pref('max buffer size', int(1e5))
             The maximum allowed size in bytes that the buffer can have when auto
             save is disabled. When the buffer exceeds this value the archive is
             saved.
@@ -485,12 +485,6 @@ class Archive(object):
         import starsmashertools.helpers.asynchronous
 
         self._previous_mtime = None
-        
-        if replacement_flags is None:
-            replacement_flags = self.preferences.get('replacement flags')
-        
-        if max_buffer_size is None:
-            max_buffer_size = self.preferences.get('max buffer size')
         
         self.filename = filename
         self.replacement_flags = replacement_flags

@@ -1,4 +1,5 @@
 import starsmashertools.preferences
+from starsmashertools.preferences import Pref
 from starsmashertools.helpers.apidecorator import api
 import starsmashertools.helpers.argumentenforcer
 import numpy as np
@@ -345,7 +346,7 @@ class FluxFigure(Figure, object):
     def __init__(
             self,
             *args,
-            values : list | tuple | type(None) = None,
+            values : list | tuple = Pref('values', ['flux']),
             **kwargs
     ):
         """
@@ -357,21 +358,18 @@ class FluxFigure(Figure, object):
 
         Other Parameters
         ----------------
-        values : list, tuple, None, default = None
+        values : list, tuple, default = Pref('values', ['flux'])
             A list of ``str`` or functions which determine the quantities to be
             shown. Each ``str`` must correspond with a key in the ``'image'``
             dict of the FluxResult. If a function is given, it must accept a
             FluxResult as input and give a 2D NumPy array and a dict as the 
             output, where the 2D array is the image and the dict specify keyword
             arguments to :func:`matplotlib.axes.Axes.imshow`.
-
-            If `None`, the preferences are used.
-            
+        
         **kwargs
             Other keyword arguments are passed directly to 
             :meth:`~.Figure.__init__`.
         """
-        if values is None: values = self.preferences.get('values')
         self._values = values
         super(FluxFigure, self).__init__(*args, **kwargs)
         self._toplot = []
