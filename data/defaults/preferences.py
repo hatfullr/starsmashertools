@@ -82,9 +82,6 @@ prefs = {
         # originate from simulations that use radiative cooling in Hatfull et
         # al. (in prep).
         'flux' : {
-            'mytest' : {
-                'val' : 'hi',
-            },
             'FluxFinder' : {
                 # Image
                 'resolution' : [400, 400],
