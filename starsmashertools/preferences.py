@@ -3,7 +3,7 @@ This is where code preferences are managed.
 """
 import inspect, functools
 import copy
-from starsmashertools import SOURCE_DIRECTORY
+
 import os
 
 # Detect if this file is imported during the execution of a code within the
@@ -12,20 +12,21 @@ frame = inspect.currentframe()
 while frame.f_back is not None:
     frame = frame.f_back
 sourcefile = inspect.getsourcefile(frame)
+del frame
 
-if sourcefile is None: # running in interactive mode
-    _execution_in_source = False
-else:
+_execution_in_source = False
+if sourcefile is not None: # Not in interactive mode
+    from starsmashertools import SOURCE_DIRECTORY
     current_directory = os.path.realpath(os.path.dirname(sourcefile))
     _execution_in_source = False
     if current_directory.startswith(os.path.realpath(SOURCE_DIRECTORY)):
         if not current_directory.startswith(os.path.join(os.path.realpath(SOURCE_DIRECTORY), 'bin')):
-            if not inspect.getsourcefile(frame).endswith("check_leaks"):
+            if not sourcefile.endswith("check_leaks"):
                 _execution_in_source = True
+    del current_directory, SOURCE_DIRECTORY
 
-del current_directory, sourcefile
-del frame
-del SOURCE_DIRECTORY
+del sourcefile
+
 
 
 
