@@ -11,12 +11,19 @@ import os
 frame = inspect.currentframe()
 while frame.f_back is not None:
     frame = frame.f_back
-current_directory = os.path.realpath(os.path.dirname(inspect.getsourcefile(frame)))
-_execution_in_source = False
-if current_directory.startswith(os.path.realpath(SOURCE_DIRECTORY)):
-    _execution_in_source = not current_directory.startswith(os.path.join(os.path.realpath(SOURCE_DIRECTORY), 'bin'))
+sourcefile = inspect.getsourcefile(frame)
 
-del current_directory
+if sourcefile is None: # running in interactive mode
+    _execution_in_source = False
+else:
+    current_directory = os.path.realpath(os.path.dirname(sourcefile))
+    _execution_in_source = False
+    if current_directory.startswith(os.path.realpath(SOURCE_DIRECTORY)):
+        if not current_directory.startswith(os.path.join(os.path.realpath(SOURCE_DIRECTORY), 'bin')):
+            if not inspect.getsourcefile(frame).endswith("check_leaks"):
+                _execution_in_source = True
+
+del current_directory, sourcefile
 del frame
 del SOURCE_DIRECTORY
 
