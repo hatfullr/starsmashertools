@@ -1341,14 +1341,14 @@ class Simulation(object):
                 scale : list | tuple | np.ndarray = (1., 1.5),
                 **kwargs
         ):
-            import starsmashertools.mpl.figure
+            import starsmashertools.mpl
 
             # Read all the energy*.sph files
             energies = self.get_energy(sort = 't')
 
             kwargs['sharex'] = kwargs.get('sharex', True)
             kwargs['nrows'] = len(energies.keys()) - 1
-            fig, ax = starsmashertools.mpl.figure.subplots(
+            fig, ax = starsmashertools.mpl.subplots(
                 scale = scale,
                 **kwargs
             )
@@ -1382,11 +1382,11 @@ class Simulation(object):
                 logy : bool = False,
                 cli : bool = False,
         ):
-            import starsmashertools.mpl.figure
+            import starsmashertools.mpl
             import starsmashertools.mpl.animation
             import copy
 
-            fig, ax = starsmashertools.mpl.figure.subplots()
+            fig, ax = starsmashertools.mpl.subplots()
 
             if x in ['x','y','z'] and y in ['x','y','z']:
                 ax.set_aspect('equal')
