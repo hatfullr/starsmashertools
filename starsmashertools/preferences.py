@@ -18,15 +18,17 @@ _execution_in_source = False
 if sourcefile is not None: # Not in interactive mode
     from starsmashertools import SOURCE_DIRECTORY
     current_directory = os.path.realpath(os.path.dirname(sourcefile))
+    bin_directory = os.path.join(SOURCE_DIRECTORY, 'bin')
+    test_directory = os.path.join(SOURCE_DIRECTORY, 'tests')
     _execution_in_source = False
-    if current_directory.startswith(os.path.realpath(SOURCE_DIRECTORY)):
-        if not current_directory.startswith(os.path.join(os.path.realpath(SOURCE_DIRECTORY), 'bin')):
+    if current_directory.startswith(SOURCE_DIRECTORY):
+        if current_directory not in [bin_directory, test_directory]:
             if not sourcefile.endswith("check_leaks"):
                 _execution_in_source = True
+    
     del current_directory, SOURCE_DIRECTORY
 
 del sourcefile
-
 
 
 

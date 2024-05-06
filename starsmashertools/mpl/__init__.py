@@ -1,9 +1,6 @@
-import typing
 from starsmashertools.helpers.apidecorator import api
 import starsmashertools.helpers.argumentenforcer
 import matplotlib
-import matplotlib.figure
-import matplotlib.axes
 
 # Set this to True to allow classes with attribute _is_example = True to be
 # included in the search for Figure and Axes classes.
@@ -17,6 +14,8 @@ def get_classes():
     import starsmashertools.mpl.figure
     import starsmashertools.mpl.axes
     import starsmashertools.helpers.path
+    import matplotlib.figure
+    import matplotlib.axes
     import importlib.util
     import sys
     import inspect
@@ -96,6 +95,8 @@ def get_classes():
 def _register_axes(classes : list = []):
     """ Register all our defined Axes classes with Matplotlib. See 
     https://stackoverflow.com/a/48593767 """
+    import matplotlib.axes
+    import matplotlib.projections
     registered = matplotlib.projections.get_projection_names()
     if not classes: classes = get_classes()
     for _class in classes:
@@ -162,6 +163,7 @@ def subplots(
     import starsmashertools.helpers.string
     # Importing axes.py registers our Axes classes for projections
     import starsmashertools.mpl.axes
+    import matplotlib.figure
 
     classes = get_classes()
     _register_axes(classes = classes)
