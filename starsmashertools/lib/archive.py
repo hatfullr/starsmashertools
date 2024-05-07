@@ -3,11 +3,11 @@ from starsmashertools.preferences import Pref
 import starsmashertools.helpers.argumentenforcer
 from starsmashertools.helpers.apidecorator import api
 from starsmashertools.helpers.clidecorator import cli, clioptions
-import starsmashertools.helpers
 import contextlib
 import zipfile
 import atexit
 import sys
+import gc
 
 def get_file_info():
     import starsmashertools.helpers.jsonfile
@@ -208,11 +208,9 @@ class ArchiveValue(object):
         import starsmashertools.helpers.jsonfile
         import starsmashertools.helpers.path
         
-        _types = starsmashertools.helpers.jsonfile.serialization_methods.keys()
         starsmashertools.helpers.argumentenforcer.enforcetypes({
-            'value' : _types,
+            'value' : starsmashertools.helpers.jsonfile.serialization_methods.keys(),
         })
-        del _types
 
         self._value = None
         self.serialized = None
@@ -262,6 +260,7 @@ class ArchiveValue(object):
             json['mtime'],
         )
         del json
+        gc.collect()
         return ret
 
 
@@ -912,6 +911,7 @@ class Archive(object):
         del dir_exists
         del current_keys
         del keys
+        gc.collect()
     
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
@@ -1038,6 +1038,7 @@ class Archive(object):
         del vals_to_deserialize
         del to_deserialize
         del remaining_keys
+        gc.collect()
         
         if len(values) == 1: return values[0]
         return values
