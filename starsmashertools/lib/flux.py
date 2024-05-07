@@ -353,13 +353,11 @@ class FluxFinder(object):
             rho = self.output['rho'] * float(units['rho'])
             h = self.output['hp'] * float(units['hp'])
 
-            if self.fluffy:
-                delta = 2 * h
-            else:
-                delta = (0.75*m/(np.pi*rho))**0.33333
+            delta = 2 * h
+            if not self.fluffy:
                 cores = self.output['u'] == 0
-                if cores.any():
-                    delta[cores] = 2 * h[cores]
+                if (~cores).any():
+                    delta[~cores] = (0.75*m[~cores]/(np.pi*rho[~cores]))**0.33333
                 del cores
 
             length = float(self.units.get('length', 1.))
@@ -573,7 +571,8 @@ class FluxFinder(object):
             # Use only particles which meet the flux threshold
             mask2 &= self._flux > self.flux_limit_min
 
-        mask2[mask2] &= list((_z > surf_d[_slice]).any() for _z,_slice in zip(
+        if mask2.any():
+            mask2[mask2] &= list((_z > surf_d[_slice]).any() for _z,_slice in zip(
                 array[mask2]['z'].tolist(), array[mask2]['slice'].tolist()
             ))
             
