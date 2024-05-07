@@ -146,11 +146,11 @@ class FluxFinder(object):
 
         self.result = FluxResult({
             'version' : starsmashertools.__version__,
-            'output' : output.path,
+            'output' : self.output.path,
             'kwargs' : _kwargs,
-            'simulation' : output.simulation.directory,
+            'simulation' : self.output.simulation.directory,
             'units' : self.units,
-            'time' : output['t'] * output.simulation.units['t'],
+            'time' : self.output['t'] * self.output.simulation.units['t'],
             'particles' : {},
             'image' : {},
             'spectrum' : {},
