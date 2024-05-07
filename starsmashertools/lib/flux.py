@@ -11,6 +11,7 @@ import copy
 import warnings
 import typing
 import collections
+import gc
 
 try:
     import matplotlib.axes
@@ -199,6 +200,10 @@ class FluxFinder(object):
         self.result['spectrum']['l_spectrum'] = l_spectrum
         self.result['spectrum']['output'] = self.spectrum.output
         self.result['spectrum']['teff'] = self.spectrum.teff
+
+        del area_br, surf_t, flux_tot, flux_tot_v, teff_aver, length, cell_area
+        del ltot, l_v, ltot_spectrum, l_spectrum
+        gc.collect()
         
 
     def _init_particles(self):
@@ -260,7 +265,6 @@ class FluxFinder(object):
             ad_cool = 2.*np.pi*self._rloc[i]**2
             flux_em[i] = uraddot_emerg[i]/ad
             dd=c_speed/kappa[i]/rho[i]
-            tdiffloc=kappa[i]*rho[i]*self._rloc[i]**2/c_speed
             gradt=a_const*pow(temp[i],4)/self._rloc[i]
             dedt=ad/3.*dd*gradt/m[i]
             self._flux[i]=dedt*m[i]/ad
@@ -289,12 +293,16 @@ class FluxFinder(object):
                     dedt = ad/3.*dd*gradt/m[_idx2]
                     self._flux[_idx2] = dedt*m[_idx2]/ad
 
+                del ratio, _idx1, _idx2
+
             _idx = np.logical_and(
                 ~cores,
                 np.logical_and(i, self._tau < 100),
             )
             if _idx.any():
                 self._flux[_idx] = np.minimum(self._flux[_idx], flux_em[_idx])
+
+            del ad, ad_cool, dd, gradt, dedt, _idx
 
 
         self._teff[~cores] = (flux_rad[~cores] / sigma_const)**0.25
@@ -328,6 +336,11 @@ class FluxFinder(object):
         self.result['particles']['kappa'] = kappa
         self.result['particles']['flux'] = self._flux
 
+        del c_speed, sigma_const, a_const, units, kappa, uraddotcool
+        del uraddot_emerg, uraddot_diff, flux_rad, flux_em, idx
+        del cores, m, rho, i, temp, flux_v
+        gc.collect()
+
     def _init_grid(self):
         if self.extent is None:
             units = self.output.simulation.units
@@ -346,6 +359,7 @@ class FluxFinder(object):
                 cores = self.output['u'] == 0
                 if cores.any():
                     delta[cores] = 2 * h[cores]
+                del cores
 
             length = float(self.units.get('length', 1.))
             xmin = np.amin(x - delta) / length
@@ -360,6 +374,7 @@ class FluxFinder(object):
             xmin=-max_coord
             self.extent = [xmin, xmax, ymin, ymax]
             if self.verbose: print("domain  max: %12.5f" %  max_coord)
+            del units, x, y, m, rho, h, max_coord, length, delta
         else:
             xmin, xmax, ymin, ymax = self.extent
 
@@ -370,6 +385,8 @@ class FluxFinder(object):
             if yminlim is not None: ymin = max(ymin, yminlim)
             if ymaxlim is not None: ymax = min(ymax, ymaxlim)
             self.extent = [xmin, xmax, ymin, ymax]
+            
+            del xminlim, xmaxlim, yminlim, ymaxlim
 
         self.dx = (xmax - xmin)/self.resolution[0]
         self.dy = (ymax - ymin)/self.resolution[1]
@@ -382,7 +399,8 @@ class FluxFinder(object):
         self.result['image']['extent'] = self.extent
         self.result['image']['dx'] = self.dx
         self.result['image']['dy'] = self.dy
-
+        del xmin, xmax, ymin, ymax
+        gc.collect()
 
     def _apply_dust(self, kappa):
         T = self.output['temperatures'] * float(self.output.simulation.units['temperatures'])
@@ -423,10 +441,13 @@ class FluxFinder(object):
         idx = find_dust()
         # Apply the dust, if there is any
         if idx.any(): kappa[idx] = self.dust_opacity
+
+        del idx, T, find_dust
+        gc.collect()
+        
         return kappa
 
     def _process_images(self):
-        import time
         xmin, xmax, ymin, ymax = self.extent
         
         units = self.output.simulation.units
@@ -527,10 +548,10 @@ class FluxFinder(object):
         # I'm not sure this operation can be vectorized, since each loop
         # iteration depends on the results from the previous
         # tolist() is faster, which is a bit silly.
-        for i,_x,_y,_z,_r,_tau,iloc,jloc,_slice in array[mask1].tolist():
+        for _i,(i,_x,_y,_z,_r,_tau,iloc,jloc,_slice) in enumerate(array[mask1].tolist()):
             if _z <= surf_d[iloc, jloc]: continue
 
-            idx = _z > surf_d[_slice] #[imin:imax, jmin:jmax]
+            idx = _z > surf_d[_slice]
             if not idx.any(): continue
 
             # Minimal allocations
@@ -551,9 +572,11 @@ class FluxFinder(object):
             # Use only particles which meet the flux threshold
             mask2 &= self._flux > self.flux_limit_min
 
-        for i,_x,_y,_z,_r,_tau,iloc,jloc,_slice in array[mask2].tolist():
-            if not (_z > surf_d[_slice]).any(): continue
+        mask2[mask2] &= list((_z > surf_d[_slice]).any() for _z,_slice in zip(
+                array[mask2]['z'].tolist(), array[mask2]['slice'].tolist()
+            ))
             
+        for i,_x,_y,_z,_r,_tau,iloc,jloc,_slice in array[mask2].tolist():
             # Minimal allocations
             dist2_arr = ((xmin + self.dx * np.arange(_slice[0].start, _slice[0].stop) - _x)**2)[:,None] + \
                 (ymin + self.dy * np.arange(_slice[1].start, _slice[1].stop) - _y)**2
@@ -575,7 +598,8 @@ class FluxFinder(object):
             i_maxray, j_maxray = np.unravel_index(idx_maxray, ray_n.shape)
 
             print("maximum number of particles above the cut off optically thick surface is %d %d %d"%(max_ray,i_maxray,j_maxray))            
-            print("minimum tau account for is  is %f"%(tau_min))            
+            print("minimum tau account for is  is %f"%(tau_min))
+            del max_ray,idx_maxray, i_maxray, j_maxray
 
         
         # this sorting is as simple as hell 
@@ -669,6 +693,12 @@ class FluxFinder(object):
         self.result['image']['ray_n'] = ray_n
         self.result['image']['weighted_averages'] = [image.array for key, image in self.images.items() if 'weightedaverage' in key]
 
+        del xmin,xmax,ymin,ymax,units,length,x,y,z,flux_from_contributors
+        del shape,ray_id,ray_n,surf_d,surf_id,grid_indices,ijloc_arr
+        del rloc,ijminmax_arr,mask,mask1,dtype,array,tau_min,mask2
+        del zipped,idx,contributors
+        gc.collect()
+
         
 
 
@@ -715,7 +745,9 @@ class FluxFinder(object):
             expon = self.factor2 / (teff * self.lam[:self._n_l])
             idx = expon < 150
             b_l = self.factor1 / (np.exp(expon[idx]) - 1) * self._invlam5[:self._n_l][idx]
+            # This is the non-allocating way of doing the calculation
             self.spectrum[:self._n_l][idx] += flux * (b_l / b_full)
+            del expon, idx, b_full, b_l
         
         def finalize(self):
             # Finish spectrum calculations
