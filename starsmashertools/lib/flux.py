@@ -76,6 +76,7 @@ class FluxFinder(object):
         _kwargs.pop('self')
         
         self.output = copy.deepcopy(output)
+        del output
 
         if self.output.simulation['ncooling'] not in [2, 3]:
             raise NotImplementedError("FluxFinder can only be used on simulations which have input parameter 'ncooling' 2 or 3, not %d" % self.output.simulation['ncooling'])
