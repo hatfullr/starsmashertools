@@ -16,8 +16,9 @@ class TestFile(basetest.BaseTest):
             os.remove(path)
     
     def tearDown(self):
-        if os.path.isfile('lock_test_file'):
-            os.remove('lock_test_file')
+        for name in ['lock_test_file', 'lock_test_file2']:
+            if os.path.isfile(name): os.remove(name)
+            
     
     def test_get_phrase(self):
         result = starsmashertools.helpers.file.get_phrase(
@@ -69,10 +70,8 @@ test4test9
         open(filename, 'x').close()
 
         self.assertEqual(0, len(os.listdir(lockdir)), msg="Clear lock directory first")
-        
-        all_modes = []
-        for key, val in starsmashertools.helpers.file.modes.items():
-            all_modes += val
+
+        all_modes = starsmashertools.helpers.file.all_modes
         
         # All modes should register file locking
         for mode in all_modes:
@@ -114,7 +113,6 @@ test4test9
                     )
 
     def test_is_locked(self):
-        """ Testing if the is_locked function works properly. """
         import starsmashertools.helpers.file
         import starsmashertools
         import os
@@ -128,14 +126,96 @@ test4test9
 
         self.assertEqual(0, len(os.listdir(lockdir)), msg="Clear lock directory first")
 
-        for mode in ['r', 'w']:
+        for mode in starsmashertools.helpers.file.all_modes:
+            if mode == 'x': continue
             self.assertFalse(starsmashertools.helpers.file.is_locked(filename))
             
             with starsmashertools.helpers.file.open(filename, mode) as f:
                 self.assertTrue(starsmashertools.helpers.file.is_locked(filename))
 
             self.assertFalse(starsmashertools.helpers.file.is_locked(filename))
+
+
+    def test_get_lock_files(self):
+        import starsmashertools.helpers.file
+        import starsmashertools
+        import os
+        import time
         
+        lockdir = starsmashertools.LOCK_DIRECTORY
+        
+        # Touch a new file for us to use
+        filename = 'lock_test_file'
+        open(filename, 'x').close()
+
+        self.assertEqual(0, len(os.listdir(lockdir)), msg="Clear lock directory first")
+
+        for mode in starsmashertools.helpers.file.all_modes:
+            if mode == 'x': continue
+            lockfiles = list(starsmashertools.helpers.file.get_lock_files(filename))
+            self.assertEqual(0, len(lockfiles))
+
+            with starsmashertools.helpers.file.open(filename, mode) as f:
+                lockfiles = list(starsmashertools.helpers.file.get_lock_files(filename))
+                self.assertEqual(1, len(lockfiles))
+
+                for _mode in starsmashertools.helpers.file.all_modes:
+                    if _mode in [mode, 'x']: continue
+                    with starsmashertools.helpers.file.open(filename, _mode, timeout=0) as f2:
+                        lockfiles = list(starsmashertools.helpers.file.get_lock_files(filename))
+                        self.assertEqual(2, len(lockfiles))
+                    lockfiles = list(starsmashertools.helpers.file.get_lock_files(filename))
+                    self.assertEqual(1, len(lockfiles))
+            lockfiles = list(starsmashertools.helpers.file.get_lock_files(filename))
+            self.assertEqual(0, len(lockfiles))
+
+    def test_unlock(self):
+        import starsmashertools.helpers.file
+        import starsmashertools
+        import os
+        import time
+        
+        lockdir = starsmashertools.LOCK_DIRECTORY
+        
+        # Touch a new file for us to use
+        filename = 'lock_test_file'
+        open(filename, 'x').close()
+
+        self.assertEqual(0, len(os.listdir(lockdir)), msg="Clear lock directory first")
+        
+        with starsmashertools.helpers.file.open(filename, 'r') as f:
+            self.assertTrue(starsmashertools.helpers.file.is_locked(filename))
+            starsmashertools.helpers.file.unlock(filename)
+            self.assertFalse(starsmashertools.helpers.file.is_locked(filename))
+        self.assertFalse(starsmashertools.helpers.file.is_locked(filename))
+
+    def test_unlock_all(self):
+        import starsmashertools.helpers.file
+        import starsmashertools
+        import os
+        import time
+        
+        lockdir = starsmashertools.LOCK_DIRECTORY
+        
+        # Touch a new file for us to use
+        filename = 'lock_test_file'
+        open(filename, 'x').close()
+        filename2 = 'lock_test_file2'
+        open(filename2, 'x').close()
+        
+        self.assertEqual(0, len(os.listdir(lockdir)), msg="Clear lock directory first")
+
+        with starsmashertools.helpers.file.open(filename, 'r') as f:
+            self.assertTrue(starsmashertools.helpers.file.is_locked(filename))
+            with starsmashertools.helpers.file.open(filename2, 'r') as f2:
+                self.assertTrue(starsmashertools.helpers.file.is_locked(filename2))
+                starsmashertools.helpers.file.unlock_all()
+
+                self.assertFalse(starsmashertools.helpers.file.is_locked(filename))
+                self.assertFalse(starsmashertools.helpers.file.is_locked(filename2))
+
+        self.assertFalse(starsmashertools.helpers.file.is_locked(filename))
+        self.assertFalse(starsmashertools.helpers.file.is_locked(filename2))
     
     def test_parallel_lock(self):
         import multiprocessing

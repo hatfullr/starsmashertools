@@ -176,20 +176,99 @@ class Lock(object):
 
 @starsmashertools.helpers.argumentenforcer.enforcetypes
 @api
-def is_locked(path : str):
-    from starsmashertools import LOCK_DIRECTORY
-    if not starsmashertools.helpers.path.isfile(path): return False
+def get_lock_files(path : str):
+    """
+    Return all the files associated with the locking of a file. A separate lock
+    file is created in the starsmashertools lock directory for each mode that a
+    file is currently open in. For example, a file which has been opened in
+    read-only mode and then opened again in write mode will have two lock files.
+    
+    Parameters
+    ----------
+    path : str
+        The path to the file.
 
+    Returns
+    -------
+    generator : str
+        A generator which yields str paths to lock files associated with the 
+        file at ``path``. The base name of each lock file equals the full path 
+        of the original file, but with the file separators replaced with 
+        ``'_'``. The file separator is that which is given by :py:attr:`os.sep`.
+    """
+    if not starsmashertools.helpers.path.isfile(path): return False
+    from starsmashertools import LOCK_DIRECTORY
+    
     pathname = path.replace(os.sep,'_')
     realpathname = starsmashertools.helpers.path.realpath(path).replace(os.sep, '_')
-    
     for entry in starsmashertools.helpers.path.listdir(LOCK_DIRECTORY):
         basename = starsmashertools.helpers.path.basename(entry)
         basename = '.'.join(basename.split('.')[:-2])
         if basename not in [pathname, realpathname]: continue
-        return True
-    return False
+        yield starsmashertools.helpers.path.join(LOCK_DIRECTORY, entry)
             
+@starsmashertools.helpers.argumentenforcer.enforcetypes
+@api
+def is_locked(path : str):
+    """
+    Check if the given path to a file is currently considered locked by
+    starsmashertools. Starsmashertools avoids simultaneous read/write operations
+    on files, such as in the case of using :class:`~.lib.archive.Archive` 
+    objects in :py:mod:`multiprocessing` environments.
+
+    Parameters
+    ----------
+    path : str
+        The path to the file to check on the system.
+
+    Returns
+    -------
+    locked : bool
+        `True` if the file is locked, `False` otherwise or if it isn't a file.
+    """
+    return len(list(get_lock_files(path))) > 0
+
+@starsmashertools.helpers.argumentenforcer.enforcetypes
+@api
+def unlock(path : str, mode : str | type(None) = None):
+    """
+    Remove lock files associated with a file.
+
+    Parameters
+    ----------
+    path : str
+        The path to the file to unlock.
+
+    Other Parameters
+    ----------------
+    mode : str, None, default = None
+        The mode for which to remove a lock file. If `None`, lock files of all
+        modes are removed. Otherwise, a valid mode should be given (see
+        :meth:`~.open` for details).
+    """
+    if mode is None: search_modes = modes.keys()
+    else:
+        for key, val in modes.items():
+            if mode not in val: continue
+            search_modes = [key]
+            break
+        
+    for lockfile in get_lock_files(path):
+        if lockfile.split('.')[-2] not in search_modes: continue
+        starsmashertools.helpers.path.remove(lockfile)
+
+
+@starsmashertools.helpers.argumentenforcer.enforcetypes
+@api
+def unlock_all():
+    """
+    Unlock all currently locked files.
+    """
+    from starsmashertools import LOCK_DIRECTORY
+    for entry in starsmashertools.helpers.path.listdir(LOCK_DIRECTORY):
+        path = starsmashertools.helpers.path.join(LOCK_DIRECTORY, entry)
+        starsmashertools.helpers.path.remove(path)
+    
 
 @starsmashertools.helpers.argumentenforcer.enforcetypes
 @contextlib.contextmanager
