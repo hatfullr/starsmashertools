@@ -94,6 +94,7 @@ class RayCast(object):
         self.ray = ray
         self.points = np.asarray([])
         self.indices = np.asarray([])
+        self.distances = np.asarray([])
         valid = np.logical_and(
             np.isfinite(xyz).all(axis = 1),
             np.isfinite(r),
@@ -126,8 +127,13 @@ class RayCast(object):
                 
                 self.points = np.vstack((p1, p2))
                 self.indices = np.tile(indices, 2)
+
+                diff = self.points - self.ray.position # destination - origin
+                self.distances = np.sqrt(np.einsum('...j,...j->...', diff, diff))
                 
-                sorted_indices = np.argsort(np.sum(self.points**2, axis = 1))
+                sorted_indices = np.argsort(self.distances)
+                
                 self.points = self.points[sorted_indices]
                 self.indices = self.indices[sorted_indices]
+                self.distances = self.distances[sorted_indices]
     
