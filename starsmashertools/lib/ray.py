@@ -95,10 +95,7 @@ class RayCast(object):
         self.points = np.asarray([])
         self.indices = np.asarray([])
         self.distances = np.asarray([])
-        valid = np.logical_and(
-            np.isfinite(xyz).all(axis = 1),
-            np.isfinite(r),
-        )
+        valid = np.isfinite(xyz).all(axis = 1) & np.isfinite(r)
         if valid.any():
             indices = np.where(valid)[0]
             
@@ -137,3 +134,8 @@ class RayCast(object):
                 self.indices = self.indices[sorted_indices]
                 self.distances = self.distances[sorted_indices]
     
+
+    def __bool__(self):
+        """ Returns `True` if the ``points`` array has values. Otherwise, 
+        returns `False`. """
+        return len(self.points) > 0
