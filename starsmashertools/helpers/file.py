@@ -4,6 +4,7 @@ import starsmashertools.helpers.argumentenforcer
 import starsmashertools.helpers.string
 import starsmashertools.helpers.path
 import starsmashertools.helpers.asynchronous
+from starsmashertools.helpers.apidecorator import api
 import contextlib
 import builtins
 import numpy as np
@@ -173,6 +174,22 @@ class Lock(object):
                 raise TimeoutError("Timeout while waiting for lock on file '%s'" % self.path)
             time.sleep(1.e-6)
 
+@starsmashertools.helpers.argumentenforcer.enforcetypes
+@api
+def is_locked(path : str):
+    from starsmashertools import LOCK_DIRECTORY
+    if not starsmashertools.helpers.path.isfile(path): return False
+
+    pathname = path.replace(os.sep,'_')
+    realpathname = starsmashertools.helpers.path.realpath(path).replace(os.sep, '_')
+    
+    for entry in starsmashertools.helpers.path.listdir(LOCK_DIRECTORY):
+        basename = starsmashertools.helpers.path.basename(entry)
+        basename = '.'.join(basename.split('.')[:-2])
+        if basename not in [pathname, realpathname]: continue
+        return True
+    return False
+            
 
 @starsmashertools.helpers.argumentenforcer.enforcetypes
 @contextlib.contextmanager
