@@ -526,7 +526,11 @@ class Output(dict, object):
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
-    def get_extents(self, radial : bool = False):
+    def get_extents(
+            self,
+            radial : bool = False,
+            r : list | tuple | np.ndarray | type(None) = None,
+    ):
         """
         Get the x, y, and z bounds of the simulation, where the minima are found
         as min(x - 2*h) and maxima max(x + 2*h) for the x-axis and similarly for
@@ -541,29 +545,38 @@ class Output(dict, object):
             want the extents of a spherically symmetric simulation, such as a
             :class:`starsmashertools.lib.relaxation.Relaxation`.
 
+        r : list, tuple, np.ndarray, None, default = None
+            The radii of the particle kernels. If `None` then the kernels are
+            assumed to have radii 2h.
+
         Returns
         -------
         :class:`starsmashertools.helpers.extents.Extents` or 
         :class:`starsmashertools.helpers.extents.RadialExtents`
         """
         import starsmashertools.helpers.extents
+
         units = self.simulation.units
+        
+        if r is None: r = 2 * self['hp'] * float(units['hp'])
+        r = np.asarray(r)
+        
         x = self['x'] * float(units['x'])
         y = self['y'] * float(units['y'])
         z = self['z'] * float(units['z'])
-        radii = 2 * self['hp'] * float(units['hp'])
-
+        
         if radial:
             return starsmashertools.helpers.extents.RadialExtents(self)
         
         return starsmashertools.helpers.extents.Extents(
-            xmin = starsmashertools.lib.units.Unit(np.amin(x - radii), units.length.label),
-            xmax = starsmashertools.lib.units.Unit(np.amax(x + radii), units.length.label),
-            ymin = starsmashertools.lib.units.Unit(np.amin(y - radii), units.length.label),
-            ymax = starsmashertools.lib.units.Unit(np.amax(y + radii), units.length.label),
-            zmin = starsmashertools.lib.units.Unit(np.amin(z - radii), units.length.label),
-            zmax = starsmashertools.lib.units.Unit(np.amax(z + radii), units.length.label),
+            xmin = starsmashertools.lib.units.Unit(np.amin(x - r), units.length.label),
+            xmax = starsmashertools.lib.units.Unit(np.amax(x + r), units.length.label),
+            ymin = starsmashertools.lib.units.Unit(np.amin(y - r), units.length.label),
+            ymax = starsmashertools.lib.units.Unit(np.amax(y + r), units.length.label),
+            zmin = starsmashertools.lib.units.Unit(np.amin(z - r), units.length.label),
+            zmax = starsmashertools.lib.units.Unit(np.amax(z + r), units.length.label),
         )
+        
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
