@@ -113,7 +113,29 @@ test4test9
                         msg = "Nested open statements leave residual lock files: '%s', '%s'" % (mode1, mode2)
                     )
 
-                    
+    def test_is_locked(self):
+        """ Testing if the is_locked function works properly. """
+        import starsmashertools.helpers.file
+        import starsmashertools
+        import os
+        import time
+        
+        lockdir = starsmashertools.LOCK_DIRECTORY
+        
+        # Touch a new file for us to use
+        filename = 'lock_test_file'
+        open(filename, 'x').close()
+
+        self.assertEqual(0, len(os.listdir(lockdir)), msg="Clear lock directory first")
+
+        for mode in ['r', 'w']:
+            self.assertFalse(starsmashertools.helpers.file.is_locked(filename))
+            
+            with starsmashertools.helpers.file.open(filename, mode) as f:
+                self.assertTrue(starsmashertools.helpers.file.is_locked(filename))
+
+            self.assertFalse(starsmashertools.helpers.file.is_locked(filename))
+        
     
     def test_parallel_lock(self):
         import multiprocessing
