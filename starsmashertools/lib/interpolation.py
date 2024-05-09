@@ -104,14 +104,14 @@ class BilinearInterpolator(Interpolator, object):
         """
         Get a boolean mask array that indicates which of the elements in ``x``
         and ``y`` are within the interpolator bounds.
-
+        
         Parameters
         ----------
         x
             The x coordinates of the points.
         y
             The y coordinates of the points.
-
+        
         Returns
         -------
         mask : np.ndarray
