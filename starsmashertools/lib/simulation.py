@@ -1448,7 +1448,8 @@ class Simulation(object):
             
             update(0)
             ani = starsmashertools.mpl.animation.Player(
-                fig, update, maxi=len(all_output), interval = 1./30.
+                fig, update, maxi=len(all_output),
+                interval = int(1./30. * 1000.), # framerate in ms
             )
             
             if cli:
