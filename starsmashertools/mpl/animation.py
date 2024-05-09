@@ -1,13 +1,18 @@
 # https://stackoverflow.com/a/46327978
 
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 import mpl_toolkits.axes_grid1
 import matplotlib.widgets
+import starsmashertools.tk_backend.widgets
+import tkinter
+from tkinter import ttk
 
 import starsmashertools
 import os
+import pathlib
 
 IMAGE_DIR = os.path.join(
     starsmashertools.SOURCE_DIRECTORY,
@@ -21,6 +26,11 @@ REWIND_IMAGE = os.path.join(IMAGE_DIR, 'rewind.png')
 SKIPFORWARD_IMAGE = os.path.join(IMAGE_DIR, 'skipforward.png')
 SKIPBACK_IMAGE = os.path.join(IMAGE_DIR, 'skipback.png')
 
+
+
+
+
+        
 
 
 class Player(FuncAnimation, object):
@@ -157,18 +167,59 @@ class Player(FuncAnimation, object):
         self.fig.canvas.draw_idle()
         self._in_onestep = False
 
+    def show_save_figure_dialog(self, *args, **kwargs):
+        self.pause()
+        def save_animation(*args, **kwargs):
+            widget = self.fig.canvas.get_tk_widget()
+            title = widget.winfo_toplevel().title().replace(' ','_')
+            saveas = tkinter.filedialog.asksaveasfilename(
+                master = widget.master,
+                title = 'Save the figure',
+                defaultextension = '',
+                initialdir = os.path.expanduser(
+                    matplotlib.rcParams['savefig.directory'],
+                ),
+                initialfile = pathlib.Path(self.fig.canvas.get_default_filename()).stem + '.gif',
+            )
+            if saveas:
+                self.show_progressbar()
+                self.message('Saving...', time = None)
+                def progress(current, *args, **kwargs):
+                    self.progress.set(current)
+                    self.fig.canvas.get_tk_widget().winfo_toplevel().update_idletasks()
+                try:
+                    self.save(
+                        saveas,
+                        progress_callback = lambda val,*a,**k: self.progress.set(val),# progress,
+                    )
+                except Exception as e:
+                    tkinter.messagebox.showerror("Error saving file", str(e))
+                self.hide_progressbar()
+                self.message('Saved')
+
+        def save_image(*args, **kwargs):
+            self.fig.canvas.manager.toolbar.save_figure()
+            self.message('Saved')
+        
+        starsmashertools.tk_backend.widgets.SaveFigureDialog(
+            self.fig.canvas.get_tk_widget(),
+            image_callback = save_image,
+            animation_callback = save_animation,
+        )
+
+        
     def setup(self, pos):
         import matplotlib
         import starsmashertools
         import os
-        import tkinter
-        from tkinter import ttk
         import matplotlib.backends._backend_tk
         
         # Now we need to force the use of Tk
         matplotlib.use('tkagg', force = True)
 
         toolbar = self.fig.canvas.manager.toolbar
+
+        toolbar._buttons['Save'].config(command = self.show_save_figure_dialog)
 
         spacer = toolbar._Spacer()
         
@@ -238,19 +289,38 @@ class Player(FuncAnimation, object):
         )
 
         def setentry(*args, **kwargs):
-            label.delete(0,'end')
-            label.insert('end', self.slider_variable.get())
+            try:
+                label.delete(0,'end')
+                label.insert('end', self.slider_variable.get())
+            except: pass
         self.slider_variable.trace_add(
             'write',
             setentry,
         )
 
+        self.message_variable = tkinter.StringVar()
+        self.message_label = ttk.Label(
+            frame,
+            textvariable = self.message_variable,
+        )
+
+        self.progress = tkinter.IntVar()
+        self.progressbar = starsmashertools.tk_backend.widgets.Progressbar(
+            frame,
+            maximum = self.max,
+            variable = self.progress,
+            textvariable = self.message_variable,
+            width = 100,
+        )
+        
+
         self.slider.pack(side = 'left')
-        label.pack(side = 'left',padx=10)
+        label.pack(side = 'left',padx=(10,0))
         slider_frame.pack(side = 'left', expand = False, anchor = 'w', padx = 5)
 
-
+        self.message_label.pack(side = 'left', padx=5)
         frame.pack(side='left', anchor='w')
+
         
         self.slider_variable.set(self.i)
         
@@ -263,6 +333,32 @@ class Player(FuncAnimation, object):
         self.slider.bind("<ButtonRelease-1>", self.on_slider_click, '+')
         
         self.forwards = True
+
+    def show_progressbar(self, *args, **kwargs):
+        self.message_label.pack_forget()
+        self.progressbar.pack(side='left',fill = 'y')
+        self.fig.canvas.get_tk_widget().winfo_toplevel().update_idletasks()
+
+    def hide_progressbar(self, *args, **kwargs):
+        self.progressbar.pack_forget()
+        self.message_label.pack(side='left')
+        self.fig.canvas.get_tk_widget().winfo_toplevel().update_idletasks()
+        
+    def message(self, text : str, time : int | type(None) = 2000):
+        widget = self.fig.canvas.get_tk_widget()
+        
+        if hasattr(self, '_message_after'):
+            widget.after_cancel(self._message_after)
+            del self._message_after
+        self.message_variable.set(text)
+        
+        
+        widget.update_idletasks()
+        if time is not None:
+            self._message_after = widget.after(
+                time,
+                lambda *a,**k: self.message_variable.set(''),
+            )
 
     def on_button_press(self, *args, **kwargs):
         if 'disabled' in self.slider.state(): return
