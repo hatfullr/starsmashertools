@@ -81,13 +81,15 @@ class Player(FuncAnimation, object):
         if value:
             self.set_sunken(self.buttons['play'])
             self.buttons['play']._image_file = PAUSE_IMAGE
-            self.fig.canvas.manager.toolbar._set_image_for_button(self.buttons['play'])
+            if self.fig.canvas.manager is not None:
+                self.fig.canvas.manager.toolbar._set_image_for_button(self.buttons['play'])
             self.slider.state(['disabled'])
             self.slider.config(takefocus=False)
         else:
             self.set_flat(self.buttons['play'])
             self.buttons['play']._image_file = PLAY_IMAGE
-            self.fig.canvas.manager.toolbar._set_image_for_button(self.buttons['play'])
+            if self.fig.canvas.manager is not None:
+                self.fig.canvas.manager.toolbar._set_image_for_button(self.buttons['play'])
             self.slider.state(['!disabled'])
             self.slider.config(takefocus=True)
         self._runs = value
