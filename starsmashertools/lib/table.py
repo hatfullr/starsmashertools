@@ -91,22 +91,36 @@ class TEOS(Table, object):
             data[key] = val.reshape(Nrho, Nu)
 
         return data
-    
-    def interpolate(self, rho, u, which):
-        import starsmashertools.lib.interpolation
-        
-        if isinstance(which, int): which = self._header_order[which]
 
-        # Create interpolators on-the-fly
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    def get_interpolator(
+            self,
+            which : str | int,
+    ):
+        if isinstance(which, int): which = self._header_order[which]
         if which not in self._interpolators.keys():
             if self.verbose: print("TEOS: Adding '"+str(which)+"' interpolator")
+            import starsmashertools.lib.interpolation
             self._interpolators[which] = starsmashertools.lib.interpolation.BilinearInterpolator(
                 self.content[which],
                 np.unique(self.content[self._header_order[0]]),
                 np.unique(self.content[self._header_order[1]]),
             )
-        if not hasattr(rho, '__iter__'): rho = [rho]
-        if not hasattr(u, '__iter__'): u = [u]
+        return self._interpolators[which]
+        
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    def interpolate(
+            self,
+            rho : float | list | tuple | np.ndarray,
+            u : float | list | tuple | np.ndarray,
+            which : str | int,
+    ):
+        import starsmashertools.lib.interpolation
+        
+        if isinstance(which, int): which = self._header_order[which]
+        if isinstance(rho, float): rho = np.asarray([rho])
+        if isinstance(u, float): u = np.asarray([u])
+
         rho = np.asarray(rho)
         u = np.asarray(u)
 
@@ -115,7 +129,9 @@ class TEOS(Table, object):
         
         result = np.full(rho.shape, np.nan)
         idx = np.logical_and(rho != 0, u != 0)
-        result[idx] = self._interpolators[which](np.log10(rho[idx]), np.log10(u[idx]))
+        
+        # Create interpolators on-the-fly
+        result[idx] = self.get_interpolator(which)(np.log10(rho[idx]), np.log10(u[idx]))
         if isinstance(result, np.ndarray):
             if not result.shape: return float(result)
             if len(result.shape) == 1 and len(result) == 1: return result[0]
