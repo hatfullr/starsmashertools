@@ -1,5 +1,12 @@
 import unittest
-import starsmashertools.helpers.gpujob
+
+badimport = False
+try:
+    import starsmashertools.helpers.gpujob
+except RuntimeError as e:
+    if 'This error is known to happen for computers' not in str(e): raise
+    badimport = True
+    
 import starsmashertools.helpers.path
 import numpy as np
 import basetest
@@ -36,5 +43,6 @@ class TestGPUJob(basetest.BaseTest):
         
 
 if __name__ == "__main__":
-    unittest.main(failfast=True)
+    if not badimport:
+        unittest.main(failfast=True)
 
