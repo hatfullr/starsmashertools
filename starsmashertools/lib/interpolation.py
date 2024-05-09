@@ -30,6 +30,15 @@ class Interpolator(object):
     
     def __call__(self, *args, **kwargs):
         raise NotImplementedError
+
+    def is_in_bounds(self, *args, **kwargs):
+        """
+        Return a boolean mask that indicates which of the given array elements
+        are considered within the bounds of this interpolator.
+
+        This method must be overriden by subclasses.
+        """
+        raise NotImplementedError
     
 
 class BilinearInterpolator(Interpolator, object):
@@ -53,15 +62,11 @@ class BilinearInterpolator(Interpolator, object):
         return np.maximum(np.minimum(value[valid], maxs), mins)
 
     def get_bounds(self, x, y):
+        if not np.all(self.is_in_bounds(x, y)):
+            raise OutOfBoundsError("\n   xmin, xmax = %f, %f\n   ymin, ymax = %f, %f\n   x = %s\n   y = %s" % (self.xmin, self.xmax, self.ymin, self.ymax, str(x), str(y)))
+
         x = np.asarray(x)
         y = np.asarray(y)
-        eps = np.finfo(float).eps
-        inbounds = np.logical_and(
-            np.logical_and(self.xmin - eps <= x, x <= self.xmax + eps),
-            np.logical_and(self.ymin - eps <= y, y <= self.ymax + eps),
-        )
-        if not np.all(inbounds):
-            raise OutOfBoundsError("\n   xmin, xmax = %f, %f\n   ymin, ymax = %f, %f\n   x = %s\n   y = %s" % (self.xmin, self.xmax, self.ymin, self.ymax, str(x), str(y)))
 
         iarr = np.zeros(np.prod(x.shape), dtype=int)
         jarr = np.zeros(np.prod(y.shape), dtype=int)
@@ -95,3 +100,28 @@ class BilinearInterpolator(Interpolator, object):
         denominator = (x1-x0)*(y1-y0)
         return numerator / denominator
 
+    def is_in_bounds(self, x, y):
+        """
+        Get a boolean mask array that indicates which of the elements in ``x``
+        and ``y`` are within the interpolator bounds.
+
+        Parameters
+        ----------
+        x
+            The x coordinates of the points.
+        y
+            The y coordinates of the points.
+
+        Returns
+        -------
+        mask : np.ndarray
+            A boolean mask where `True` indicates that the point is within the
+            interpolation bounds and `False` indicates that the point is outside
+            the interpolation bounds.
+        """
+
+        x = np.asarray(x)
+        y = np.asarray(y)
+        eps = np.finfo(float).eps
+        return (   (self.xmin - eps <= x) & (x <= self.xmax + eps) &
+                   (self.ymin - eps <= y) & (y <= self.ymax + eps)   )
