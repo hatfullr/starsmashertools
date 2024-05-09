@@ -189,20 +189,69 @@ class Player(FuncAnimation, object):
             "FASTFORWARD", FASTFORWARD_IMAGE, False, self.forward,
         )
 
-        frame.pack(side='left', anchor='w')
+        slider_frame = tkinter.Frame(frame)
+
+        def on_slider_changed(new_value):
+            # This is called when the user clicks and drags the slider
+            # We snap the value to the nearest integer
+            new_value = round(float(new_value))
+            self.slider_variable.set(new_value)
 
         self.slider_variable = tkinter.IntVar()
+        self.slider_label_variable = tkinter.StringVar()
         self.slider = ttk.Scale(
-            frame,
+            slider_frame,
             from_=self.min,
             to=self.max,
             orient='horizontal',
             length = None,
             variable = self.slider_variable,
+            command = on_slider_changed,
         )
-        self.slider_variable.set(self.i)
-        self.slider.pack(side='left',expand=False, anchor='w', padx=5)
+        def is_valid(action, value):
+            action = int(action)
+            if action == 0: # Delete
+                if not value.strip(): return True
 
+            if value.strip() == '-':
+                return True
+                
+            try:
+                int(value)
+            except: return False
+            
+            value = int(value)
+            value = min(max(value, self.min), self.max)
+            self.slider_variable.set(value)
+            return True
+            
+        
+        vcmd = (slider_frame.register(is_valid), '%d', '%P')
+        label = ttk.Entry(
+            slider_frame,
+            width = 5,
+            justify = 'center',
+            validate = 'key',
+            validatecommand=vcmd,
+        )
+
+        def setentry(*args, **kwargs):
+            label.delete(0,'end')
+            label.insert('end', self.slider_variable.get())
+        self.slider_variable.trace_add(
+            'write',
+            setentry,
+        )
+
+        self.slider.pack(side = 'left')
+        label.pack(side = 'left',padx=10)
+        slider_frame.pack(side = 'left', expand = False, anchor = 'w', padx = 5)
+
+
+        frame.pack(side='left', anchor='w')
+        
+        self.slider_variable.set(self.i)
+        
         self.slider.state(['disabled'])
         self.slider.config(takefocus=False)
 
