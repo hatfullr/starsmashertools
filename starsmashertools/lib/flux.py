@@ -74,6 +74,7 @@ class FluxFinder(object):
     ):
         _kwargs = locals()
         _kwargs.pop('self')
+        _kwargs.pop('output')
         
         self.output = copy.deepcopy(output)
         del output
