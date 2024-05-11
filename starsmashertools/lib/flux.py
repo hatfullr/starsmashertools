@@ -7,6 +7,7 @@ import starsmashertools.lib.output
 from starsmashertools.helpers.apidecorator import api
 import starsmashertools.helpers.argumentenforcer
 from starsmashertools.lib.units import constants
+import starsmashertools.helpers.nesteddict
 import copy
 import warnings
 import typing
@@ -193,15 +194,15 @@ class FluxFinder(object):
         ltot_spectrum = 4 * cell_area * self.spectrum.flux['total']
         l_spectrum = {key:4 * cell_area * val for key, val in self.spectrum.flux.items() if key != 'total'}
 
-        self.result['image']['Teff_cell'] = surf_t
-        self.result['image']['teff_aver'] = teff_aver
-        self.result['image']['ltot'] = ltot
-        self.result['image']['flux_tot'] = flux_tot
-        self.result['image']['l_v'] = l_v
-        self.result['spectrum']['ltot_spectrum'] = ltot_spectrum
-        self.result['spectrum']['l_spectrum'] = l_spectrum
-        self.result['spectrum']['output'] = self.spectrum.output
-        self.result['spectrum']['teff'] = self.spectrum.teff
+        self.result['image','Teff_cell'] = surf_t
+        self.result['image','teff_aver'] = teff_aver
+        self.result['image','ltot'] = ltot
+        self.result['image','flux_tot'] = flux_tot
+        self.result['image','l_v'] = l_v
+        self.result['spectrum','ltot_spectrum'] = ltot_spectrum
+        self.result['spectrum','l_spectrum'] = l_spectrum
+        self.result['spectrum','output'] = self.spectrum.output
+        self.result['spectrum','teff'] = self.spectrum.teff
 
         del area_br, surf_t, flux_tot, flux_tot_v, teff_aver, length, cell_area
         del ltot, l_v, ltot_spectrum, l_spectrum
@@ -332,11 +333,11 @@ class FluxFinder(object):
             if 'weightedaverage' not in key: continue
             self.images[key].particle_array *= self._flux
 
-        self.result['particles']['contributing_IDs'] = np.arange(self.output['ntot'], dtype=int)
-        self.result['particles']['rloc'] = self._rloc
-        self.result['particles']['tau'] = self._tau
-        self.result['particles']['kappa'] = kappa
-        self.result['particles']['flux'] = self._flux
+        self.result['particles','contributing_IDs'] = np.arange(self.output['ntot'], dtype=int)
+        self.result['particles','rloc'] = self._rloc
+        self.result['particles','tau'] = self._tau
+        self.result['particles','kappa'] = kappa
+        self.result['particles','flux'] = self._flux
 
         del c_speed, sigma_const, a_const, units, kappa, uraddotcool
         del uraddot_emerg, uraddot_diff, flux_rad, flux_em, idx
@@ -396,9 +397,9 @@ class FluxFinder(object):
             print("   xmin, xmax, dx = %12.5f %12.5f %12.5f" % (xmin, xmax, self.dx))
             print("   ymin, ymax, dy = %12.5f %12.5f %12.5f" % (ymin, ymax, self.dy))
 
-        self.result['image']['extent'] = self.extent
-        self.result['image']['dx'] = self.dx
-        self.result['image']['dy'] = self.dy
+        self.result['image','extent'] = self.extent
+        self.result['image','dx'] = self.dx
+        self.result['image','dy'] = self.dy
         del xmin, xmax, ymin, ymax
         gc.collect()
 
@@ -684,15 +685,15 @@ class FluxFinder(object):
         # Narrow down the output arrays to minimize storage space
         contributors = flux_from_contributors > 0
         for key in ['contributing_IDs', 'rloc', 'tau', 'kappa', 'flux']:
-            self.result['particles'][key] = self.result['particles'][key][contributors]
-        self.result['particles']['flux_from_contributors'] = flux_from_contributors[contributors]
+            self.result['particles',key] = self.result['particles',key][contributors]
+        self.result['particles','flux_from_contributors'] = flux_from_contributors[contributors]
         
-        self.result['image']['flux'] = self.images['flux'].array
-        self.result['image']['flux_v'] = self.images['flux v'].array
-        self.result['image']['surf_d'] = surf_d
-        self.result['image']['surf_id'] = surf_id
-        self.result['image']['ray_n'] = ray_n
-        self.result['image']['weighted_averages'] = [image.array for key, image in self.images.items() if 'weightedaverage' in key]
+        self.result['image','flux'] = self.images['flux'].array
+        self.result['image','flux_v'] = self.images['flux v'].array
+        self.result['image','surf_d'] = surf_d
+        self.result['image','surf_id'] = surf_id
+        self.result['image','ray_n'] = ray_n
+        self.result['image','weighted_averages'] = [image.array for key, image in self.images.items() if 'weightedaverage' in key]
 
         del xmin,xmax,ymin,ymax,units,length,x,y,z,flux_from_contributors
         del shape,ray_id,ray_n,surf_d,surf_id,grid_indices,ijloc_arr
@@ -838,7 +839,7 @@ class FluxFinder(object):
 
 
 
-class FluxResult(dict, object):
+class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
     def __init__(self, *args, **kwargs):
         self._simulation = None
         self._output = None
@@ -863,7 +864,8 @@ class FluxResult(dict, object):
     @api
     def save(
             self,
-            filename : str = 'flux.zip',
+            filename : str = Pref('filename'),
+            exclude : dict | starsmashertools.helpers.nesteddict.NestedDict = Pref('exclude'),
             **kwargs
     ):
         """
@@ -871,8 +873,16 @@ class FluxResult(dict, object):
         
         Other Parameters
         ----------
-        filename : str, default = 'flux.zip'
+        filename : str, default = Pref('filename')
             The name of the Archive.
+
+        exclude : dict, :class:`~.helpers.nesteddict.NestedDict`, default = Pref('exclude')
+            The items to exclude from the file. Only the keys of the dictionary
+            are checked. If ``exclude`` contains a key which is also in this
+            FluxResult, then the value is not saved to the file. You can specify
+            multiple nested dictionaries in this way, and only the keys given
+            at the deepest nesting levels are considered. See the preferences
+            file for an example.
 
         **kwargs
             Keyword arguments are passed directly to 
@@ -888,16 +898,27 @@ class FluxResult(dict, object):
         :meth:`~.load`
         """
         import starsmashertools.lib.archive
-        if filename is None: filename = 'flux.zip'
+
+        tosave = starsmashertools.helpers.nesteddict.NestedDict()
+        if not isinstance(exclude, starsmashertools.helpers.nesteddict.NestedDict):
+            exclude = starsmashertools.helpers.nesteddict.NestedDict(exclude)
+
+        exclude_branches = exclude.branches()
+        for branch, leaf in self.flowers():
+            if branch in exclude_branches: continue
+            if not leaf: continue
+            tosave[branch] = leaf
+        
         kwargs['auto_save'] = False
         archive = starsmashertools.lib.archive.Archive(filename, **kwargs)
-        for key, val in self.items():
+        for key, val in tosave.to_dict().items(): # Get top-level keys, vals
             archive.add(
                 key,
                 val,
                 origin = self['output'],
             )
         archive.save()
+
         return archive
     
     @staticmethod
@@ -921,7 +942,7 @@ class FluxResult(dict, object):
         :meth:`~.save`
         """
         import starsmashertools.lib.archive
-        archive = starsmashertools.lib.archive.Archive(filename)
+        archive = starsmashertools.lib.archive.Archive(filename, readonly=True)
         keys = archive.keys()
         _dict = {}
         for key, val in zip(keys, archive.get(keys)):
@@ -1016,3 +1037,150 @@ class FluxResult(dict, object):
             ret = starsmashertools.mpl.artists.FluxPlot(ax, self)
             im = ret.imshow(data, **kwargs)
             return ret, im
+
+
+
+
+
+
+class FluxResults(object):
+    """
+    A container for multiple :class:`~.FluxResult` objects. Permits for multiple
+    FluxResult objects to be saved in a single file, which can be convenient
+    when working with many FluxResult objects.
+    """
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def __init__(
+            self,
+            results : list | tuple,
+    ):
+        """
+        Constructor.
+        
+        Parameters
+        ----------
+        results : list, tuple
+            The :class:`~.FluxResult` objects, or str paths to saved FluxResult
+            files.
+        """
+        # Convert string to FluxResult
+        for i, r in enumerate(results):
+            if isinstance(r, str):
+                results[i] = FluxResult.load(r)
+            if not isinstance(results[i], FluxResult):
+                raise TypeError("Elements in argument 'results' must be of type FluxResult, not '%s'" % type(r).__name__)
+        
+        self.results = results
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def save(
+            self,
+            filename : str = Pref('filename'),
+            exclude : dict | starsmashertools.helpers.nesteddict.NestedDict = Pref('exclude'),
+            **kwargs
+    ):
+        """
+        Save the :class:`~.FluxResult` objects to disk. Each result is stored in
+        the same format as :meth:`~.FluxResult.save`, except stacked in a list.
+        For example, the ``'image'`` key in the archive will be a list, where 
+        each element is the ``'image'`` key from the corresponding FluxResult.
+
+        Results are sorted by simulation times, and it is expected that each
+        FluxResult comes from the same Simulation. If times are excluded then no
+        sorting is done.
+        
+        Other Parameters
+        ----------
+        filename : str, default = Pref('filename')
+            The file to save. If a `str`, it should be a location on the file
+            system.
+        
+        exclude : dict, :class:`~.helpers.nesteddict.NestedDict`, default = {}
+            Items to exclude from the saved file. Applies to all `FluxResult` 
+            objects.
+        
+            This overrides the ``exclude`` keyword in :meth:`~.FluxResult.save`.
+
+        **kwargs
+            Other keyword arguments are passed directly to 
+            :meth:`~.lib.archive.Archive.__init__`.
+
+        Returns
+        -------
+        archive : :class:`~.lib.archive.Archive`
+            The newly created Archive.
+
+        See Also
+        --------
+        :meth:`~.load`
+        """
+        import starsmashertools.lib.archive
+
+        if not isinstance(exclude, starsmashertools.helpers.nesteddict.NestedDict):
+            exclude = starsmashertools.helpers.nesteddict.NestedDict(exclude)
+
+        final_object = {}
+        for result in self.results:
+            tosave = starsmashertools.helpers.nesteddict.NestedDict()
+            
+            exclude_branches = exclude.branches()
+            for branch, leaf in result.flowers():
+                if exclude_branches.get(branch, False): continue
+                tosave[branch] = leaf
+            
+            for key, val in tosave.to_dict().items(): # Get top-level keys,vals
+                if key not in final_object.keys(): final_object[key] = []
+                final_object[key] += [val]
+
+        # Sort by simulation times
+        if 'time' in final_object.keys():
+            times = np.asarray([float(t) for t in final_object['time']])
+            idx = np.argsort(times)
+            for key, val in final_object.items():
+                final_object[key] = [val[i] for i in idx]
+
+        kwargs['auto_save'] = False
+        archive = starsmashertools.lib.archive.Archive(filename, **kwargs)
+        for key, val in final_object.items():
+            archive.add(
+                key,
+                val,
+                origin = self['output'],
+            )
+        archive.save()
+
+    @staticmethod
+    def load(filename : str):
+        """
+        Load the :class:`~.FluxResult` objects from disk. Each result is stored
+        in the same format as :meth:`~.FluxResult.save`, except stacked in a 
+        list. For example, the ``'image'`` key in the archive will be a list, 
+        where each element is the ``'image'`` key from the corresponding 
+        FluxResult.
+        
+        Other Parameters
+        ----------
+        filename : str, default = Pref('filename')
+            The file to save. If a `str`, it should be a location on the file
+            system. If it has no 
+        
+        Returns
+        -------
+        fluxresults : :class:`~.FluxResults`
+            The `FluxResult` objects in the same order as stored in the archive.
+        
+        See Also
+        --------
+        :meth:`~.save`
+        """
+        import starsmashertools.lib.archive
+        archive = starsmashertools.lib.archive.Archive(filename, readonly=True)
+        keys = archive.keys()
+        values = archive.get(keys)
+        results = []
+        for i in range(len(next(iter(values)))):
+            results += [FluxResult({key:val[i] for key,val in zip(keys,values)})]
+        return results
+

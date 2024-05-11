@@ -454,6 +454,9 @@ class Archive(object):
             and the second the new value. Each function must return a bool-like 
             value which will be evaluated by an "if" statement.
 
+            If an empty list is given, values in the archive will be
+            overwritten (no checks performed), unless if ``readonly`` is `True`.
+
         auto_save : bool, default = True
             If `True`, values will automatically be written to the file on the
             system whenever they are edited. If `False`, it is the user's
