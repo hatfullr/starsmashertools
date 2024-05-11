@@ -864,8 +864,8 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
     @api
     def save(
             self,
-            filename : str = Pref('filename'),
-            exclude : dict | starsmashertools.helpers.nesteddict.NestedDict = Pref('exclude'),
+            filename : str = Pref('save.filename'),
+            exclude : dict | starsmashertools.helpers.nesteddict.NestedDict = Pref('save.exclude'),
             **kwargs
     ):
         """
@@ -873,10 +873,10 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
         
         Other Parameters
         ----------
-        filename : str, default = Pref('filename')
+        filename : str, default = Pref('save.filename')
             The name of the Archive.
 
-        exclude : dict, :class:`~.helpers.nesteddict.NestedDict`, default = Pref('exclude')
+        exclude : dict, :class:`~.helpers.nesteddict.NestedDict`, default = Pref('save.exclude')
             The items to exclude from the file. Only the keys of the dictionary
             are checked. If ``exclude`` contains a key which is also in this
             FluxResult, then the value is not saved to the file. You can specify
@@ -1077,8 +1077,8 @@ class FluxResults(object):
     @api
     def save(
             self,
-            filename : str = Pref('filename'),
-            exclude : dict | starsmashertools.helpers.nesteddict.NestedDict = Pref('exclude'),
+            filename : str = Pref('save.filename'),
+            exclude : dict | starsmashertools.helpers.nesteddict.NestedDict = Pref('save.exclude'),
             **kwargs
     ):
         """
@@ -1093,11 +1093,10 @@ class FluxResults(object):
         
         Other Parameters
         ----------
-        filename : str, default = Pref('filename')
-            The file to save. If a `str`, it should be a location on the file
-            system.
+        filename : str, default = Pref('save.filename')
+            The path to the file to create.
         
-        exclude : dict, :class:`~.helpers.nesteddict.NestedDict`, default = {}
+        exclude : dict, :class:`~.helpers.nesteddict.NestedDict`, default = Pref('save.exclude')
             Items to exclude from the saved file. Applies to all `FluxResult` 
             objects.
         
@@ -1162,9 +1161,8 @@ class FluxResults(object):
         
         Other Parameters
         ----------
-        filename : str, default = Pref('filename')
-            The file to save. If a `str`, it should be a location on the file
-            system. If it has no 
+        filename : str
+            The path to the file to load.
         
         Returns
         -------
