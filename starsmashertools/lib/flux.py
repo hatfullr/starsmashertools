@@ -905,7 +905,8 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
 
         exclude_branches = exclude.branches()
         for branch, leaf in self.flowers():
-            if exclude_branches.get(branch, False): continue
+            if branch not in exclude_branches: continue
+            if exclude_branches[branch]: continue
             tosave[branch] = leaf
         
         kwargs['auto_save'] = False
@@ -1125,7 +1126,8 @@ class FluxResults(object):
             
             exclude_branches = exclude.branches()
             for branch, leaf in result.flowers():
-                if exclude_branches.get(branch, False): continue
+                if branch not in exclude_branches: continue
+                if exclude_branches[branch]: continue
                 tosave[branch] = leaf
             
             for key, val in tosave.to_dict().items(): # Get top-level keys,vals
