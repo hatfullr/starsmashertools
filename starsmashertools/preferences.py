@@ -22,9 +22,10 @@ if sourcefile is not None: # Not in interactive mode
     test_directory = os.path.join(SOURCE_DIRECTORY, 'tests')
     _execution_in_source = False
     if current_directory.startswith(SOURCE_DIRECTORY):
-        if current_directory not in [bin_directory, test_directory]:
-            if not sourcefile.endswith("check_leaks"):
-                _execution_in_source = True
+        if current_directory != os.path.join(test_directory, 'flux'):
+            if current_directory not in [bin_directory, test_directory]:
+                if not sourcefile.endswith("check_leaks"):
+                    _execution_in_source = True
     
     del current_directory, SOURCE_DIRECTORY
 

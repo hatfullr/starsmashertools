@@ -25,18 +25,22 @@ class TestFlux(basetest.BaseTest):
     # We expect these keys to be different
     ignore_keys = [
         'version',
-        'extra',
+        ('extra', 'particle_flux'),
+        ('extra', 'particle_teff'),
+        ('extra', 'particle_kappa'),
+        ('extra', 'particle_tau'),
+        ('extra', 'particle_rloc'),
         'units',
-        'image/Teff_cell',
-        'image/kappa_cell',
-        'image/rho_cell',
-        'image/T_cell',
+        ('image', 'Teff_cell'),
+        ('image', 'kappa_cell'),
+        ('image', 'rho_cell'),
+        ('image', 'T_cell'),
     ]
 
     priority = [
-        'image/surf_d',
-        'image/surf_id',
-        'image/ray_n',
+        ('image', 'surf_d'),
+        ('image', 'surf_id'),
+        ('image', 'ray_n'),
     ]
     
     def setUp(self):
@@ -165,7 +169,7 @@ class TestFlux(basetest.BaseTest):
             'output' : output.path,
             'kwargs' : kwargs,
             'simulation' : self.simulation.directory,
-            'units' : self.simulation.units,
+            'units' : {'length' : self.simulation.units.length},
             'time' : time,
             'image' : {
                 'flux' : surf_br,
@@ -219,10 +223,10 @@ class TestFlux(basetest.BaseTest):
 
         # Validate the keys
         to_test = []
-        for key, val in baseline.items():
+        for key, val in baseline.flowers():
             if key in TestFlux.ignore_keys: continue
-            if key not in result.keys():
-                raise KeyError("Missing key '%s' for comparison" % key)
+            if key not in result.branches():
+                raise KeyError("Missing key '%s' for comparison" % str(key))
             to_test += [key]
 
         def compare_simple(a, b, msg = None):
@@ -246,20 +250,19 @@ class TestFlux(basetest.BaseTest):
             base = baseline
             comp = result
             try:
-                for key in key_path.split('/'):
-                    base = base[key]
-                    comp = comp[key]
+                base = base[key_path]
+                comp = comp[key_path]
             except KeyError as e:
-                raise Exception("key_path = '%s'" % key_path) from e
+                raise Exception("key_path = '%s'" % str(key_path)) from e
                 
             if isinstance(base, dict):
                 for key in base.keys():
-                    compare(key_path + '/' + key, tested_paths = tested_paths)
+                    compare(tuple(list(key_path) + key), tested_paths = tested_paths)
                 return
 
             compare_simple(
                 base, comp,
-                msg = key_path + ' (base, comparison)'
+                msg = str(key_path) + ' (base, comparison)'
             )
 
         # Test the priority items first

@@ -9,7 +9,7 @@ To completely exclude default values, you can do:
 
     prefs = {...}
     exclude = [
-        'lib.units.Unit.conversions.Msun
+        'lib.units.Unit.conversions.Msun'
     ]
 
 For example. Each '.' is a delimiter for the keys to follow in the dict.
