@@ -838,7 +838,7 @@ class FluxFinder(object):
 
 
 
-
+@starsmashertools.preferences.use
 class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
     def __init__(self, *args, **kwargs):
         self._simulation = None
@@ -1042,7 +1042,7 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
 
 
 
-
+@starsmashertools.preferences.use
 class FluxResults(object):
     """
     A container for multiple :class:`~.FluxResult` objects. Permits for multiple
