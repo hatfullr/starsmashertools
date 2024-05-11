@@ -9,6 +9,7 @@ import starsmashertools.lib.simulation
 import starsmashertools.lib.relaxation
 import starsmashertools.lib.binary
 import starsmashertools.lib.dynamical
+import starsmashertools.helpers.nesteddict
 import importlib
 import inspect
 #import starsmashertools.helpers.pickler
@@ -166,6 +167,12 @@ serialization_methods = {
         'name' : 'np.ndarray', 'conversions' : [
             lambda obj: obj.tolist(),    # To JSON
             lambda obj: np.asarray(obj), # From JSON
+        ],
+    },
+    starsmashertools.helpers.nesteddict.NestedDict : {
+        'name' : 'starsmashertools.helpers.nesteddict.NestedDict', 'conversions' : [
+            lambda obj: obj.to_dict(),
+            lambda obj: starsmashertools.helpers.nesteddict.NestedDict(obj),
         ],
     },
     starsmashertools.preferences.Pref : {
