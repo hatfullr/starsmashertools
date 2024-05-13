@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "starsmashertools"
-version = '13.26.0'
+version = '13.27.0'
 authors = [
   { name="Roger Hatfull" },
 ]

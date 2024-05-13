@@ -1022,7 +1022,8 @@ class Archive(object):
                 if key not in file_keys: raise KeyError(key)
                 values[i] = zfile.read(key)
                 to_deserialize += [[i, key]]
-                zfile.progress.increment()
+                if hasattr(zfile, 'progress'):
+                    zfile.progress.increment()
 
         keys_to_deserialize = []
         vals_to_deserialize = []
