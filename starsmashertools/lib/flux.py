@@ -1159,11 +1159,13 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
         :meth:`~.load`
         """
         import starsmashertools.lib.archive
+        import time
         
         kwargs['auto_save'] = False
         archive = starsmashertools.lib.archive.Archive(filename, **kwargs)
         for key, val in self.to_dict().items(): # Just the top-level items
-            archive.add(key, val)
+            print(key)
+            archive.add(key, val, mtime = time.time())
         archive.save()
 
     @staticmethod
