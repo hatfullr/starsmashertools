@@ -359,8 +359,11 @@ class NestedDict(dict, object):
         ret = {}
         for branch, leaf in self.flowers():
             current = ret
-            for key in branch[:-1]:
-                if key not in current.keys(): current[key] = {}
-                current = current[key]
-            current[branch[-1]] = leaf
+            if isinstance(branch, tuple): # A nested branch
+                for key in branch[:-1]:
+                    if key not in current.keys(): current[key] = {}
+                    current = current[key]
+                current[branch[-1]] = leaf
+            else: # A regular dict key
+                current[branch] = leaf
         return ret
