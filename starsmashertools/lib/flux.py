@@ -1043,7 +1043,7 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
 
 
 @starsmashertools.preferences.use
-class FluxResults(object):
+class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
     """
     A container for multiple :class:`~.FluxResult` objects. Permits for multiple
     FluxResult objects to be saved in a single file, which can be convenient
@@ -1053,32 +1053,71 @@ class FluxResults(object):
     @api
     def __init__(
             self,
-            results : list | tuple,
+            allowed : dict | starsmashertools.helpers.nesteddict.NestedDict = Pref('allowed'),
     ):
         """
         Constructor.
         
+        Other Parameters
+        ----------------
+        allowed : dict, :class:`~.helpers.nesteddict.NestedDict`, default = Pref('exclude')
+            Items to include from each added :class:`~.FluxResult`. This cannot
+            be changed after initialization.
+        """
+        self._allowed = allowed
+        super(FluxResults, self).__init__()
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def add(
+            self,
+            result : str | FluxResult,
+            order : str | list | tuple = Pref('add.order'),
+    ):
+        """
+        Add a :class:`~.FluxResult`. The values in the FluxResult will be
+        inserted in a way which preserves the specified order.
+        
         Parameters
         ----------
-        results : list, tuple
-            The :class:`~.FluxResult` objects, or str paths to saved FluxResult
-            files.
-        """
-        # Convert string to FluxResult
-        for i, r in enumerate(results):
-            if isinstance(r, str):
-                results[i] = FluxResult.load(r)
-            if not isinstance(results[i], FluxResult):
-                raise TypeError("Elements in argument 'results' must be of type FluxResult, not '%s'" % type(r).__name__)
-        
-        self.results = results
+        result : str, FluxResult
+            If a `str`, it must be a path to a saved :class:`~.FluxResult`. The
+            FluxResult is loaded and its contents are added to this dictionary.
 
+        order : str, list, tuple, default = Pref('add.order')
+            The order with which to insert the FluxResult. If a `list` or 
+            `tuple` are given, it refers to the nested key. For example, 
+            ``['image', 'teff_aver']`` refers to the value found at
+            ``FluxResult['image']['teff_aver']``. See 
+            :class:`~.helpers.nesteddict.NestedDict` for details.
+
+        See Also
+        --------
+        :class:`~.helpers.nesteddict.NestedDict`
+        """
+        import bisect
+        
+        if isinstance(result, str): result = FluxResult.load(result)
+
+        index = None
+        if order in self.branches():
+            index = bisect.bisect(self.get(order), result.get(order))
+
+        for branch, leaf in result.flowers():
+            if branch not in self._allowed: continue
+            
+            if branch not in self.branches(): self[branch] = [leaf]
+            else:
+                if index is None:
+                    self[branch].insert(len(self[branch]), leaf)
+                else:
+                    self[branch].insert(index, leaf)
+    
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def save(
             self,
             filename : str = Pref('save.filename'),
-            exclude : dict | starsmashertools.helpers.nesteddict.NestedDict = Pref('save.exclude'),
             **kwargs
     ):
         """
@@ -1086,22 +1125,12 @@ class FluxResults(object):
         the same format as :meth:`~.FluxResult.save`, except stacked in a list.
         For example, the ``'image'`` key in the archive will be a list, where 
         each element is the ``'image'`` key from the corresponding FluxResult.
-
-        Results are sorted by simulation times, and it is expected that each
-        FluxResult comes from the same Simulation. If times are excluded then no
-        sorting is done.
         
         Other Parameters
         ----------
         filename : str, default = Pref('save.filename')
             The path to the file to create.
         
-        exclude : dict, :class:`~.helpers.nesteddict.NestedDict`, default = Pref('save.exclude')
-            Items to exclude from the saved file. Applies to all `FluxResult` 
-            objects.
-        
-            This overrides the ``exclude`` keyword in :meth:`~.FluxResult.save`.
-
         **kwargs
             Other keyword arguments are passed directly to 
             :meth:`~.lib.archive.Archive.__init__`.
@@ -1116,38 +1145,14 @@ class FluxResults(object):
         :meth:`~.load`
         """
         import starsmashertools.lib.archive
-
-        if not isinstance(exclude, starsmashertools.helpers.nesteddict.NestedDict):
-            exclude = starsmashertools.helpers.nesteddict.NestedDict(exclude)
-
-        final_object = {}
-        for result in self.results:
-            tosave = starsmashertools.helpers.nesteddict.NestedDict()
-            
-            exclude_branches = exclude.branches()
-            for branch, leaf in result.flowers():
-                if branch not in exclude_branches: continue
-                if exclude_branches[branch]: continue
-                tosave[branch] = leaf
-            
-            for key, val in tosave.to_dict().items(): # Get top-level keys,vals
-                if key not in final_object.keys(): final_object[key] = []
-                final_object[key] += [val]
-
-        # Sort by simulation times
-        if 'time' in final_object.keys():
-            times = np.asarray([float(t) for t in final_object['time']])
-            idx = np.argsort(times)
-            for key, val in final_object.items():
-                final_object[key] = [val[i] for i in idx]
-
+        
         kwargs['auto_save'] = False
         archive = starsmashertools.lib.archive.Archive(filename, **kwargs)
-        for key, val in final_object.items():
+        for key, val in self.items():
             archive.add(
                 key,
                 val,
-                origin = self['output'],
+                origin = self.get('output', None),
             )
         archive.save()
 
