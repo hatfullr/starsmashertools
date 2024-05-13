@@ -1149,11 +1149,7 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
         kwargs['auto_save'] = False
         archive = starsmashertools.lib.archive.Archive(filename, **kwargs)
         for key, val in self.items():
-            archive.add(
-                key,
-                val,
-                origin = self.get('output', None),
-            )
+            archive.add(key, val)
         archive.save()
 
     @staticmethod
