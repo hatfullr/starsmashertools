@@ -1076,6 +1076,8 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
             Other keyword arguments are passed directly to 
             :meth:`~.helpers.nesteddict.NestedDict.__init__`.
         """
+        if isinstance(allowed, dict):
+            allowed = starsmashertools.helpers.nesteddict.NestedDict(allowed)
         self._allowed = allowed
         super(FluxResults, self).__init__(*args, **kwargs)
 

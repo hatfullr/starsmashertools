@@ -177,7 +177,7 @@ prefs = {
                     'order' : 'time',
                 },
                 'allowed' : {
-                    'version'    : True, # starsmashertools version
+                    #'version'    : True, # starsmashertools version
                     'output'     : True, # output file path
                     'kwargs'     : True, # keywords passed to FluxFinder
                     'simulation' : True, # the simulation directory
