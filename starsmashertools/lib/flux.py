@@ -1053,19 +1053,31 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
     @api
     def __init__(
             self,
+            *args,
             allowed : dict | starsmashertools.helpers.nesteddict.NestedDict = Pref('allowed'),
+            **kwargs
     ):
         """
         Constructor.
         
+        Parameters
+        ----------
+        *args
+            Positional arguments are passed directly to
+            :meth:`~.helpers.nesteddict.NestedDict.__init__`.
+
         Other Parameters
         ----------------
         allowed : dict, :class:`~.helpers.nesteddict.NestedDict`, default = Pref('exclude')
             Items to include from each added :class:`~.FluxResult`. This cannot
             be changed after initialization.
+
+        **kwargs
+            Other keyword arguments are passed directly to 
+            :meth:`~.helpers.nesteddict.NestedDict.__init__`.
         """
         self._allowed = allowed
-        super(FluxResults, self).__init__()
+        super(FluxResults, self).__init__(*args, **kwargs)
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
@@ -1177,10 +1189,6 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
         """
         import starsmashertools.lib.archive
         archive = starsmashertools.lib.archive.Archive(filename, readonly=True)
-        keys = archive.keys()
-        values = archive.get(keys)
-        results = []
-        for i in range(len(next(iter(values)))):
-            results += [FluxResult({key:val[i] for key,val in zip(keys,values)})]
-        return results
+        return FluxResults({key:val.value for key,val in archive.items()})
+
 
