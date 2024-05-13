@@ -1116,7 +1116,7 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
             index = bisect.bisect(self.get(order), result.get(order))
 
         for branch, leaf in result.flowers():
-            if branch not in self._allowed: continue
+            if not self._allowed.get(branch, False): continue
             
             if branch not in self.branches(): self[branch] = [leaf]
             else:
