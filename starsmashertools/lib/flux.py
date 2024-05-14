@@ -1212,7 +1212,10 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
         archive.save()
 
     @staticmethod
-    def load(filename : str):
+    def load(
+            filename : str,
+            deserialize : bool = True,
+    ):
         """
         Load the :class:`~.FluxResult` objects from disk. Each result is stored
         in the same format as :meth:`~.FluxResult.save`, except stacked in a 
@@ -1224,6 +1227,11 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
         ----------
         filename : str
             The path to the file to load.
+
+        deserialize : bool, default = True
+            Convert :class:`~.lib.archive.ArchiveValue` objects in each list to
+            whatever their real values should be. Set this to `True` if you
+            used ``deserialize=False`` in :meth:`~.add`.
         
         Returns
         -------
@@ -1238,8 +1246,16 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
         archive = starsmashertools.lib.archive.Archive(filename, readonly=True)
         toload = starsmashertools.helpers.nesteddict.NestedDict()
         for key, val in archive.items():
-            try: toload[eval(key)] = val.value
-            except: toload[key] = val.value
+            try: key = eval(key)
+            except: pass
+            
+            if deserialize:
+                toload[key] = [starsmashertools.lib.archive.ArchiveValue.deserialize(
+                    key,
+                    v,
+                ) for v in val.value]
+            else:
+                toload[key] = val.value
         return FluxResults(toload)
 
 
