@@ -1107,6 +1107,7 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
             allowed = starsmashertools.helpers.nesteddict.NestedDict(allowed)
         self._allowed = allowed
         super(FluxResults, self).__init__(*args, **kwargs)
+        self._todeserialize = []
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
@@ -1165,10 +1166,10 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
             
             if branch not in self.branches(): self[branch] = [leaf]
             else:
-                if index is None:
-                    self[branch].insert(len(self[branch]), leaf)
-                else:
-                    self[branch].insert(index, leaf)
+                if index is None: index = len(self[branch])
+                self[branch].insert(index, leaf)
+                self._todeserialize.insert(index, not deserialize)
+                
     
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
@@ -1206,16 +1207,33 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
         
         kwargs['auto_save'] = False
         archive = starsmashertools.lib.archive.Archive(filename, **kwargs)
+
+        # Perform the deferred deserializations before saving
+        if self._todeserialize:
+            batch = {}
+            for branch, leaf in self.flowers():
+                branch = str(branch)
+                for i, val in enumerate(leaf):
+                    if not self._todeserialize[i]: continue
+                    batch[str(branch)+'!delimeter!'+str(i)] = val
+            items = starsmashertools.lib.archive.ArchiveItems(
+                batch.keys(),
+                batch.values(),
+            )
+            for key, val in items.items():
+                k, i = key.split('!delimiter!')
+                i = int(i)
+                try: k = eval(k)
+                except: pass
+                self[k][i] = val
+        
         mtime = time.time()
         for branch, leaf in self.flowers():
             archive.add(str(branch), leaf, mtime = mtime)
         archive.save()
 
     @staticmethod
-    def load(
-            filename : str,
-            deserialize : bool = True,
-    ):
+    def load(filename : str):
         """
         Load the :class:`~.FluxResult` objects from disk. Each result is stored
         in the same format as :meth:`~.FluxResult.save`, except stacked in a 
@@ -1227,11 +1245,6 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
         ----------
         filename : str
             The path to the file to load.
-
-        deserialize : bool, default = True
-            Convert :class:`~.lib.archive.ArchiveValue` objects in each list to
-            whatever their real values should be. Set this to `True` if you
-            used ``deserialize=False`` in :meth:`~.add`.
         
         Returns
         -------
@@ -1248,14 +1261,7 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
         for key, val in archive.items():
             try: key = eval(key)
             except: pass
-            
-            if deserialize:
-                toload[key] = [starsmashertools.lib.archive.ArchiveValue.deserialize(
-                    key,
-                    v,
-                ) for v in val.value]
-            else:
-                toload[key] = val.value
+            toload[key] = val.value
         return FluxResults(toload)
 
 

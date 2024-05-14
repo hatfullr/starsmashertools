@@ -266,19 +266,23 @@ class ArchiveValue(object):
 
 class ArchiveItems(object):
     """ An iterator to help with reading an Archive. """
-    def __init__(self, archive, verbose : bool = False):
+    def __init__(self, *args, verbose : bool = False):
         self.verbose = verbose
-
         self._file = None
+        
+        if len(args) == 1:
+            archive = args
 
-        if archive.thread_safe: self._keys = archive.keys()
-        else: self._keys = archive._keys
+            if archive.thread_safe: self._keys = archive.keys()
+            else: self._keys = archive._keys
 
-        # Reading all the contents of an Archive usually isn't what takes
-        # the most time. It's the deserializing that is costly.
-        self._values = archive.get(self._keys, deserialize = False)
-        if not isinstance(self._values, list):
-            self._values = [self._values]
+            # Reading all the contents of an Archive usually isn't what takes
+            # the most time. It's the deserializing that is costly.
+            self._values = archive.get(self._keys, deserialize = False)
+            if not isinstance(self._values, list):
+                self._values = [self._values]
+        else:
+            self._keys, self._values = args
         
         self._iterator = None
         self._process = None
