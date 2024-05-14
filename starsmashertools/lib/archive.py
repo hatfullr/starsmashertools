@@ -8,15 +8,22 @@ import zipfile
 import atexit
 import sys
 import gc
+import binascii
+import _pickle
 
 def get_file_info():
-    import starsmashertools.helpers.jsonfile
-    return starsmashertools.helpers.jsonfile.save_bytes({
+    import starsmashertools.helpers.pickler
+    return starsmashertools.helpers.pickler.pickle_object({
         '__version__' : starsmashertools.__version__,
     })
+
 def load_file_info(info):
     import starsmashertools.helpers.jsonfile
-    return starsmashertools.helpers.jsonfile.load_bytes(info)
+    import starsmashertools.helpers.pickler
+    try:
+        return starsmashertools.helpers.pickler.unpickle_object(info)
+    except (binascii.Error, _pickle.UnpicklingError):
+        return starsmashertools.helpers.jsonfile.load_bytes(info)
 
 def update_archive_version(
         old_path : str,
@@ -46,6 +53,7 @@ def update_archive_version(
     import shutil
     import starsmashertools.helpers.warnings
     import starsmashertools.helpers.string
+    import starsmashertools.helpers.pickler
     
     if new_path is None: new_path = old_path
 
@@ -69,7 +77,10 @@ def update_archive_version(
         if len(namelist) == 1 and namelist[0] != 'file info':
             with starsmashertools.helpers.string.loading_message("Reading '%s'" % Archive.to_str(old_path)) as l:
                 content = zfile.read(namelist[0])
-                data = starsmashertools.helpers.jsonfile.load_bytes(content)
+                try:
+                    data = starsmashertools.helpers.pickler.unpickle_object(content)
+                except (binascii.Error, _pickle.UnpicklingError):
+                    data = starsmashertools.helpers.jsonfile.load_bytes(content)
                 del content
         else: # If we were not able to detect the old Archive format
             format_detected = False
@@ -205,13 +216,8 @@ class ArchiveValue(object):
             The modification time of the file specified by `origin`. If not
             `None` then `origin` can be a file which doesn't currently exist.
         """
-        import starsmashertools.helpers.jsonfile
         import starsmashertools.helpers.path
         
-        starsmashertools.helpers.argumentenforcer.enforcetypes({
-            'value' : starsmashertools.helpers.jsonfile.serialization_methods.keys(),
-        })
-
         self._value = None
         self.serialized = None
         
@@ -238,9 +244,9 @@ class ArchiveValue(object):
     def value(self): return self._value
     @value.setter
     def value(self, new_value):
-        import starsmashertools.helpers.jsonfile
+        import starsmashertools.helpers.pickler
         self._value = new_value
-        self.serialized = starsmashertools.helpers.jsonfile.save_bytes({
+        self.serialized = starsmashertools.helpers.pickler.pickle_object({
             'value' : new_value,
             'origin' : self.origin,
             'mtime' : self.mtime,
@@ -252,15 +258,12 @@ class ArchiveValue(object):
         Return a :class:`~.ArchiveValue` object from the given json object.
         """
         import starsmashertools.helpers.jsonfile
-        json = starsmashertools.helpers.jsonfile.load_bytes(obj)
-        ret = ArchiveValue(
-            identifier,
-            json['value'],
-            json['origin'],
-            json['mtime'],
-        )
-        del json
-        gc.collect()
+        import starsmashertools.helpers.pickler
+        try:
+            o = starsmashertools.helpers.pickler.unpickle_object(obj)
+        except (binascii.Error, _pickle.UnpicklingError):
+            o = starsmashertools.helpers.jsonfile.load_bytes(obj)
+        ret = ArchiveValue(identifier, o['value'], o['origin'], o['mtime'])
         return ret
 
 
@@ -805,7 +808,7 @@ class Archive(object):
             old_version = info['__version__']
 
         user_allowed = self.preferences.get('auto update format')
-
+        
         if old_version is not None:
             message = "%s was written by starsmashertools version '%s', but the current version is '%s'. This Archive will be updated to the latest format."
             message = message % (str(self), old_version, starsmashertools.__version__)
