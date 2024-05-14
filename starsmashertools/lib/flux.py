@@ -1216,7 +1216,7 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
             for branch, leaf in self.flowers():
                 for i, val in enumerate(leaf):
                     if not self._todeserialize[branch][i]: continue
-                    batch[str(branch)+'!delimeter!'+str(i)] = val
+                    batch[str(branch)+'!delimiter!'+str(i)] = val
             items = starsmashertools.lib.archive.ArchiveItems(
                 batch.keys(),
                 batch.values(),
