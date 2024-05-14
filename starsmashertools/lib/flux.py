@@ -163,6 +163,8 @@ class FluxFinder(object):
         self._init_particles()
 
     def get(self):
+        import starsmashertools.lib.units
+        
         self.initialize()
         self._process_images()
 
@@ -756,6 +758,8 @@ class FluxFinder(object):
             del expon, idx, b_full, b_l
         
         def finalize(self):
+            import starsmashertools.lib.units
+            
             # Finish spectrum calculations
             self.teff = 0
             max_flux = 0
