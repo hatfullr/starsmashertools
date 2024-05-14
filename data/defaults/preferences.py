@@ -205,7 +205,7 @@ prefs = {
                         #'surf_d'    : True, # distance map?
                         #'surf_id'   : True, # maybe particle IDs at surface
                         #'ray_n'     : True, # number of particles on rays
-                    #    'weighted_averages' : True, # weighted average maps
+                        #'weighted_averages' : True, # weighted average maps
                     },
                     'spectrum' : {
                         'ltot_spectrum' : True, # spectral luminosity
