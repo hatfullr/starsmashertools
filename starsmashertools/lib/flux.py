@@ -939,6 +939,7 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
     def load(
             filename : str,
             allowed : dict | starsmashertools.helpers.nesteddict.NestedDict = Pref('save.allowed'),
+            deserialize : bool = True,
     ):
         """
         Load results from disk which were saved by :meth:`~.save`.
@@ -952,6 +953,9 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
         ----------------
         allowed : dict, :class:`~.helpers.nesteddict.NestedDict`, default = Pref('save.allowed')
             The same as ``allowed`` in :meth:`~.save`.
+
+        deserialize : bool, default = True
+            Given to :meth:`~.lib.archive.Archive.get`.
 
         Returns
         -------
@@ -967,10 +971,12 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
         if not isinstance(allowed, starsmashertools.helpers.nesteddict.NestedDict):
             allowed = starsmashertools.helpers.nesteddict.NestedDict(allowed)
 
-        _dict = {}
-        for key, val in allowed.to_dict().items(): # Only top-level items
-            _dict[key] = archive[key].value
-        return FluxResult(_dict)
+
+        keys = list(allowed.to_dict().keys())
+        if deserialize:
+            return FluxResult({key:val.value for key,val in zip(keys, archive.get(keys))})
+        else:
+            return FluxResult({key:val for key,val in zip(keys, archive.get(keys, deserialize=deserialize))})
     
     if has_matplotlib:
         @starsmashertools.helpers.argumentenforcer.enforcetypes
@@ -1110,6 +1116,7 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
             self,
             result : str | FluxResult,
             order : str | list | tuple = Pref('add.order'),
+            deserialize : bool = True,
     ):
         """
         Add a :class:`~.FluxResult`. The values in the FluxResult will be
@@ -1121,6 +1128,9 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
             If a `str`, it must be a path to a saved :class:`~.FluxResult`. The
             FluxResult is loaded and its contents are added to this dictionary.
 
+
+        Other Parameters
+        ----------------
         order : str, list, tuple, default = Pref('add.order')
             The order with which to insert the FluxResult. If a `list` or 
             `tuple` are given, it refers to the nested key. For example, 
@@ -1128,13 +1138,25 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
             ``FluxResult['image']['teff_aver']``. See 
             :class:`~.helpers.nesteddict.NestedDict` for details.
 
+        deserialize : bool, default = True
+            Given to :meth:`~.lib.archive.Archive.get` when loading the
+            :class:`~.FluxResult` objects. If `False`, the values will be in
+            their original binary format as stored on the disk. This can be
+            helpful for operations such as condensing many :class:`~.FluxResult`
+            objects into a single compressed file.
+
         See Also
         --------
         :class:`~.helpers.nesteddict.NestedDict`
         """
         import bisect
         
-        if isinstance(result, str): result = FluxResult.load(result)
+        if isinstance(result, str):
+            result = FluxResult.load(
+                result,
+                allowed = self._allowed,
+                deserialize = deserialize,
+            )
 
         index = None
         if order in self.branches():
