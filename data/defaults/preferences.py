@@ -131,42 +131,42 @@ prefs = {
                     # Changing values here doesn't improve performance, it only
                     # affects what gets saved in the save() method in FluxResult
                     # 'True' means don't save it, 'False' means save it.
-                    'exclude' : {
-                        #'version'    : True, # starsmashertools version
-                        #'output'     : True, # output file path
-                        #'kwargs'     : True, # keywords passed to FluxFinder
-                        #'simulation' : True, # the simulation directory
-                        #'units'      : True, # units used only in FluxResult
-                        #'time'       : True, # time in output (output['t'])
+                    'allowed' : {
+                        'version'    : True, # starsmashertools version
+                        'output'     : True, # output file path
+                        'kwargs'     : True, # keywords passed to FluxFinder
+                        'simulation' : True, # the simulation directory
+                        'units'      : True, # units used only in FluxResult
+                        'time'       : True, # time in output (output['t'])
                         'particles' : {
-                        #    'contributing_IDs' : True, # flux-producing IDs
-                        #    'rloc'             : True, # 2h or (m/rho)^1/3
-                        #    'tau'              : True, # optical depths
-                        #    'kappa'            : True, # opacities
-                        #    'flux'             : True, # fluxes (recalculated)
-                        #    'flux_from_contributors' : True, # tot flux (atten)
+                            'contributing_IDs' : True, # flux-producing IDs
+                            'rloc'             : True, # 2h or (m/rho)^1/3
+                            'tau'              : True, # optical depths
+                            'kappa'            : True, # opacities
+                            'flux'             : True, # fluxes (recalculated)
+                            'flux_from_contributors' : True, # tot flux (atten)
                         },
                         'image' : {
-                        #    'Teff_cell' : True, # effective temperature map
-                        #    'teff_aver' : True, # average effective temperature
-                        #    'ltot'      : True, # total bolometric luminosity
-                        #    'flux_tot'  : True, # total bolometric flux
-                        #    'l_v'       : True,
-                        #    'extent'    : True, # x,y screen space limits
-                        #    'dx'        : True, # x cell size
-                        #    'dy'        : True, # y cell size
-                        #    'flux'      : True, # flux map
-                        #    'flux_v'    : True,
-                        #    'surf_d'    : True, # distance map?
-                        #    'surf_id'   : True, # maybe particle IDs at surface
-                        #    'ray_n'     : True, # number of particles on rays
-                        #    'weighted_averages' : True, # weighted average maps
+                            'Teff_cell' : True, # effective temperature map
+                            'teff_aver' : True, # average effective temperature
+                            'ltot'      : True, # total bolometric luminosity
+                            'flux_tot'  : True, # total bolometric flux
+                            'l_v'       : True,
+                            'extent'    : True, # x,y screen space limits
+                            'dx'        : True, # x cell size
+                            'dy'        : True, # y cell size
+                            'flux'      : True, # flux map
+                            'flux_v'    : True,
+                            'surf_d'    : True, # distance map?
+                            'surf_id'   : True, # maybe particle IDs at surface
+                            'ray_n'     : True, # number of particles on rays
+                            'weighted_averages' : True, # weighted average maps
                         },
                         'spectrum' : {
-                        #    'ltot_spectrum' : True, # spectral luminosity
-                        #    'l_spectrum'    : True, # L in filters
-                        #    'output'        : True, # spectrum information
-                        #    'teff'          : True, # effective temperature
+                            'ltot_spectrum' : True, # spectral luminosity
+                            'l_spectrum'    : True, # L in filters
+                            'output'        : True, # spectrum information
+                            'teff'          : True, # effective temperature
                         },
                     }, # 'exclude'
                 }, # 'save'

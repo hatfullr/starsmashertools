@@ -877,7 +877,7 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
     def save(
             self,
             filename : str = Pref('save.filename'),
-            exclude : dict | starsmashertools.helpers.nesteddict.NestedDict = Pref('save.exclude'),
+            allowed : dict | starsmashertools.helpers.nesteddict.NestedDict = Pref('save.allowed'),
             **kwargs
     ):
         """
@@ -888,13 +888,13 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
         filename : str, default = Pref('save.filename')
             The name of the Archive.
 
-        exclude : dict, :class:`~.helpers.nesteddict.NestedDict`, default = Pref('save.exclude')
-            The items to exclude from the file. Only the keys of the dictionary
-            are checked. If ``exclude`` contains a key which is also in this
-            FluxResult, then the value is not saved to the file. You can specify
-            multiple nested dictionaries in this way, and only the keys given
-            at the deepest nesting levels are considered. See the preferences
-            file for an example.
+        allowed : dict, :class:`~.helpers.nesteddict.NestedDict`, default = Pref('save.allowed')
+            The items to include in the file. Only the keys of the dictionary
+            are checked. If ``allowed`` contains a key which is also in this
+            FluxResult, then the value is saved to the file. You can specify
+            a nested dictionaries in this way, and only the keys given at the
+            deepest nesting levels (the "flowers") are considered. See the 
+            preferences file for an example.
 
         **kwargs
             Keyword arguments are passed directly to 
@@ -912,13 +912,13 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
         import starsmashertools.lib.archive
 
         tosave = starsmashertools.helpers.nesteddict.NestedDict()
-        if not isinstance(exclude, starsmashertools.helpers.nesteddict.NestedDict):
-            exclude = starsmashertools.helpers.nesteddict.NestedDict(exclude)
+        if not isinstance(allowed, starsmashertools.helpers.nesteddict.NestedDict):
+            allowed = starsmashertools.helpers.nesteddict.NestedDict(allowed)
 
-        exclude_branches = exclude.branches()
+        allowed_branches = allowed.branches()
         for branch, leaf in self.flowers():
-            if branch not in exclude_branches: continue
-            if exclude_branches[branch]: continue
+            if branch not in allowed_branches: continue
+            if not allowed[branch]: continue
             tosave[branch] = leaf
         
         kwargs['auto_save'] = False
@@ -936,7 +936,10 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
     @staticmethod
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
-    def load(filename : str):
+    def load(
+            filename : str,
+            allowed : dict | starsmashertools.helpers.nesteddict.NestedDict = Pref('save.allowed'),
+    ):
         """
         Load results from disk which were saved by :meth:`~.save`.
 
@@ -944,6 +947,11 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
         ----------
         filename : str
             The location of the file on the disk to load.
+
+        Other Parameters
+        ----------------
+        allowed : dict, :class:`~.helpers.nesteddict.NestedDict`, default = Pref('save.allowed')
+            The same as ``allowed`` in :meth:`~.save`.
 
         Returns
         -------
@@ -955,10 +963,13 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
         """
         import starsmashertools.lib.archive
         archive = starsmashertools.lib.archive.Archive(filename, readonly=True)
-        keys = archive.keys()
+
+        if not isinstance(allowed, starsmashertools.helpers.nesteddict.NestedDict):
+            allowed = starsmashertools.helpers.nesteddict.NestedDict(allowed)
+
         _dict = {}
-        for key, val in zip(keys, archive.get(keys)):
-            _dict[key] = val.value
+        for key, val in allowed.to_dict().items(): # Only top-level items
+            _dict[key] = archive[key].value
         return FluxResult(_dict)
     
     if has_matplotlib:
