@@ -1214,7 +1214,7 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
                         leaf[i] = starsmashertools.lib.archive.ArchiveValue.deserialize(
                             str(branch),
                             l,
-                        )
+                        ).value
             archive.add(str(branch), leaf, mtime = mtime)
         archive.save()
 
