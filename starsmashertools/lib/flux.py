@@ -970,7 +970,8 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
         toload = starsmashertools.helpers.nesteddict.NestedDict()
         keys = [str(a) for a in allowed.branches()]
         for key, val in zip(keys, archive.get(keys, deserialize=deserialize)):
-            key = eval(key)
+            try: key = eval(key)
+            except: pass
             if deserialize: toload[key] = val.value
             else: toload[key] = val
         return FluxResult(toload)
@@ -1237,7 +1238,8 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
         archive = starsmashertools.lib.archive.Archive(filename, readonly=True)
         toload = starsmashertools.helpers.nesteddict.NestedDict()
         for key, val in archive.items():
-            toload[eval(key)] = val.value
+            try: toload[eval(key)] = val.value
+            except: toload[key] = val.value
         return FluxResults(toload)
 
 
