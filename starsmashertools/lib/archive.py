@@ -225,7 +225,7 @@ class ArchiveValue(object):
         if isinstance(self.value, bytes):
             # Catch values which are already serialized
             try:
-                value = ArchiveValue.deserialize(self.identifier, self.value)
+                value = ArchiveValue.deserialize(self.identifier, value)
             except: pass
             
         self.value = value
