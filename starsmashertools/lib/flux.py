@@ -910,23 +910,19 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
         :meth:`~.load`
         """
         import starsmashertools.lib.archive
-
-        tosave = starsmashertools.helpers.nesteddict.NestedDict()
+        
         if not isinstance(allowed, starsmashertools.helpers.nesteddict.NestedDict):
             allowed = starsmashertools.helpers.nesteddict.NestedDict(allowed)
 
         allowed_branches = allowed.branches()
-        for branch, leaf in self.flowers():
-            if branch not in allowed_branches: continue
-            if not allowed[branch]: continue
-            tosave[branch] = leaf
-        
         kwargs['auto_save'] = False
         archive = starsmashertools.lib.archive.Archive(filename, **kwargs)
-        for key, val in tosave.to_dict().items(): # Get top-level keys, vals
+        for branch, leaf in tosave.flowers():
+            if branch not in allowed_branches: continue
+            if not allowed[branch]: continue
             archive.add(
-                key,
-                val,
+                str(branch),
+                leaf,
                 origin = self['output'],
             )
         archive.save()
@@ -971,12 +967,13 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
         if not isinstance(allowed, starsmashertools.helpers.nesteddict.NestedDict):
             allowed = starsmashertools.helpers.nesteddict.NestedDict(allowed)
 
-
-        keys = list(allowed.to_dict().keys())
-        if deserialize:
-            return FluxResult({key:val.value for key,val in zip(keys, archive.get(keys))})
-        else:
-            return FluxResult({key:val for key,val in zip(keys, archive.get(keys, deserialize=deserialize))})
+        toload = starsmashertools.helpers.nesteddict.NestedDict()
+        keys = [str(a) for a in allowed.branches()]
+        for key, val in zip(keys, archive.get(keys, deserialize=deserialize)):
+            key = eval(key)
+            if deserialize: toload[key] = val.value
+            else: toload[key] = val
+        return FluxResult(toload)
     
     if has_matplotlib:
         @starsmashertools.helpers.argumentenforcer.enforcetypes
@@ -1208,8 +1205,9 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
         
         kwargs['auto_save'] = False
         archive = starsmashertools.lib.archive.Archive(filename, **kwargs)
-        for key, val in self.to_dict().items(): # Just the top-level items
-            archive.add(key, val, mtime = time.time())
+        mtime = time.time()
+        for branch, leaf in self.flowers():
+            archive.add(str(branch), leaf, mtime = mtime)
         archive.save()
 
     @staticmethod
@@ -1237,6 +1235,9 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
         """
         import starsmashertools.lib.archive
         archive = starsmashertools.lib.archive.Archive(filename, readonly=True)
-        return FluxResults({key:val.value for key,val in archive.items()})
+        toload = starsmashertools.helpers.nesteddict.NestedDict()
+        for key, val in archive.items():
+            toload[eval(key)] = val.value
+        return FluxResults(toload)
 
 
