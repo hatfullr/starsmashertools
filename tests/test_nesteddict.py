@@ -582,12 +582,15 @@ class TestNestedDict(basetest.BaseTest):
                 },
             },
             '2' : None,
+            'somekey' : None,
         })
 
         a = d.to_dict()
         self.assertTrue(isinstance(a, dict))
         self.assertFalse(isinstance(a, starsmashertools.helpers.nesteddict.NestedDict))
-        self.assertEqual(len(a.keys()), 2)
+        self.assertEqual(len(a.keys()), 3)
+        for key in ['1','2','somekey']: self.assertIn(key, a.keys())
+        
         self.assertEqual(a['1'], {'1a' : {'1ai':1,'1aii' : 2}, '1b' : {'1bi':3}})
         self.assertEqual(a['1']['1a'], {'1ai':1,'1aii' : 2})
         self.assertEqual(a['1']['1a']['1ai'], 1)
@@ -595,6 +598,7 @@ class TestNestedDict(basetest.BaseTest):
         self.assertEqual(a['1']['1b'], {'1bi':3})
         self.assertEqual(a['1']['1b']['1bi'], 3)
         self.assertEqual(a['2'], None)
+        self.assertEqual(a['somekey'], None)
 
         a = starsmashertools.helpers.nesteddict.NestedDict(a)
         self.assertEqual(d['2'], None)

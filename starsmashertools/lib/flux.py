@@ -183,6 +183,10 @@ class FluxFinder(object):
             warnings.simplefilter("ignore")
             teff_aver = np.sum(surf_t[:self.resolution[0]-1, :self.resolution[1]-1] * area_br / flux_tot)
 
+        # Units of energy/time/area
+        flux_tot = starsmashertools.lib.units.Unit(flux_tot, 'g/s*s*s')
+        flux_tot_v = starsmashertools.lib.units.Unit(flux_tot_v, 'g/s*s*s')
+        
         # Finish the ltot and l_v calculations
         length = self.units.get('length', 1.)
         cell_area = self.dx * self.dy * length**2
@@ -799,6 +803,10 @@ class FluxFinder(object):
                 self.output += [[il, lamb, teff_loc, sp, b_l]]
 
             self.output = np.asarray(self.output, dtype = float)
+
+            for key, val in self.flux.items():
+                # In units of energy/time/area
+                self.flux[key] = starsmashertools.lib.units.Unit(val, 'g/s*s*s')
 
             
             
