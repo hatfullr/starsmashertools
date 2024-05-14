@@ -222,6 +222,12 @@ class ArchiveValue(object):
             mtime = starsmashertools.helpers.path.getmtime(self.origin)
         self.mtime = mtime
         
+        if isinstance(self.value, bytes):
+            # Catch values which are already serialized
+            try:
+                value = ArchiveValue.deserialize(self.identifier, self.value)
+            except: pass
+            
         self.value = value
 
     def __str__(self):
@@ -847,7 +853,7 @@ class Archive(object):
         
         if self.readonly: raise Archive.ReadOnlyError(self.filename)
         if self._nosave_holders > 0: return
-
+        
         exists = starsmashertools.helpers.path.isfile(self.filename)
         
         # If nothing changed since the last time we saved

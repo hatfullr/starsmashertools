@@ -1107,7 +1107,6 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
             allowed = starsmashertools.helpers.nesteddict.NestedDict(allowed)
         self._allowed = allowed
         super(FluxResults, self).__init__(*args, **kwargs)
-        self._todeserialize = starsmashertools.helpers.nesteddict.NestedDict()
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
@@ -1166,11 +1165,9 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
             
             if branch not in self.branches():
                 self[branch] = [leaf]
-                self._todeserialize[branch] = [not deserialize]
             else:
                 if index is None: index = len(self[branch])
                 self[branch].insert(index, leaf)
-                self._todeserialize[branch].insert(index, not deserialize)
                 
     
     @starsmashertools.helpers.argumentenforcer.enforcetypes
@@ -1209,30 +1206,6 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
         
         kwargs['auto_save'] = False
         archive = starsmashertools.lib.archive.Archive(filename, **kwargs)
-
-        # Perform the deferred deserializations before saving
-        if self._todeserialize:
-            batch = {}
-            for branch, leaf in self.flowers():
-                for i, val in enumerate(leaf):
-                    if not self._todeserialize[branch][i]: continue
-                    batch[str(branch)+'!delimiter!'+str(i)] = val
-            items = starsmashertools.lib.archive.ArchiveItems(
-                batch.keys(),
-                batch.values(),
-            )
-            for key, val in items:
-                k, i = key.split('!delimiter!')
-                i = int(i)
-                try: k = eval(k)
-                except: pass
-                print(k)
-                print(i)
-                print(val)
-                self[k][i] = val
-        
-        self._todeserialize.clear()
-        
         mtime = time.time()
         for branch, leaf in self.flowers():
             archive.add(str(branch), leaf, mtime = mtime)
