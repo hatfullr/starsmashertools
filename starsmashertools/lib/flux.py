@@ -1226,6 +1226,8 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
                 i = int(i)
                 try: k = eval(k)
                 except: pass
+                print(k)
+                print(i)
                 print(val)
                 self[k][i] = val
         
