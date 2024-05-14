@@ -1114,7 +1114,6 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
             self,
             result : str | FluxResult,
             order : str | list | tuple = Pref('add.order'),
-            deserialize : bool = True,
     ):
         """
         Add a :class:`~.FluxResult`. The values in the FluxResult will be
@@ -1136,13 +1135,6 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
             ``FluxResult['image']['teff_aver']``. See 
             :class:`~.helpers.nesteddict.NestedDict` for details.
 
-        deserialize : bool, default = True
-            Given to :meth:`~.lib.archive.Archive.get` when loading the
-            :class:`~.FluxResult` objects. If `False`, the values will be in
-            their original binary format as stored on the disk. This can be
-            helpful for operations such as condensing many :class:`~.FluxResult`
-            objects into a single compressed file.
-
         See Also
         --------
         :class:`~.helpers.nesteddict.NestedDict`
@@ -1153,7 +1145,6 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
             result = FluxResult.load(
                 result,
                 allowed = self._allowed,
-                deserialize = deserialize,
             )
 
         index = None
@@ -1208,13 +1199,6 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
         archive = starsmashertools.lib.archive.Archive(filename, **kwargs)
         mtime = time.time()
         for branch, leaf in self.flowers():
-            if isinstance(leaf, list):
-                for i, l in enumerate(leaf):
-                    if isinstance(l, bytes):
-                        leaf[i] = starsmashertools.lib.archive.ArchiveValue.deserialize(
-                            str(branch),
-                            l,
-                        ).value
             archive.add(str(branch), leaf, mtime = mtime)
         archive.save()
 
