@@ -271,7 +271,7 @@ class ArchiveItems(object):
         self._file = None
         
         if len(args) == 1:
-            archive = args
+            archive = args[0]
 
             if archive.thread_safe: self._keys = archive.keys()
             else: self._keys = archive._keys
