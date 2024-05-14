@@ -1208,6 +1208,13 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
         archive = starsmashertools.lib.archive.Archive(filename, **kwargs)
         mtime = time.time()
         for branch, leaf in self.flowers():
+            if isinstance(leaf, list):
+                for i, l in enumerate(leaf):
+                    if isinstance(l, bytes):
+                        leaf[i] = starsmashertools.lib.archive.ArchiveValue.deserialize(
+                            str(branch),
+                            l,
+                        )
             archive.add(str(branch), leaf, mtime = mtime)
         archive.save()
 

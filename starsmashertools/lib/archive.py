@@ -221,12 +221,6 @@ class ArchiveValue(object):
         if self.origin is not None and mtime is None:
             mtime = starsmashertools.helpers.path.getmtime(self.origin)
         self.mtime = mtime
-        
-        if isinstance(value, bytes):
-            # Catch values which are already serialized
-            try:
-                value = ArchiveValue.deserialize(self.identifier, value).value
-            except: pass
             
         self.value = value
 
