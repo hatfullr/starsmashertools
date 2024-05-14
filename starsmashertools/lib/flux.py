@@ -1220,12 +1220,14 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
                 batch.keys(),
                 batch.values(),
             )
-            for key, val in items.items():
+            for key, val in items:
                 k, i = key.split('!delimiter!')
                 i = int(i)
                 try: k = eval(k)
                 except: pass
                 self[k][i] = val
+        
+        self._todeserialize = []
         
         mtime = time.time()
         for branch, leaf in self.flowers():
