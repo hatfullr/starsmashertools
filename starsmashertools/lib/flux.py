@@ -922,7 +922,7 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
             if not allowed[branch]: continue
             archive.add(
                 str(branch),
-                leaf,
+                self[branch],
                 origin = self['output'],
             )
         archive.save()
