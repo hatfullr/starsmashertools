@@ -1107,7 +1107,7 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
             allowed = starsmashertools.helpers.nesteddict.NestedDict(allowed)
         self._allowed = allowed
         super(FluxResults, self).__init__(*args, **kwargs)
-        self._todeserialize = []
+        self._todeserialize = starsmashertools.helpers.nesteddict.NestedDict()
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
@@ -1164,11 +1164,13 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
         for branch, leaf in result.flowers():
             if not self._allowed.get(branch, False): continue
             
-            if branch not in self.branches(): self[branch] = [leaf]
+            if branch not in self.branches():
+                self[branch] = [leaf]
+                self._todeserialize[branch] = [not deserialize]
             else:
                 if index is None: index = len(self[branch])
                 self[branch].insert(index, leaf)
-                self._todeserialize.insert(index, not deserialize)
+                self._todeserialize[branch].insert(index, not deserialize)
                 
     
     @starsmashertools.helpers.argumentenforcer.enforcetypes
@@ -1212,9 +1214,8 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
         if self._todeserialize:
             batch = {}
             for branch, leaf in self.flowers():
-                branch = str(branch)
                 for i, val in enumerate(leaf):
-                    if not self._todeserialize[i]: continue
+                    if not self._todeserialize[branch][i]: continue
                     batch[str(branch)+'!delimeter!'+str(i)] = val
             items = starsmashertools.lib.archive.ArchiveItems(
                 batch.keys(),
@@ -1227,7 +1228,7 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
                 except: pass
                 self[k][i] = val
         
-        self._todeserialize = []
+        self._todeserialize.clear()
         
         mtime = time.time()
         for branch, leaf in self.flowers():
