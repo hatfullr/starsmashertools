@@ -222,7 +222,7 @@ class ArchiveValue(object):
             mtime = starsmashertools.helpers.path.getmtime(self.origin)
         self.mtime = mtime
         
-        if isinstance(self.value, bytes):
+        if isinstance(value, bytes):
             # Catch values which are already serialized
             try:
                 value = ArchiveValue.deserialize(self.identifier, value)
