@@ -917,7 +917,7 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
         allowed_branches = allowed.branches()
         kwargs['auto_save'] = False
         archive = starsmashertools.lib.archive.Archive(filename, **kwargs)
-        for branch, leaf in tosave.flowers():
+        for branch, leaf in allowed.flowers():
             if branch not in allowed_branches: continue
             if not allowed[branch]: continue
             archive.add(
