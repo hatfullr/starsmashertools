@@ -1203,7 +1203,12 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
         archive.save()
 
     @staticmethod
-    def load(filename : str):
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def load(
+            filename : str,
+            keys : list | tuple | type(None) = None,
+    ):
         """
         Load the :class:`~.FluxResult` objects from disk. Each result is stored
         in the same format as :meth:`~.FluxResult.save`, except stacked in a 
@@ -1211,10 +1216,17 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
         where each element is the ``'image'`` key from the corresponding 
         FluxResult.
         
-        Other Parameters
+        Parameters
         ----------
         filename : str
             The path to the file to load.
+
+        Other Parameters
+        ----------------
+        keys : list, tuple, None, default = None
+            To retrieve only specific keys, specify the keys here. Note that
+            each element must point to a "branch" in the archived 
+            :class:`~.helpers.nesteddict.NestedDict`.
         
         Returns
         -------
@@ -1228,10 +1240,14 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
         import starsmashertools.lib.archive
         archive = starsmashertools.lib.archive.Archive(filename, readonly=True)
         toload = starsmashertools.helpers.nesteddict.NestedDict()
-        for key, val in archive.items():
-            try: key = eval(key)
-            except: pass
-            toload[key] = val.value
+        if keys is not None:
+            for key, val in zip(keys, archive.get([str(k) for k in keys])):
+                toload[key] = val.value
+        else:
+            for key, val in archive.items():
+                try: key = eval(key)
+                except: pass
+                toload[key] = val.value
         return FluxResults(toload)
 
 
