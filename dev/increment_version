@@ -4,20 +4,15 @@ import os
 import re
 import sys
 import starsmashertools.helpers.apidecorator
-import starsmashertools.helpers.string
 import starsmashertools.helpers.jsonfile
-import numpy
 import inspect
-import importlib
 import types
 import copy
 import hashlib
 import starsmashertools
-import importlib
 import typing
-import matplotlib
-import _io
 from typing import *
+import matplotlib, numpy # Needed in some eval statements
 
 version_line_regex = "[vV][eE][rR][sS][iI][oO][nN]\\s*[=]\\s*[\"']\\d*[.]\\d*[.]\\d*[\"']"
 
