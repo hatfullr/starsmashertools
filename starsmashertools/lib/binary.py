@@ -3,7 +3,7 @@ from starsmashertools.preferences import Pref
 import starsmashertools.lib.simulation
 import starsmashertools.lib.output
 from starsmashertools.helpers.apidecorator import api
-from starsmashertools.helpers.clidecorator import cli
+from starsmashertools.helpers.clidecorator import cli, clioptions
 import starsmashertools.helpers.argumentenforcer
 import numpy as np
 
@@ -34,12 +34,14 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
 
     @api
     @cli('starsmashertools')
+    @clioptions(display_name = 'Primary star number of particles')
     def get_n1(self, cli : bool = False):
         if self._n1 is None: self._get_n1_n2()
         return self._n1
 
     @api
     @cli('starsmashertools')
+    @clioptions(display_name = 'Secondary star number of particles')
     def get_n2(self, cli : bool = False):
         if self._n2 is None: self._get_n1_n2()
         return self._n2
@@ -81,11 +83,13 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
     # Returns True if the primary is a point mass
     @api
     @cli('starsmashertools')
+    @clioptions(display_name = 'Show if the primary star is a point mass')
     def isPrimaryPointMass(self, cli : bool = False): return self.get_n1() == 1
     
     # Returns True if the secondary is a point mass
     @api
     @cli('starsmashertools')
+    @clioptions(display_name = 'Show if the secondary star is a point mass')
     def isSecondaryPointMass(self, cli : bool = False): return self.get_n2() == 1
 
     @api
@@ -265,6 +269,7 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     @cli('starsmashertools')
+    @clioptions(display_name = 'Get Roche lobe overflow factor f_RLOF')
     def get_RLOF(
             self,
             which : str = 'primary',
@@ -444,6 +449,7 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
         
     @api
     @cli('starsmashertools')
+    @clioptions(display_name = 'Mass of primary star')
     def get_primary_mass(self, cli : bool = False):
         """
         Return the mass of the primary star (usually the donor). First the log
@@ -482,6 +488,7 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
 
     @api
     @cli('starsmashertools')
+    @clioptions(display_name = 'Mass of secondary star')
     def get_secondary_mass(self, cli : bool = False):
         """
         Return the mass of the secondary star (usually the accretor). First the
@@ -521,6 +528,7 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
 
     @api
     @cli('starsmashertools')
+    @clioptions(display_name = 'Mass of primary star core particle')
     def get_primary_core_mass(self, cli : bool = False):
         """
         Return the mass of the core particle in the primary (usually the donor)
@@ -575,6 +583,7 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
     
     @api
     @cli('starsmashertools')
+    @clioptions(display_name = 'Mass of secondary core particle')
     def get_secondary_core_mass(self, cli : bool = False):
         """
         Return the mass of the core particle in the secondary (usually the

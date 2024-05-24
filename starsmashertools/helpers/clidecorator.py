@@ -4,7 +4,12 @@ import starsmashertools.helpers.argumentenforcer
 
 _exposed_programs = {}
 
-def cli(program, *args, **kwargs):
+def cli(
+        program,
+        *args,
+        #display_name : str | type(None) = None,
+        **kwargs
+):
     # Add this decorator to functions that you wish to tag as callable by CLI
     # programs in starsmashertools/bin. Pass as an argument to the decorator the
     # name of the program you wish to expose the function to, or a list of
@@ -23,6 +28,11 @@ def cli(program, *args, **kwargs):
             'args' : args,
             'kwargs' : kwargs,
         }
+        
+        #if display_name is None:
+        #    display_name = f.__qualname__.split('.')[-1]
+        #f.__displayname__ = display_name
+        
         @functools.wraps(f)
         def wrapper(*_args, **_kwargs):
             return f(*_args, **_kwargs)
@@ -77,5 +87,6 @@ def get_clioptions(function):
 @starsmashertools.helpers.argumentenforcer.enforcetypes
 def validate_options(
         confirm : str | type(None) = None,
+        display_name : str | type(None) = None,
 ):
     return locals()

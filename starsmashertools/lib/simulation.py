@@ -6,7 +6,7 @@ from starsmashertools.preferences import Pref
 import starsmashertools.lib.units
 import starsmashertools.helpers.argumentenforcer
 from starsmashertools.helpers.apidecorator import api
-from starsmashertools.helpers.clidecorator import cli
+from starsmashertools.helpers.clidecorator import cli, clioptions
 from starsmashertools.helpers.archiveddecorator import archived
 import numpy as np
 import typing
@@ -336,6 +336,7 @@ class Simulation(object):
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     @cli('starsmashertools')
+    @clioptions(display_name = 'Set children')
     def set_children(
             self,
             children : str | list | tuple,
@@ -390,6 +391,7 @@ class Simulation(object):
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     @cli('starsmashertools')
+    @clioptions(display_name = 'Show children')
     def get_children(
             self,
             verbose : bool = False,
@@ -1034,6 +1036,7 @@ class Simulation(object):
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     @cli('starsmashertools')
+    @clioptions(display_name = 'Show output files')
     def get_output(
             self,
             start : int | type(None) = None,
@@ -1335,6 +1338,7 @@ class Simulation(object):
     if has_matplotlib:
         @api
         @cli('starsmashertools')
+        @clioptions(display_name = 'Plot energies')
         def plot_energy(
                 self,
                 cli : bool = False,
@@ -1374,6 +1378,7 @@ class Simulation(object):
             
         @api
         @cli('starsmashertools')
+        @clioptions(display_name = 'Plot animation')
         def plot_animation(
                 self,
                 x : str = 'x',
@@ -1461,6 +1466,7 @@ class Simulation(object):
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     @cli('starsmashertools')
+    @clioptions(display_name = 'Concatenate simulations')
     def join(
             self,
             other,
@@ -1547,6 +1553,7 @@ class Simulation(object):
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     @cli('starsmashertools')
+    @clioptions(display_name = 'Detach concatenated simulations')
     def split(
             self,
             which = None,
@@ -1639,6 +1646,7 @@ class Simulation(object):
         
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @cli('starsmashertools')
+    @clioptions(display_name = 'Show concatenated simulations')
     def show_joined_simulations(self, cli : bool = True):
         import starsmashertools.bintools
         newline = starsmashertools.bintools.Style.get('characters', 'newline')

@@ -702,7 +702,7 @@ class Archive(object):
     
     @api
     @cli('ssarchive')
-    @clioptions(confirm = "Are you sure? This will remove all contents and delete the archive file.")
+    @clioptions(display_name = "Remove all values", confirm = "Are you sure? This will remove all contents and delete the archive file.")
     def clear(self, cli : bool = False):
         """ Clears all contents from the archive and deletes the file if auto
         save is enabled. """
@@ -947,6 +947,7 @@ class Archive(object):
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     @cli('ssarchive')
+    @clioptions(display_name = 'Set/add a value')
     def set(self, *args, **kwargs):
         """
         A simple alias for :meth:`~.add`.
@@ -1057,6 +1058,7 @@ class Archive(object):
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     @cli('ssarchive')
+    @clioptions(display_name = 'Remove a key')
     def remove(self, key : str, cli : bool = False):
         """
         Remove an identifier from the Archive. Calls :py:meth:`~.save` if auto
@@ -1104,6 +1106,7 @@ class Archive(object):
     # Some convenience methods for the CLI only
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @cli('ssarchive')
+    @clioptions(display_name = 'Show keys')
     def show_keys(self, cli : bool = True):
         import starsmashertools.bintools
         newline = starsmashertools.bintools.Style.get('characters', 'newline')
@@ -1111,6 +1114,7 @@ class Archive(object):
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @cli('ssarchive')
+    @clioptions(display_name = 'Show a value')
     def show_value(self, key : str, cli : bool = True):
         import starsmashertools.helpers.jsonfile
 
@@ -1125,6 +1129,7 @@ class Archive(object):
     
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @cli('ssarchive')
+    @clioptions(display_name = 'Show a raw value')
     def show_raw_value(self, key : str, cli : bool = True):
         import starsmashertools.bintools
         

@@ -3,7 +3,7 @@ import starsmashertools.helpers.path
 import starsmashertools.helpers.file
 import starsmashertools.lib.logfile
 from starsmashertools.helpers.apidecorator import api
-from starsmashertools.helpers.clidecorator import cli
+from starsmashertools.helpers.clidecorator import cli, clioptions
 import starsmashertools.helpers.argumentenforcer
 import starsmashertools.math
 import starsmashertools.lib.output
@@ -74,8 +74,9 @@ class Relaxation(starsmashertools.lib.simulation.Simulation, object):
         
         return self._isPolytrope
 
-    @cli('starsmashertools')
     @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @cli('starsmashertools')
+    @clioptions(display_name = 'Total number of particles')
     def get_n(self, cli : bool = False):
         if self._n is None:
             # Check for log files
@@ -95,6 +96,7 @@ class Relaxation(starsmashertools.lib.simulation.Simulation, object):
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     @cli('starsmashertools')
+    @clioptions(display_name = 'Bounding box at end of time integration')
     def get_final_extents(self, cli : bool = False):
         """
         Returns the results of :func:`~.lib.output.Output.get_extents` with
@@ -113,6 +115,7 @@ class Relaxation(starsmashertools.lib.simulation.Simulation, object):
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     @cli('starsmashertools')
+    @clioptions(display_name = 'Envelope binding energy')
     def get_binding_energy(
             self,
             output : starsmashertools.lib.output.Output | starsmashertools.lib.output.OutputIterator,

@@ -462,7 +462,7 @@ class HookedCLI(CLI, object):
         import starsmashertools.bintools
         
         available_functions = self.get_available_functions()
-        names = self.get_function_names(available_functions)
+        names = list(self.get_function_names(available_functions))
 
         newline = starsmashertools.bintools.Style.get('characters', 'newline')
 
@@ -509,10 +509,11 @@ class HookedCLI(CLI, object):
         return keep
 
     def get_function_names(self, functions):
-        names = []
-        for function in functions:
-            if '.' in function.__qualname__:
-                names += [function.__qualname__.split('.')[-1]]
-            else: names += [function.__qualname__]
-        return names
-
+        import starsmashertools.helpers.clidecorator
+        for f in functions:
+            options = starsmashertools.helpers.clidecorator.get_clioptions(f)
+            display_name = options.get('display_name', None)
+            function_name = f.__qualname__.split('.')[-1]
+            if display_name is None: display_name = function_name
+            else: display_name += ' ({:s})'.format(function_name)
+            yield display_name
