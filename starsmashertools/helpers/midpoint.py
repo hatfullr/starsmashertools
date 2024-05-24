@@ -33,8 +33,8 @@ class Midpoint(object):
     def set_criteria(self, low, equal, high):
         """
         Set the criterion functions to be evaluated by the :func:`get` method.
-        Each criterion is passed as input to the :class:`Criteria` class
-        constructor.
+        Each criterion is passed as input to the :class:`~.Midpoint.Criteria` 
+        class constructor.
 
         Parameters
         ----------
@@ -219,7 +219,7 @@ class Midpoint(object):
             -------
             Midpoint.Criteria.Result
                 If the `low` function evaluates to `True`, ``Result.LessThan``
-                is returned. If the `mid` function evaluates to True`,
+                is returned. If the `mid` function evaluates to `True`,
                 ``Result.Equal`` is returned. If the `low` function evaluates to
                 `True`, ``Result.GreaterThan`` is returned. Otherwise a
                 `RuntimeError` is raised.
