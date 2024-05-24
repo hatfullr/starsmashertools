@@ -1,13 +1,16 @@
 from starsmashertools.helpers.apidecorator import api
 import starsmashertools.helpers.argumentenforcer
-import matplotlib
 
 # Set this to True to allow classes with attribute _is_example = True to be
 # included in the search for Figure and Axes classes.
 _is_example = False
 
 # Prefer using the Tk backend (seems it's faster)
-matplotlib.use('tkagg', force = False)
+try:
+    import matplotlib
+    matplotlib.use('tkagg', force = False)
+except (ModuleNotFoundError, ImportError):
+    pass
 
 def get_classes():
     import starsmashertools
