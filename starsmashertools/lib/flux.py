@@ -409,47 +409,56 @@ class FluxFinder(object):
         del xmin, xmax, ymin, ymax
         gc.collect()
 
-    def _apply_dust(self, kappa):
-        T = self.output['temperatures'] * float(self.output.simulation.units['temperatures'])
-        # Vectorized dust handling
-        def find_dust():
-            T_dust_min, T_dust_max = self.dust_Trange
-            if self.dust_opacity is not None:
-                if T_dust_max is None and T_dust_min is not None:
-                    return np.logical_and(
-                        T > T_dust_min,
-                        kappa < self.dust_opacity,
-                    )
-                elif T_dust_max is not None and T_dust_min is None:
-                    return np.logical_and(
-                        T < T_dust_max,
-                        kappa < self.dust_opacity,
-                    )
+    def find_dust(
+            self,
+            T : list | tuple | np.ndarray | type(None) = None,
+            kappa : list | tuple | np.ndarray | type(None) = None,
+    ):
+        if T is None:
+            T = self.output['temperatures'] * float(self.output.simulation.units['temperatures'])
+        if kappa is None:
+            kappa = self.output['popacity'] * float(self.output.simulation.units['popacity'])
+        T = np.asarray(T)
+        kappa = np.asarray(kappa)
 
-                if T_dust_max is None and T_dust_min is None:
-                    return kappa < self.dust_opacity
-
+        T_dust_min, T_dust_max = self.dust_Trange
+        if self.dust_opacity is not None:
+            if T_dust_max is None and T_dust_min is not None:
                 return np.logical_and(
-                    np.logical_and(
-                        T < T_dust_max,
-                        T > T_dust_min,
-                    ),
+                    T > T_dust_min,
+                    kappa < self.dust_opacity,
+                )
+            elif T_dust_max is not None and T_dust_min is None:
+                return np.logical_and(
+                    T < T_dust_max,
                     kappa < self.dust_opacity,
                 )
 
-            if T_dust_max is None and T_dust_min is not None:
-                return T > T_dust_min
-            elif T_dust_max is not None and T_dust_min is None:
-                return T < T_dust_max
-            
-            return np.full(False, T.shape, dtype = bool)
+            if T_dust_max is None and T_dust_min is None:
+                return kappa < self.dust_opacity
 
-        # Find the dust
-        idx = find_dust()
+            return np.logical_and(
+                np.logical_and(
+                    T < T_dust_max,
+                    T > T_dust_min,
+                ),
+                kappa < self.dust_opacity,
+            )
+        if T_dust_max is None and T_dust_min is not None:
+            return T > T_dust_min
+        elif T_dust_max is not None and T_dust_min is None:
+            return T < T_dust_max
+            
+        return np.full(T.shape, False, dtype = bool)
+        
+
+    def _apply_dust(self, kappa):
+        idx = self.find_dust(kappa = kappa)
+        
         # Apply the dust, if there is any
         if idx.any(): kappa[idx] = self.dust_opacity
 
-        del idx, T, find_dust
+        del idx, find_dust
         gc.collect()
         
         return kappa
