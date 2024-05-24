@@ -473,7 +473,7 @@ class HookedCLI(CLI, object):
             page = self.add_function_page(
                 function,
                 bullet = '%5d)',
-                header = ("Select an argument to modify for '%s'. When you are finished, press enter to execute" + newline) % name,
+                header = "Select an argument to modify, or press enter to execute." + newline,
                 footer = newline,
                 back = self.mainmenu,
                 _quit = True,

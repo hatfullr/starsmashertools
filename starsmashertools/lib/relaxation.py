@@ -91,6 +91,7 @@ class Relaxation(starsmashertools.lib.simulation.Simulation, object):
 
                 header = data.read(return_headers=True, return_data=False)
                 self._n = header['ntot']
+        if cli: return str(self._n)
         return self._n
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes

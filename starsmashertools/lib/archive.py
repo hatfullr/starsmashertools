@@ -1140,14 +1140,12 @@ class Archive(object):
         newline = starsmashertools.bintools.Style.get('characters', 'newline')
         
         val = self[key]
-        header = newline.join([
-            'origin: ' + str(val.origin),
-            'mtime: ' + str(val.mtime),
+        return newline.join([
+            'origin = ' + str(val.origin),
+            'mtime = ' + str(val.mtime),
+            'value = ' + str(val.value),
         ])
-        
-        return ("Showing '%s':" % key) + newline + newline + header + newline + newline + str(val.value)
-        
-
+    
     def _deserialize(self, keys : list, values : list):
         """ Deserialize many :class:`~.ArchiveValue` objects efficiently. Uses
         parallel processing to speed things up. """
