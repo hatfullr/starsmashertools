@@ -1,9 +1,15 @@
 import functools
 import starsmashertools
+import starsmashertools.helpers.argumentenforcer
 
 _exposed_programs = {}
 
-def cli(program, *args, **kwargs):
+def cli(
+        program,
+        *args,
+        #display_name : str | type(None) = None,
+        **kwargs
+):
     # Add this decorator to functions that you wish to tag as callable by CLI
     # programs in starsmashertools/bin. Pass as an argument to the decorator the
     # name of the program you wish to expose the function to, or a list of
@@ -22,6 +28,21 @@ def cli(program, *args, **kwargs):
             'args' : args,
             'kwargs' : kwargs,
         }
+        
+        #if display_name is None:
+        #    display_name = f.__qualname__.split('.')[-1]
+        #f.__displayname__ = display_name
+        
+        @functools.wraps(f)
+        def wrapper(*_args, **_kwargs):
+            return f(*_args, **_kwargs)
+        return wrapper
+    return decorator
+
+def clioptions(**kwargs):
+    def decorator(f):
+        # Functions can have arbitrary attributes
+        f.clioptions = kwargs
         @functools.wraps(f)
         def wrapper(*_args, **_kwargs):
             return f(*_args, **_kwargs)
@@ -41,16 +62,31 @@ def get_exposed_programs():
         module_name = obj['module']
         full_name = obj['full name']
         module = importlib.import_module(module_name)
-        if obj['class'] is not None:
-            f = None
-            for _class in obj['class'].split('.'):
-                if f is None: f = getattr(module, _class)
-                else: f = getattr(f, _class)
-            if f is None:
-                f = getattr(getattr(module, obj['class']), obj['short name'])
-            else: f = getattr(f, obj['short name'])
-        else:
-            f = getattr(module, obj['short name'])
+        try:
+            if obj['class'] is not None:
+                f = None
+                for _class in obj['class'].split('.'):
+                    if f is None: f = getattr(module, _class)
+                    else: f = getattr(f, _class)
+                if f is None:
+                    f = getattr(getattr(module, obj['class']), obj['short name'])
+                else: f = getattr(f, obj['short name'])
+            else:
+                f = getattr(module, obj['short name'])
+        except AttributeError:
+            # This can happen if, for example, certain module members are only
+            # defined inside a conditional statement.
+            pass
         del module
     return _exposed_programs
     
+def get_clioptions(function):
+    options = getattr(function, 'clioptions', {})
+    return validate_options(**options)
+
+@starsmashertools.helpers.argumentenforcer.enforcetypes
+def validate_options(
+        confirm : str | type(None) = None,
+        display_name : str | type(None) = None,
+):
+    return locals()

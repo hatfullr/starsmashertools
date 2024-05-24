@@ -1,9 +1,11 @@
 import unittest
 import os
 import starsmashertools
-import starsmashertools.lib.teos
+import starsmashertools.lib.table
+import starsmashertools.lib.interpolation
+import basetest
 
-class TestTEOS(unittest.TestCase):
+class TestTEOS(basetest.BaseTest):
     def setUp(self):
         simdir = os.path.join(
             starsmashertools.SOURCE_DIRECTORY,
@@ -14,10 +16,10 @@ class TestTEOS(unittest.TestCase):
 
     def testSimulationHasTEOS(self):
         self.assertNotEqual(self.simulation.teos, None)
-        self.assertTrue(isinstance(self.simulation.teos, starsmashertools.lib.teos.TEOS))
+        self.assertTrue(isinstance(self.simulation.teos, starsmashertools.lib.table.TEOS))
 
     def testKeys(self):
-        keys = self.simulation.teos.keys()
+        keys = self.simulation.teos.content.keys()
         expected = [
             'log Rho',
             'log U',
@@ -64,7 +66,7 @@ class TestTEOS(unittest.TestCase):
         y = 0.5 * (y1 + y2)
 
         expected = (Q11 + Q12 + Q22 + Q21) * 0.25
-        found = self.simulation.teos(10**x, 10**y, 'log T')
+        found = self.simulation.teos.interpolate(10**x, 10**y, 'log T')
         self.assertAlmostEqual(expected, found)
 
         x = x1 + 0.1 * (x2 - x1)
@@ -74,11 +76,11 @@ class TestTEOS(unittest.TestCase):
         denominator = (x2-x1)*(y2-y1)
 
         expected = numerator / denominator
-        found = self.simulation.teos(10**x, 10**y, 'log T')
+        found = self.simulation.teos.interpolate(10**x, 10**y, 'log T')
         self.assertAlmostEqual(expected, found)
 
         for x, y, expected in [[x1, y1, Q11], [x1, y2, Q12], [x2, y1, Q21], [x2, y2, Q22]]:
-            found = self.simulation.teos(10**x, 10**y, 'log T')
+            found = self.simulation.teos.interpolate(10**x, 10**y, 'log T')
             self.assertAlmostEqual(expected, found)
 
 
@@ -95,11 +97,11 @@ class TestTEOS(unittest.TestCase):
         y = 0.5 * (y1 + y2)
         
         expected = (Q11 + Q12 + Q21 + Q22) * 0.25
-        found = self.simulation.teos(10**x, 10**y, 'log T')
+        found = self.simulation.teos.interpolate(10**x, 10**y, 'log T')
         self.assertAlmostEqual(expected, found)
 
         for x, y, expected in [[x1, y1, Q11], [x1, y2, Q12], [x2, y1, Q21], [x2, y2, Q22]]:
-            found = self.simulation.teos(10**x, 10**y, 'log T')
+            found = self.simulation.teos.interpolate(10**x, 10**y, 'log T')
             self.assertAlmostEqual(expected, found)
 
         oob = [
@@ -119,10 +121,10 @@ class TestTEOS(unittest.TestCase):
             
         for x, y in oob:
             with self.assertRaises(
-                    starsmashertools.lib.teos.Interpolator.OutOfBoundsError):
-                self.simulation.teos(10**x, 10**y, 'log T')
+                    starsmashertools.lib.interpolation.OutOfBoundsError):
+                self.simulation.teos.interpolate(10**x, 10**y, 'log T')
         for x, y in not_oob:
-            self.simulation.teos(10**x, 10**y, 'log T')
+            self.simulation.teos.interpolate(10**x, 10**y, 'log T')
 
 
     def testLowerBoundaryInterpolation(self):
@@ -137,11 +139,11 @@ class TestTEOS(unittest.TestCase):
         x = 0.5 * (x1 + x2)
         y = 0.5 * (y1 + y2)
         expected = (Q11 + Q12 + Q21 + Q22) * 0.25
-        found = self.simulation.teos(10**x, 10**y, 'log T')
+        found = self.simulation.teos.interpolate(10**x, 10**y, 'log T')
         self.assertAlmostEqual(expected, found)
 
         for x, y, expected in [[x1, y1, Q11], [x1, y2, Q12], [x2, y1, Q21], [x2, y2, Q22]]:
-            found = self.simulation.teos(10**x, 10**y, 'log T')
+            found = self.simulation.teos.interpolate(10**x, 10**y, 'log T')
             self.assertAlmostEqual(expected, found)
 
         not_oob = [
@@ -161,11 +163,11 @@ class TestTEOS(unittest.TestCase):
 
         for x, y in oob:
             with self.assertRaises(
-                    starsmashertools.lib.teos.Interpolator.OutOfBoundsError):
-                self.simulation.teos(10**x, 10**y, 'log T')
+                    starsmashertools.lib.interpolation.OutOfBoundsError):
+                self.simulation.teos.interpolate(10**x, 10**y, 'log T')
 
         for x, y in not_oob:
-            self.simulation.teos(10**x, 10**y, 'log T')
+            self.simulation.teos.interpolate(10**x, 10**y, 'log T')
 
     def testMultipleValues(self):
         import numpy as np
@@ -178,7 +180,7 @@ class TestTEOS(unittest.TestCase):
             [-13.9, 18.99, 0.5*(4.8003 + 4.8053)],
         ])
         
-        result = self.simulation.teos(10**xyz[:,0], 10**xyz[:,1], 'log T')
+        result = self.simulation.teos.interpolate(10**xyz[:,0], 10**xyz[:,1], 'log T')
         for i, (found, expected) in enumerate(zip(result, xyz[:,2])):
             self.assertAlmostEqual(expected, found, msg="x = %f, y = %f" % (xyz[i][0], xyz[i][1]))
         

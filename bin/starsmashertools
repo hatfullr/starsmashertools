@@ -10,88 +10,14 @@ This program exposes the methods defined in
 
 #import starsmashertools
 import starsmashertools.bintools.cli
-import starsmashertools.helpers.clidecorator
 import starsmashertools.bintools
 import starsmashertools
 import os
-import inspect
 
 newline = starsmashertools.bintools.Style.get('characters', 'newline')
 
-exposed_programs = starsmashertools.helpers.clidecorator.get_exposed_programs()
-program = os.path.basename(__file__)
-
-################################################################################
-################################## Back end ####################################
-################################################################################
-
-
-def get_function_class_name(function):
-    if '.' in function.__qualname__:
-        return ".".join(function.__qualname__.split(".")[:-1])
-    return None
-
-def get_available_functions():
-    global simulation, exposed_programs
-    
-    available_functions = []
-    for key, val in exposed_programs.items():
-        if val['program'] == program:
-            available_functions += [key]
-    basenames = [a.__name__ for a in simulation.__class__.__bases__]
-    keep = []
-    for function in available_functions:
-        cls = get_function_class_name(function)
-        if cls is None: continue
-        if cls == simulation.__class__.__name__ or cls in basenames:
-            keep += [function]
-    return keep
-
-def get_function_names(functions):
-    names = []
-    for function in functions:
-        if '.' in function.__qualname__:
-            names += [function.__qualname__.split('.')[-1]]
-        else: names += [function.__qualname__]
-    return names
-
-
-def call_function(function):
-    args = exposed_programs[function]['args']
-    kwargs = exposed_programs[function]['kwargs']
-    result = function(simulation, *args, **kwargs)
-    if isinstance(result, (list, tuple)):
-        for i, r in enumerate(result):
-            if isinstance(r, starsmashertools.lib.simulation.Simulation):
-                result[i] = r.directory
-    elif isinstance(result, starsmashertools.lib.simulation.Simulation):
-        result = result.directory        
-        
-    return str(result)
-#return ""
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-################################################################################
-################################# Front end ####################################
-################################################################################
-cli = starsmashertools.bintools.cli.CLI(
-    'starsmashertools',
+cli = starsmashertools.bintools.cli.HookedCLI(
+    os.path.basename(__file__),
     "Analyze a StarSmasher simulation directory.",
     # We don't need a valid directory if we are just checking the package version
     require_valid_directory = False,
@@ -125,28 +51,11 @@ if cli.args['version']:
 # Now we check for a valid directory (implicitly)
 simulation = starsmashertools.get_simulation(cli.args['directory'])
 
-available_functions = get_available_functions()
-names = get_function_names(available_functions)
+cli.set_object(simulation)
 
-mainmenu = cli.add_list(
-    [int, str],
-    items = names,
-    bullet = '%5d)',
+cli.set_mainmenu_properties(
     header = starsmashertools.bintools.Style.bold("Main Menu") + newline + newline + ("Directory = %s" % cli.args['directory']) + newline + newline + 'Choose an option' + newline,
-    footer=newline,
+    footer = newline,
 )
-
-for i, (name, function) in enumerate(zip(names, available_functions)):
-    page = cli.add_page(
-        [],
-        lambda function=function: call_function(function),
-        header="Result:"+newline,
-        footer=newline,
-        back=mainmenu,
-        _quit=True,
-    )
-    mainmenu.connect(page, [i, name])
-
-cli.set_mainmenu(mainmenu)
 
 cli.run()

@@ -1,12 +1,9 @@
-import starsmashertools.helpers.string
-import starsmashertools.helpers.path
 import starsmashertools.preferences
-import starsmashertools.helpers.file
 from starsmashertools.helpers.apidecorator import api
 import starsmashertools.helpers.argumentenforcer
 import starsmashertools.helpers.readonlydict
-import copy
 
+@starsmashertools.preferences.use
 class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
     """
     This class holds information about inputs that are sent to a StarSmasher
@@ -18,7 +15,10 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
     """
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
-    def __init__(self, directory : str):
+    def __init__(
+            self,
+            directory : str,
+    ):
         self.directory = directory
         self._src = None
         self._initialized = False
@@ -28,6 +28,7 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
         """
         The StarSmasher source directory.
         """
+        import starsmashertools.helpers.path
         if self._src is None:
             self._src = starsmashertools.helpers.path.get_src(self.directory, throw_error=True)
         return self._src
@@ -42,10 +43,11 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
         Obtain the "init.f" file that StarSmasher uses to initialize the
         simulation.
         """
+        import starsmashertools.helpers.path
         return starsmashertools.helpers.path.realpath(
             starsmashertools.helpers.path.join(
                 self.src,
-                starsmashertools.preferences.get_default(self, 'src init filename', throw_error=True),
+                self.preferences.get('src init filename'),
             ),
         )
 
@@ -63,8 +65,9 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
         return lines
 
     def _get_namelist_names(self, path_or_lines):
+        import starsmashertools.helpers.file
         if isinstance(path_or_lines, str):
-            with starsmashertools.helpers.file.open(path_or_lines, 'r') as f:
+            with starsmashertools.helpers.file.open(path_or_lines, 'r', lock = False) as f:
                 path_or_lines = f.read().split('\n')
         ret = []
         for line in path_or_lines:
@@ -77,9 +80,11 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
             self,
             init_file : str | type(None) = None,
     ):
+        import starsmashertools.helpers.path
+        import starsmashertools.helpers.file
         if init_file is None: init_file = self.get_init_file()
         
-        with starsmashertools.helpers.file.open(init_file, 'r') as f:
+        with starsmashertools.helpers.file.open(init_file, 'r', lock = False) as f:
             lines = f.read().split('\n')
 
         lines = self._isolate_get_input_subroutine(lines)
@@ -110,9 +115,10 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
             self,
             init_file : str | type(None) = None,
     ):
+        import starsmashertools.helpers.file
         namelist_name, filename = self.get_namelist_name(init_file = init_file)
 
-        with starsmashertools.helpers.file.open(filename, 'r') as f:
+        with starsmashertools.helpers.file.open(filename, 'r', lock = False) as f:
             lines = f.read().split('\n')
 
         for i, line in enumerate(lines):
@@ -160,9 +166,11 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
             default unless "init.f" in the StarSmasher source code has been
             modified.
         """
+        import starsmashertools.helpers.file
+        
         if init_file is None: init_file = self.get_init_file()
 
-        with starsmashertools.helpers.file.open(init_file, 'r') as f:
+        with starsmashertools.helpers.file.open(init_file, 'r', lock = False) as f:
             lines = f.read().split('\n')
 
         lines = self._isolate_get_input_subroutine(lines)
@@ -185,6 +193,9 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     def get_default_values(self, init_file : str | type(None) = None):
+        import starsmashertools.helpers.file
+        import starsmashertools.helpers.string
+        
         if init_file is None: init_file = self.get_init_file()
 
         input_filename = self.get_input_filename(init_file = init_file)
@@ -192,7 +203,7 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
         obj = {}
         
         # Read the init.f file to obtain default values
-        with starsmashertools.helpers.file.open(init_file, 'r') as f:
+        with starsmashertools.helpers.file.open(init_file, 'r', lock = False) as f:
             lines = f.read().split("\n")
 
         # Get the namelist variable names
@@ -244,6 +255,11 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
             filename : str | type(None) = None,
             init_file : str | type(None) = None,
     ):
+        import starsmashertools.helpers.path
+        import starsmashertools.helpers.file
+        import starsmashertools.helpers.string
+        import copy
+        
         if init_file is None: init_file = self.get_init_file()
         if defaults is None:
             defaults = self.get_default_values(init_file = init_file)
@@ -253,7 +269,7 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
                 self.get_input_filename(init_file = init_file),
             )
 
-        with starsmashertools.helpers.file.open(filename, 'r') as f:
+        with starsmashertools.helpers.file.open(filename, 'r', lock = False) as f:
             lines = f.read().split("\n")
 
         obj = copy.deepcopy(defaults)

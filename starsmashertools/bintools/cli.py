@@ -3,13 +3,8 @@ import sys
 import os
 import argparse
 import starsmashertools.bintools.page
-import starsmashertools.bintools.inputmanager
-import starsmashertools
 import starsmashertools.lib.simulation
 import starsmashertools.helpers.argumentenforcer
-import starsmashertools.helpers.path
-import starsmashertools.helpers.file
-import starsmashertools.helpers.string
 import collections
 import curses
 import copy
@@ -21,6 +16,7 @@ class CLI(object):
     stdscr = None
     pad = None
     position = [None, None]
+    overlay = None
     
     def __init__(
             self,
@@ -28,9 +24,11 @@ class CLI(object):
             description : str,
             require_valid_directory : bool = True,
     ):
+        import starsmashertools.bintools.inputmanager
+        
         if CLI.instance is not None:
             raise Exception("Only one CLI instance is permitted per process")
-        
+
         self.name = name
         self.description = description
         
@@ -107,6 +105,10 @@ class CLI(object):
 
     @staticmethod
     def write(*args, xy=None, move=None, move_relative=False, end='\n', flush=True):
+        import starsmashertools.bintools
+        import starsmashertools.helpers.file
+        import starsmashertools.helpers.path
+        
         string = ' '.join(args) + end
 
         # Current cursor position
@@ -157,6 +159,7 @@ class CLI(object):
         Before calling writestr, the string should be prepared first by wrapping
         text for printing in the terminal.
         """
+        import starsmashertools.bintools
 
         width = CLI.get_width()
         codes = starsmashertools.bintools.ANSI.get_all()
@@ -188,6 +191,9 @@ class CLI(object):
         We parse out the styles for proper writing
         """
         import time
+        import curses
+        import starsmashertools.bintools
+
         ANSI = starsmashertools.bintools.ANSI
         mapping = {
             ANSI.BOLD : [curses.A_BOLD],
@@ -218,7 +224,7 @@ class CLI(object):
 
         # Print the first stuff that has no codes
         CLI.pad.addstr(text[:lowest_idx], *_codes)
-            
+
         # Turn on the code
         if lowest_code != ANSI.NORMAL:
             for code in mapping[lowest_code]:
@@ -244,7 +250,7 @@ class CLI(object):
     def reset(self):
         if self._mainmenu is not None:
             self.navigate(self._mainmenu.identifier)
-        else: quit()
+        else: self._quit()
 
     # str to use as identifier
     def remove_page(
@@ -265,9 +271,21 @@ class CLI(object):
         for connection in keys:
             self.remove_page(connection)
         
-    def add_page(self, inputtypes, contents, **kwargs):
-        return self._add_page(starsmashertools.bintools.page.Page(self, inputtypes, contents, **kwargs))
+    def add_page(
+            self,
+            inputtypes,
+            contents,
+            kind : type = starsmashertools.bintools.page.Page,
+            **kwargs
+    ):
+        return self._add_page(kind(self, inputtypes, contents, **kwargs))
 
+    def add_function_page(self, function, **kwargs):
+        return self._add_page(starsmashertools.bintools.page.FunctionPage(self, function, **kwargs))
+
+    def add_argument_page(self, *args, **kwargs):
+        return self._add_page(starsmashertools.bintools.page.ArgumentPage(self, *args, **kwargs))
+    
     def add_confirmation_page(self, **kwargs):
         return self._add_page(starsmashertools.bintools.page.ConfirmationPage(self, **kwargs))
     
@@ -298,7 +316,7 @@ class CLI(object):
         def main(stdscr):
             # This puts us in shell mode, which the rest of our code expects
             curses.use_default_colors()
-
+            
             curses.init_pair(1, curses.COLOR_GREEN, -1) # green
             curses.init_pair(2, curses.COLOR_RED, -1) # red
             curses.init_pair(3, -1, curses.COLOR_WHITE)
@@ -307,8 +325,9 @@ class CLI(object):
             stdscr.refresh()
 
             CLI.stdscr = stdscr
-            
+
             height, width = stdscr.getmaxyx()
+            
             CLI.pad = curses.newpad(1000, 1000)
             CLI.position = [0, 0]
             CLI.refresh()
@@ -326,7 +345,10 @@ class CLI(object):
                 CLI.scroll((0, lines - height))
             
         signal.signal(signal.SIGWINCH, on_resize)
-        curses.wrapper(main)
+        try:
+            curses.wrapper(main)
+        except KeyboardInterrupt:
+            self._quit()
 
     @staticmethod
     def scroll(offset, refresh=True):
@@ -356,19 +378,37 @@ class CLI(object):
     def refresh():
         if CLI.pad is None:
             raise Exception("Cannot refresh the screen because the screen has not yet been created")
-        CLI.stdscr.redrawwin()
+
         height, width = CLI.get_height_and_width()
+        CLI.stdscr.redrawwin()
         CLI.pad.refresh(
             CLI.position[1],
             CLI.position[0],
             0, 0, height - 1, width - 1,
         )
 
+    @staticmethod
+    def _quit():
+        try:
+            import matplotlib.pyplot as plt
+            # Destroy the window of each opened figure manually
+            for fignum in plt.get_fignums():
+                plt.figure(fignum)
+                try:
+                    plt.gcf().canvas.get_tk_widget().destroy()
+                except: pass
+        except: pass
+        quit()
+    
+
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     def add_simulation(
             self,
             simulation : str | starsmashertools.lib.simulation.Simulation,
     ):
+        import starsmashertools.helpers.path
+        import starsmashertools
+        
         if isinstance(simulation, str):
             simulation = starsmashertools.helpers.path.realpath(simulation)
             simulation = starsmashertools.get_simulation(simulation)
@@ -379,6 +419,8 @@ class CLI(object):
             self,
             simulation : int | str | starsmashertools.lib.simulation.Simulation,
     ):
+        import starsmashertools
+        
         if isinstance(simulation, str):
             simulation = starsmashertools.get_simulation(simulation)
         elif isinstance(simulation, int):
@@ -386,4 +428,92 @@ class CLI(object):
         self.simulations.remove(simulation)
 
 
+
+
+
+
+
+
+
+
+class HookedCLI(CLI, object):
+    """
+    This is a CLI which uses the @cli decorator to expose functions to the user.
+    """
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    def __init__(self, *args, **kwargs):
+        import starsmashertools.helpers.clidecorator
+
+        super(HookedCLI, self).__init__(*args, **kwargs)
+
+        self._object = None
+
+        self.exposed_programs = starsmashertools.helpers.clidecorator.get_exposed_programs()
+        
+        self.mainmenu = self.add_list(
+            [int, str],
+            bullet = '%5d)',
+        )
+        
+        self.set_mainmenu(self.mainmenu)
+
+    def run(self, *args, **kwargs):
+        import starsmashertools.bintools
+        
+        available_functions = self.get_available_functions()
+        names = list(self.get_function_names(available_functions))
+
+        newline = starsmashertools.bintools.Style.get('characters', 'newline')
+
+        for name in names:
+            self.mainmenu.add(name)
+        
+        for i, (name, function) in enumerate(zip(names, available_functions)):
+            page = self.add_function_page(
+                function,
+                bullet = '%5d)',
+                header = "Select an argument to modify, or press enter to execute." + newline,
+                footer = newline,
+                back = self.mainmenu,
+                _quit = True,
+            )
+            self.mainmenu.connect(page, [i, name])
+
+        return super(HookedCLI, self).run(*args, **kwargs)
+
+    def set_object(self, _object):
+        self._object = _object
+        
+    def set_mainmenu_properties(self, **properties):
+        for key, val in properties.items():
+            setattr(self.mainmenu, key, val)
+
+    def get_function_class_name(self, function):
+        if '.' in function.__qualname__:
+            return ".".join(function.__qualname__.split(".")[:-1])
+        return None
     
+    def get_available_functions(self):
+        available_functions = []
+        for key, val in self.exposed_programs.items():
+            if val['program'] == self.name:
+                available_functions += [key]
+        basenames = [a.__name__ for a in self._object.__class__.__bases__]
+        keep = []
+        for function in available_functions:
+            cls = self.get_function_class_name(function)
+            if cls is None: continue
+            if cls == self._object.__class__.__name__ or cls in basenames:
+                keep += [function]
+        return keep
+
+    def get_function_names(self, functions):
+        import starsmashertools.helpers.clidecorator
+        for f in functions:
+            options = starsmashertools.helpers.clidecorator.get_clioptions(f)
+            display_name = options.get('display_name', None)
+            function_name = f.__qualname__.split('.')[-1]
+            if display_name is None: display_name = function_name
+            else: display_name += ' ({:s})'.format(function_name)
+            yield display_name

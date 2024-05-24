@@ -1,0 +1,182 @@
+#!/usr/bin/env python3
+
+class Timing(object):
+    def read(self, _file):
+        import mmap
+        if isinstance(_file, str): _file = open(_file, 'r')
+        # This trick makes reading large files a lot faster
+        self._buffer = mmap.mmap(
+            _file.fileno(),
+            0,
+            access = mmap.ACCESS_READ,
+        )
+        _file.close()
+
+    def find_indices(self, phrase : str):
+        """ Return all the indices where phrase is found in the buffer. """
+        phrase = phrase.encode('utf-8')
+        index = self._buffer.find(phrase)
+        while index != -1: # breaks when the phrase isn't found anymore
+            yield index
+            # Find the next one
+            index = self._buffer.find(phrase, index + len(phrase))
+
+    def find_iterations(self):
+        """ Return entire blocks between 'end it.' phrases. """
+        p = ' end it'.encode('utf-8')
+        for start in self.find_indices(' end it.'):
+            stop = self._buffer.find(p, start + len(p))
+            if stop == -1: continue # Iteration was cutoff, probably
+            self._buffer.seek(start)
+            yield self._buffer.read(stop - start).decode('utf-8')
+
+    def get(
+            self,
+            start : int | float | type(None) = None,
+            end : int | float | type(None) = None,
+    ):
+        """ For each iteration, find the lines where the given phrase 
+        appears and sum all the numbers found on those lines. The result is
+        the total sum.
+        
+        Parameters
+        ----------
+        phrases : list, tuple, str
+            The string phrases to count.
+
+        Other Parameters
+        ----------------
+        start : int, float, None, default = None
+            Where to start counting iterations. If an integer is given, the
+            counting starts at the corresponding iteration (e.g., 
+            start = 10 starts the counting at iteration 10). If a float is 
+            given, the counting starts at the corresponding simulation 
+            time. If None, counting starts at the beginning of the file.
+
+        stop : int, float, None, default = None
+            Similar to start.
+
+        Returns
+        -------
+        sums : list
+            A list of floats with the same length as phrases. Each element
+            is the total summed time of the corresponding phrase.
+        """
+        import re # regex
+        import collections
+        
+        # https://regex101.com/r/aky7X2/1
+        reg = re.compile(r'(^.*?\s+)([0-9]+\.?[0-9]*)', flags = re.M)
+        
+        sums = collections.OrderedDict()
+        
+        started = False
+        for iteration in self.find_iterations(): # loop in iteration blocks
+            try:
+                first = iteration[:iteration.find('\n')]
+            except: continue # In case an iteration is cutoff for some reason
+            s = first.split() # split on white space
+            # example: ['end', 'it.', '14', 't=', '0.169446358019359']
+            
+            if not started:
+                if start is not None:
+                    if ((isinstance(start, int) and int(s[2]) < start) or
+                        (isinstance(start, float) and float(s[4]) < start)):
+                        continue
+                started = True
+
+            # Check if we should stop
+            if end is not None:
+                if ((isinstance(end, int) and int(s[2]) >= end) or
+                    (isinstance(end, float) and float(s[4]) >= end)):
+                    break
+
+            for_search = '\n'.join(iteration.split('\n')[1:])
+
+            for match in reg.finditer(for_search):
+                string = match.group(1)
+                time = match.group(2)
+                if string not in sums.keys(): sums[string] = float(time)
+                else: sums[string] += float(time)
+        return sums
+
+def int_or_float(string):
+    try:
+        return int(string)
+    except ValueError:
+        return float(string)
+
+def parse_arguments(): # Parse command line arguments
+    import argparse
+    parser = argparse.ArgumentParser(
+        prog = 'iteration_timing',
+        description = 'Get timing data from StarSmasher standard output (stdout).',
+    )
+    parser.add_argument(
+        'files',
+        nargs='*',
+        type = argparse.FileType('rb'),
+        help = "Paths to files containing StarSmasher standard output (stdout).",
+    )
+    parser.add_argument(
+        '-s',
+        '--start',
+        type = int_or_float,
+        help = "Specifies when to start counting. If an integer is given, it refers to the iteration number. If a float is given, it refers to the simulation time. The lines which read ' end it.   X    t=XX.XXX' in the output are used to determine where to start.",
+        metavar = '[int|float]',
+    )
+    parser.add_argument(
+        '-e',
+        '--end',
+        type = int_or_float,
+        help = "Specifies when to stop counting. If an integer is given, it refers to the iteration number. If a float is given, it refers to the simulation time. The lines which read ' end it.   X    t=XX.XXX' in the output are used to determine where to stop.",
+        metavar = '[int|float]',
+    )
+    
+    args = parser.parse_args()
+
+    if not args.files:
+        raise parser.error('At least one file is required')
+
+    return args
+
+
+def convert_time(seconds): # Change seconds to something nicer
+    import copy
+    if seconds < 60: return seconds, 's'
+    time = copy.deepcopy(seconds)
+    time /= 60.
+    if time < 60: return time, 'mins'
+    time /= 60.
+    if time < 24: return time, 'hrs'
+    return time / 24., 'days'
+
+if __name__ == '__main__':
+    args = parse_arguments()
+
+    t = Timing()
+    
+    for _file in args.files:
+        print()
+        print(_file.name)
+        
+        t.read(_file) # Load the file
+        times = t.get( # Get the sum of times in all iterations
+            start = args.start, # int = iteration #, float = simulation time
+            end   = args.end,   # None = no limit
+        )
+        
+        phrase_len = max([len(phrase.strip()) for phrase in times.keys()]) + 2
+        fmt = ' {{phrase:>{phrase_len:d}s}}   {{time:10f}} {{label:s}}'.format(
+            phrase_len = phrase_len,
+        )
+        
+        for phrase, time in times.items():
+            time, label = convert_time(time) # Make nice format
+            print(fmt.format(
+                phrase = '"' + phrase.strip() + '"',
+                time = time,
+                label = label,
+            ))
+
+

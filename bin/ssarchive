@@ -1,0 +1,57 @@
+#!/usr/bin/env python3
+
+"""
+Use this program to work with archives created by starsmashertools.
+"""
+
+import starsmashertools.bintools.cli
+import starsmashertools.bintools
+import os
+import starsmashertools
+
+newline = starsmashertools.bintools.Style.get('characters', 'newline')
+
+def get_archive(filename):
+    # Returns the archive and either a string message of failure, or None on
+    # success.
+    import starsmashertools.lib.archive
+    import os
+
+    if not os.path.isfile(filename):
+        raise FileNotFoundError(filename)
+    
+    archive = starsmashertools.lib.archive.Archive(
+        filename,
+        auto_save = False,
+        readonly = True,
+    )
+
+    return archive, None
+
+cli = starsmashertools.bintools.cli.HookedCLI(
+    os.path.basename(__file__),
+    "Work with Archive files created by starsmashertools.",
+    require_valid_directory = False,
+)
+
+cli.parser.add_argument(
+    'filename',
+    type=str,
+    help='The Archive to use',
+)
+
+archive, success = get_archive(cli.args['filename'])
+
+header = starsmashertools.bintools.Style.bold("Main Menu") + newline + newline+\
+    ("File = %s" % os.path.realpath(archive.filename)) + newline + newline +\
+    'Choose an option' + newline
+
+cli.set_object(archive)
+
+
+cli.set_mainmenu_properties(
+    header = header,
+    footer = newline,
+)
+
+cli.run()

@@ -402,7 +402,7 @@ class RadialExtents(Extents, object):
     """
     def __init__(
             self,
-            output : starsmashertools.lib.output.Output,
+            output : 'starsmashertools.lib.output.Output',
     ):
         self.output = output
         units = self.output.simulation.units

@@ -1,4 +1,5 @@
-import starsmashertools.lib.output
+# Add functions here to perform actions just before the program exits.
+#import starsmashertools.lib.output
 import starsmashertools.helpers.argumentenforcer
 from starsmashertools.helpers.apidecorator import api
 import numpy as np
@@ -6,6 +7,7 @@ import contextlib
 import os
 import importlib.metadata as metadata
 import importlib.util as util
+import starsmashertools.mpl # Runs code in mpl/__init__.py
 
 __version__ = metadata.version('starsmashertools')
 
@@ -14,6 +16,51 @@ if __file__.endswith(os.path.join('starsmashertools', 'starsmashertools','__init
 else:
     SOURCE_DIRECTORY = os.path.dirname(os.path.dirname(util.find_spec('starsmashertools').origin))
 
+DATA_DIRECTORY = os.path.join(SOURCE_DIRECTORY, 'data')
+LOCK_DIRECTORY = os.path.join(DATA_DIRECTORY, 'locks')
+DEFAULTS_DIRECTORY = os.path.join(DATA_DIRECTORY, 'defaults')
+USER_DIRECTORY = os.path.join(DATA_DIRECTORY, 'user')
+for directory in [
+        DATA_DIRECTORY,
+        DEFAULTS_DIRECTORY,
+        LOCK_DIRECTORY,
+        USER_DIRECTORY,
+]:
+    if not os.path.isdir(directory): os.makedirs(directory)
+
+# Check if some version string is older than the current version
+def _is_version_older(version, other = None):
+    if other is None: other = __version__
+    
+    # We use semantic versioning 2.0.0
+    major, minor, patch = version.split('.')
+    major = int(major)
+    minor = int(minor)
+    patch = int(patch)
+
+    _major, _minor, _patch = other.split('.')
+    _major = int(_major)
+    _minor = int(_minor)
+    _patch = int(_patch)
+
+    if major < _major: return True
+    if minor < _minor: return True
+    if patch < _patch: return True
+    return False
+
+
+def _get_git_branch():
+    # TODO: Test if this still works on main branch.
+    import os
+
+    filename = os.path.join(
+        SOURCE_DIRECTORY,
+        '.git',
+        'HEAD',
+    )
+    with open(filename, 'r') as f:
+        content = f.readline()
+    return content.split('/')[-1]
 
 # If our current version mis-matches the installed version, show a warning
 def _check_version():
@@ -31,7 +78,9 @@ def _check_version():
     import starsmashertools.helpers.warnings
 
     def get_latest_version():
-        url = 'https://raw.githubusercontent.com/hatfullr/starsmashertools/main/pyproject.toml'
+        url = 'https://raw.githubusercontent.com/hatfullr/starsmashertools/{branch:s}/pyproject.toml'.format(
+            branch = _get_git_branch(),
+        )
         request = urllib.request.Request(url)
         # This is to get the most recent webpage
         request.add_header('Cache-Control', 'max-age=0')
@@ -57,7 +106,16 @@ def _check_version():
         elif latest_version != __version__:
             starsmashertools.helpers.warnings.warn("Current starsmashertools version is '%s', while latest version on GitHub is '%s'. If you just downloaded the latest version make sure you also run the install script." % (__version__, latest_version))
 
-_check_version()
+try:
+    _check_version()
+except Exception as e:
+    try:
+        import starsmashertools.helpers.warnings
+        # Allow code execution even if this fails
+        starsmashertools.helpers.warnings.warn(str(e))
+        del starsmashertools.helpers.warnings
+    except: pass
+
 
         
 @starsmashertools.helpers.argumentenforcer.enforcetypes
@@ -76,7 +134,7 @@ def get_simulation(directory : str):
     :class:`~.lib.relaxation.Relaxation`, :class:`~.lib.binary.Binary`, 
     :class:`~.lib.dynamical.Dynamical`, or :class:`~.lib.simulation.Simulation`
         The StarSmasher simulation at the given `directory`.
-
+    
     Examples
     --------
     This example obtains a :class:`~.lib.simulation.Simulation` object from a
@@ -219,7 +277,7 @@ def iterator(*args, **kwargs):
 @starsmashertools.helpers.argumentenforcer.enforcetypes
 @api
 def get_particles(
-        output : starsmashertools.lib.output.Output,
+        output,
         particles : np.ndarray | list | tuple,
 ):
     """
@@ -247,6 +305,12 @@ def get_particles(
     :func:`mask`
     """
     import copy
+    import starsmashertools.lib.output
+
+    starsmashertools.helpers.argumentenforcer.enforcetypes({
+        'output' : starsmashertools.lib.output.Output,
+    })
+    
     with mask(output, particles) as masked_output:
         return copy.deepcopy(masked_output)
 
@@ -255,10 +319,15 @@ def get_particles(
 @api
 def trace_particles(
         particles : int | list | tuple | np.ndarray,
-        outputs_or_simulation : list | tuple | starsmashertools.lib.output.OutputIterator | starsmashertools.lib.simulation.Simulation,
+        outputs_or_simulation,
         **kwargs
 ):
     import starsmashertools.lib.output
+    import starsmashertools.lib.simulation
+
+    starsmashertools.helpers.argumentenforcer.enforcetypes({
+        'outputs_or_simulation' : [list, tuple, starsmashertools.lib.output.Output, starsmashertools.lib.simulation.Simulation],
+    })
     
     if isinstance(outputs_or_simulation, (list, tuple)):
         simulation = outputs_or_simulation[0].simulation
@@ -304,7 +373,7 @@ def trace_particles(
 @starsmashertools.helpers.argumentenforcer.enforcetypes
 @api
 def mask(
-        output : starsmashertools.lib.output.Output,
+        output,
         mask : np.ndarray | list | tuple,
 ):
     """
@@ -340,6 +409,11 @@ def mask(
 
     
     """
+    import starsmashertools.lib.output
+    starsmashertools.helpers.argumentenforcer.enforcetypes({
+        'output' : [starsmashertools.lib.output.Output],
+    })
+    
     if output._mask is not None:
         raise Exception("Cannot mask output that is already masked: '%s'" % str(output.path))
 
@@ -354,7 +428,7 @@ def mask(
 @starsmashertools.helpers.argumentenforcer.enforcetypes
 @api
 def interpolate(
-        outputs : "list | tuple | starsmashertools.lib.output.OutputIterator",
+        outputs,
         values : list,
 ):
     """
@@ -378,7 +452,16 @@ def interpolate(
         ``ValueError`` if the input time is out of bounds of the interpolation.
     """
     import starsmashertools.math
+    import starsmashertools.lib.units
     import numpy as np
+
+    starsmashertools.helpers.argumentenforcer.enforcetypes({
+        'outputs' : [
+            list,
+            tuple,
+            starsmashertools.lib.output.OutputIterator,
+        ],
+    })
     
     if len(outputs) < 2:
         raise ValueError("You must provide 2 or more outputs for interpolation")
@@ -446,9 +529,77 @@ def interpolate(
     return interp
 
 
+@starsmashertools.helpers.argumentenforcer.enforcetypes
+@api
+def get_data_files(path : list | tuple):
+    """
+    Search the defaults and user directories for a file. Raises a 
+    :py:class:`FileNotFoundError` if the given path cannot be found in either
+    the defaults or user directories.
+
+    Parameters
+    ----------
+    path : list, tuple
+        Each element is a `str` which is the name of a file or subdirectory in
+        the ``starsmashertools/data/defaults`` and/or
+        ``starsmashertools/data/user`` directories. For example, if there is a 
+        file located at ``starsmashertools/data/user/subdir1/subdir2/file.py``,
+        it can be accessed with ``['subdir1', 'subdir2', 'file.py']``. If there
+        is also a file located at 
+        ``starsmashertools/data/defaults/subdir1/subdir2/file.py``, then the
+        same path will return the corresponding file in the defaults directory
+        and the file in the user directory.
+
+        You can use wildcard patterns as supported by :py:mod:`fnmatch`, but if
+        multiple matches are found during the search then an 
+        :py:class:`Exception` will be raised. If the last element in the list is
+        a wildcard pattern, all respective matches will be returned.
+
+    Returns
+    -------
+    default : list
+        A list of full paths to the file(s) in the defaults directory.
+
+    user : list
+        A list of full paths to the file(s) in the user directory.
+    """
+    import os
+    import fnmatch
+
+    # Use the os library here rather than helpers.path. helpers.path is really
+    # intended just for use in the user-facing aspects. Here we are searching
+    # the starsmashertools source code, which we can always use os to find
+    # properly.
+
+    def search(base):
+        matches = []
+        curdir = base
+        # Go through subdirectories
+        for item in path[:-1]:
+            for f in os.scandir(curdir):
+                if not fnmatch.fnmatch(f.name, item): continue
+                curdir = os.path.join(curdir, f.name)
+        
+        # Search the subdirectory for the name
+        for f in os.scandir(curdir):
+            if not fnmatch.fnmatch(f.name, path[-1]): continue
+            matches += [os.path.join(curdir, f.name)]
+        
+        return matches
+
+    return search(DEFAULTS_DIRECTORY), search(USER_DIRECTORY)
 
 
-
+@api
+def get_format_sheets():
+    """
+    Returns
+    -------
+    sheets : list
+        A :py:class:`list` of :py:class:`str` paths to format sheets.
+    """
+    defaults, user = get_data_files(['format_sheets', '*.format'])
+    return [] + defaults + user
 
 
 
@@ -471,6 +622,15 @@ def interpolate(
 def _get_decorators():
     import os
     import ast
+    import re
+
+    comment_checks = [
+        # Remove # comments first
+        re.compile("(?<!['\"])#.*", flags = re.M),
+        # Then remove block comments (which can be commented out by #)
+        re.compile('(?<!\')(?<!\\\\)""".*?"""', flags = re.M | re.S),
+        re.compile("(?<!\")(?<!\\\\)'''.*?'''", flags = re.M | re.S),
+    ]
     
     tocheck = os.path.join(os.path.dirname(os.path.realpath(__file__)))
     files = []
@@ -482,18 +642,21 @@ def _get_decorators():
             
 
     def get_full_function_name(_file,  name, _class = None):
-        path = get_module_name(_file, name)
-        name = get_function_name(name, _class = _class)
-        return '%s.%s' % (path, name)
-
-    def get_module_name(_file, name):
+        path = get_module_name(_file)
+        if _class is None: function_name = name
+        else: function_name = '%s.%s' % (_class, name)
+        return '%s.%s' % (path, function_name)
+    
+    def get_module_name(_file):
         path = os.path.relpath(_file, SOURCE_DIRECTORY)
         return path.replace(".py",'').replace(os.sep, '.')
 
-    def get_function_name(name, _class = None):
-        path = get_module_name(_file, name)
-        if _class is None: return name
-        return '%s.%s' % (_class, name)
+    def get_full_class_name(_file, name, _class = None):
+        path = get_module_name(_file)
+        if _class is None: class_name = name
+        else: class_name = '%s.%s' % (_class, name)
+        return '%s.%s' % (path, class_name)
+            
 
     def get_modules(_file):
         class ImportNodeVisitor(ast.NodeVisitor):
@@ -530,119 +693,151 @@ def _get_decorators():
         if (basename.endswith("#") or basename.endswith("~") or
             basename.startswith("#") or basename.startswith(".#")): continue
         
-        
         with open(_file, 'r') as f:
-            modules, module_names = get_modules(_file)
+            content = f.read()
+
+        # Remove all comments
+        for check in comment_checks:
+            for match in check.findall(content):
+                content = content.replace(match, '')
+
+        lines = content.split('\n')
+
+        modules, module_names = get_modules(_file)
+
+        listening_for_func_or_class = False
+        detected_decorators = []
+        _class = None
+        _class_indent = None
+        
+        for line in lines:
+            ls = line.strip()
+            if not ls: continue # Skip empty lines
             
-            listening_for_def = False
-            detected_decorators = []
-            _class = None
-            _class_indent = None
-            in_comment_block = False
-            for line in f:
-                # Remove comments
-                ls = line.strip()
-                if not ls: continue
-                if '"""' in ls:
-                    in_comment_block = not in_comment_block
-                    continue
-                if in_comment_block: continue
-                if '#' in ls:
-                    ls = ls[:ls.index('#')]
-                    if not ls: continue
-                
-                indent = line.index(ls[0])
-
-                if _class is not None and indent <= _class_indent:
-                    # If the indentation has moved out of the class then we need
-                    # to fall back down 1 class level
-                    if _class.count('.') == 0:
-                        # No more nested classes
-                        _class = None
-                        _class_indent = None
-                    else:
-                        # Still in a class statement, dropping out of one level
-                        # of nested classes
-                        _class = '.'.join(_class.split('.')[:-1])
-                        _class_indent = indent
+            indent = line.index(ls[0])
             
-                if ls.startswith('class'):
-                    l = ls.replace('class', '').strip()
-                    if '(' in l: l = l[:l.index("(")]
-                    if ':' in l: l = l[:l.index(':')]
+            if _class is not None and indent <= _class_indent:
+                # If the indentation has moved out of the class then we need
+                # to fall back down 1 class level
+                if _class.count('.') == 0:
+                    # No more nested classes
+                    _class = None
+                    _class_indent = None
+                else:
+                    # Still in a class statement, dropping out of one level
+                    # of nested classes
+                    _class = '.'.join(_class.split('.')[:-1])
+                    _class_indent = indent
 
-                    # When we find a class, we need to add the '.stuff' syntax
-                    # to _class only if the current indentation level is greater
-                    # than the previous.
-                    # If we already have a '.' syntax, then we need to remove
-                    # the final '.' member and replace it with the class we just
-                    # found.
-
-                    if _class is None:
-                        _class = l
-                        _class_indent = indent
-                    else:
-                        if '.' in _class:
-                            if indent > _class_indent:
-                                _class = '.'.join([_class,l])
-                            else:
-                                _class = '.'.join(_class.split('.')[:-1] + [l])
-                            _class_indent = indent
-                    continue
-                
-                if listening_for_def:
+            if listening_for_func_or_class:
+                if ls.startswith('def') or ls.startswith('class'):
                     if ls.startswith('def'):
                         l = ls.replace('def', '').strip()
                         name = l[:l.index("(")]
                         full_name = get_full_function_name(_file, name, _class=_class)
-                        for detected_decorator in detected_decorators:
+                    elif ls.startswith('class'):
+                        l = ls.replace('class', '').strip()
+                        # Get the name of the class
+                        if '(' in l: l = l[:l.index('(')]
+                        if ':' in l: l = l[:l.index(':')]
+                        name = l
+                        full_name = get_full_class_name(_file, name, _class=_class)
+                    
+                    module = get_module_name(_file)
+                    for detected_decorator in detected_decorators:
+                        if modules:
+                            for key, val in modules.items():
+                                if detected_decorator == val:
+                                    detected_decorator = key
+                                    module = module_names[key]
+                                    break
 
-                            module = get_module_name(_file, name)
-                            if modules:
-                                for key, val in modules.items():
-                                    if detected_decorator == val:
-                                        detected_decorator = key
-                                        module = module_names[key]
-                                        break
-                            
-                            if detected_decorator not in functions.keys():
-                                functions[detected_decorator] = []
-                            functions[detected_decorator] += [{
-                                'full name' : full_name,
-                                'short name' : name,
-                                'module' : module,
-                                'class' : _class,
-                            }]
-                        detected_decorators = []
-                        listening_for_def = False
-                    elif ls.startswith("@"):
-                        l = ls.replace("@", '').strip()
-                        if '(' in l: l = l[:l.index("(")]
-                        if modules:
-                            for key, val in modules.items():
-                                if l == val:
-                                    l = key
-                                    break
-                        detected_decorators += [l]
-                    else:
-                        raise NotImplementedError("Detected decorators that are floating above a function definition or don't belong to any function definition in '%s'" % _file)
+                        if detected_decorator not in functions.keys():
+                            functions[detected_decorator] = []
+                        functions[detected_decorator] += [{
+                            'full name' : full_name,
+                            'short name' : name,
+                            'module' : module,
+                            'class' : _class,
+                        }]
+                    detected_decorators = []
+                    listening_for_func_or_class = False
+                elif ls.startswith('@'):
+                    l = ls.replace("@", '').strip()
+                    if '(' in l: l = l[:l.index("(")]
+                    if modules:
+                        for key, val in modules.items():
+                            if l == val:
+                                l = key
+                                break
+                    detected_decorators += [l]
                 else:
-                    if ls.startswith("@"):
-                        listening_for_def = True
-                        l = ls.replace("@",'').strip()
-                        if '(' in l: l = l[:l.index("(")]
-                        if modules:
-                            for key, val in modules.items():
-                                if l == val:
-                                    l = key
-                                    break
-                        detected_decorators += [l]
+                    print(line)
+                    string = ', '.join("'%s'" % s for s in detected_decorators)
+                    raise NotImplementedError("Detected decorators that are floating above a function or class definition or don't belong to any function or class definition in '%s': %s" % (_file, string))
+            else: # Not listening for function or class declaration
+                if ls.startswith("@"):
+                    listening_for_func_or_class = True
+                    l = ls.replace("@",'').strip()
+                    if '(' in l: l = l[:l.index("(")]
+                    if modules:
+                        for key, val in modules.items():
+                            if l == val:
+                                l = key
+                                break
+                    detected_decorators += [l]
+
+            # If the line is a class declaration
+            if ls.startswith('class'):
+                l = ' '.join(ls.split()[1:]) # Remove the 'class' word
+                # Get the name of the class
+                if '(' in l: l = l[:l.index('(')]
+                if ':' in l: l = l[:l.index(':')]
+                
+                # When we find a class, we need to add the '.stuff' syntax
+                # to _class only if the current indentation level is greater
+                # than the previous.
+                # If we already have a '.' syntax, then we need to remove
+                # the final '.' member and replace it with the class we just
+                # found.
+                
+                #listening_for_func_or_class = False
+                
+                if _class is None:
+                    _class = l
+                    _class_indent = indent
+                else:
+                    if '.' in _class:
+                        if indent > _class_indent:
+                            _class = '.'.join([_class,l])
+                        else:
+                            _class = '.'.join(_class.split('.')[:-1] + [l])
+                        _class_indent = indent
+                
     return functions
 
 
 
+@api
+@starsmashertools.helpers.argumentenforcer.enforcetypes
+def report(simulations : list | tuple):
+    """
+    Generate a report for a list of given :class:`~.lib.simulation.Simulation`s.
+    The report appears as a table of values, where each row is a Simulation and
+    each column is a quantity related to that Simulation.
 
+    Parameters
+    ----------
+    simulations : list, tuple
+        A list of :class:`~.lib.simulation.Simulation` objects for which to
+        generate a report.
 
+    Returns
+    -------
+    report : :class:`~.lib.report.Report`
+    """
+    import starsmashertools.lib.report
+    return starsmashertools.lib.report.Report(simulations)
 
 
 
@@ -696,9 +891,6 @@ try: del metadata
 except: pass
 
 try: del util
-except: pass
-
-try: del starsmashertools
 except: pass
 
 try: del os # The most terrifying syntax...

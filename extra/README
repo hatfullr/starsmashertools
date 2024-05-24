@@ -1,0 +1,6 @@
+In this directory are standalone tools which can be used with StarSmasher.
+
+iteration_timing
+    A tool for collecting elapsed time per each StarSmasher iteration using
+    files containing the standard output from a StarSmasher run (stdout).
+

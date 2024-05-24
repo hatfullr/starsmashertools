@@ -1,5 +1,12 @@
 #!/bin/bash
 
+#python3 -m pip install --no-build-isolation -e .
+python3 -m build
+if [ $? -ne 0 ]; then
+    echo "Install failed"
+    exit 1
+fi
+
 python3 -m pip install --no-build-isolation -e .
 if [ $? -ne 0 ]; then
     echo "Install failed"
@@ -8,6 +15,9 @@ fi
 
 which starsmashertools &>/dev/null
 if [ $? -ne 0 ]; then
+    echo ""
+    echo "***********************************************"
+    echo ""
     echo "Warning: cannot find command 'starsmashertools'"
     echo "To complete your installation add the following line to $HOME/.bashrc:"
     echo '   export PATH="$HOME/.local/bin:$PATH"'

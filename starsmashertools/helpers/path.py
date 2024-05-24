@@ -1,14 +1,18 @@
 # Path helper methods
 import os
-import starsmashertools.preferences as preferences
 import starsmashertools.helpers.argumentenforcer
 import glob
 import starsmashertools.helpers.ssh
 import numpy as np
-import fnmatch
 import collections
 import warnings
 import starsmashertools.helpers.string
+
+def makedirs(path : str, **kwargs):
+    if starsmashertools.helpers.ssh.isRemote(path):
+        raise NotImplementedError
+    if isdir(path): return
+    return os.makedirs(path, **kwargs)
 
 def getcwd():
     return os.getcwd()
@@ -144,7 +148,17 @@ def basename(path):
 def getmtime(path):
     if starsmashertools.helpers.ssh.isRemote(path):
         raise NotImplementedError
-    return os.path.getmtime(path)
+    # Use stat instead of os.path.getmtime, for reasons detailed in the official
+    # documentation:
+    #    Note that the exact times you set here may not be returned by a
+    #    subsequent stat() call, depending on the resolution with which your
+    #    operating system records access and modification times; see stat(). The
+    #    best way to preserve exact times is to use the st_atime_ns and
+    #    st_mtime_ns fields from the os.stat() result object with the ns
+    #    parameter to utime().
+    stat_result = os.stat(path)
+    return int(stat_result.st_mtime_ns * 1e-9)
+    #return os.path.getmtime(path)
 
 def rename(path, newpath):
     if starsmashertools.helpers.ssh.isRemote(path):
@@ -214,6 +228,8 @@ pattern_matches = collections.OrderedDict()
 # Given the path to a file, search search_directory for the first duplicate file.
 #@profile
 def find_duplicate_file(filepath, search_directory, pattern="out*.sph", throw_error=False):
+    import starsmashertools.helpers.file
+    
     filepath = realpath(filepath)
 
     isRemote = starsmashertools.helpers.ssh.isRemote(filepath)
@@ -250,6 +266,8 @@ def find_duplicate_file(filepath, search_directory, pattern="out*.sph", throw_er
 
 
 def get_src(directory, throw_error=False):
+    import starsmashertools.lib.simulation
+    
     if not isdir(directory):
         raise FileNotFoundError("Directory does not exist: '%s'" % str(directory))
     
@@ -257,8 +275,10 @@ def get_src(directory, throw_error=False):
         raise Exception("A search for the StarSmasher source directory extended to the root directory and thus we failed to find the source directory. Please make sure there is a copy of the StarSmasher source code in your simulation directory.")
     #print("get_src",directory)
     directory = realpath(directory)
-    
-    src_identifiers = preferences.get_default('Simulation', 'src identifiers', throw_error=True)
+
+    src_identifiers = starsmashertools.lib.simulation.Simulation.preferences.get(
+        'src identifiers',
+    )
 
     if starsmashertools.helpers.ssh.isRemote(directory):
         address, remote_path = starsmashertools.helpers.ssh.split_address(directory)

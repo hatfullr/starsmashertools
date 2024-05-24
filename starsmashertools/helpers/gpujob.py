@@ -1,6 +1,8 @@
+import starsmashertools.preferences
+from starsmashertools.preferences import Pref
+
 try:
     import starsmashertools.helpers.argumentenforcer
-    import starsmashertools.preferences
     import starsmashertools.lib.output
     import time
     import numpy as np
@@ -11,7 +13,7 @@ try:
     import warnings
     import math
 
-
+    @starsmashertools.preferences.use
     class GPUJob(object):
         """
         A base class for utilizing the GPU.
@@ -49,12 +51,11 @@ try:
         @starsmashertools.helpers.argumentenforcer.enforcetypes
         def run(
                 self,
-                threadsperblock : int | type(None) = None,
+                threadsperblock : int = Pref('run.threadsperblock'),
                 return_duration : bool = False,
         ):
-            if threadsperblock is None:
-                threadsperblock = starsmashertools.preferences.get_default("GPUJob", "threadsperblock", throw_error=True)
-
+            import starsmashertools
+            
             # Send inputs to the GPU
             inputs = []
             for i in range(len(self.inputs)):
@@ -252,7 +253,7 @@ try:
 
 
 # Catch this pesky exception which likes to pop up in random places
-except (numba.cuda.cudadrv.driver.CudaAPIError, numba.cuda.cudadrv.error.CudaSupportError) as e:
+except Exception as e:# (numba.cuda.cudadrv.driver.CudaAPIError, numba.cuda.cudadrv.error.CudaSupportError) as e:
     if ('Call to cuInit results in UNKNOWN_CUDA_ERROR (804)' in str(e) or
         '[804] Call to cuInit results in UNKNOWN_CUDA_ERROR' in str(e)):
         raise RuntimeError("This error is known to happen for computers that have been put in 'suspend' mode some time after a restart. You can try logging out and logging back in again or restarting your system.") from e

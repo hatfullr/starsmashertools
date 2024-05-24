@@ -1,7 +1,8 @@
 import unittest
 import starsmashertools.helpers.midpoint
+import basetest
 
-class TestMidpoint(unittest.TestCase):
+class TestMidpoint(basetest.BaseTest):
     def test(self):
         objects = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
         m = starsmashertools.helpers.midpoint.Midpoint(objects)

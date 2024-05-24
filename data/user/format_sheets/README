@@ -1,0 +1,2 @@
+Add ".format" files here to give your own methods of formatting Output objects.
+See the defaults directory for examples.

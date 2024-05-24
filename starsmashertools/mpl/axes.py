@@ -1,16 +1,34 @@
 # This contains shortcut methods for working on matplotlib Axes objects.
-
 import matplotlib.axes
 import matplotlib.transforms
 import matplotlib.colorbar
+import matplotlib.path
+import matplotlib.patches
+import matplotlib.pyplot as plt
+import matplotlib.projections
+import matplotlib.text
 import numpy as np
 import starsmashertools.helpers.argumentenforcer
-
+import copy
 
 
 @starsmashertools.helpers.argumentenforcer.enforcetypes
+def make_legend(axes : matplotlib.axes._axes.Axes):
+    import starsmashertools.mpl.artists
+    legend_kwargs = {}
+    try:
+        legend_kwargs = starsmashertools.mpl.artists.PlottingPreferences.preferences.get('legend')
+    except: pass
+    
+    markersize = legend_kwargs.pop('markersize', None)
+    legend = axes.legend(**legend_kwargs)
+    if markersize is not None:
+        for handle in legend.legendHandles:
+            handle.set_sizes([markersize])
+
+@starsmashertools.helpers.argumentenforcer.enforcetypes
 def colorbar(
-        axes : matplotlib.axes._axes.Axes | np.ndarray,
+        axes : matplotlib.axes._axes.Axes | np.ndarray | list | tuple,
         padding : int | float = 0.01,
         width : float = 0.05,
         orientation : str = 'vertical',
@@ -22,8 +40,8 @@ def colorbar(
         'location' : ['right', 'left', 'top', 'bottom'],
     })
 
-    if isinstance(axes, matplotlib.axes._axes.Axes):
-        axes = np.array(axes, dtype=matplotlib.axes._axes.Axes)
+    if not isinstance(axes, np.ndarray):
+        axes = np.asarray(axes, dtype=matplotlib.axes._axes.Axes)
 
     fig = axes.flatten()[0].get_figure()
     cax = fig.add_axes([0,0,0,0])
@@ -132,3 +150,23 @@ def text(
         xycoords='axes fraction',
         **kwargs
     )
+
+
+class Axes(matplotlib.axes.Axes, object):
+    name = 'Axes'
+    
+    def _get_all_children(self):
+        def get(obj, children = []):
+            if obj not in children: children += [obj]
+            if hasattr(obj, 'get_children'):
+                for child in obj.get_children():
+                    for c in get(child, children = children):
+                        if c not in children: children += [c]
+            return children
+
+        children = []
+        for child in self.get_children():
+            children = get(child, children = children)
+        return children
+
+

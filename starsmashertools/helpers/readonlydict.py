@@ -1,8 +1,10 @@
 import copy
 
 class ReadOnlyDict(dict, object):
+    class EditError(Exception, object): pass
+    
     def raise_readonly(*args, **kwargs):
-        raise Exception("Cannot edit a ReadOnlyDict")
+        raise ReadOnlyDict.EditError("Cannot edit a ReadOnlyDict")
 
     __setitem__ = raise_readonly
     __delitem__ = raise_readonly
@@ -28,3 +30,14 @@ class ReadOnlyDict(dict, object):
             setattr(ret, k, copy.deepcopy(v, memo))
         self.__setitem__ = previous_setitem
         return ret
+
+    # For pickling
+    def __getstate__(self):
+        return dict(self)
+    def __setstate__(self, state):
+        self.__setitem__ = super(ReadOnlyDict, self).__setitem__
+        self.clear()
+        for key, val in state.items():
+            self[key] = val
+        self.__setitem__ = ReadOnlyDict.raise_readonly
+

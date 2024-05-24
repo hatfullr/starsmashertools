@@ -4,16 +4,15 @@ import os
 import re
 import sys
 import starsmashertools.helpers.apidecorator
-import starsmashertools.helpers.string
 import starsmashertools.helpers.jsonfile
-import numpy
 import inspect
-import importlib
 import types
 import copy
 import hashlib
 import starsmashertools
-import importlib
+import typing
+from typing import *
+import matplotlib, numpy # Needed in some eval statements
 
 version_line_regex = "[vV][eE][rR][sS][iI][oO][nN]\\s*[=]\\s*[\"']\\d*[.]\\d*[.]\\d*[\"']"
 
@@ -85,9 +84,15 @@ def get_parameter_details(parameter):
         default = empty_value
     annotation = parameter.annotation
 
+    is_union = (
+        isinstance(annotation, types.UnionType) or
+        typing.get_origin(annotation) is typing.Union or
+        annotation is typing.Union
+    )
+    
     if annotation is inspect.Parameter.empty:
         annotation = empty_value
-    elif not isinstance(annotation, types.UnionType) and hasattr(annotation, "__name__"):
+    elif not is_union and hasattr(annotation, "__name__"):
         if str(annotation.__module__) == 'builtins':
             annotation = annotation.__name__
         else:
@@ -118,12 +123,17 @@ def to_json(data, version):
         obj[key] = []
         for parameter in parameters:
             name, kind, default, annotation = get_parameter_details(parameter)
+            is_union = (
+                isinstance(annotation, types.UnionType) or
+                annotation is typing.Union or
+                typing.get_origin(annotation) is typing.Union
+            )
             obj[key] += [{
                 'name' : name,
                 'kind' : kind,
                 'default' : default,
                 'annotation' : str(annotation),
-                'annotation is UnionType' : isinstance(annotation, types.UnionType),
+                'annotation is UnionType' : is_union,
             }]
     obj['version'] = version
     obj['hashes'] = get_file_hashes()
@@ -154,11 +164,20 @@ def from_json(obj):
             if annotation == empty_value:
                 annotation = inspect.Parameter.empty
             else:
-                annotation = eval(annotation)
+                annotation = eval(
+                    annotation.replace('NoneType', 'type(None)'),
+                    globals(),
+                )
 
             if inspect.Parameter.empty not in [default, annotation]:
-                if not isinstance(annotation, types.UnionType):
-                    default = annotation(default)
+                if (not isinstance(annotation, types.UnionType) and
+                    not annotation is typing.Union and
+                    typing.get_origin(annotation) is not typing.Union):
+
+                    if type(default).__name__ == 'Pref':
+                        default = inspect._empty
+                    else:
+                        default = annotation(default)
             
             data[key] += [inspect.Parameter(name, kind, default=default, annotation=annotation)]
     return data, previous_version, previous_hashes
@@ -211,11 +230,6 @@ def combine_dict(dict1, dict2):
             else: ret[key] = val
     return ret
 
-def get_types_from_annotation(annotation):
-    if isinstance(annotation, types.UnionType):
-        return annotation.__args__
-    return [annotation]
-
 
 class Change(object):
     def __init__(self, function_name, message):
@@ -230,11 +244,16 @@ class MinorChange(Change, object): pass
 class AnnotationType(object):
     def __init__(self, annotation):
         if isinstance(annotation, str):
-            annotation = AnnotationType.get_type_from_string(annotation)
-        if isinstance(annotation, types.UnionType):
+            self.types = [AnnotationType.get_type_from_string(annotation)]
+        elif annotation is typing.Union:
+            self.types = typing.get_args(annotation)
+        elif (isinstance(annotation, types.UnionType) or
+            typing.get_origin(annotation) is typing.Union):
             self.types = annotation.__args__
         elif isinstance(annotation, type):
             self.types = [annotation]
+        elif isinstance(annotation, typing.Callable):
+            self.types = [typing.Callable]
         else: raise TypeError(annotation)
 
     @staticmethod

@@ -1,7 +1,5 @@
-import starsmashertools.preferences as preferences
-import starsmashertools.helpers.path
-import starsmashertools.helpers.file
-import starsmashertools.helpers.string
+import starsmashertools.preferences
+from starsmashertools.preferences import Pref
 import starsmashertools.helpers.argumentenforcer
 from starsmashertools.helpers.apidecorator import api
 from glob import glob
@@ -9,15 +7,17 @@ import numpy as np
 import mmap
 import collections
 
-@starsmashertools.helpers.argumentenforcer.enforcetypes
+
 @api
+@starsmashertools.helpers.argumentenforcer.enforcetypes
+@starsmashertools.preferences.use
 def find(
         directory : str,
-        pattern : str | type(None) = None,
+        pattern : str = Pref('pattern', 'log*.sph'),
         throw_error : bool = False,
 ):
-    if pattern is None:
-        pattern = preferences.get_default('LogFile', 'file pattern', throw_error=True)
+    import starsmashertools.helpers.path
+    
     direc = starsmashertools.helpers.path.realpath(directory)
     tosearch = starsmashertools.helpers.path.join(
         direc,
@@ -34,13 +34,17 @@ def find(
 
     
 class LogFile(object):
-    @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
-    def __init__(
-            self,
-            path : str,
-            simulation : "starsmashertools.lib.simulation.Simulation",
-    ):
+    def __init__(self, path, simulation):
+        import starsmashertools.helpers.path
+        import starsmashertools.helpers.file
+        import starsmashertools.lib.simulation
+
+        starsmashertools.helpers.argumentenforcer.enforcetypes({
+            'path' : [str],
+            'simulation' : [starsmashertools.lib.simulation.Simulation],
+        })
+        
         self.path = starsmashertools.helpers.path.realpath(path)
         self.simulation = simulation
         self._header = None
@@ -50,15 +54,19 @@ class LogFile(object):
         self._last_iteration = None
         self._iteration_content_length = None
 
-        with starsmashertools.helpers.file.open(self.path, 'rb') as f:
+        with starsmashertools.helpers.file.open(self.path, 'rb', lock = False) as f:
             try:
                 self._buffer = mmap.mmap(f.fileno(), 0, flags=mmap.MAP_POPULATE, access=mmap.ACCESS_READ)
             except:
                 self._buffer = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
 
-
-
-        
+    def __eq__(self, other):
+        import starsmashertools.helpers.file
+        starsmashertools.helpers.argumentenforcer.enforcetypes({
+            'other' : LogFile,
+        })
+        return starsmashertools.helpers.file.compare(self.path, other.path)
+    
     @property
     def header(self):
         if self._header is None: self.read_header()
@@ -92,6 +100,8 @@ class LogFile(object):
             self,
             filenames : list | tuple | np.ndarray,
     ):
+        import starsmashertools.helpers.path
+        
         first_file = self.get_first_output_file(throw_error=False)
         last_file = self.get_last_output_file(throw_error=False)
         
@@ -399,12 +409,12 @@ class LogFile(object):
         specials = {}
 
 
-        @starsmashertools.helpers.argumentenforcer.enforcetypes
-        def __init__(
-                self, 
-                contents : bytes,
-                logfile : "LogFile",
-        ):
+        def __init__(self, contents, logfile):
+            starsmashertools.helpers.argumentenforcer.enforcetypes({
+                'contents' : [bytes],
+                'logfile' : [LogFile],
+            })
+            
             self.logfile = logfile
             contents = contents.decode('utf-8')
             lines = contents.split('\n')

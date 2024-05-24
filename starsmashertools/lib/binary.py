@@ -1,10 +1,13 @@
+import starsmashertools.preferences
+from starsmashertools.preferences import Pref
 import starsmashertools.lib.simulation
 import starsmashertools.lib.output
 from starsmashertools.helpers.apidecorator import api
-from starsmashertools.helpers.clidecorator import cli
+from starsmashertools.helpers.clidecorator import cli, clioptions
 import starsmashertools.helpers.argumentenforcer
 import numpy as np
 
+@starsmashertools.preferences.use
 class Binary(starsmashertools.lib.simulation.Simulation, object):
     def __init__(self, *args, **kwargs):
         super(Binary, self).__init__(*args, **kwargs)
@@ -31,12 +34,14 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
 
     @api
     @cli('starsmashertools')
+    @clioptions(display_name = 'Primary star number of particles')
     def get_n1(self, cli : bool = False):
         if self._n1 is None: self._get_n1_n2()
         return self._n1
 
     @api
     @cli('starsmashertools')
+    @clioptions(display_name = 'Secondary star number of particles')
     def get_n2(self, cli : bool = False):
         if self._n2 is None: self._get_n1_n2()
         return self._n2
@@ -78,11 +83,13 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
     # Returns True if the primary is a point mass
     @api
     @cli('starsmashertools')
+    @clioptions(display_name = 'Show if the primary star is a point mass')
     def isPrimaryPointMass(self, cli : bool = False): return self.get_n1() == 1
     
     # Returns True if the secondary is a point mass
     @api
     @cli('starsmashertools')
+    @clioptions(display_name = 'Show if the secondary star is a point mass')
     def isSecondaryPointMass(self, cli : bool = False): return self.get_n2() == 1
 
     @api
@@ -99,10 +106,11 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
             verbose : bool = False,
     ):
         import starsmashertools.lib.relaxation
-        import starsmashertools.preferences
+        import starsmashertools.lib.simulation
         import starsmashertools.helpers.path
-        
-        search_directory = starsmashertools.preferences.get_default('Simulation', 'search directory')
+        search_directory = starsmashertools.lib.simulation.Simulation.preferences.get(
+            'search directory',
+        )
         search_directory = starsmashertools.helpers.path.realpath(search_directory)
 
         if self.isPrimaryPointMass():
@@ -134,7 +142,6 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
     def get_COMs(self, output : starsmashertools.lib.output.Output | starsmashertools.lib.output.OutputIterator):
         import starsmashertools.math
         import starsmashertools.lib.simulation
-        import starsmashertools.lib.output
         
         if output not in self:
             raise starsmashertools.lib.simulation.Simulation.OutputNotInSimulationError(self, output)
@@ -261,11 +268,13 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
-    @cli('starsmashertools', which='both')
+    @cli('starsmashertools')
+    @clioptions(display_name = 'Get Roche lobe overflow factor f_RLOF')
     def get_RLOF(
             self,
             which : str = 'primary',
             threshold : float | int = 1.,
+            CLI_output_window : int = Pref('get_RLOF.CLI output window', 6),
             cli : bool = False,
     ):
         """
@@ -287,6 +296,10 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
         threshold : float, int,  default = 1.
             The threshold for detecting Roche lobe overflow. This value is
             compared with fRLOF from `~.get_fRLOF`.
+
+        CLI_output_window : int, default = Pref('get_RLOF.CLI output window', 6)
+            How many output files to show in the CLI. Only applies when running
+            starsmashertools in CLI mode.
 
         Returns
         -------
@@ -310,6 +323,8 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
 
         import starsmashertools.helpers.path
         import starsmashertools.helpers.midpoint
+        import starsmashertools.helpers.string
+        import os
         
         starsmashertools.helpers.argumentenforcer.enforcevalues({
             'which' : ['primary', 'secondary', 'both'],
@@ -342,61 +357,99 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
             fRLOF2 = self.get_fRLOF(output2)[1]
             if fRLOF2 > threshold: output2 = outputs[max(0, index2 - 1)]
         
-        if which == 'primary': return output1
-        if which == 'secondary': return output2
+        
         if cli:
             # Give some additional fRLOF values in the vicinity of the found output files
-            window = 3
             outputs = self.get_output()
 
-            outputs1 = []
-            outputs2 = []
-            results1 = [[], []]
-            results2 = [[], []]
+            # Get all the output files we will be using
+            all_outputs = []
+            tops = [None, None]
+            bottoms = [None, None]
+            if which in ['primary', 'both']:
+                idx = outputs.index(output1)
+                if idx + CLI_output_window/2 >= len(outputs):
+                    tops[0] = len(outputs)
+                    bottoms[0] = max(tops[0] - CLI_output_window - 1, 0)
+                elif idx - CLI_output_window/2 < 0:
+                    bottoms[0] = 0
+                    tops[0] = min(CLI_output_window + 1, len(outputs))
+                all_outputs += outputs[bottoms[0]:tops[0]]
+            if which in ['secondary', 'both']:
+                idx = outputs.index(output2)
+                if idx + CLI_output_window/2 >= len(outputs):
+                    tops[1] = len(outputs)
+                    bottoms[1] = max(tops[1] - CLI_output_window - 1, 0)
+                elif idx - CLI_output_window/2 < 0:
+                    bottoms[1] = 0
+                    tops[1] = min(CLI_output_window*2 + 1, len(outputs))
+                all_outputs += outputs[bottoms[1]:tops[1]]
+            all_outputs = list(set(all_outputs))
+            fRLOFs = {'primary':{}, 'secondary':{}}
+            for o in all_outputs:
+                primary, secondary = self.get_fRLOF(o)
+                fRLOFs['primary'][o] = primary
+                fRLOFs['secondary'][o] = secondary
             
-            if output1 is not None:
-                idx1 = outputs.index(output1)
-                bottom1 = max(idx1 - window, 0)
-                top1 = min(idx1 + window, len(outputs) - 1)
-                outputs1 = outputs[bottom1:top1 + 1]
-                results1[0] = outputs1
-                
-            if output2 is not None:
-                idx2 = outputs.index(output2)
-                bottom2 = max(idx2 - window, 0)
-                top2 = min(idx2 + window, len(outputs) - 1)
-                outputs2 = outputs[bottom2:top2 + 1]
-                results2[0] = outputs2
-
-            all_outputs = outputs1 + outputs2
-            results = {}
-            for output in all_outputs:
-                results[output] = self.get_fRLOF(output)
-                
-            for output in outputs1:
-                results1[1] += [results[output][0]]
-            for output in outputs2:
-                results2[1] += [results[output][1]]
+            widths = [15, 13]
+            header_fmt = '{name:>%d}' % (sum(widths) + 1)
+            fmt = '{name:>%ds}{pick:1s}{value:%d.%df}' % tuple([widths[0], widths[1], 7])
+            strings = [
+                [header_fmt.format(name='Primary')],
+                [header_fmt.format(name='Secondary')],
+            ]
             
-            string = []
-            for i, result in enumerate([results1, results2]):
-                outputs, fRLOFs = result
-                if not outputs:
-                    string += ["Star %d: None (point mass)" % (i+1)]
-                else:
-                    string += ["Star %d:" % (i+1)]
-                    for o, fRLOF in zip(outputs, fRLOFs):
-                        string += [
-                            "   %15s  fRLOF = %11.7f" % (
-                                starsmashertools.helpers.path.basename(o.path),
-                                fRLOF,
-                            )]
-                        
-            return "\n".join(string)
+            if which in ['primary', 'both']:
+                idx = outputs.index(output1)
+                for o in outputs[bottoms[0]:tops[0]]:
+                    name = starsmashertools.helpers.string.shorten(
+                        os.path.basename(o.path),
+                        widths[0],
+                        where = 'left',
+                    )
+                    strings[0] += [fmt.format(
+                        name=name,
+                        value=fRLOFs['primary'][o],
+                        pick='*' if o == output1 else '',
+                    )]
+            if which in ['secondary', 'both']:
+                idx = outputs.index(output2)
+                for o in outputs[bottoms[1]:tops[1]]:
+                    name = starsmashertools.helpers.string.shorten(
+                        os.path.basename(o.path),
+                        widths[0],
+                        where = 'left',
+                    )
+                    strings[1] += [fmt.format(
+                        name=name,
+                        value=fRLOFs['secondary'][o],
+                        pick='*' if o == output2 else '',
+                    )]
+            
+            if which == 'primary':
+                return '\n'.join(strings[0])
+            if which == 'secondary':
+                return '\n'.join(strings[1])
+            if which == 'both':
+                # Normalize the lengths
+                length = max(len(strings[0]), len(strings[1]))
+                for i in range(length):
+                    if i >= len(strings[0]): strings[0] += [""]
+                    if i >= len(strings[1]): strings[1] += [""]
+                string = ""
+                for i in range(length):
+                    string += strings[0][i] + strings[1][i] + '\n'
+                return string
+            raise NotImplementedError("Bad which value '%s'" % str(which))
+        
+        if which == 'primary': return output1
+        if which == 'secondary': return output2
         return output1, output2
-
+        
+        
     @api
     @cli('starsmashertools')
+    @clioptions(display_name = 'Mass of primary star')
     def get_primary_mass(self, cli : bool = False):
         """
         Return the mass of the primary star (usually the donor). First the log
@@ -435,6 +488,7 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
 
     @api
     @cli('starsmashertools')
+    @clioptions(display_name = 'Mass of secondary star')
     def get_secondary_mass(self, cli : bool = False):
         """
         Return the mass of the secondary star (usually the accretor). First the
@@ -474,16 +528,24 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
 
     @api
     @cli('starsmashertools')
+    @clioptions(display_name = 'Mass of primary star core particle')
     def get_primary_core_mass(self, cli : bool = False):
         """
         Return the mass of the core particle in the primary (usually the donor)
-        star, if it has a core particle.
+        star, if it has a core particle. The log files are checked first, which
+        is usually faster than checking the outputs. If something goes wrong 
+        with checking the log files, the first output file is checked instead,
+        using :func:`~.lib.output.Output.get_core_particles`.
 
         Returns
         -------
         float or None
             The mass of the core particle in the primary (usually the donor)
             star. If there is no core particle, returns `None`.
+
+        See Also
+        --------
+        :func:`~.get_secondary_core_mass`, :func:`~.lib.output.Output.get_core_particles`
         """
         import starsmashertools.helpers.path
         import starsmashertools.lib.logfile
@@ -511,27 +573,34 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
                 raise FileNotFoundError("Cannot get the primary's core mass because there is more than 1 particle for the primary star and the simulation has no log files, no output files, and the sph.start1u file is missing, in '%s'" % self.directory)
             output = starsmashertools.lib.output.Output(start1u, self)
 
-        with starsmashertools.mask(output, self.get_primary_IDs()) as masked:
-            idx = masked['u'] == 0
-        
-            sumidx = sum(idx)
-            if sumidx == 0: return None
-            if sumidx == 1: return masked['am'][idx][0]
-            else:
-                raise Exception("The primary star has multiple core particles, which doesn't make sense.")
-
+        cores = output.get_core_particles()
+        if len(cores) == 0: return None
+        primary_IDs = self.get_primary_IDs()
+        for c in cores:
+            if c not in primary_IDs: continue
+            return output['am'][c]
+        raise NotImplementedError("The primary star has multiple core particles")
+    
     @api
     @cli('starsmashertools')
+    @clioptions(display_name = 'Mass of secondary core particle')
     def get_secondary_core_mass(self, cli : bool = False):
         """
         Return the mass of the core particle in the secondary (usually the
-        accretor) star, if it has a core particle.
+        companion) star, if it has a core particle. The log files are checked 
+        first, which is usually faster than checking the outputs. If something 
+        goes wrong with checking the log files, the first output file is checked
+        instead, using :func:`~.lib.output.Output.get_core_particles`.
 
         Returns
         -------
         float or None
             The mass of the core particle in the secondary (usually the
-            accretor) star. If there is no core particle, returns `None`.
+            companion) star. If there is no core particle, returns `None`.
+        
+        See Also
+        --------
+        :func:`~.get_primary_core_mass`, :func:`~.lib.output.Output.get_core_particles`
         """
         import starsmashertools.helpers.path
         import starsmashertools.lib.output
@@ -552,11 +621,10 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
                 raise FileNotFoundError("Cannot get the secondary's core mass because there is more than 1 particle for the secondary star, the simulation has no output files, and the sph.start2u file is missing, in '%s'" % self.directory)
             output = starsmashertools.lib.output.Output(start2u, self)
 
-        with starsmashertools.mask(output, self.get_secondary_IDs()) as masked:
-            idx = masked['u'] == 0
-        
-            sumidx = sum(idx)
-            if sumidx == 0: return None
-            if sumidx == 1: return masked['am'][idx][0]
-            else:
-                raise Exception("The secondary star has multiple core particles, which doesn't make sense.")
+        cores = output.get_core_particles()
+        if len(cores) == 0: return None
+        secondary_IDs = self.get_secondary_IDs()
+        for c in cores:
+            if c not in secondary_IDs: continue
+            return output['am'][c]
+        raise NotImplementedError("The secondary star has multiple core particles")

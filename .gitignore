@@ -1,8 +1,16 @@
 # Emacs junk
 **/*~
 **/*#
+**/#*
+**/.#*
 *~
 *#
+.#*
+
+data/user/*
+!data/user/format_sheets
+
+data/locks/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

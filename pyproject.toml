@@ -7,13 +7,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "starsmashertools"
-version = '8.43.0'
+version = '13.1.7'
 authors = [
   { name="Roger Hatfull" },
 ]
 description = "Tools for StarSmasher simulations"
 readme = "README.md"
-requires-python = ">=3"
+requires-python = ">=3.4"
 classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",

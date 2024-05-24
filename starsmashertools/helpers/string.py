@@ -2,6 +2,214 @@
 import re
 import starsmashertools.helpers.file
 import starsmashertools.helpers.argumentenforcer
+import numpy as np
+import contextlib
+import starsmashertools.lib.output
+
+class LoadingMessage(object):
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    def __init__(
+            self,
+            message : str = "Loading",
+            delay : int | float = 5,
+            interval : int | float = 1,
+            suffixes : list | tuple = ['.','..','...'],
+            done_message : str = 'Done',
+    ):
+        import starsmashertools.helpers.asynchronous
+        import sys
+
+        self._printed_done_message = False
+        
+        self.message = message
+        self.suffixes = suffixes
+        self.done_message = done_message
+        
+        self.ticker = None
+        if sys.stdout.isatty(): # Output is going to the terminal
+            self.ticker = starsmashertools.helpers.asynchronous.Ticker(
+                interval,
+                target = self.print_message,
+                delay = delay,
+            )
+        
+        self._index = 0
+
+        self._didprint = False
+    
+    def __enter__(self):
+        if self.ticker is not None:
+            if not self.ticker.is_alive():
+                self.ticker.start()
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        import copy
+        
+        #print_done_message = False
+        if self.ticker is not None:
+            #print_done_message = copy.deepcopy(self.ticker.completed)
+            self.ticker.cancel()
+
+        if exc_type is not None: raise
+        
+        #if print_done_message: self.print_done_message()
+        if self._didprint: self.print_done_message()
+        
+        return True
+
+    def get_message(self):
+        return self.message + self.suffixes[self._index]
+
+    def print_done_message(self):
+        import starsmashertools.bintools.cli
+        if starsmashertools.bintools.cli.CLI.instance is not None:
+            starsmashertools.bintools.cli.CLI.write(self.done_message)
+        else:
+            print(self.done_message)
+        self._printed_done_message = True
+    
+    def print_message(self):
+        import starsmashertools.bintools.cli
+        import sys
+        
+        message = self.get_message()
+        
+        if starsmashertools.bintools.cli.CLI.instance is not None:
+            starsmashertools.bintools.cli.CLI.move(
+                starsmashertools.bintools.cli.CLI.get_height() - 1,
+                0
+            )
+            starsmashertools.bintools.cli.CLI.write(
+                ' '*(starsmashertools.bintools.cli.CLI.get_width() - 1),
+                flush = True,
+                end = '',
+            )
+            starsmashertools.bintools.cli.CLI.move(
+                starsmashertools.bintools.cli.CLI.get_height() - 1,
+                0
+            )
+            starsmashertools.bintools.cli.CLI.write(
+                message,
+                flush = True,
+                end = '',
+            )
+        else: print('\r\033[K\r' + message, flush = True, end = '')
+
+        self._index += 1
+
+        if self._index >= len(self.suffixes):
+            self._index = 0
+
+        self._didprint = True
+
+class ProgressMessage(LoadingMessage, object):
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    def __init__(
+            self,
+            *args,
+            suffixes : list | tuple = [
+                '.   {current:d} / {total:d} ({progress:5.1f}%)',
+                '..  {current:d} / {total:d} ({progress:5.1f}%)',
+                '... {current:d} / {total:d} ({progress:5.1f}%)',
+            ],
+            done_message : str = '',
+            min : int = 0,
+            max : int = 100,
+            **kwargs
+    ):
+        self._min = min
+        self._max = max
+        self._progress = self._min
+        super(ProgressMessage, self).__init__(
+            *args,
+            suffixes = suffixes,
+            done_message = done_message,
+            **kwargs
+        )
+
+    def get_message(self):
+        total = self._max - self._min
+        current = self._progress
+        if total == 0: progress = 100.
+        else: progress = current / float(total) * 100.
+        return self.message + self.suffixes[self._index].format(
+            current = current,
+            total = total,
+            progress = progress,
+        )
+
+    def increment(self, amount : int = 1):
+        self._progress += amount
+
+    def print_done_message(self, *args, **kwargs):
+        self._progress = self._max
+        self.print_message()
+        super(ProgressMessage, self).print_done_message(*args, **kwargs)
+
+@contextlib.contextmanager
+def loading_message(*args, **kwargs):
+    try:
+        with LoadingMessage(*args, **kwargs) as l:
+            yield l
+    finally: pass
+
+@contextlib.contextmanager
+def progress_message(*args, **kwargs):
+    try:
+        with ProgressMessage(*args, **kwargs) as p:
+            yield p
+    finally: pass
+
+    
+"""
+@starsmashertools.helpers.argumentenforcer.enforcetypes
+def get_progress_string(
+        progress : float | np.float_,
+        fmt : str = 'progress = %5.1f%%',
+        console : bool = True,
+):
+    ""
+    Obtain a progress metric, which varies from 0 to 100.
+
+    Parameters
+    ----------
+    progress : float, np.float_
+        The metric to include in the resulting string.
+
+    Other Parameters
+    ----------------
+    fmt : str, default = 'progress %4.2f%%'
+        The format to use when building the string.
+    
+    console : bool, default = True
+        If `True`, the resulting string will be formatted for console output in
+        such a way that if the result of this method was printed to the console
+        previously, that previous text will be overwritten.
+
+    Returns
+    -------
+    str
+        A string which is formatted using ``fmt`` and the provided ``progress``
+        value.
+    ""
+    import inspect
+    frame = inspect.currentframe().f_back
+    code = frame.f_code
+    
+    result = fmt % progress
+
+    # Only print the first progress line one time.
+    if console and code in progress_printers:
+        # \033[F moves up 1 line and goes to the beginning of the line
+        # Then we clear our previous message with ' '*len(fmt % 100.), which is
+        # the expected maximum string length.
+        # \r goes back to the beginning of the line
+        result = '\033[F' + ' '*len(fmt % 100.) + '\r' + result
+    else:
+        progress_printers += [code]
+    return result
+"""
 
 @starsmashertools.helpers.argumentenforcer.enforcetypes
 def find_all_indices(
@@ -62,9 +270,11 @@ def shorten(
         left = length_per_side
         right = -length_per_side
         return string[:left+1] + join + string[right:]
-    if where == 'left':
+    elif where == 'left':
+        return join + string[-l:]
+    elif where == 'right':
         return string[:l] + join
-    return join + string[-l:]
+    else: raise NotImplementedError("where = '%s'" % str(where))
     
     
 
@@ -77,7 +287,7 @@ def list_to_string(
     if len(_list) == 0: return "''"
     if len(_list) == 1: return format % str(_list[0])
     string = ", ".join(format % s for s in _list[:-1])
-    if len(_list) > 2: string += ","
+    if len(_list) > 2: string += ','
     string += " " + join + " " + (format % _list[-1])
     return string
 
@@ -85,6 +295,7 @@ def list_to_string(
 def parse(string : str):
     _string = string.strip().lower()
     # Try to parse in order of ascending data complexity
+    if _string == 'None': return None
     if _string.lower() in ['true', 'false', 't', 'f']:
         if _string.lower() in ['true', 't']: return True
         return False

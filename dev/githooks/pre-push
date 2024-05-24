@@ -1,0 +1,31 @@
+#!/usr/bin/env python3
+
+import subprocess
+import starsmashertools
+import os
+import sys
+
+test_dir = os.path.join(
+    starsmashertools.SOURCE_DIRECTORY,
+    'tests',
+)
+
+curdir = os.getcwd()
+os.chdir(test_dir)
+try:
+    p = subprocess.run(
+        ['python3', 'run_all_tests.py'],
+        check = True,
+        text = True,
+        stdout = subprocess.PIPE,
+        stderr = subprocess.STDOUT,
+    )
+    if p.stdout and ('FAILED' in p.stdout or 'Traceback' in p.stdout):
+        print(p.stdout)
+        sys.exit(1)
+except subprocess.CalledProcessError as e:
+    print(e.returncode)
+    print(e.output)
+    sys.exit(1)
+
+sys.exit(0)

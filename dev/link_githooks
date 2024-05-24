@@ -1,0 +1,26 @@
+#!/usr/bin/env python3
+
+import starsmashertools
+import os
+import warnings
+
+source = starsmashertools.SOURCE_DIRECTORY
+
+hooksdir = os.path.join(source, '.git', 'hooks')
+myhooksdir = os.path.join(source, 'dev', 'githooks')
+
+offenders = []
+for basename in os.listdir(myhooksdir):
+    src = os.path.join(myhooksdir, basename)
+    dst = os.path.join(hooksdir, basename)
+
+    if os.path.isfile(dst):
+        offenders += [dst]
+        continue
+
+    os.symlink(src, dst)
+
+if offenders:
+    string = '\n'.join(['   '+o for o in offenders])
+    message = "Found the following hooks already, so symbolic links were not made for them:\n" + string
+    warnings.warn(message)

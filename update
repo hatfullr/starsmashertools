@@ -1,0 +1,197 @@
+#!/usr/bin/env python3
+
+# Check the current codes in bin/. If any have changed since the previous
+# version, then we uninstall the current code. Otherwise do nothing. Then
+# we use 'git pull' to download the latest verison. If the bin/ did
+# change, then we install the code once again.
+
+def get_bindir():
+    import starsmashertools
+    import os
+    src = starsmashertools.SOURCE_DIRECTORY
+    return os.path.join(src, 'bin')
+
+def get_statefile():
+    import os
+    return os.path.join(get_bindir(), 'state.zip')
+
+def get_gitignore_patterns():
+    import os
+    import starsmashertools
+
+    gitignore = os.path.join(
+        starsmashertools.SOURCE_DIRECTORY,
+        '.gitignore',
+    )
+    
+    patterns = []
+    if os.path.exists(gitignore):
+        with open(gitignore, 'r') as f:
+            for line in f:
+                if not line.strip(): continue # Skip empty lines
+                if line.strip()[0] == '#': continue # Skip comments
+                patterns += [os.path.join(
+                    starsmashertools.SOURCE_DIRECTORY,
+                    line.strip(),
+                )]
+    return patterns
+
+def get_bin_files():
+    import os
+    import fnmatch
+
+    statefile = get_statefile()
+    ignore_patterns = get_gitignore_patterns()
+    
+    all_files = []
+    for dirpath, dirnames, filenames in os.walk(get_bindir()):
+        for filename in filenames:
+            path = os.path.join(dirpath, filename)
+            if path == statefile: continue # Skip this file
+            if not os.path.isfile(path): continue # Skip directories
+            # Check for gitignore matches
+            for pattern in ignore_patterns:
+                if fnmatch.fnmatch(path, pattern):
+                    break
+            else: # File doesn't match any of the gitignore patterns
+                all_files += [path]
+    return all_files
+
+def load_bin_state():
+    import zipfile
+    statefile = get_statefile()
+    state = {}
+    if os.path.isfile(statefile):
+        with zipfile.ZipFile(
+                statefile, 'r',
+                compression = zipfile.ZIP_DEFLATED,
+                compresslevel = 9,
+        ) as zfile:
+            for key in zfile.namelist():
+                state[key] = zfile.read(key).decode('utf-8')
+    return state
+
+def get_bin_state():
+    import os
+    import re
+
+    comment_checks = [
+        # Remove # comments first
+        re.compile("(?<!['\"])#.*", flags = re.M),
+        # Then remove block comments (which can be commented out by #)
+        re.compile('(?<!\')(?<!\\\\)""".*?"""', flags = re.M | re.S),
+        re.compile("(?<!\")(?<!\\\\)'''.*?'''", flags = re.M | re.S),
+    ]
+    
+    bindir = get_bindir()
+    statefile = get_statefile()
+    state = {}
+    for dirpath, dirnames, filenames in os.walk(bindir):
+        for filename in filenames:
+            path = os.path.join(dirpath, filename)
+            if path == statefile: continue
+            with open(path, 'r') as f:
+                content = f.read()
+
+            # Remove all comments
+            for check in comment_checks:
+                for match in check.findall(content):
+                    content.replace(match, '')
+            
+            state[path] = content.encode('utf-8')
+    return state
+
+
+def is_bin_states_same(state1, state2):
+    # Returns True if the states are identical, False otherwise
+    for key, val in state1.items():
+        if key not in state2.keys(): return False
+        if val != state2[key]: return False
+    for key, val in state2.items():
+        if key not in state1.keys(): return False
+        if val != state1[key]: return False
+    return True
+
+
+def run_src_script(script):
+    import subprocess
+    import starsmashertools
+    p = subprocess.Popen(
+        [
+            r'\cd', starsmashertools.SOURCE_DIRECTORY + r';',
+            r'./' + script,
+        ],
+        shell = True,
+        text = True,
+    )
+    p.wait()
+
+def do_update():
+    import subprocess
+    import starsmashertools
+    p = subprocess.Popen(
+        [
+            r'\cd', starsmashertools.SOURCE_DIRECTORY + r';',
+            'git', 'pull',
+        ],
+        shell = True,
+        text = True,
+    )
+    p.wait()
+
+def get_latest_version():
+    import urllib.request
+    import urllib.error
+    url = 'https://raw.githubusercontent.com/hatfullr/starsmashertools/main/pyproject.toml'
+    request = urllib.request.Request(url)
+    # This is to get the most recent webpage
+    request.add_header('Cache-Control', 'max-age=0')
+    response = urllib.request.urlopen(request)
+    contents = response.read().decode('utf-8')
+    for line in contents.split('\n'):
+        if line.startswith('version'):
+            return line.split('=')[1].replace("'",'').replace('"','').strip()
+    return None
+    
+if __name__ == '__main__':
+    import subprocess
+    import starsmashertools
+    import argparse
+    import os
+
+    parser = argparse.ArgumentParser(
+        prog = os.path.basename(__file__),
+        description = 'Update starsmashertools to the latest version',
+    )
+    parser.add_argument(
+        '-o', '--offline', action = 'store_true',
+        help = "If given, the 'install_offline' script will be used instead of the 'install' script.",
+    )
+    args = parser.parse_args()
+
+    latest = get_latest_version()
+    if not starsmashertools._is_version_older(
+            starsmashertools.__version__,
+            other = latest,
+    ):
+        print('starsmashertools %s is the latest version' % starsmashertools.__version__)
+        quit()
+    
+    previous_bin_state = load_bin_state()
+    bin_state = get_bin_state()
+
+    src = starsmashertools.SOURCE_DIRECTORY
+
+    bin_states_changed = is_bin_states_same(previous_bin_state, bin_state)
+    if bin_states_changed:
+        print("Detected changes in the bin directory. Uninstalling current version")
+        run_src_script('uninstall')
+
+    
+    do_update()
+
+    if bin_states_changed:
+        print("Installing updated version")
+        if args.offline: run_src_script('install_offline')
+        else: run_src_script('install')
+

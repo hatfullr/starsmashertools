@@ -3,9 +3,10 @@ import starsmashertools.helpers.path
 import starsmashertools.helpers.file
 import starsmashertools.lib.logfile
 from starsmashertools.helpers.apidecorator import api
-from starsmashertools.helpers.clidecorator import cli
+from starsmashertools.helpers.clidecorator import cli, clioptions
 import starsmashertools.helpers.argumentenforcer
 import starsmashertools.math
+import starsmashertools.lib.output
 import numpy as np
 import copy
 
@@ -58,7 +59,7 @@ class Relaxation(starsmashertools.lib.simulation.Simulation, object):
             initfile = self._get_sphinit_filename()
             #initfile = starsmashertools.helpers.path.join(self.directory, 'sph.init')
             if starsmashertools.helpers.path.isfile(initfile):
-                with starsmashertools.helpers.file.open(initfile, 'r') as f:
+                with starsmashertools.helpers.file.open(initfile, 'r', lock = False) as f:
                     f.readline()
                     line = f.readline()
 
@@ -73,8 +74,9 @@ class Relaxation(starsmashertools.lib.simulation.Simulation, object):
         
         return self._isPolytrope
 
-    @cli('starsmashertools')
     @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @cli('starsmashertools')
+    @clioptions(display_name = 'Total number of particles')
     def get_n(self, cli : bool = False):
         if self._n is None:
             # Check for log files
@@ -89,11 +91,18 @@ class Relaxation(starsmashertools.lib.simulation.Simulation, object):
 
                 header = data.read(return_headers=True, return_data=False)
                 self._n = header['ntot']
+        if cli: return str(self._n)
         return self._n
 
-    @cli('starsmashertools')
     @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    @cli('starsmashertools')
+    @clioptions(display_name = 'Bounding box at end of time integration')
     def get_final_extents(self, cli : bool = False):
+        """
+        Returns the results of :func:`~.lib.output.Output.get_extents` with
+        keyword ``radial = True``.
+        """
         output = self.get_output(-1)
         extents = output.get_extents(radial = True)
         if cli:
@@ -104,6 +113,95 @@ class Relaxation(starsmashertools.lib.simulation.Simulation, object):
             return string
         return extents
 
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    @cli('starsmashertools')
+    @clioptions(display_name = 'Envelope binding energy')
+    def get_binding_energy(
+            self,
+            output : starsmashertools.lib.output.Output | starsmashertools.lib.output.OutputIterator,
+            mass_coordinate : int | float | type(None) = None,
+            cli : bool = False,
+    ):
+        """
+        Returns the binding energy of the star's envelope E_{SPH}(m(r)) at some
+        specified mass coordinate, as defined in equation (12) of Hatfull et al.
+        (2021).
+
+        Parameters
+        ----------
+        output : :class:`~.lib.output.Output`, :class:`~.lib.output.OutputIterator`
+           If a :class:`~.lib.output.Output` is given, the binding energy will
+           be calculated just for that output file and a single value will be 
+           returned. If a :class:`~.lib.output.OutputIterator` is given then the
+           binding energy will be calculated for all 
+           :class:`~.lib.output.Output` objects in the iterator and a list of
+           values will be returned.
+        
+        Other Parameters
+        ----------
+        mass_coordinate : int, float, None, default = None
+           The mass coordinate "m(r)" to calculate the binding energy at. Set to
+           `None` to get the total binding energy of the envelope, skipping the
+           core particle if there is one. That is, m(r) = m_coreparticle. Set to
+           0 to get the binding energy of the entire star, including any core
+           particles (perhaps not valid?). A ValueError is raised if this 
+           argument is negative.
+
+        Returns
+        -------
+        :class:`~.lib.units.Unit` or list
+           If ``output`` is of type :class:`~.lib.output.Output` then a 
+           :class:`~.lib.units.Unit` is returned in cgs units. If ``output`` is
+           of type :class:`~.lib.output.OutputIterator` then a list of 
+           :class:`~.lib.units.Unit` objects is returned.
+        
+        See Also
+        --------
+        :func:`~.lib.output.Output.get_core_particles`, :class:`~.lib.units.Unit`
+        """
+        import starsmashertools.lib.output
+        import starsmashertools.lib.units
+        
+        if mass_coordinate is not None and mass_coordinate < 0:
+            raise ValueError("Positional argument 'mass_coordinate' cannot be negative, but received %s" % str(mass_coordinate))
+        
+        if isinstance(output, starsmashertools.lib.output.OutputIterator):
+            result = []
+            for o in output:
+                result += [self.get_binding_energy(
+                    o,
+                    mass_coordinate = mass_coordinate,
+                )]
+            return result
+        
+        if mass_coordinate is None:
+            cores = output.get_core_particles()
+            if len(cores) > 1:
+                raise NotImplementedError("Found %d core particles, but expected at most 1" % len(cores))
+            if len(cores) == 0: mass_coordinate = 0
+            else: mass_coordinate = output['am'][cores[0]]
+        
+        xyz = np.column_stack((
+            output['x'], output['y'], output['z'],
+        )) * float(self.units.length)
+        r2 = np.sum(xyz**2, axis=-1)
+        idx = np.argsort(r2)
+        
+        m = output['am'] * float(self.units['am'])
+        mr = np.cumsum(m[idx])[np.argsort(idx)]
+        
+        keep = mr >= mass_coordinate
+        m = m[keep] 
+        u = output['u'][keep] * float(self.units['u'])
+        r = np.sqrt(r2[keep]) 
+        mr = mr[keep]
+
+        G = float(starsmashertools.lib.units.constants['G'])
+        
+        ret = np.sum((G * mr / r - u) * m)
+        return starsmashertools.lib.units.Unit(ret, self.units.energy.label)
+    
 
     class Profile(dict, object):
         @api
@@ -177,7 +275,7 @@ class Relaxation(starsmashertools.lib.simulation.Simulation, object):
 
         def _initialize(self):
             obj = {}
-            with starsmashertools.helpers.file.open(self.path, 'r') as f:
+            with starsmashertools.helpers.file.open(self.path, 'r', lock = False) as f:
                 f.readline() # numbers
                 obj = {key:val for key, val in zip(f.readline().strip().split(), f.readline().strip().split())}
                 f.readline() # newline
@@ -207,11 +305,13 @@ class Relaxation(starsmashertools.lib.simulation.Simulation, object):
         # energy comparison, and the specific gravitational potential
         # energy comparison.
         def energy_comparison(self, output, minterest=None):
+            import starsmashertools.lib.units
+            
             if not isinstance(output.simulation, starsmashertools.lib.relaxation.Relaxation):
                 raise TypeError("Can only do an energy comparison on output files from a Relaxation. Received an output file from a '%s'." % (type(outputfile.simulation).__name__))
 
 
-            G = starsmashertools.lib.units.gravconst
+            G = starsmashertools.lib.units.constants['G']
             rsun = output.simulation.units.length
             msun = output.simulation.units.mass
 
