@@ -458,9 +458,6 @@ class FluxFinder(object):
         # Apply the dust, if there is any
         if idx.any(): kappa[idx] = self.dust_opacity
 
-        del idx, find_dust
-        gc.collect()
-        
         return kappa
 
     def _process_images(self):
