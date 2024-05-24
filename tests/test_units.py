@@ -175,7 +175,7 @@ class TestUnits(basetest.BaseTest):
         # Lsun conversion
         u = starsmashertools.lib.units.Unit(1, 'Lsun')
         base = u.get_base()
-        self.assertEqual(base.label, 'cm*cm*g/s*s*s')
+        self.assertEqual(base.label, 'erg/s')
         self.assertEqual(u.get_base().value, starsmashertools.lib.units.constants['Lsun'])
     
     def test_integers(self):
