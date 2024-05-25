@@ -6,13 +6,15 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-import starsmashertools
+from starsmashertools import __version__ as version
+import inspect
+#import starsmashertools
 import sys
 import os
 
-sys.path.insert(0, starsmashertools.SOURCE_DIRECTORY)
+#sys.path.insert(0, starsmashertools.SOURCE_DIRECTORY)
 
-release = starsmashertools.__version__
+release = version
 
 project = 'starsmashertools'
 copyright = '2024, Roger Hatfull'
@@ -57,9 +59,6 @@ exclude_patterns = ['build', '_templates', 'Thumbs.db', '.DS_Store']
 html_theme = 'alabaster'
 html_static_path = ['_static']
 
-
-import starsmashertools.helpers.apidecorator
-import inspect
 
 def remove_python_comments(content):
     import re
