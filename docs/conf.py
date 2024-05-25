@@ -7,12 +7,13 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 from starsmashertools import __version__ as version
+from starsmashertools import SOURCE_DIRECTORY
 import inspect
 #import starsmashertools
 import sys
 import os
 
-#sys.path.insert(0, starsmashertools.SOURCE_DIRECTORY)
+sys.path.insert(0, SOURCE_DIRECTORY)
 
 release = version
 
