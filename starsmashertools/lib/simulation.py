@@ -242,8 +242,7 @@ class Simulation(object):
         Returns
         -------
         str
-            The "realpath" (:func:`os.path.realpath`) of the default search
-            directory.
+            The :meth:`os.path.realpath` of the default search directory.
         """
         import starsmashertools.helpers.path
         search_directory = self.preferences.get('search directory')
@@ -291,24 +290,23 @@ class Simulation(object):
             **kwargs
     ):
         """
-        Get a list of :class:`starsmashertools.lib.logfile.LogFile`, sorted by
-        oldest-to-newest, including those in subdirectories in the simulation
-        directory.
+        Get a list of :class:`~.logfile.LogFile`\, sorted by oldest-to-newest,
+        including those in subdirectories in the simulation directory.
 
         Other Parameters
         ----------------
         **kwargs
-            Passed directly to :func:`starsmashertools.lib.logfile.find`.
+            Passed directly to :meth:`~.logfile.find`\.
 
         include_joined : bool, default = True
-            If `True`, the joined simulations will be included in the search.
+            If `True`\, the joined simulations will be included in the search.
             Otherwise, only this simulation will be searched.
 
         Returns
         -------
         list
-            A list of :class:`starsmashertools.lib.logfile.LogFile` sorted from
-            oldest-to-newest by system modification times.
+            A list of :class:`~.logfile.LogFile` sorted from oldest-to-newest by
+            system modification times.
         """
         import starsmashertools.lib.logfile
         import starsmashertools.helpers.path
@@ -351,10 +349,10 @@ class Simulation(object):
         ----------
         children : list, tuple, str
             If a `list` or `tuple` is given, this simulation's children become
-            the contents of ``children``. Thus, each element must at least be of
-            type :class:`~.Simulation`. If a `str` or :class:`~.Simulation` is 
+            the contents of ``children``\. Thus, each element must at least be of
+            type :class:`~.Simulation`\. If a `str` or :class:`~.Simulation` is 
             given, then :meth:`starsmashertools.get_simulation` will be called
-            if it is a `str`, and then this simulation will have one child.
+            if it is a `str`\, and then this simulation will have one child.
 
         See Also
         --------
@@ -400,13 +398,13 @@ class Simulation(object):
         """
         Return a list of :class:`~.Simulation` objects that were used to create
         this simulation. For example, if this simulation is a dynamical
-        simulation (nrelax = 0), then it has one child, which is the binary scan
-        that it originated from. Similarly, a binary scan has two children,
+        simulation (``nrelax = 0``), then it has one child, which is the binary
+        scan that it originated from. Similarly, a binary scan has two children,
         which are each the stellar relaxations that make up the two stars in the
         binary.
 
         If the children are already known because they ahve been saved in this 
-        simulation's :class:`~.lib.archive.SimulationArchive`, then the children
+        simulation's :class:`~.archive.SimulationArchive`\, then the children
         will be recovered from the archive. Otherwise, :meth:`~._get_children`
         is called and the result is saved to the archive. You can edit the 
         children in the archive using the ``starsmashertools`` CLI by selecting
@@ -416,13 +414,13 @@ class Simulation(object):
         Parameters
         ----------
         verbose : bool, default = False
-            If `True`, debug messages will be printed to the console.
-
+            If `True`\, debug messages will be printed to the console.
+        
         Returns
         -------
         list
             A list of the child simulations.
-
+        
         See Also
         --------
         :meth:`~.set_children`
@@ -458,8 +456,8 @@ class Simulation(object):
     def get_start_file(self):
         """
         Return the path to the output file that this simulation started from,
-        as identified by 'Simulation/start file' in 
-        :py:mod:`~starsmashertools.preferences`. If this simulation doesn't
+        as identified by ``'Simulation/start file'`` in 
+        :mod:`~starsmashertools.preferences`\. If this simulation doesn't
         have a file matching that name, instead return the first output file 
         this simulation produced. If this simulation has not produced any output
         files, a :py:class:`FileNotFoundError` is raised.
@@ -494,7 +492,7 @@ class Simulation(object):
         
         Returns
         -------
-        :class:`~.lib.units.Unit`
+        :class:`~.units.Unit`
             The simulation time in seconds when this simulation started running.
         """
         import starsmashertools.lib.units
@@ -514,16 +512,16 @@ class Simulation(object):
             include_joined : bool = True,
     ):
         """
-        Obtain the time which the Simulation is currently at.
+        Obtain the time which the :class:`~.Simulation` is currently at.
         
         Other Parameters
         ----------------
         use_logfiles : bool, default = False
-            If `True`, only the simulation's log files are used, which will in
+            If `True`\, only the simulation's log files are used, which will in
             general return larger time values than when using just the output
-            files. If `False`, this method is equivalent to the value of 't' in
-            the header of the very last output file which was written in this
-            simulation.
+            files. If `False`\, this method is equivalent to the value of 
+            ``'t'`` in the header of the very last output file which was written
+            in this simulation.
 
         include_joined : bool, default = True
             If `True` then the simulations which are joined to this simulation
@@ -532,7 +530,7 @@ class Simulation(object):
 
         Returns
         -------
-        :class:`~.lib.units.Unit`
+        :class:`~.units.Unit`
             The simulation time in seconds when this simulation stopped running.
         """
         import starsmashertools.lib.units
@@ -555,17 +553,18 @@ class Simulation(object):
             include_joined : bool = True,
     ):
         """
-        Obtain the time at which the Simulation is expected to stop running.
-        This is set by the ``tf`` parameter in the StarSmasher input file.
+        Obtain the time at which the :class:`~.Simulation` is expected to stop 
+        running. This is set by the ``'tf'`` parameter in the StarSmasher input 
+        file ``sph.input``\.
         
         Other Parameters
         ----------------
         include_joined : bool, default = True
-            If `True`, the joined simulations will be included.
+            If `True`\, the joined simulations will be included.
 
         Returns
         -------
-        tf : :class:`~.lib.units.Unit`
+        tf : :class:`~.units.Unit`
             The stop time for this Simulation.
         """
         import starsmashertools.lib.units
@@ -576,16 +575,20 @@ class Simulation(object):
         return tf
 
     @api
-    def started_from(self, simulation):
+    def started_from(self, simulation : 'starsmashertools.lib.simulation.Simulation'):
         """
+        Parameters
+        ----------
+        simulation : :class:`~.Simulation`
+        
         Returns
         -------
         bool
-            `True` if this simulation was started from ``simulation``, in the 
+            `True` if this simulation was started from ``simulation``\, in the 
             sense that this simulation both has a "start file" (returned by
-            :meth:`~.get_start_file`) and the start file is identical to one of
-            the output files in ``simulation``.
-
+            :meth:`~.get_start_file`\) and the start file is identical to one of
+            the output files in ``simulation``\.
+        
         See Also
         --------
         :meth:`~.get_file`
@@ -627,14 +630,14 @@ class Simulation(object):
         ----------
         filename_or_pattern : str
             A file name in the simulation directory or a pattern (e.g., 
-            ``out*.sph``)
+            ``out*.sph``\)
         recursive : bool, default = True
-            If `True`, searches all sub directories in the simulation. If
-            `False`, searches just the top level simulation directory.
+            If `True`\, searches all sub directories in the simulation. If
+            `False`\, searches just the top level simulation directory.
 
         Returns
         -------
-        `list`
+        list
             A list of paths which match the given pattern or filenames.
         """
         import starsmashertools.helpers.path
@@ -658,38 +661,38 @@ class Simulation(object):
         Returns a list of output file locations. If this simulation has any
         joined simulations, then each of those simulations' output file paths
         are returned as well. The result is sorted by simulation times.
-
+        
         For joined simulations, it is possible that one or more of the joined
         simulations are a "continuation" of this current simulation, or this
         current simulation is a "continuation" of one of its joined simulations.
         Here, a "continuation" is a simulation which was started by copying an
         output file from another simulation and calling it 
-        "restartrad.sph.orig", without changing the simulation type ("nrelax" in
-        sph.input). Only the joined simulations will be checked for a file which
-        is identical to this simulation's "restartrad.sph.orig" file (the actual
-        name depends on the user's preferences, in 
-        :py:mod:`~starsmashertools.preferences`).
-
+        ``'restartrad.sph.orig'``\, without changing the simulation type 
+        (``'nrelax'`` in ``sph.input``\). Only the joined simulations will be 
+        checked for a file which is identical to this simulation's 
+        ``restartrad.sph.orig`` file (the actual name depends on the user's 
+        preferences, in :mod:`~starsmashertools.preferences`\).
+        
         For example, consider that simulation ``A`` produced output files 
-        ``'A/out0000.sph'``, ``'A/out0001.sph'``, and ``'A/out0002.sph'``. Then,
-        simulation ``B`` was created by copying ``'A/out0001.sph'`` and renaming
-        it as ``'B/restartrad.sph.orig'``, and then ``'B/restartrad.sph.orig'``
-        was copied to ``'B/restartrad.sph'`` before starting simulation ``B``. 
-        Suppose then that simulation ``B`` creates output files 
-        ``'B/out0001.sph'``, ``'B/out0002.sph'``, and ``'B/out0003.sph'`` and 
-        that simulations ``A`` and ``B`` are joined. The expected output of this
-        function would be ``['A/out0000.sph', 'B/out0001.sph', 'B/out0002.sph',
-        'B/out0003.sph']``. Note that the actual files simulation ``B`` would 
-        create depends on its input parameters, such as "dtout" in 
-        ``'B/sph.input'``.
+        ``'A/out0000.sph'``\, ``'A/out0001.sph'``\, and ``'A/out0002.sph'``\. 
+        Then, simulation ``B`` was created by copying ``'A/out0001.sph'`` and 
+        renaming it as ``'B/restartrad.sph.orig'``\, and then 
+        ``'B/restartrad.sph.orig'`` was copied to ``'B/restartrad.sph'`` before
+        starting simulation ``B``\. Suppose then that simulation ``B`` creates 
+        output files ``'B/out0001.sph'``\, ``'B/out0002.sph'``\, and 
+        ``'B/out0003.sph'`` and that simulations ``A`` and ``B`` are joined. The
+        expected output of this function would be 
+        ``['A/out0000.sph', 'B/out0001.sph', 'B/out0002.sph', 'B/out0003.sph']``\. 
+        Note that the actual files simulation ``B`` would create depends on its
+        input parameters, such as ``'dtout'`` in ``'B/sph.input'``\.
         
         Parameters
         ----------
         pattern : str, default = Pref('get_outputfiles.output files', 'out*.sph')
-            Passed directly to :meth:`~.get_file`.
+            Passed directly to :meth:`~.get_file`\.
         
         include_joined : bool, default = True
-            If `True`, the joined simulations will be included in the search.
+            If `True`\, the joined simulations will be included in the search.
             Otherwise, only this simulation will be searched.
         
         Returns
@@ -803,35 +806,35 @@ class Simulation(object):
         filename : str, None, default = None
             The name of the resulting compressed file. If `None` then the name
             of the file will be the name of the simulation directory with
-            '.zip' on the end.
+            ``'.zip'`` on the end.
         
         patterns : list, default = Pref('state files')
             File name patterns to include in the compression.
 
         recursive : bool, default = True
-            If `True`, subdirectories are also searched for files matching the
-            given patterns. If `False`, only searches the main simulation
+            If `True`\, subdirectories are also searched for files matching the
+            given patterns. If `False`\, only searches the main simulation
             directory.
 
         delete : bool, default = True
-            If `True`, the files which are compressed are deleted.
+            If `True`\, the files which are compressed are deleted.
 
         delete_after : bool, default = True
-            If `True`, compressed files are deleted only after all files have
-            been compressed. If `False`, each file is deleted after it has
+            If `True`\, compressed files are deleted only after all files have
+            been compressed. If `False`\, each file is deleted after it has
             been compressed. If ``delete = False`` this option is ignored.
 
         Other Parameters
         ----------------
         **kwargs
             Remaining keyword arguments are passed directly to 
-            :func:`~helpers.compressiontask.CompressionTask.compress`.
+            :meth:`starsmashertools.helpers.compressiontask.CompressionTask.compress`\.
 
         See Also
         --------
-        :func:`decompress`
-        :func:`~.helpers.compressiontask.CompressionTask.compress`
-        :py:mod:`starsmashertools.preferences`
+        :meth:`~.decompress`
+        :meth:`starsmashertools.helpers.compressiontask.CompressionTask.compress`
+        :mod:`starsmashertools.preferences`
         """
         import starsmashertools.helpers.path
         import starsmashertools.helpers.compressiontask
@@ -867,25 +870,25 @@ class Simulation(object):
         Parameters
         ----------
         filename : str, None default = None
-            The filename to decompress. If `None`, the simulation directory is
-            searched for a compressed file whose path ends with '.zip'.
+            The filename to decompress. If `None`\, the simulation directory is
+            searched for a compressed file whose path ends with ``'.zip'``\.
             The file chosen is one which has a ``compression.sstools`` file
             included in it, which created by
-            :func:`~helpers.compressiontask.CompressionTask.compress`.
+            :meth:`starsmashertools.helpers.compressiontask.CompressionTask.compress`\.
 
         delete : bool, default = True
-            If `True`, the compressed file is deleted after decompression.
+            If `True`\, the compressed file is deleted after decompression.
         
         Other Parameters
         ----------------
         **kwargs
             Remaining keyword arguments are passed directly to
-            `~helpers.compressiontask.CompressionTask.decompress`.
+            `starsmashertools.helpers.compressiontask.CompressionTask.decompress`\.
 
         See Also
         --------
-        :func:`compress`
-        :func:`~.helpers.compresisontask.CompressionTask.decompress`
+        :meth:`compress`
+        :meth:`starsmashertools.helpers.compresisontask.CompressionTask.decompress`
         """
         import starsmashertools.helpers.compressiontask
 
@@ -933,39 +936,37 @@ class Simulation(object):
             **kwargs
     ):
         """
-        Return a :class:`starsmashertools.lib.output.OutputIterator` containing
-        all the :class:`starsmashertools.lib.output.Output` objects present in
-        this simulation.
+        Return a :class:`~.output.OutputIterator` containing all the 
+        :class:`~.output.Output` objects present in this simulation.
 
         The iterator includes output files from any joined simulations.
         
         Parameters
         ----------
         start : int, None, default = None
-            Passed directly to :meth:`~.get_output`.
+            Passed directly to :meth:`~.get_output`\.
 
         stop : int, None, default = None
-            Passed directly to :meth:`~.get_output`.
+            Passed directly to :meth:`~.get_output`\.
 
         step : int, None, default = None
-            Passed directly to :meth:`~.get_output`.
+            Passed directly to :meth:`~.get_output`\.
 
         include_joined : bool, default = True
-            If `True`, the joined simulations will be included in the search.
+            If `True`\, the joined simulations will be included in the search.
             Otherwise, only this simulation will be searched. Passed directly to
-            :meth:`~.get_output`.
+            :meth:`~.get_output`\.
 
         Other Parameters
         ----------------
         **kwargs
             Other keyword arguments are passed directly to 
-            :class:`starsmashertools.lib.output.OutputIterator`.
+            :class:`~.output.OutputIterator`\.
         
         Returns
         -------
         iterator
-            The created :class:`starsmashertools.lib.output.OutputIterator` 
-            instance.
+            The created :class:`~.output.OutputIterator` instance.
         """
         import starsmashertools.lib.output
         # Now that we have all the file names, we can create an output iterator
@@ -986,26 +987,26 @@ class Simulation(object):
             include_joined : bool = True,
     ):
         """
-        Return the `starsmashertools.lib.output.Output` object of this
-        simulation whose time best matches the given time. Raises a ValueError
-        if the given time is out of bounds.
+        Return the :class:`~.output.Output` object of this simulation whose time
+        best matches the given time. Raises a :py:class:`ValueError` if the 
+        given time is out of bounds.
         
         Parameters
         ----------
-        time : int, float, `starsmashertools.lib.units.Unit`
+        time : int, float, :class:`~.units.Unit`
             The simulation time to locate. If an `int` or `float` are given then
             this value represents time in the simulation units. If a 
-            `starsmashertools.lib.units.Unit` is given, it will be converted to
-            this simulation's time unit.
+            :class:`~.units.Unit` is given, it will be converted to this 
+            simulation's time unit from :attr:`~.units`.
 
         include_joined : bool, default = True
-            If `True`, the joined simulations will be included in the search.
+            If `True`\, the joined simulations will be included in the search.
             Otherwise, only this simulation will be searched.
 
         Returns
         -------
-        `starsmashertools.lib.output.Output`
-            The Output object closest to the given time.
+        :class:`~.output.Output`
+            The :class:`~.output.Output` object closest to the given time.
         """
         import starsmashertools.helpers.midpoint
         import starsmashertools.helpers.string
@@ -1049,9 +1050,8 @@ class Simulation(object):
             cli : bool = False,
     ):
         """
-        Obtain a list of :class:`starsmashertools.lib.output.Output` objects 
-        associated with this simulation. Returns all outputs if no arguments are
-        specified.
+        Obtain a list of :class:`~.output.Output` objects associated with this
+        simulation. Returns all outputs if no arguments are specified.
         
         Parameters
         ----------
@@ -1064,28 +1064,28 @@ class Simulation(object):
         step : int, None, default = None
             How many output files to skip in the slice.
         
-        times : int, float, :class:`starsmashertools.lib.units.Unit`, list, tuple, np.ndarray, default = None
+        times : int, float, :class:`~.units.Unit`\, list, tuple, :class:`numpy.ndarray`\, default = None
             If given, returns the output files that are closest to the given
             simulation time or collection of times. This can possibly include
             duplicate items.
 
         time_range : list, tuple, None, default = None
-            If not `None`, this must be an iterable of 2 elements, the first 
+            If not `None`\, this must be an iterable of 2 elements, the first 
             being the lower time bound and the second being the upper time 
             bound. If either bounds are `None` then only one bound will be used.
         
-        indices : list, tuple, np.ndarray, default = None
+        indices : list, tuple, :class:`numpy.ndarray`\, default = None
             If given, returns the output files at each index from the result of
-            :meth:`~.get_outputfiles()`.
+            :meth:`~.get_outputfiles`\.
 
         include_joined : bool, default = True
-            If `True`, the joined simulations will be included in the search.
+            If `True`\, the joined simulations will be included in the search.
             Otherwise, only this simulation will be searched.
         
         Returns
         -------
-        list, `starsmashertools.lib.output.Output`
-            A list of :class:`~.lib.output.Output` objects. If the list contains
+        list, :class:`~.output.Output`
+            A list of :class:`~.output.Output` objects. If the list contains
             only a single item, that item is returned instead.
         """
         import starsmashertools.lib.output
@@ -1170,17 +1170,17 @@ class Simulation(object):
         Other Parameters
         ----------------
         kwargs : dict
-            Extra keyword arguments passed to :meth:`~.get_output_iterator`. 
+            Extra keyword arguments passed to :meth:`~.get_output_iterator`\. 
             Note that keyword ``return_headers`` is always `True` and 
-            ``return_data`` is always `False`. Keyword ``asynchronous`` is set 
+            ``return_data`` is always `False`\. Keyword ``asynchronous`` is set 
             to `False` by default because reading headers is often faster that 
             way.
 
         Returns
         -------
-        `dict`
-            Each key is a :class:`starsmashertools.lib.output.Output` object and
-            each value is the entire header.
+        dict
+            Each key is a :class:`~.output.Output` object and each value is the
+            entire header.
         """
         kwargs['return_headers'] = True
         kwargs['return_data'] = False
@@ -1199,23 +1199,23 @@ class Simulation(object):
             include_joined : bool = True,
     ):
         """
-        Get the :class:`~.lib.energyfile.EnergyFile` objects associated with
-        this simulation.
+        Get the :class:`~.energyfile.EnergyFile` objects associated with this 
+        simulation.
 
         Other Parameters
         ----------------
         skip_rows : int, None, default = None
-            Only read every Nth line of each energy file. If `None`, uses the 
-            default value in :func:`~.lib.energyfile.EnergyFile.__init__`.
+            Only read every Nth line of each energy file. If `None`\, uses the 
+            default value in :meth:`~.energyfile.EnergyFile.__init__`\.
 
         include_joined : bool, default = True
-            If `True`, the joined simulations will be included in the search.
+            If `True`\, the joined simulations will be included in the search.
             Otherwise, only this simulation will be searched.
 
         Returns
         -------
         list
-            A list of :class:`~.lib.energyfile.EnergyFile` objects.
+            A list of :class:`~.energyfile.EnergyFile` objects.
         """
         import starsmashertools.lib.energyfile
         energyfiles = []
@@ -1245,18 +1245,19 @@ class Simulation(object):
             error if that key doesn't exist.
 
         skip_rows : int, None, default = None
-            Only read every Nth line of each energy file. If `None`, uses the 
-            default value in :func:`~.lib.energyfile.EnergyFile.__init__`.
+            Only read every :math:`\\mathrm{N^{th}}` line of each energy file. 
+            If `None`\, uses the default value in 
+            :meth:`~.energyfile.EnergyFile.__init__`\.
 
         include_joined : bool, default = True
-            If `True`, the joined simulations will be included in the search.
+            If `True`\, the joined simulations will be included in the search.
             Otherwise, only this simulation will be searched.
 
         Returns
         -------
         dict or None
-            A dictionary of NumPy arrays. If no energy files were found, returns
-            `None` instead.
+            A dictionary of :class:`numpy.ndarray`\. If no energy files were 
+            found, returns `None` instead.
         """
         energyfiles = self.get_energyfiles(
             skip_rows = skip_rows,
@@ -1476,21 +1477,21 @@ class Simulation(object):
         Merge two simulations of the same type together, by having
         starsmashertools retrieve the output files of all joined simulations
         whenever the ``include_joined`` flag is set to `True` (default) in
-        :meth:`~.get_output`, :meth:`~.get_output_at_time`, 
-        :meth:`~.get_output_iterator`, :meth:`~.get_outputfiles`, 
-        :meth:`~.get_logfiles`, :meth:`~.get_energyfiles`, and 
-        :meth:`~.get_energy`.
+        :meth:`~.get_output`\, :meth:`~.get_output_at_time`\, 
+        :meth:`~.get_output_iterator`\, :meth:`~.get_outputfiles`\, 
+        :meth:`~.get_logfiles`\, :meth:`~.get_energyfiles`\, and 
+        :meth:`~.get_energy`\.
 
-        The "restartrad.sph.orig" file (or equivalent from 
-        :py:mod:`starsmashertools.preferences`) must originate from ``other``,
-        or ``other`` must have a "restartrad.sph.orig" file which originates
+        The ``restartrad.sph.orig`` file (or equivalent from 
+        :mod:`starsmashertools.preferences`\) must originate from ``other``\,
+        or ``other`` must have a ``restartrad.sph.orig`` file which originates
         from this simulation. Otherwise, a :class:`~.JoinError` is raised.
 
-        To undo this operation, use :meth:`~.split`.
+        To undo this operation, use :meth:`~.split`\.
         
         Parameters
         ----------
-        other : :class:`~.Simulation` | str
+        other : str, :class:`~.Simulation`
             The other simulation to merge with, or a path to a simulation
             directory.
 
@@ -1560,18 +1561,18 @@ class Simulation(object):
             cli : bool = False,
     ):
         """
-        The opposite of :meth:`~.join`. Split this simulation apart from each
+        The opposite of :meth:`~.join`\. Split this simulation apart from each
         simulation it is joined to. Any simulation joined to this one will also
         be split apart from it.
 
         Other Parameters
         ----------------
-        which : str, :class:`~.Simulation`, None, default = None
+        which : str, :class:`~.Simulation`\, None, default = None
             Which simulation to split from the joined simulations. If a `str` is
             given, it must match exactly one of the directory strings stored in
             this simulation's archive file. If a :class:`~.Simulation` is given,
             it must have a directory which matches one of those directory
-            strings. Otherwise, if `None`, this simulation will be split apart 
+            strings. Otherwise, if `None`\, this simulation will be split apart 
             from all of its joined simulations.
         
         See Also
@@ -1658,7 +1659,7 @@ class Simulation(object):
 
     def get_state(self):
         """ 
-        Return a new :class:`~.State` object and call :meth:`~.State.get`.
+        Return a new :class:`~.State` object and call :meth:`~.State.get`\.
         """
         state = State(self)
         state.get()

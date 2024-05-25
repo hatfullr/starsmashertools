@@ -6,10 +6,10 @@ class Midpoint(object):
     """
     This class provides an abstract way of implementing the midpoint method.
     A list of objects is specified at instantiation and a set of criteria are
-    provided in :func:`set_criteria`. Each criterion is a function which accepts
-    one of the objects given in the list at instantiation and returns a boolean.
-    The return values inform the method on how to take steps towards the
-    midpoint value in the :func:`get` function.
+    provided in :meth:`~.set_criteria`\. Each criterion is a function which 
+    accepts one of the objects given in the list at instantiation and returns a
+    :py:class:`bool`\. The return values inform the method on how to take steps
+    towards the midpoint value in the :meth:`~.get` function.
     """
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     def __init__(
@@ -32,7 +32,7 @@ class Midpoint(object):
         
     def set_criteria(self, low, equal, high):
         """
-        Set the criterion functions to be evaluated by the :func:`get` method.
+        Set the criterion functions to be evaluated by the :meth:`~.get` method.
         Each criterion is passed as input to the :class:`~.Midpoint.Criteria` 
         class constructor.
 
@@ -58,8 +58,8 @@ class Midpoint(object):
 
         See Also
         --------
-        :class:`Criteria`
-        :func:`get`
+        :class:`~.Criteria`
+        :meth:`~.get`
         """
         self._criteria = Midpoint.Criteria(low, equal, high)
 
@@ -71,34 +71,34 @@ class Midpoint(object):
             return_index : bool = False,
     ):
         """
-        Obtain the object at the midpoint. We work with 3 indices, `low`, `mid`,
-        and `high`, where each index points to one of the objects in the list of
-        objects specified in the constructor. The value of `low` is initially 0
-        and `high` is ``len(objects) - 1``. On every iteration, `mid` is
-        evaluated as ``int((low + high)/2)`` and we check if ``mid == low`` or
-        ``mid == high``. If so, then we return the object specified by `favor`.
-        Otherwise, we obtain the result of each criterion function for the
-        objects in the list at `low`, `mid`, and `high`. If the "LessThan"
-        criterion is `True` then we set ``low = mid``, otherwise if the "Equal"
-        criterion is `True` then we return ``objects[mid]``. Otherwise, if the
-        "GreaterThan" criterion is `True` then ``high = mid`` and we continue to
-        the next iteration.
+        Obtain the object at the midpoint. We work with 3 indices, ``low``\, 
+        ``mid``\, and ``high``\, where each index points to one of the objects 
+        in the list of objects specified in the constructor. The value of 
+        ``low`` is initially 0 and `high` is ``len(objects) - 1``\. On every 
+        iteration, ``mid`` is evaluated as ``int((low + high)/2)`` and we check
+        if ``mid == low`` or ``mid == high``\. If so, then we return the object
+        specified by ``favor``\. Otherwise, we obtain the result of each 
+        criterion function for the objects in the list at ``low``\, ``mid``\, 
+        and ``high``\. If the "LessThan" criterion is `True` then we set 
+        ``low = mid``\, otherwise if the "Equal" criterion is `True` then we 
+        return ``objects[mid]``\. Otherwise, if the "GreaterThan" criterion is
+        `True` then ``high = mid`` and we continue to the next iteration.
 
         Parameters
         ----------
-        favor : str, default='low'
+        favor : str, default=``'low'``
             In the case where the midpoint is equal to one of the bounding
-            values (`low` or `high`) then ``objects[low]`` is returned if
-            ``favor == 'low'``, ``objects[mid]`` if ``favor == 'mid'``, and
-            ``objects[high]`` if ``favor == 'high'``.
+            values (``low`` or ``high``\) then ``objects[low]`` is returned if
+            ``favor == 'low'``\, ``objects[mid]`` if ``favor == 'mid'``\, and
+            ``objects[high]`` if ``favor == 'high'``\.
 
-            Must be one of 'low', 'mid', or 'high'.
+            Must be one of ``'low'``\, ``'mid'``\, or ``'high'``\.
 
         max_iter : int, default = 10000
             The maximum number of iterations.
 
         return_index : bool, default = False
-            If `True`, the second value returned is the midpoint object's index
+            If `True`\, the second value returned is the midpoint object's index
             in the array of objects.
 
         Returns
@@ -111,8 +111,8 @@ class Midpoint(object):
 
         See Also
         --------
-        :func:`__init__`
-        :func:`set_criteria`
+        :meth:`~.__init__`
+        :meth:`~.set_criteria`
         """
         starsmashertools.helpers.argumentenforcer.enforcevalues({
             'favor' : ['low', 'mid', 'high'],
@@ -156,12 +156,12 @@ class Midpoint(object):
     class Criteria(object):
         """
         A class representing the criterion functions used in the
-        :class:`Midpoint` class.
+        :class:`~.Midpoint` class.
         """
         class Result(enum.Enum):
             """
             An enumerator used to identify the result of the criterion functions
-            used in the :class:`Midpoint.Criteria` class.
+            used in the :class:`~.Midpoint.Criteria` class.
             """
             LessThan = 1
             Equal = 2
@@ -175,23 +175,24 @@ class Midpoint(object):
             ----------
             low : callable
                 A function which accepts an arbitrary object and returns a 
-                value that is checked in the :func:`check` method. This function
-                should return a value that evaluates to `True` if the given
-                object represents a case that is 'lower' than the midpoint
+                value that is checked in the :meth:`~.check` method. This 
+                function should return a value that evaluates to `True` if the
+                given object represents a case that is 'lower' than the midpoint
                 value.
         
             equal : callable
                 A function which accepts an arbitrary object and returns a 
-                value that is checked in the :func:`check` method. This function
-                should return a value that evaluates to `True` if the given
-                object represents a case that is 'equal' to the midpoint value.
+                value that is checked in the :meth:`~.check` method. This 
+                function should return a value that evaluates to `True` if the
+                given object represents a case that is 'equal' to the midpoint 
+                value.
 
             high : callable
                 A function which accepts an arbitrary object and returns a 
-                value that is checked in the :func:`check` method. This function
-                should return a value that evaluates to `True` if the given
-                object represents a case that is 'higher' than the midpoint
-                value.
+                value that is checked in the :meth:`~.check` method. This 
+                function should return a value that evaluates to `True` if the
+                given object represents a case that is 'higher' than the
+                midpoint value.
             """
             if not callable(low):
                 raise Midpoint.Criteria.CriteriaNotCallableError(str(low))
@@ -205,28 +206,28 @@ class Midpoint(object):
 
         def check(self, obj):
             """
-            Check the return values of the `low`, `equal`, and `high` functions
-            given in the constructor, in that order. The first one to evaluate
-            as `True` returns the return value.
-
+            Check the return values of the ``low``\, ``equal``\, and ``high`` 
+            functions given in :meth:`~.set_criteria`\, in that order. The 
+            first one to evaluate as `True` returns the return value.
+            
             Parameters
             ----------
             obj : object
-                An arbitrary object that is passed to the `low`, `equal`, and
-                `high` functions.
+                An arbitrary object that is passed to the ``low``\, ``equal``\,
+                and ``high`` functions.
 
             Returns
             -------
-            Midpoint.Criteria.Result
-                If the `low` function evaluates to `True`, ``Result.LessThan``
-                is returned. If the `mid` function evaluates to `True`,
-                ``Result.Equal`` is returned. If the `low` function evaluates to
-                `True`, ``Result.GreaterThan`` is returned. Otherwise a
-                `RuntimeError` is raised.
+            :class:`~.Midpoint.Criteria.Result`
+                If the ``low`` function evaluates to `True`\, 
+                ``Result.LessThan`` is returned. If the ``mid`` function 
+                evaluates to `True`\, ``Result.Equal`` is returned. If the 
+                ``low`` function evaluates to `True`\, ``Result.GreaterThan`` is
+                returned. Otherwise a :py:class:`RuntimeError` is raised.
 
             See Also
             --------
-            :class:`Result`
+            :class:`~.Result`
             """
             if self.low(obj): return Midpoint.Criteria.Result.LessThan
             elif self.equal(obj): return Midpoint.Criteria.Result.Equal

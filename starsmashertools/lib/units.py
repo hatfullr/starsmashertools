@@ -1,6 +1,5 @@
-"""
-See the bottom of this file for definitions of constants.
-"""
+# See the bottom of this file for definitions of constants.
+
 import starsmashertools.preferences
 import starsmashertools.helpers.readonlydict
 import starsmashertools.helpers.argumentenforcer
@@ -29,14 +28,16 @@ def get_all_labels():
 class Unit(object):
     """
     To use string formatters with a Unit, you can either specify the usual
-    formatting as integer or float types, i.e., ``'{:5.3f}'``, or you can
+    formatting as integer or float types, i.e., ``'{:5.3f}'``\, or you can
     specify a formatter for both the value and the label, i.e. ``'{:5.3f 6s}'``
     (see examples below). Any whitespace between the value and label formatters 
     is discarded during processing.
     
-    Formatting Example
-    ------------------
+    Example
+    -------
         
+    .. code-block:: python
+
         import starsmashertools.lib.units
         u = starsmashertools.lib.units.Unit(1.234567, 'day')
     
@@ -267,22 +268,22 @@ class Unit(object):
         
         Other Parameters
         ----------
-        new : str, :class:`~.Unit.Label`, :class:`~.Unit`, None, default = None
+        new : str, :class:`~.Unit.Label`\, :class:`~.Unit`\, None, default = None
             If a :py:class:`str` is given it will be converted to a 
-            :class:`~.Unit.Label`. If a :class:`~.Unit` is given, it must have
-            the same dimensions as this Unit. If `None`, you must specify 
+            :class:`~.Unit.Label`\. If a :class:`~.Unit` is given, it must have
+            the same dimensions as this Unit. If `None`\, you must specify 
             keyword ``to`` (see below).
         
-        to : list, tuple, :class:`~.Units`, None, default = None
+        to : list, tuple, :class:`~.Units`\, None, default = None
             An iterable of :py:class:`str` unit labels. For each given string, 
             the :class:`~.Unit.Label` is searched for matches. Then, each match
             is converted to the base units (cgs) before being converted into the
-            unit of the given string. If `None`, you must specify keyword 
+            unit of the given string. If `None`\, you must specify keyword 
             ``new`` (see above).
         
         **kwargs
             Keywords arguments are passed directly to 
-            :meth:`~.Unit.get_conversion_factor`.
+            :meth:`~.Unit.get_conversion_factor`\.
         
         Returns
         -------

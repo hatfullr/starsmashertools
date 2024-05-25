@@ -31,21 +31,21 @@ def update_archive_version(
         verbose : bool = False,
 ):
     """
-    Convert old-style :py:class:`~.Archive` files to new-style files. This 
-    function does nothing if the given :py:class:`~.Archive` is already in the
+    Convert old-style :class:`~.Archive` files to new-style files. This 
+    function does nothing if the given :class:`~.Archive` is already in the
     latest format.
 
     Parameters
     ----------
     old_path : str
-        The file path to the old :py:class:`~.Archive` to convert.
+        The file path to the old :class:`~.Archive` to convert.
 
     Other Parameters
     ----------------
     new_path : str, None, default = None
-        If a `str` is given, the updated :py:class:`~.Archive` will be saved at
+        If a `str` is given, the updated :class:`~.Archive` will be saved at
         that file path. Otherwise it will be saved at the old 
-        :py:class:`~.Archive`'s path, overwriting it.
+        :class:`~.Archive`\'s path, overwriting it.
     """
     import starsmashertools.helpers.file
     import starsmashertools.helpers.jsonfile
@@ -207,14 +207,14 @@ class ArchiveValue(object):
         
         value : serializable types
             A value that is one of the serializable types, found in the keys of
-            :py:property:`~.helpers.jsonfile.serialization_methods`.
+            :attr:`~.helpers.jsonfile.serialization_methods`\.
         
         origin : str, None, default = None
             Path to the file from which this value originated.
 
         mtime : int, float, None, default = None
-            The modification time of the file specified by `origin`. If not
-            `None` then `origin` can be a file which doesn't currently exist.
+            The modification time of the file specified by ``origin``\. If not
+            `None` then ``origin`` can be a file which doesn't currently exist.
         """
         import starsmashertools.helpers.path
         
@@ -349,8 +349,8 @@ def REPLACE_OLD(
     A function that decides whether or not to replace an old value. The old
     value is replaced if its file modification time is less than the new
     value's. This function can be registered as a replacement checker in an
-    :class:`~.Archive`. This is a valid flag for the `replacement_flags`
-    keyword in the constructor of an :class:`~.Archive`.
+    :class:`~.Archive`\. This is a valid flag for the `replacement_flags`
+    keyword in the constructor of an :class:`~.Archive`\.
 
     Parameters
     ----------
@@ -359,7 +359,7 @@ def REPLACE_OLD(
 
     new_value : :class:`~.ArchiveValue`
         The new value whose identifier matches that of the `old_value` and who
-        will replace ``old_value`` if this function returns `True`.
+        will replace ``old_value`` if this function returns `True`\.
 
     Returns
     -------
@@ -380,19 +380,21 @@ def REPLACE_NEQ(
 @starsmashertools.preferences.use
 class Archive(object):
     """
-    An Archive object stores :class:`ArchiveValue`s in a single file for quick 
+    An Archive object stores :class:`ArchiveValue`\s in a single file for quick 
     access. Note that :class:`ArchiveValue` can only store data that is JSON
     serializable. This typically includes only standard types str, bool, float,
-    int, list, tuple, and dict. However, additional types such as np.ndarray,
-    np.integer, and more can also be stored as specified in 
-    :py:mod:`~.starsmashertools.helpers.jsonfile`, which you can update to
-    include additional data types. See
-    :py:property:`~.helpers.jsonfile.serialization_methods` for details.
+    int, list, tuple, and dict. However, additional types such as 
+    :class:`numpy.ndarray`, :class:`numpy.integer`, and more can also be stored
+    as specified in :mod:`~.starsmashertools.helpers.jsonfile`\, which you can
+    update to include additional data types. See
+    :attr:`~.helpers.jsonfile.serialization_methods` for details.
     
     Examples
     --------
     Suppose you have many StarSmasher output files and you want to store the
-    total number of particles each one has in a file called ``mydata.dat``:
+    total number of particles each one has in a file called ``mydata.dat``\:
+    
+    .. code-block:: python
     
         import starsmashertools
         import starsmashertools.lib.archive
@@ -410,7 +412,6 @@ class Archive(object):
             # iteration, then interrupting the program won't cause us to lose
             # any data we already calculated.
             archive.save()
-
     """
 
     open_method_kwargs = {
@@ -443,7 +444,7 @@ class Archive(object):
             thread_safe : bool = False,
     ):
         """
-        Constructor for :class:`~.Archive`.
+        Constructor for :class:`~.Archive`\.
 
         Parameters
         ----------
@@ -452,32 +453,34 @@ class Archive(object):
 
         Other Parameters
         ----------------
-        replacement_flags : list, tuple, default = Pref('replacement flags')
+        replacement_flags : list, tuple, default = ``Pref('replacement flags')``
             A list of flags to use to determine if a replacement should happen
             in the archive whenever a new :class:`ArchiveValue` is about to be
             written to a pre-existing identifier. Each element of in 
-            `replacement_flags` must be a function which accepts two arguments, 
-            each is :class:`~.ArchiveValue`. The first argument is the old value
-            and the second the new value. Each function must return a bool-like 
-            value which will be evaluated by an "if" statement.
-
+            ``replacement_flags`` must be a function which accepts two 
+            arguments, each is :class:`~.ArchiveValue`\. The first argument is 
+            the old value and the second the new value. Each function must 
+            return a bool-like value which will be evaluated by an ``if``
+            statement.
+        
             If an empty list is given, values in the archive will be
-            overwritten (no checks performed), unless if ``readonly`` is `True`.
+            overwritten (no checks performed), unless if ``readonly`` is 
+            `True`\.
 
         auto_save : bool, default = True
-            If `True`, values will automatically be written to the file on the
-            system whenever they are edited. If `False`, it is the user's
-            responsibility to call :func:`~.save` to save the contents.
+            If `True`\, values will automatically be written to the file on the
+            system whenever they are edited. If `False`\, it is the user's
+            responsibility to call :meth:`~.save` to save the contents.
 
         readonly : bool, default = False
-            If `True`, a :py:class:`~.Archive.ReadOnlyError` is raised whenever
-            :py:func:`~.Archive.save` is called on this object.
+            If `True`\, a :class:`~.Archive.ReadOnlyError` is raised whenever
+            :meth:`~.Archive.save` is called on this object.
             
         verbose : bool, default = True
-            If `False`, messages are suppressed. Otherwise messages are
+            If `False`\, messages are suppressed. Otherwise messages are
             printed to the standard output.
 
-        max_buffer_size : int, default = Pref('max buffer size', int(1e5))
+        max_buffer_size : int, default = ``Pref('max buffer size', int(1e5))``
             The maximum allowed size in bytes that the buffer can have when auto
             save is disabled. When the buffer exceeds this value the archive is
             saved.
@@ -485,7 +488,7 @@ class Archive(object):
         thread_safe : bool, default = False
             If `True` then we will try to make thread-safe assumptions about 
             the state of the archive, such as reading the file on the system to
-            determine its contents whenever a value is modified. If `False`,
+            determine its contents whenever a value is modified. If `False`\,
             then it is assumed that this archive was created on the main
             process, such that we can use faster operations for determining the
             current state of the archive.
@@ -623,14 +626,15 @@ class Archive(object):
         )
         
     @api
-    def __contains__(self, key):
+    def __contains__(self, key : str | ArchiveValue):
         """ If an :class:`~.ArchiveValue` is specified, calls 
-        :py:meth:`~.values`, which reads the entire Archive file and can be 
+        :meth:`~.values`\, which reads the entire Archive file and can be 
         quite I/O intensive. Use sparingly. Otherwise, if a str is given then
         the string is checked against the keys, which is faster. """
         if isinstance(key, ArchiveValue): key = key.identifier
         return key in self.keys()
-    
+
+    @api
     def __delitem__(self, key):
         """ Remove the given key from the Archive. If auto save is enabled, the
         Archive file will be modified. """
@@ -725,9 +729,9 @@ class Archive(object):
             key,
             value : ArchiveValue,
     ):
-        """ Similar to :py:func:`dict.__setitem__` except the archive file is
+        """ Similar to :py:meth:`dict.__setitem__` except the archive file is
         modified if auto save is enabled. Also the replacement flag functions
-        specified in :py:func:`~.__init__` are checked. If all the functions 
+        specified in :meth:`~.__init__` are checked. If all the functions 
         return `True` then the value is overwritten. Otherwise, nothing 
         happens. """
 
@@ -747,9 +751,8 @@ class Archive(object):
         if not self.thread_safe: self._keys += [key]
 
         self._auto_save()
-    
+
     def __getitem__(self, key):
-        """ Obtain the value corresponding with the given key. """
         if not self.thread_safe and key not in self._keys:
             raise KeyError(key)
         
@@ -838,8 +841,8 @@ class Archive(object):
         Parameters
         ----------
         verbose : bool, None, default = None
-            Overrides the :py:attr:`~.verbose` option in :py:func:`~.__init__`.
-            If `None` then :py:attr:`~.verbose` is used instead.
+            Overrides the :attr:`~.verbose` option in :meth:`~.__init__`\.
+            If `None` then :attr:`~.verbose` is used instead.
         """
         import starsmashertools.helpers.path
         import starsmashertools.helpers.asynchronous
@@ -928,18 +931,18 @@ class Archive(object):
     def add(self, *args, **kwargs):
         """
         Create a new :class:`ArchiveValue` and add it to the archive. If there
-        already exists a :class:`ArchiveValue` with the same `identifier` in the
-        archive, then if the origin file is different we overwrite the old
+        already exists a :class:`ArchiveValue` with the same ``identifier`` in 
+        the archive, then if the origin file is different we overwrite the old
         value. Otherwise, if the file's modification time is more recent than
         the archived value, we also overwrite the old value.
 
         Other Parameters
         ----------
         *args
-            Positional arguments are passed directly to :class:`ArchiveValue`.
+            Positional arguments are passed directly to :class:`ArchiveValue`\.
 
         **kwargs
-            Keyword arguments are passed directly to :class:`ArchiveValue`.
+            Keyword arguments are passed directly to :class:`ArchiveValue`\.
         """
         value = ArchiveValue(*args, **kwargs)
         self[value.identifier] = value
@@ -950,7 +953,7 @@ class Archive(object):
     @clioptions(display_name = 'Set/add a value')
     def set(self, *args, **kwargs):
         """
-        A simple alias for :meth:`~.add`.
+        A simple alias for :meth:`~.add`\.
 
         See Also
         --------
@@ -968,27 +971,28 @@ class Archive(object):
         """
         Obtain the key or keys given. This is useful for if you want to retrieve
         many values from the archive without opening and closing the file each
-        time. Raises a :py:class:`KeyError` if any of the keys weren't found.
+        time. Raises a :class:`KeyError` if any of the keys weren't found.
 
         Parameters
         ----------
         keys : str, list, tuple
-            If a `str`, the behavior is equivalent to :meth:`~.__getitem__`. If
-            a `list` or `tuple`, each element must be type `str`. Then the
-            archive is opened and the values for the given keys are returned in
-            the same order as ``keys``.
+            If a `str`\, the behavior is equivalent to 
+            :meth:`~.Archive.__getitem__`\. If a `list` or `tuple`\, each 
+            element must be type `str`\. Then the archive is opened and the 
+            values for the given keys are returned in the same order as 
+            ``keys``\.
 
         Other Parameters
         ----------------
         deserialize : bool, default = True
-            If `True`, the values in the :class:`~.Archive` are converted from
+            If `True`\, the values in the :class:`~.Archive` are converted from
             their raw format as stored in the file on the system into Python
             objects. Otherwise, the raw values are returned.
 
         Returns
         -------
         :class:`~.ArchiveValue` or `list`
-            If a `str` was given for ``keys``, a :class:`~.ArchiveValue` is 
+            If a `str` was given for ``keys``\, a :class:`~.ArchiveValue` is 
             returned. Otherwise, a `list` of :class:`~.ArchiveValue` objects is
             returned.
         """
@@ -1061,7 +1065,7 @@ class Archive(object):
     @clioptions(display_name = 'Remove a key')
     def remove(self, key : str, cli : bool = False):
         """
-        Remove an identifier from the Archive. Calls :py:meth:`~.save` if auto
+        Remove an identifier from the Archive. Calls :meth:`~.save` if auto
         save is enabled.
 
         Parameters
@@ -1075,14 +1079,14 @@ class Archive(object):
     @api
     def combine(self, other):
         """
-        Merge the contents of 'other' with this Archive, according to this 
-        Archive's replacement flags.
+        Merge the contents of ``other`` with this :class:`~.Archive`\, according
+        to this :class:`~.Archive`\'s replacement flags.
 
         Parameters
         ----------
         other : str, Archive
-            The Archive whose contents will be merged into this Archive. Only 
-            this Archive will be affected.
+            The Archive whose contents will be merged into this 
+            :class:`~.Archive`\. Only this :class:`~.Archive` will be affected.
         """
         import copy
 
@@ -1192,14 +1196,14 @@ class Archive(object):
 
     def find_old_values(self):
         """
-        Using :property:`~.replacement_flags`, locate the 
+        Using :attr:`~.replacement_flags`\, locate the 
         :class:`~.ArchiveValue` objects whose origins have a newer modification
-        time than that which is currently saved in the :class:`~.Archive`. This
+        time than that which is currently saved in the :class:`~.Archive`\. This
         is useful for detecting which values need to be updated in an Archive.
         
         Ignores any :class:`~.ArchiveValue` object with an origin that is not 
-        currently on the file system or whose origin is `None`, or whose mtime
-        value is `None`.
+        currently on the file system or whose origin is `None`\, or whose mtime
+        value is `None`\.
 
         Returns
         -------
@@ -1221,36 +1225,38 @@ class Archive(object):
 @starsmashertools.preferences.use
 class SimulationArchive(Archive, object):
     """
-    When working with data from a :class:`~.lib.simulation.Simulation`, it is
+    When working with data from a :class:`~.lib.simulation.Simulation`\, it is
     common to want to save results of calculations in a way that is easily
     retrievable again in the future, such as getting the sum of total energies
     etc. Such operations can take a very long time if there are a lot of output
     files. If the work is interrupted then all the calculations are lost and we
-    have to start over again. To mitigate this we can use a SimulationArchive.
+    have to start over again. To mitigate this we can use a 
+    :class:`~.SimulationArchive`\.
 
-    Examples
-    --------
+    Example
+    -------
+    
+    .. code-block:: python
     
         import starsmashertools
         import starsmashertools.lib.archive
         simulation = starsmashertools.get_simulation(".")
         archive = starsmashertools.lib.archive.SimulationArchive(simulation)
-    
     """
     
     @api
     def __init__(self, simulation):
         """
-        Constructor for a :class:`SimulationArchive`. Note that a
+        Constructor for a :class:`SimulationArchive`\. Note that a
         :class:`~.SimulationArchive` is not directly loaded or saved. This
-        rather happens automatically as archived values are accessed / modified.
+        rather happens automatically as archived values are accessed/modified.
 
         There are no replacement flags available, as all values are forcibly 
         overwritten always.
 
         Parameters
         ----------
-        simulation : :py::class:`~.simulation.Simulation`, str
+        simulation : str, :class:`~.simulation.Simulation`
             The simulation to which this archive belongs, or a string path to a
             simulation directory or a simulation archive within a simulation
             directory.

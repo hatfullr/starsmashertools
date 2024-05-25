@@ -186,7 +186,7 @@ class CursesInput(object):
 
 class Session(object):
     """ Store information about the CLI session. Whenever an InputManager has 
-    method :py:func:`~.InputManager.get` called, we store the user's input
+    method :meth:`~.InputManager.get` called, we store the user's input
     whenever we ask them for a keyword (has a default value). The next time we
     ask them for that value, the new default will be their previous response. 
     """

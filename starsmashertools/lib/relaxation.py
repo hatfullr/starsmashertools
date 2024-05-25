@@ -100,8 +100,8 @@ class Relaxation(starsmashertools.lib.simulation.Simulation, object):
     @clioptions(display_name = 'Bounding box at end of time integration')
     def get_final_extents(self, cli : bool = False):
         """
-        Returns the results of :func:`~.lib.output.Output.get_extents` with
-        keyword ``radial = True``.
+        Returns the results of :meth:`~.lib.output.Output.get_extents` with
+        keyword ``radial = True``\.
         """
         output = self.get_output(-1)
         extents = output.get_extents(radial = True)
@@ -124,41 +124,42 @@ class Relaxation(starsmashertools.lib.simulation.Simulation, object):
             cli : bool = False,
     ):
         """
-        Returns the binding energy of the star's envelope E_{SPH}(m(r)) at some
-        specified mass coordinate, as defined in equation (12) of Hatfull et al.
-        (2021).
+        Returns the binding energy of the star's envelope 
+        :math:`E_\\mathrm{SPH}` at some specified mass coordinate :math:`m(r)`\,
+        as defined in equation (12) of Hatfull et al. (2021).
 
         Parameters
         ----------
-        output : :class:`~.lib.output.Output`, :class:`~.lib.output.OutputIterator`
+        output : :class:`~.lib.output.Output`\, :class:`~.output.OutputIterator`
            If a :class:`~.lib.output.Output` is given, the binding energy will
            be calculated just for that output file and a single value will be 
-           returned. If a :class:`~.lib.output.OutputIterator` is given then the
+           returned. If a :class:`~.output.OutputIterator` is given then the
            binding energy will be calculated for all 
-           :class:`~.lib.output.Output` objects in the iterator and a list of
+           :class:`~.output.Output` objects in the iterator and a list of
            values will be returned.
         
         Other Parameters
         ----------
         mass_coordinate : int, float, None, default = None
-           The mass coordinate "m(r)" to calculate the binding energy at. Set to
-           `None` to get the total binding energy of the envelope, skipping the
-           core particle if there is one. That is, m(r) = m_coreparticle. Set to
-           0 to get the binding energy of the entire star, including any core
-           particles (perhaps not valid?). A ValueError is raised if this 
-           argument is negative.
+           The mass coordinate :math:`m(r)` to calculate the binding energy at. 
+           Set to `None` to get the total binding energy of the envelope, 
+           skipping the core particle if there is one. That is, 
+           :math:`m(r) = m_{core\\ particle}`\. Set to 0 to get the binding 
+           energy of the entire star, including any core particles (perhaps not
+           valid?). A :py:class:`ValueError` is raised if this argument is 
+           negative.
 
         Returns
         -------
-        :class:`~.lib.units.Unit` or list
-           If ``output`` is of type :class:`~.lib.output.Output` then a 
-           :class:`~.lib.units.Unit` is returned in cgs units. If ``output`` is
-           of type :class:`~.lib.output.OutputIterator` then a list of 
-           :class:`~.lib.units.Unit` objects is returned.
+        :class:`~.units.Unit` or list
+           If ``output`` is of type :class:`~.output.Output` then a 
+           :class:`~.units.Unit` is returned in cgs units. If ``output`` is
+           of type :class:`~.output.OutputIterator` then a list of 
+           :class:`~.units.Unit` objects is returned.
         
         See Also
         --------
-        :func:`~.lib.output.Output.get_core_particles`, :class:`~.lib.units.Unit`
+        :meth:`~.output.Output.get_core_particles`\, :class:`~.units.Unit`
         """
         import starsmashertools.lib.output
         import starsmashertools.lib.units

@@ -807,17 +807,25 @@ class Table(Page, object):
     """Display a table of data in the terminal. The content given as input must
     be either a list of columns or a callable function that takes no inputs and
     returns a list of columns. Columns themselves should be lists, such that the
-    content appears as, e.g. ``[[0,1],[0,1],[2,3]]``, which would give a table
+    content appears as, e.g. ``[[0,1],[0,1],[2,3]]``\, which would give a table
     like:
-        ``0 0 2``
-        ``1 1 3``
+    
+    .. code-block:: text
+
+        0 0 2
+        1 1 3
+    
     The labels should also be either a list of lists or a callable function. You
     can alternatively specify your columns as, e.g.
-    ``[[[0,1],[0,1],[2,3]],['col1','col2','col3']]``, where 'col1', 'col2', and
+    ``[[[0,1],[0,1],[2,3]],['col1','col2','col3']]``\, where 'col1', 'col2', and
     'col3' are the column labels:
-        ``col1 col2 col3``
-        ``   0    0    2``
-        ``   1    1    3``
+    
+    ..code-block:: text
+    
+        col1 col2 col3
+           0    0    2
+           1    1    3
+    
     Likewise, your columns function can return a similar object. Columns and
     labels are evaluated at runtime during the show() function.
     """

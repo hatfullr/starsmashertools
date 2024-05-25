@@ -105,7 +105,7 @@ class ColoredPlot(matplotlib.collections.LineCollection, object):
 class OutputPlot(object):
     """
     A :class:`matplotlib.artist.Artist` which represents the data contained in
-    a :class:`~starsmashertools.lib.output.Output`.
+    a :class:`~starsmashertools.lib.output.Output`\.
     """
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     def __init__(
@@ -257,7 +257,7 @@ class OutputPlot(object):
 class FluxPlot(object):
     """
     A class for easily performing Matplotlib plotting operations on a 
-    :class:`~.lib.flux.FluxResult`.
+    :class:`~.lib.flux.FluxResult`\.
     """
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     def __init__(
@@ -300,25 +300,25 @@ class FluxPlot(object):
             **kwargs
     ):
         """
-        Plot a quantity on a Matplotlib :class:`matplotlib.axes.Axes`.
+        Plot a quantity on a Matplotlib :class:`matplotlib.axes.Axes`\.
         
         Parameters
         ----------
-        data : np.ndarray
+        data : :class:`numpy.ndarray`
             The image to plot.
 
         Other Parameters
         ----------------
-        extent : list, tuple, numpy.ndarray, None, default = None
-            See :meth:`matplotlib.axes.Axes.imshow`. If `None`, then the extents
-            from the flux results are used.
+        extent : list, tuple, :class:`numpy.ndarray`\, None, default = None
+            See :meth:`matplotlib.axes.Axes.imshow`\. If `None`\, then the 
+            extents from the flux results are used.
 
         kwargs
             Other keyword arguments are passed directly to 
-            :meth:`matplotlib.axes.Axes.imshow`. Note, keyword ``origin`` is
+            :meth:`matplotlib.axes.Axes.imshow`\. Note, keyword ``origin`` is
             always be set to ``'lower'`` regardless of any value it has in
-            ``kwargs``. If keywords appear in the preferences, they will be used
-            unless specified here.
+            ``kwargs``\. If keywords appear in the preferences, they will be 
+            used unless specified here.
 
         Returns
         -------
@@ -359,7 +359,7 @@ class FluxPlot(object):
 
         Parameters
         ----------
-        IDs : list, tuple, np.ndarray
+        IDs : list, tuple, :class:`numpy.ndarray`
             The particle IDs to highlight. IDs which are not in the
             ``contributing_IDs`` list of the :class:`~.lib.flux.FluxResult` are
             excluded.
@@ -368,7 +368,7 @@ class FluxPlot(object):
         ----------------
         kwargs
             Other keyword arguments are passed directly to 
-            :meth:`matplotlib.axes.Axes.imshow`.
+            :meth:`matplotlib.axes.Axes.imshow`\.
 
         Returns
         -------
@@ -503,7 +503,7 @@ class FluxPlot(object):
 
         Parameters
         ----------
-        IDs : list, tuple, np.ndarray
+        IDs : list, tuple, :class:`numpy.ndarray`
             The particle IDs to outline. IDs which are not in the
             ``contributing_IDs`` list of the :class:`~.lib.flux.FluxResult` are
             excluded.
@@ -512,7 +512,7 @@ class FluxPlot(object):
         ----------------
         kwargs
             Other keyword arguments are passed directly to 
-            :meth:`matplotlib.collections.EllipseCollection`.
+            :meth:`matplotlib.collections.EllipseCollection.__init__`\.
 
         Returns
         -------

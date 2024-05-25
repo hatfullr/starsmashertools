@@ -15,15 +15,16 @@ except ImportError:
 class Output(dict, object):
     """
     A container for StarSmasher binary output data, usually appearing as
-    "out*.sph" in simulation directories.
+    ``out*.sph`` in simulation directories.
 
     Parameters
     ----------
     path : str
-        The file path to a StarSmasher binary output data file.
+        The file path to a ``StarSmasher`` binary output data file.
 
-    simulation : `~starsmashertools.lib.simulation.Simulation`
-        The `Simulation` object that this output file belongs to.
+    simulation : :class:`~.simulation.Simulation`
+        The :class:`~.simulation.Simulation` object that this output file 
+        belongs to.
 
     Other Parameters
     ----------------
@@ -290,29 +291,29 @@ class Output(dict, object):
     def get_core_particles(self):
         """
         Return the IDs of any core particles present in this output file. A core
-        particle is identified in StarSmasher as having the unique property of 
-        zero specific internal energy. This is because core particles act only 
-        gravitationally on other particles.
+        particle is identified in ``StarSmasher`` as having the unique property
+        of zero specific internal energy. This is because core particles act 
+        only gravitationally on other particles.
 
         Returns
         -------
         :class:`numpy.ndarray`
-            A NumPy array of IDs of the core particles in this output file, if 
-            there are any. Note that the IDs are zero'th indexed, unlike the
-            particle IDs in StarSmasher, which start at index 1 instead of 0.
+            Integer IDs of the core particles in this output file, if there are
+            any. Note that the IDs are zero'th indexed, unlike the particle IDs
+            in ``StarSmasher``, which start at index 1 instead of 0.
         """
         return np.where(self['u'] == 0)[0]
 
     @api
     def get_non_core_particles(self):
         """
-        Similar to :func:`~.get_core_particles`, but instead returns the IDs of
+        Similar to :meth:`~.get_core_particles`\, but instead returns the IDs of
         the particles which are not identified as being core particles.
         
         Returns
         -------
         :class:`numpy.ndarray`
-            A NumPy array of non-core-particle IDs.
+            Non-core-particle IDs.
         """
         return np.where(self['u'] != 0)[0]
 
@@ -331,11 +332,11 @@ class Output(dict, object):
         """
         Perform an operation as defined by a string or function using this
         :class:`~.Output` object. The result is saved to the 
-        :class:`~.lib.simulation.Simulation` archive for quick access in the
+        :class:`~.simulation.Simulation` archive for quick access in the
         future.
         
         Values stored in the simulation archive will be erased when "max stored
-        condense results" in :py:mod:`starsmashertools.preferences` is reached,
+        condense results" in :mod:`starsmashertools.preferences` is reached,
         per output file. If this value is changed, the stored results will be 
         updated automatically the next time this function is called, but only 
         for this output object. The identifiers which were accessed most 
@@ -358,57 +359,57 @@ class Output(dict, object):
 
         Other Parameters
         ----------------
-        func : str, :py:class:`typing.Callable`, None, default = None
-           If `None`, no calculations will be done and the simulation archive
-           will be searched for ``identifier``. If no key is found matching
+        func : str, :class:`typing._CallableType`\, None, default = None
+           If `None`\, no calculations will be done and the simulation archive
+           will be searched for ``identifier``\. If no key is found matching
            ``identifier`` for this output file, a :py:class:`KeyError` will be
            raised. Keyword ``overwrite`` is ignored in this case.
            
            If type :py:class:`str` is given, it will be given as input to an 
            :py:func:`exec` call. In this case, variables will be accessible as
-           the names of the keys in this :class:`~.Output` object, such as 'x',
-           'rho', etc., including keys which are in 
-           :py:mod:`starsmashertools.preferences`. The string must set a
-           variable called "result", the contents of which will be saved in the
-           simulation archive.
-
-           If type :py:class:`typing.Callable` is given, it must be a function
+           the names of the keys in this :class:`~.Output` object, such as 
+           ``'x'\, ``'rho'``\, etc., including keys which are in 
+           :mod:`starsmashertools.preferences`\. The string must set a
+           variable called ``'result'``\, the contents of which will be saved in
+           the simulation archive.
+        
+           If type :class:`typing._CallableType` is given, it must be a function
            which accepts a single input that is this :class:`~.Output` object 
            and it must return an object that can be serialized, such as those
-           in :property:`~.helpers.jsonfile.serialization_methods`. This is so
+           in :attr:`~.helpers.jsonfile.serialization_methods`\. This is so
            that it can be saved in the simulation's archive.
         
         args : list, tuple, default = ()
            Positional arguments passed directly to ``func`` when it is of type
-           :class:`typing.Callable`.
+           :class:`typing._CallableType`\.
 
         kwargs : dict, default = {}
            Keyword arguments passed directly to ``func`` when it is of type
-           :class:`typing.Callable`.
+           :class:`typing._CallableType`\.
         
-        mask : np.ndarray, list, tuple, None, default = None
-           If not `None`, the mask will be applied to this :class:`~.Output`
-           object using :func:`~.mask`.
+        mask : :class:`numpy.ndarray`\, list, tuple, None, default = None
+           If not `None`\, the mask will be applied to this :class:`~.Output`
+           object using :meth:`~.mask`\.
 
         overwrite : bool, default = False
-           Ignored if ``func`` is `None`.
+           Ignored if ``func`` is `None`\.
 
            If `False` and the simulation archive already contains the given
            ``identifier`` then the archived value is returned. Otherwise, the
            result of ``func`` is added to the simulation archive.
            
-           If `True`, then the result of ``func`` is added to the simulation 
+           If `True`\, then the result of ``func`` is added to the simulation 
            archive if it doesn't already exists, and replaces the value in the 
            archive if it does.
 
-        max_stored : int, default = Pref('condense.max stored', 10000)
+        max_stored : int, default = ``Pref('condense.max stored', 10000)``
            The maximum number of results from Output.condense that is allowed to
            be stored in the simulation archives per output.
 
         Returns
         -------
         The value returned depends on the contents of positional argument 
-        ``func``, and/or the contents of the simulation archive.
+        ``func``\, and/or the contents of the simulation archive.
         """
         import time
             
@@ -495,7 +496,7 @@ class Output(dict, object):
 
         Parameters
         ----------
-        keys : list, tuple, np.ndarray, default = [('x', 'y', 'z'), ('vx', 'vy', 'vz'), ('vxdot', 'vydot', 'vzdot')]
+        keys : list, tuple, :class:`numpy.ndarray`\, default = ``[('x', 'y', 'z'), ('vx', 'vy', 'vz'), ('vxdot', 'vydot', 'vzdot')]``
             The particle quantities to rotate. You should carefully specify all
             vector particle quantities (those with x, y, and z components).
 
@@ -506,12 +507,12 @@ class Output(dict, object):
         
         yangle : float, default = 0.
             The y component of an Euler rotation in degrees. Either `xangle` or
-            `yangle` can be thought of as equivalent to polar angle "theta", but
-            not both.
+            `yangle` can be thought of as equivalent to polar angle 
+            :math:`\\theta`\.
 
         zangle : float, default = 0.
             The z component of an Euler rotation in degrees. This can be thought
-            of as equivalent to azimuthal angle "phi".
+            of as equivalent to azimuthal angle :math:`\\phi`\.
         """
         import starsmashertools.math
         
@@ -533,26 +534,25 @@ class Output(dict, object):
     ):
         """
         Get the x, y, and z bounds of the simulation, where the minima are found
-        as min(x - 2*h) and maxima max(x + 2*h) for the x-axis and similarly for
-        the y and z axes.
+        as ``min(x - 2*h)`` and maxima ``max(x + 2*h)`` for the x-axis and 
+        similarly for the y and z axes.
 
         Parameters
         ----------
         radial : bool, default = False
             If True, returns a
-            :class:`starsmashertools.helpers.extents.RadialExtents` instead of a
-            :class:`starsmashertools.helpers.extents.Extents`. Use this if you
+            :class:`~.helpers.extents.RadialExtents` instead of a
+            :class:`~.helpers.extents.Extents`\. Use this if you
             want the extents of a spherically symmetric simulation, such as a
-            :class:`starsmashertools.lib.relaxation.Relaxation`.
+            :class:`~.relaxation.Relaxation`\.
 
-        r : list, tuple, np.ndarray, None, default = None
+        r : list, tuple, :class:`numpy.ndarray`\, None, default = None
             The radii of the particle kernels. If `None` then the kernels are
             assumed to have radii 2h.
 
         Returns
         -------
-        :class:`starsmashertools.helpers.extents.Extents` or 
-        :class:`starsmashertools.helpers.extents.RadialExtents`
+        :class:`~.helpers.extents.Extents` or :class:`~.helpers.extents.RadialExtents`
         """
         import starsmashertools.helpers.extents
 
@@ -592,12 +592,12 @@ class Output(dict, object):
 
         Parameters
         ----------
-        output : :class:`starsmashertools.lib.output.Output`
+        output : :class:`~.Output`
             The output file to convert to a string.
 
         Other Parameters
         ----------------
-        format_sheet : str, None, default = Pref('get_formatted_string.format sheet')
+        format_sheet : str, None, default = ``Pref('get_formatted_string.format sheet')``
             The format sheet to use when converting.
 
         Returns
@@ -643,11 +643,11 @@ class Output(dict, object):
             Returns
             -------
             :class:`starsmashertools.mpl.artists.OutputPlot`
-                A Matplotlib ``Artist``.
+                A Matplotlib ``Artist``\.
 
             See Also
             --------
-            :py:mod:`starsmashertools.preferences` ('Plotting'), 
+            :mod:`starsmashertools.preferences` ('Plotting'), 
             :class:`starsmashertools.mpl.artists.OutputPlot`
             """
             import starsmashertools.mpl.artists
@@ -721,7 +721,8 @@ class Output(dict, object):
 @starsmashertools.preferences.use
 class OutputIterator(object):
     """
-    An iterator which can be used to iterate through Output objects efficiently.
+    An iterator which can be used to iterate through :class:`~.Output` objects
+    efficiently.
     """
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
@@ -735,26 +736,26 @@ class OutputIterator(object):
             **kwargs,
     ):
         """
-        OutputIterator constructor.
+        Constructor.
         
         Parameters
         ----------
-        filenames : list, tuple, np.ndarray
+        filenames : list, tuple, :class:`numpy.ndarray`
             The list of file names to iterate through.
 
         simulation : :class:`~starsmashertools.lib.simulation.Simulation`
             The simulation that the given file names belong to.
 
-        onFlush : list, tuple, np.ndarray, default = []
+        onFlush : list, tuple, :class:`numpy.ndarray`\, default = []
             A list of functions to be called in the :meth:`~.flush` method. If 
             one of the methods returns ``'break'`` then iteration is stopped and
             no other ``onFlush`` functions are called.
 
-        max_buffer_size : int, default = Pref('max buffer size', 100)
+        max_buffer_size : int, default = ``Pref('max buffer size', 100)``
             The maximum size of the buffer for reading Output ahead-of-time.
         
         asynchronous : bool, default = True
-            If `True`, Output objects are read asynchronously in a separate
+            If `True`\, Output objects are read asynchronously in a separate
             process than the main thread. Otherwise, Output objects are read on
             an "as needed" basis in serial.
         

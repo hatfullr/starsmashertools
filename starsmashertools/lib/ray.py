@@ -16,14 +16,15 @@ class Ray(object):
         """
         Parameters
         ----------
-        position : list, tuple, np.ndarray
+        position : list, tuple, :class:`numpy.ndarray`
             The 3D position vector of the ray, (x, y, z).
 
-        direction : list, tuple, np.ndarray
-            The 3D direction vector of the ray, (xhat, yhat, zhat). The 
-            direction can be obtained as a subtraction of two vectors A-B, where
-            A is the "destination" and B is the "origin". This array is 
-            normalized automatically.
+        direction : list, tuple, :class:`numpy.ndarray`
+            The 3D direction vector of the ray, 
+            :math:`(\\hat{x},\\hat{y},\\hat{z})`\. The direction can be obtained
+            as a subtraction of two vectors :math:`\\vec{A}-\\vec{B}`\, where 
+            :math:`\\vec{A}` is the "destination" and :math:`\\vec{B}` is the 
+            "origin". This array is normalized automatically.
         """
 
         position = np.asarray(position, dtype = float)
@@ -47,23 +48,24 @@ class Ray(object):
     def cast(self, *args, **kwargs):
         """
         Cast this ray through a given set of hard spheres, each with positions
-        ``x``, ``y``, and ``z`` and radii ``r``.
+        ``x``\, ``y``\, and ``z`` and radii ``r``\.
 
         Parameters
         ----------
         *args
             Positional arguments are passed directly to 
-            :meth:`~.RayCast.__init__`.
+            :meth:`~.RayCast.__init__`\.
 
         **kwargs
-            Keyword arguments are passed directly to :meth:`~.RayCast.__init__`.
+            Keyword arguments are passed directly to 
+            :meth:`~.RayCast.__init__`\.
 
         Returns
         -------
         cast : :class:`~.RayCast`
-            The RayCast object corresponding to this cast. The intersection 
-            points can be accessed with ``cast.points`` and the indices with 
-            ``cast.indices``.
+            The :class:`~.RayCast` object corresponding to this cast. The 
+            intersection points can be accessed with :attr:`~.RayCast.points`
+            and the indices with :attr:`~.RayCast.indices`\.
         """
         return RayCast(self, *args, **kwargs)
         
@@ -136,6 +138,6 @@ class RayCast(object):
     
 
     def __bool__(self):
-        """ Returns `True` if the ``points`` array has values. Otherwise, 
-        returns `False`. """
+        """ Returns `True` if the :attr:`points` array has values. Otherwise, 
+        returns `False`\. """
         return len(self.points) > 0

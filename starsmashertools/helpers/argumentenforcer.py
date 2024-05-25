@@ -63,7 +63,7 @@ def _check_default_arguments(f):
 
 def enforcetypes(f):
     """
-    If this function is called, the input must be of type :py:class:`dict`.
+    If this function is called, the input must be of type :py:class:`dict`\.
     Otherwise, this function is to be used as a wrapper.
     """
     if isinstance(f, dict): return _enforcetypes(f)

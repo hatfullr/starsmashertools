@@ -887,14 +887,14 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
             **kwargs
     ):
         """
-        Save the results to disk as an :class:`~.lib.archive.Archive`.
+        Save the results to disk as an :class:`~.lib.archive.Archive`\.
         
         Other Parameters
         ----------
-        filename : str, default = Pref('save.filename')
+        filename : str, default = ``Pref('save.filename')``
             The name of the Archive.
 
-        allowed : dict, :class:`~.helpers.nesteddict.NestedDict`, default = Pref('save.allowed')
+        allowed : dict, :class:`~.helpers.nesteddict.NestedDict`\, default = ``Pref('save.allowed')``
             The items to include in the file. Only the keys of the dictionary
             are checked. If ``allowed`` contains a key which is also in this
             FluxResult, then the value is saved to the file. You can specify
@@ -904,7 +904,7 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
 
         **kwargs
             Keyword arguments are passed directly to 
-            :meth:`~.lib.archive.Archive.__init__`.
+            :meth:`~.lib.archive.Archive.__init__`\.
         
         Returns
         -------
@@ -944,7 +944,7 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
             deserialize : bool = True,
     ):
         """
-        Load results from disk which were saved by :meth:`~.save`.
+        Load results from disk which were saved by :meth:`~.save`\.
 
         Parameters
         ----------
@@ -953,11 +953,11 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
 
         Other Parameters
         ----------------
-        allowed : dict, :class:`~.helpers.nesteddict.NestedDict`, default = Pref('save.allowed')
-            The same as ``allowed`` in :meth:`~.save`.
+        allowed : dict, :class:`~.helpers.nesteddict.NestedDict`\, default = ``Pref('save.allowed')``
+            The same as ``allowed`` in :meth:`~.save`\.
 
         deserialize : bool, default = True
-            Given to :meth:`~.lib.archive.Archive.get`.
+            Given to :meth:`~.lib.archive.Archive.get`\.
 
         Returns
         -------
@@ -996,40 +996,40 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
             """
             Creates a new :class:`~.mpl.artists.FluxPlot` and calls its 
             :meth:`~.mpl.artists.FluxPlot.imshow` method on the given Matplotlib
-            :class:`matplotlib.axes.Axes`.
+            :class:`matplotlib.axes.Axes`\.
             
             Other Parameters
             ----------------
-            ax : :class:`matplotlib.axes.Axes`, None, default = None
+            ax : :class:`matplotlib.axes.Axes`\, None, default = None
                 The Matplotlib :class:`matplotlib.axes.Axes` to plot on. If 
-                `None`, the plot is created on the axes returned by
-                ``plt.gca()``.
+                `None`\, the plot is created on the axes returned by
+                ``plt.gca()``\.
 
             key : str, default = 'flux'
                 The dictionary key in the ``['image']`` :py:class:`dict` to 
                 obtain the data for plotting, or a function which accepts a 
                 FluxResult as input and returns a 2D NumPy array and a dict, 
                 where the 2D array is the image contents and the dict is the 
-                keywords to pass to :func:`matplotlib.axes.Axes.imshow`. If 
+                keywords to pass to :meth:`matplotlib.axes.Axes.imshow`\. If 
                 ``weighted_average`` is given, this argument is ignored.
 
             weighted_average : int, None, default = None
                 The integer index of the array to plot from the 
-                ``weighted_averages`` key in the results. If `None`, keyword 
+                ``weighted_averages`` key in the results. If `None`\, keyword 
                 argument ``key`` is ignored.
 
             log10 : bool, default = False
-                If `True`, the log10 operation will be done on the data.
+                If `True`\, :meth:`numpy.log10` will be called on the data.
             
             kwargs
                 Other keyword arguments are passed directly to 
-                :meth:`~.mpl.artists.FluxPlot.imshow`. Note, keyword ``origin`` 
+                :meth:`~.mpl.artists.FluxPlot.imshow`\. Note, keyword ``origin`` 
                 is always set to ``'lower'`` regardless of any value it has in
-                ``kwargs``.
+                ``kwargs``\.
 
             Returns
             -------
-            :class:`matplotlib.axes.AxesImage`, :class:`~.mpl.artists.FluxPlot`
+            :class:`matplotlib.axes.AxesImage`\, :class:`~.mpl.artists.FluxPlot`
                 The :class:`matplotlib.axes.AxesImage` object created by 
                 :meth:`~.mpl.artists.FluxPlot.imshow` and the 
                 :class:`~.mpl.artists.FluxPlot` object which created it.
@@ -1079,8 +1079,8 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
 class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
     """
     A container for multiple :class:`~.FluxResult` objects. Permits for multiple
-    FluxResult objects to be saved in a single file, which can be convenient
-    when working with many FluxResult objects.
+    :class:`~.FluxResult` objects to be saved in a single file, which can be 
+    convenient when working with many :class:`~.FluxResult` objects.
     """
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
@@ -1097,17 +1097,17 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
         ----------
         *args
             Positional arguments are passed directly to
-            :meth:`~.helpers.nesteddict.NestedDict.__init__`.
+            :meth:`~.helpers.nesteddict.NestedDict.__init__`\.
 
         Other Parameters
         ----------------
-        allowed : dict, :class:`~.helpers.nesteddict.NestedDict`, default = Pref('exclude')
-            Items to include from each added :class:`~.FluxResult`. This cannot
+        allowed : dict, :class:`~.helpers.nesteddict.NestedDict`\, default = ``Pref('exclude')``
+            Items to include from each added :class:`~.FluxResult`\. This cannot
             be changed after initialization.
 
         **kwargs
             Other keyword arguments are passed directly to 
-            :meth:`~.helpers.nesteddict.NestedDict.__init__`.
+            :meth:`~.helpers.nesteddict.NestedDict.__init__`\.
         """
         if isinstance(allowed, dict):
             allowed = starsmashertools.helpers.nesteddict.NestedDict(allowed)
@@ -1122,23 +1122,24 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
             order : str | list | tuple = Pref('add.order'),
     ):
         """
-        Add a :class:`~.FluxResult`. The values in the FluxResult will be
-        inserted in a way which preserves the specified order.
+        Add a :class:`~.FluxResult`\. The values in the :class:`~.FluxResult` 
+        will be inserted in a way which preserves the specified order.
         
         Parameters
         ----------
         result : str, FluxResult
-            If a `str`, it must be a path to a saved :class:`~.FluxResult`. The
-            FluxResult is loaded and its contents are added to this dictionary.
+            If a `str`\, it must be a path to a saved :class:`~.FluxResult`\. 
+            The :class:`~.FluxResult` is loaded and its contents are added to 
+            this dictionary.
 
 
         Other Parameters
         ----------------
-        order : str, list, tuple, default = Pref('add.order')
-            The order with which to insert the FluxResult. If a `list` or 
-            `tuple` are given, it refers to the nested key. For example, 
-            ``['image', 'teff_aver']`` refers to the value found at
-            ``FluxResult['image']['teff_aver']``. See 
+        order : str, list, tuple, default = ``Pref('add.order')``
+            The order with which to insert the :class:`~.FluxResult`. If a 
+            `list` or `tuple` are given, it refers to the nested key. For
+            example, ``['image', 'teff_aver']`` refers to the value found at
+            ``FluxResult['image']['teff_aver']``\. See 
             :class:`~.helpers.nesteddict.NestedDict` for details.
 
         See Also
@@ -1176,18 +1177,19 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
     ):
         """
         Save the :class:`~.FluxResult` objects to disk. Each result is stored in
-        the same format as :meth:`~.FluxResult.save`, except stacked in a list.
+        the same format as :meth:`~.FluxResult.save`\, except stacked in a list.
         For example, the ``'image'`` key in the archive will be a list, where 
-        each element is the ``'image'`` key from the corresponding FluxResult.
+        each element is the ``'image'`` key from the corresponding 
+        :class:`~.FluxResult`.
         
         Other Parameters
         ----------
-        filename : str, default = Pref('save.filename')
+        filename : str, default = ``Pref('save.filename')``
             The path to the file to create.
         
         **kwargs
             Other keyword arguments are passed directly to 
-            :meth:`~.lib.archive.Archive.__init__`.
+            :meth:`~.lib.archive.Archive.__init__`\.
 
         Returns
         -------
@@ -1217,10 +1219,10 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
     ):
         """
         Load the :class:`~.FluxResult` objects from disk. Each result is stored
-        in the same format as :meth:`~.FluxResult.save`, except stacked in a 
+        in the same format as :meth:`~.FluxResult.save`\, except stacked in a 
         list. For example, the ``'image'`` key in the archive will be a list, 
         where each element is the ``'image'`` key from the corresponding 
-        FluxResult.
+        :class:`~.FluxResult`.
         
         Parameters
         ----------
@@ -1232,12 +1234,13 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
         keys : list, tuple, None, default = None
             To retrieve only specific keys, specify the keys here. Note that
             each element must point to a "branch" in the archived 
-            :class:`~.helpers.nesteddict.NestedDict`.
+            :class:`~.helpers.nesteddict.NestedDict`\.
         
         Returns
         -------
         fluxresults : :class:`~.FluxResults`
-            The `FluxResult` objects in the same order as stored in the archive.
+            The :class:`~.FluxResult` objects in the same order as stored in the
+            archive.
         
         See Also
         --------

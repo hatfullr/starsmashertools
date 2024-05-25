@@ -34,6 +34,7 @@ SKIPBACK_IMAGE = os.path.join(IMAGE_DIR, 'skipback.png')
 
 
 class Player(FuncAnimation, object):
+    """""" # Prevent bad docstring inheritance
     def __init__(
             self,
             fig,

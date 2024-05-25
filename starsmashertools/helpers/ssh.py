@@ -26,26 +26,5 @@ def run(address, command, timeout=1, text=True):
     return output.strip()
 
 def run_python(address, command, **kwargs):
-    """
-    import random
-    # Send a file over to the host and then execute that file
-    _hash = random.getrandbits(64)
-    filename = str(_hash)+".py"
-    with open(filename, 'w') as f:
-        f.write(command)
-
-    #command = 
-
-    subprocess.run(
-        "rsync -av %s %s:$HOME" % (filename, address),
-        shell=True,
-    )
-
-    os.remove(filename)
-
-    run(address, ('"' + "rm -rf $HOME/%s" + '"') % filename)
-    quit()
-    """
-    
     command = ('"' + "python3 -c " + r"\"" + "%s" + r"\"" + '"') % command
     return run(address, command, **kwargs)

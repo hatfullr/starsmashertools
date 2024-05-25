@@ -20,6 +20,7 @@ DATA_DIRECTORY = os.path.join(SOURCE_DIRECTORY, 'data')
 LOCK_DIRECTORY = os.path.join(DATA_DIRECTORY, 'locks')
 DEFAULTS_DIRECTORY = os.path.join(DATA_DIRECTORY, 'defaults')
 USER_DIRECTORY = os.path.join(DATA_DIRECTORY, 'user')
+TEST_DIRECTORY = os.path.join(SOURCE_DIRECTORY, 'tests')
 for directory in [
         DATA_DIRECTORY,
         DEFAULTS_DIRECTORY,
@@ -122,18 +123,18 @@ except Exception as e:
 @api
 def get_simulation(directory : str):
     """
-    Obtain a StarSmasher simulation from a directory.
+    Obtain a ``StarSmasher`` simulation from a directory.
     
     Parameters
     ----------
     directory : str
-        A path to a StarSmasher simulation directory.
+        A path to a ``StarSmasher`` simulation directory.
 
     Returns
     -------
-    :class:`~.lib.relaxation.Relaxation`, :class:`~.lib.binary.Binary`, 
-    :class:`~.lib.dynamical.Dynamical`, or :class:`~.lib.simulation.Simulation`
-        The StarSmasher simulation at the given `directory`.
+    :class:`~.lib.relaxation.Relaxation`\, :class:`~.lib.binary.Binary`\, 
+    :class:`~.lib.dynamical.Dynamical`\, or :class:`~.lib.simulation.Simulation`
+        The ``StarSmasher`` simulation at the given ``directory``\.
     
     Examples
     --------
@@ -155,12 +156,12 @@ def get_type(directory : str):
     Parameters
     ----------
     directory : str
-        A path to a StarSmasher simulation directory.
+        A path to a ``StarSmasher`` simulation directory.
 
     Returns
     -------
-    :class:`~.lib.relaxation.Relaxation`, :class:`~.lib.binary.Binary`, 
-    :class:`~.lib.dynamical.Dynamical`, or :class:`~.lib.simulation.Simulation`
+    :class:`~.lib.relaxation.Relaxation`\, :class:`~.lib.binary.Binary`\, 
+    :class:`~.lib.dynamical.Dynamical`\, or :class:`~.lib.simulation.Simulation`
     """
     import starsmashertools.lib.simulation
     
@@ -182,17 +183,17 @@ def get_type(directory : str):
 @api
 def relaxation(*args, **kwargs):
     """
-    Get a :class:`~.lib.relaxation.Relaxation` type StarSmasher simulation.
+    Get a :class:`~.lib.relaxation.Relaxation` type ``StarSmasher`` simulation.
 
     Other Parameters
     ----------------
     *args
         Positional arguments are passed directly to the constructor method of
-        :class:`~.lib.relaxation.Relaxation`.
+        :class:`~.lib.relaxation.Relaxation`\.
 
     **kwargs
         Keyword arguments are passed directly to the constructor method of 
-        :class:`~.lib.relaxation.Relaxation`.
+        :class:`~.lib.relaxation.Relaxation`\.
 
     Returns
     -------
@@ -204,17 +205,17 @@ def relaxation(*args, **kwargs):
 @api
 def binary(*args, **kwargs):
     """
-    Get a :class:`~.lib.binary.Binary` type StarSmasher simulation.
+    Get a :class:`~.lib.binary.Binary` type ``StarSmasher`` simulation.
 
     Other Parameters
     ----------------
     *args
         Positional arguments are passed directly to the constructor method of
-        :class:`~.lib.binary.Binary`.
+        :class:`~.lib.binary.Binary`\.
 
     **kwargs
         Keyword arguments are passed directly to the constructor method of
-        :class:`~.lib.binary.Binary`.
+        :class:`~.lib.binary.Binary`\.
 
     Returns
     -------
@@ -226,17 +227,17 @@ def binary(*args, **kwargs):
 @api
 def dynamical(*args, **kwargs):
     """
-    Get a :class:`~.lib.dynamical.Dynamical` type StarSmasher simulation.
+    Get a :class:`~.lib.dynamical.Dynamical` type ``StarSmasher`` simulation.
 
     Other Parameters
     ----------------
     *args
         Positional arguments are passed directly to the constructor method of
-        :class:`~.lib.dynamical.Dynamical`.
+        :class:`~.lib.dynamical.Dynamical`\.
 
     **kwargs
         Keyword arguments are passed directly to the constructor method of 
-        :class:`~.lib.dynamical.Dynamical`.
+        :class:`~.lib.dynamical.Dynamical`\.
 
     Returns
     -------
@@ -282,7 +283,7 @@ def get_particles(
 ):
     """
     Mask the given output file such that it contains only the particles
-    specified by `particles`.
+    specified by ``particles``\.
 
     Parameters
     ----------
@@ -290,19 +291,19 @@ def get_particles(
         The simulation output files from which to extract the particle
         information.
 
-    particles : np.ndarray, list, tuple
+    particles : :class:`numpy.ndarray`\, list, tuple
         A collection of particle IDs as zeroth-indexed integers or as a numpy
         boolean array.
     
     Returns
     -------
     :class:`~.lib.output.Output`
-        A copy of `output`, masked such that it includes only the specified
+        A copy of ``output``\, masked such that it includes only the specified
         particles.
 
     See Also
     --------
-    :func:`mask`
+    :meth:`~.mask`
     """
     import copy
     import starsmashertools.lib.output
@@ -385,11 +386,11 @@ def mask(
     output : :class:`~.lib.output.Output`
         The StarSmasher output file to mask.
 
-    mask : np.ndarray, list, tuple
-        The mask to apply to `output`, which can be either a collection of 
+    mask : :class:`numpy.ndarray`\, list, tuple
+        The mask to apply to `output`\, which can be either a collection of 
         zeroth-indexed integers representing the particle IDs, or a collection
         of ``bool`` values the same length as the number of particles in
-        `output`.
+        `output`\.
 
     Returns
     -------
@@ -432,6 +433,8 @@ def interpolate(
         values : list,
 ):
     """
+    Maybe don't trust this function in this version of starsmashertools.
+
     Returns a function that performs a 1D linear interpolation between the
     provided output files on the time axis for a specific value.
 
@@ -447,9 +450,10 @@ def interpolate(
     -------
     function
         A callable function that accepts a time as input and returns a
-        dictionary whose keys are that of the `values` arguments and values are
+        dictionary whose keys are that of the ``values`` and values are
         particle quantities interpolated at the given time. Raises a
-        ``ValueError`` if the input time is out of bounds of the interpolation.
+        :py:class:`ValueError` if the input time is out of bounds of the 
+        interpolation.
     """
     import starsmashertools.math
     import starsmashertools.lib.units
@@ -543,14 +547,14 @@ def get_data_files(path : list | tuple):
         Each element is a `str` which is the name of a file or subdirectory in
         the ``starsmashertools/data/defaults`` and/or
         ``starsmashertools/data/user`` directories. For example, if there is a 
-        file located at ``starsmashertools/data/user/subdir1/subdir2/file.py``,
-        it can be accessed with ``['subdir1', 'subdir2', 'file.py']``. If there
+        file located at ``starsmashertools/data/user/subdir1/subdir2/file.py``\,
+        it can be accessed with ``['subdir1', 'subdir2', 'file.py']``\. If there
         is also a file located at 
-        ``starsmashertools/data/defaults/subdir1/subdir2/file.py``, then the
+        ``starsmashertools/data/defaults/subdir1/subdir2/file.py``\, then the
         same path will return the corresponding file in the defaults directory
         and the file in the user directory.
 
-        You can use wildcard patterns as supported by :py:mod:`fnmatch`, but if
+        You can use wildcard patterns as supported by :mod:`fnmatch`\, but if
         multiple matches are found during the search then an 
         :py:class:`Exception` will be raised. If the last element in the list is
         a wildcard pattern, all respective matches will be returned.
@@ -822,9 +826,10 @@ def _get_decorators():
 @starsmashertools.helpers.argumentenforcer.enforcetypes
 def report(simulations : list | tuple):
     """
-    Generate a report for a list of given :class:`~.lib.simulation.Simulation`s.
-    The report appears as a table of values, where each row is a Simulation and
-    each column is a quantity related to that Simulation.
+    Generate a report for a list of given 
+    :class:`~.lib.simulation.Simulation`\s. The report appears as a table of 
+    values, where each row is a Simulation and each column is a quantity related
+    to that Simulation.
 
     Parameters
     ----------

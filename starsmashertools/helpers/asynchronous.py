@@ -46,8 +46,8 @@ class ParallelFunction(object):
         """
         Initializer. If there are no available processes (because too many have
         already been spawned), whenever processes become available we create 
-        processes up to a number ``nprocs``, which must be smaller than
-        ``multiprocessing.cpu_count()``.
+        processes up to a number ``nprocs``\, which must be smaller than
+        ``multiprocessing.cpu_count()``\.
         
         Parameters
         ----------
@@ -55,38 +55,38 @@ class ParallelFunction(object):
             The function to be executed in parallel.
 
         args : list, tuple, None, default = None
-            A list of positional arguments to pass to ``target``. Each element
+            A list of positional arguments to pass to ``target``\. Each element
             should be a list of positional arguments. The number of calls to
             ``target`` is equal to the number of elements in this list. If
-            `None`, no arguments will be passed to ``target``.
+            `None`\, no arguments will be passed to ``target``\.
 
         kwargs : list, tuple, None, default = None
-            A list of keyword arguments to pass to ``target``. Each element
+            A list of keyword arguments to pass to ``target``\. Each element
             should be a dictionary of keyword arguments. If ``args`` is not 
-            `None` and this list has fewer elements than ``args``, then ``{}`` 
-            will be appended until it is the same length as ``args``. 
+            `None` and this list has fewer elements than ``args``\, then ``{}`` 
+            will be appended until it is the same length as ``args``\. 
         
 
         Other Parameters
         ----------------
         nprocs : int, None, default = None
-            The number of processes to use. If `None`, the number of processes
+            The number of processes to use. If `None`\, the number of processes
             will be the number of available CPU cores as given by
-            ``multiprocessing.cpu_count()``.
+            ``multiprocessing.cpu_count()``\.
 
         start : bool, default = True
             Automatically start the processes after initialization without
             blocking. To start with blocking, specify `False` and then call
-            :func:`~.start` in your code.
+            :meth:`~.start` in your code.
 
-        progress_message : :class:`~.helpers.string.ProgressMessage`, None, default = None
+        progress_message : :class:`~.helpers.string.ProgressMessage`\, None, default = None
             A progress message to update each time a function call is completed
             by one of the child processes.
 
         **kw
             Other keyword arguments are passed directly to
             ``multiprocessing.Process`` when creating each individual process.
-            By default, keyword 'daemon' is set to `True`.
+            By default, keyword 'daemon' is set to `True`\.
         """
         if nprocs is None: nprocs = max_processes
         self._nprocs = nprocs
@@ -210,8 +210,8 @@ class ParallelFunction(object):
     ):
         """
         A convenience function for executing the given method at regular
-        intervals while waiting for :func:`~.get_output` to finish. This must be
-        called prior to calling :func:`~.get_output`.
+        intervals while waiting for :meth:`~.get_output` to finish. This must be
+        called prior to calling :meth:`~.get_output`\.
 
         Parameters
         ----------
@@ -224,10 +224,10 @@ class ParallelFunction(object):
         Other Parameters
         ----------------
         args : list, tuple, default = ()
-            Positional arguments to pass to `method`.
+            Positional arguments to pass to `method`\.
 
         kwargs : dict, default = {}
-            Keyword arguments to pass to `method`.
+            Keyword arguments to pass to `method`\.
         """
         self._do += [[interval, method, args, kwargs]]
 
@@ -243,7 +243,7 @@ class ParallelFunction(object):
     def get_output(self, sort : bool = True):
         """
         Obtain all outputs and identifiers of the target function specified in 
-        :func:`~.__init__`. Blocks until all processes have finished. If you
+        :meth:`~.__init__`\. Blocks until all processes have finished. If you
         want the results to be sorted then this will return a list of results.
         Otherwise, this returns an iterator which blocks on every iteration
         until a result is ready to be given. Thus, when `sort` is False you
@@ -253,10 +253,10 @@ class ParallelFunction(object):
         Parameters
         ----------
         sort : bool, default = True
-            If `False`, return an iterator that is not sorted. Otherwise, obtain
+            If `False`\, return an iterator that is not sorted. Otherwise, obtain
             all results and put them in a list which is sorted by the same order
             as the arguments and keywords given in
-            :func:`~.ParallelFunction.__init__`.
+            :meth:`~.ParallelFunction.__init__`\.
         
         Returns
         -------
@@ -393,7 +393,7 @@ class ParallelFunction(object):
 
 class ParallelIterator(ParallelFunction, object):
     """
-    Perhaps a more simple concept than in :class:`~.ParallelFunction`. This
+    Perhaps a more simple concept than in :class:`~.ParallelFunction`\. This
     class spawns processes and then works as an iterator. You feed it with a
     function and the arguments and keywords you want it to process. When you
     start iteration, the processes start running, moving along the queue in

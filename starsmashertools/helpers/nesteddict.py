@@ -33,7 +33,7 @@ collections.abc.KeysView.register(nested_dict_keys)
 
 class nested_dict_branches(nested_dict_keys):
     """
-    This is similar to :class:`~.nested_dict_keys`, but only the keys which 
+    This is similar to :class:`~.nested_dict_keys`\, but only the keys which 
     reference non-dict values are included. These are the "branches" of the 
     nested dict "tree". The values of these keys are the "leaves".
     """
@@ -88,7 +88,7 @@ collections.abc.ValuesView.register(nested_dict_values)
 class nested_dict_leaves(nested_dict_values):
     """
     The "leaves" are the values at the end of each "branch" in the nested dict
-    "tree". Leaves are never of type :py:class:`dict`.
+    "tree". Leaves are never of type :py:class:`dict`\.
     """
     def _get_mapping_gen(self, obj, path = ()):
         if isinstance(obj, NestedDict):
@@ -155,10 +155,12 @@ collections.abc.ItemsView.register(nested_dict_flowers)
 class NestedDict(dict, object):
     """
     Nested dictionaries quickly become hard to handle in Python. This class is
-    intended to make it easier. It works like a regular :py:class:`dict`, but
+    intended to make it easier. It works like a regular :py:class:`dict`\, but
     keys can be specified as a list of nest levels. For example, consider a
     :class:`~.NestedDict` with a structure of
-
+    
+    .. code-block:: python
+    
         nested = NestedDict({
             '1' : {
                 '1a' : {
@@ -172,20 +174,20 @@ class NestedDict(dict, object):
             '2' : None,
         })
 
-    To access the key '1aii', one can do ``nested['1','1a','1aii']``. Setting
+    To access the key '1aii', one can do ``nested['1','1a','1aii']``\. Setting
     values works similarly. The builtin standard :py:class:`dict` methods are
     overridden to restore the expected functionality. For example,
-    ``nested.keys()`` would return ``nested_dict_keys(['1', ['1', '1a'], ['1', '1a', '1ai'], ['1', '1a', '1aii'], ['1', '1b'], ['1', '1b', '1bi'], '2'])``.
+    ``nested.keys()`` would return ``nested_dict_keys(['1', ['1', '1a'], ['1', '1a', '1ai'], ['1', '1a', '1aii'], ['1', '1b'], ['1', '1b', '1bi'], '2'])``\.
     Note that this class uses custom dictionary View objects.
 
     Use :meth:`~.branches` to get all the unique keys, regardless of their depth
     in the nested dict, use :meth:`~.leaves` to get the values of the unique
     keys, and use :meth:`~.flowers` to get the combination of branches and
-    leaves (analogous to ``dict.items()``). The values returned by 
-    :meth:`~.branches` is not the same as that returned by :meth:`~.keys`, and
-    likewise for :meth:`~.leaves` and :meth:`~.flowers`.
+    leaves (analogous to ``dict.items()``\). The values returned by 
+    :meth:`~.branches` is not the same as that returned by :meth:`~.keys`\, and
+    likewise for :meth:`~.leaves` and :meth:`~.flowers`\.
 
-    To convert to a regular dictionary, use :meth:`~.to_dict`.
+    To convert to a regular dictionary, use :meth:`~.to_dict`\.
     """
     def __init__(self, iterable = None, **kwargs):
         super(NestedDict, self).__init__({}, **kwargs)
@@ -278,16 +280,16 @@ class NestedDict(dict, object):
     
     def branches(self):
         """ Keys in the nested dictionary which point to "leaves" in the nested
-        dict "tree". Each "leaf" is not a :py:class:`dict`, by definition. """
+        dict "tree". Each "leaf" is not a :py:class:`dict`\, by definition. """
         return nested_dict_branches(self)
     def leaves(self):
         """ Non-dict values in the nested dict "tree". Each of these values
-        correspond to a key, given by :meth:`~.branches`. """
+        correspond to a key, given by :meth:`~.branches`\. """
         return nested_dict_leaves(self)
 
     def flowers(self):
         """ A combination of branches and leaves, in the same way that keys and
-        values are combined to form "items" in a :py:class:`dict`. """
+        values are combined to form "items" in a :py:class:`dict`\. """
         return nested_dict_flowers(self)
 
     def keys(self): return nested_dict_keys(self)
@@ -355,7 +357,7 @@ class NestedDict(dict, object):
 
     def to_dict(self):
         """ Return a copy of this NestedDict as a regular Python 
-        :py:class:`dict`. """
+        :py:class:`dict`\. """
         ret = {}
         for branch, leaf in self.flowers():
             current = ret

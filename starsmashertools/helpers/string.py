@@ -183,7 +183,7 @@ def get_progress_string(
         The format to use when building the string.
     
     console : bool, default = True
-        If `True`, the resulting string will be formatted for console output in
+        If `True`\, the resulting string will be formatted for console output in
         such a way that if the result of this method was printed to the console
         previously, that previous text will be overwritten.
 

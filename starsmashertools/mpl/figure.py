@@ -31,8 +31,8 @@ class Figure(matplotlib.figure.Figure, object):
     for creating figures to ensure consistency.
 
     ``Figure.name`` describes the class identifier string, which can be used,
-    e.g., as the argument for ``FigureClass`` in :func:`~.mpl.subplots`. The
-    value for this class is ``name = 'starsmashertools.mpl.figure.Figure'``.
+    e.g., as the argument for ``FigureClass`` in :meth:`~.mpl.subplots`\. The
+    value for this class is ``name = 'starsmashertools.mpl.figure.Figure'``\.
     """
     
     name = 'Figure'
@@ -48,29 +48,29 @@ class Figure(matplotlib.figure.Figure, object):
     ):
         """
         Initializer. Review the Matplotlib documentation for 
-        :func:`matplotlib.pyplot.subplots` for details which are not documented 
+        :meth:`matplotlib.pyplot.subplots` for details which are not documented 
         here.
         
         Other Parameters
         ----------------
         *args
            Other positional arguments are passed directly to 
-           :class:`matplotlib.figure.Figure`.
+           :class:`matplotlib.figure.Figure`\.
 
-        scale : list | tuple | np.ndarray, default = (1., 1.)
+        scale : list | tuple | :class:`numpy.ndarray`\, default = (1., 1.)
            A 2-element iterable which scales the figure size. Values cannot be
            negative.
 
         bound : bool, default = True
-           If `True`, artists will be forced to stay within the figure limits
+           If `True`\, artists will be forced to stay within the figure limits
            by adjusting the ``subplot_adjust`` properties.
 
         debug : bool, default = False
-           If `True`, debug information will be drawn on the figure.
+           If `True`\, debug information will be drawn on the figure.
 
         **kwargs
            Other keyword arguments are passed directly to 
-           :class:`matplotlib.figure.Figure`.
+           :class:`matplotlib.figure.Figure`\.
         """
         import matplotlib.patches
         
@@ -311,7 +311,7 @@ class Figure(matplotlib.figure.Figure, object):
             artist_type : type | type(None) = matplotlib.artist.Artist,
             artist : matplotlib.artist.Artist | type(None) = None,
     ):
-        """ Obtain all artists of the given type. If the given type is None, 
+        """ Obtain all artists of the given type. If the given type is `None`\, 
         this returns all artists in the figure. The search begins at the given
         artist. If the given artist is None, all artists are searched. """
         if artist is None: artist = self
@@ -333,10 +333,10 @@ class Figure(matplotlib.figure.Figure, object):
 @starsmashertools.preferences.use
 class FluxFigure(Figure, object):
     """
-    Show any number of :class:`~.lib.flux.FluxResult`s on a Figure. The figure
-    appears as a collection of images, where each row represents one FluxResult.
-    The number of columns in each row is determined by the keys given in the 
-    constructor
+    Show any number of :class:`~.lib.flux.FluxResult`\s on a Figure. The figure
+    appears as a collection of images, where each row represents one 
+    :class:`~.lib.flux.FluxResult`\. The number of columns in each row is 
+    determined by the keys given in the constructor.
     """
     
     name = 'FluxFigure' # Cannot be used in starsmashertools.mpl.subplots()
@@ -354,21 +354,23 @@ class FluxFigure(Figure, object):
         ----------
         *args
             Positional arguments are passed directly to
-            :meth:`~.Figure.__init__`.
+            :meth:`~.Figure.__init__`\.
 
         Other Parameters
         ----------------
-        values : list, tuple, default = Pref('values', ['flux'])
-            A list of ``str`` or functions which determine the quantities to be
-            shown. Each ``str`` must correspond with a key in the ``'image'``
-            dict of the FluxResult. If a function is given, it must accept a
-            FluxResult as input and give a 2D NumPy array and a dict as the 
-            output, where the 2D array is the image and the dict specify keyword
-            arguments to :func:`matplotlib.axes.Axes.imshow`.
+        values : list, tuple, default = ``Pref('values', ['flux'])``
+            A list of :py:class:`str` or functions which determine the 
+            quantities to be shown. Each :py:class:`str` must correspond with a
+            key in the ``'image'`` :py:class:`dict` of the 
+            :class:`~.lib.flux.FluxResult`\. If a function is given, it must 
+            accept a :class:`~.lib.flux.FluxResult` as input and give a 2D 
+            :class:`numpy.ndarray` and a :py:class:`dict` as the output, where 
+            the 2D array is the image and the dict specify keyword arguments to
+            :meth:`matplotlib.axes.Axes.imshow`\.
         
         **kwargs
             Other keyword arguments are passed directly to 
-            :meth:`~.Figure.__init__`.
+            :meth:`~.Figure.__init__`\.
         """
         self._values = values
         super(FluxFigure, self).__init__(*args, **kwargs)
@@ -383,7 +385,7 @@ class FluxFigure(Figure, object):
             **kwargs
     ):
         """
-        This function is called by :func:`~.mpl.subplots` to create the axes on
+        This function is called by :meth:`~.mpl.subplots` to create the axes on
         the figure.
         """
         self._subplots_kw = kwargs
@@ -403,17 +405,13 @@ class FluxFigure(Figure, object):
         Parameters
         ----------
         result : str, :class:`~.lib.flux.FluxResult`
-            The :class:`~.lib.flux.FluxResult` to add to the figure. If a `str`
-            is given, it must be a path to a valid FluxResult file.
-
+            The :class:`~.lib.flux.FluxResult` to add to the figure. If a 
+            :py:class:`str` is given, it must be a path to a valid 
+            :class:`~.lib.flux.FluxResult` file.
+        
         values : list, tuple, None, default = None
             The :py:class:`str` keys in the 'image' dict of the FluxResult which
             will be plotted.
-        
-        Returns
-        -------
-        ax : list
-            A list of Axes which have been added to the figure.
         """
         import starsmashertools.lib.flux
         if isinstance(result, str):

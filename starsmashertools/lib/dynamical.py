@@ -1,10 +1,12 @@
+import starsmashertools.preferences
+from starsmashertools.preferences import Pref
 import starsmashertools.lib.simulation
 from starsmashertools.helpers.apidecorator import api
 from starsmashertools.helpers.clidecorator import cli
 from starsmashertools.helpers.archiveddecorator import archived
 import numpy as np
 
-
+@starsmashertools.preferences.use
 class Dynamical(starsmashertools.lib.simulation.Simulation, object):
     def _get_children(self, *args, **kwargs):
         import starsmashertools.helpers.path
@@ -40,8 +42,8 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
     @cli('starsmashertools')
     def get_plunge_time(
             self,
-            threshold_frac : int | float | type(None) = None,
-            threshold : int | float | type(None) = 0.05,
+            threshold_frac : int | float | type(None) = Pref('get_plunge_time.threshold_frac', None),
+            threshold : int | float | type(None) = Pref('get_plunge_time.threshold', 0.05),
             cli : bool = False,
     ):
         """
@@ -53,18 +55,18 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
 
         Parameters
         ----------
-        threshold_frac : int, float, None, default = None
+        threshold_frac : int, float, None, default = ``Pref('get_plunge_time.threshold_frac', None)``
             The fraction of the secondary's total starting mass that must be
             within the secondary's initial radius to identify the plunge-in
             event.
 
-        threshold : int, float, None, default = 0.05
+        threshold : int, float, None, default = ``Pref('get_plunge_time.threshold', 0.05)``
             The mass in solar masses of the secondary star which must be within
             the primary's starting radius in order to detect a plunge-in event.
         
         Returns
         -------
-        :class:`~.lib.units.Unit` or `None`
+        :class:`~.lib.units.Unit` or None
             The plunge time. Returns `None` if there is not yet any plunge-in
             event in this simulation.
         """
@@ -176,30 +178,49 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
         the orbital energy in the phi hat direction and the theta hat direction,
         where phi is the azimuthal angle and theta is the polar angle. The
         orbital energy of a single particle is its kinetic energy in some given
-        direction mv^2/2.
+        direction :math:`mv^2/2`.
 
         We obtain the velocities by first writing the velocity in spherical
-        coordinates: \\vec{v} = v_r\\hat{r} + r\\dot{\\theta}\\hat{\\theta} + 
-        \\dot{\\phi}r\\sin\\phi\\hat{\\phi}. In this way, the velocity
-        components are: v_\\theta = r\\dot{\\theta} and 
-        v_\\phi = \\dot{\\phi}r\\sin\\phi. To find the angular velocities 
-        \\dot{\\theta} and \\dot{\\phi}, we use their spherical coordinate 
-        relations \\cos\\theta = z/r and \\tan\\phi = y/x. Differentiating each
-        with respect to time yields: \\dot{\\theta} = 
-        (r'/r^2) [ (zx v_x + zy v_y) / r'^2 - v_z], where r' = sqrt(x^2 + y^2),
-        and \\dot{\\phi} = (x v_y - y v_x) / r'^2. Therefore,
+        coordinates
+
+        .. math::
+
+            \\vec{v} = v_r\\hat{r} + r\\dot{\\theta}\\hat{\\theta} + \\dot{\\phi}r\\sin\\phi\\hat{\\phi}
+
+        In this way, the velocity components are 
+        :math:`v_\\theta = r\\dot{\\theta}` and 
+        :math:`v_\\phi = \\dot{\\phi}r\\sin\\phi`\. To find the angular 
+        velocities :math:`\\dot{\\theta}` and :math:`\\dot{\\phi}`\, we use 
+        their spherical coordinate relations :math:`\\cos\\theta = z/r` and 
+        :math:`\\tan\\phi = y/x`\. Differentiating each with respect to time 
+        yields
+
+        .. math::
+
+            \\dot{\\theta} = \\frac{r'}{r^2} \\left( \\frac{zx v_x + zy v_y}{r'^2} - v_z\\right)
+
+        where :math:`r' = (x^2 + y^2)^{1/2}`\, and 
+        :math:`\\dot{\\phi} = (x v_y - y v_x) / r'^2`\. Therefore,
         
-        v_\\theta = y/r [ (zx v_x + zy v_y) / r'^2 - v_z ]
-          v_\\phi = r/r'^2 (x v_y - y v_x)
+        .. math::
+        
+            \\begin{align}
+                v_\\theta &= \\frac{y}{r} \\left[ \\frac{zx v_x + zy v_y}{r'^2} - v_z \\right]\\\\
+                v_\\phi &= \\frac{r}{r'^2} (x v_y - y v_x)
+            \\end{align}
 
         The corresponding orbital energies of a particle are:
         
-        E_{orb,i,\\theta} = m_i v_{\\theta,i}^2 / 2
-          E_{orb,i,\\phi} = m_i v_{\\phi,i}^2 / 2
+        .. math::
+        
+            \\begin{align}
+                E_{orb,i,\\theta} &= \\frac{1}{2} m_i v_{\\theta,i}^2\\\\
+                E_{orb,i,\\phi} &= \\frac{1}{2} m_i v_{\\phi,i}^2
+            \\end{align}
 
         Parameters
         ----------
-        origin : tuple, list, np.ndarray, default = (0, 0, 0)
+        origin : tuple, list, :class:`numpy.ndarray`\, default = ``(0, 0, 0)``
             The origin relative to the center of mass.
 
         filter_unbound : bool, default = True
@@ -209,23 +230,23 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
         ----------------
         *args
             Positional arguments are passed directly to
-            :func:`~.lib.simulation.Simulation.get_output`
+            :meth:`~.lib.simulation.Simulation.get_output`
         
         **kwargs
             Other keyword arguments are passed directly to
-            :func:`~.lib.simulation.Simulation.get_output`
+            :meth:`~.lib.simulation.Simulation.get_output`
 
         Returns
         -------
         list
-            The total orbital energy E_{orb,\\theta} summed over every particle.
-            If `filter_unbound` is `True` then an output that has no bound
-            particles has a value of 0.
+            The total orbital energy :math:`E_{orb,\\theta}` summed over every 
+            particle. If ``filter_unbound`` is `True` then an output that has no
+            bound particles has a value of 0.
 
         list
-            The total orbital energy E_{orb,\\phi} summed over every particle.
-            If `filter_unbound` is `True` then an output that has no bound
-            particles has a value of 0.
+            The total orbital energy :math:`E_{orb,\\phi}` summed over every 
+            particle. If ``filter_unbound`` is `True` then an output that has no
+            bound particles has a value of 0.
         """
         outputs = self.get_output(*args, **kwargs)
         if not isinstance(outputs, list): outputs = [outputs]

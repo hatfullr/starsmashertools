@@ -78,6 +78,15 @@ prefs = {
             }, # 'Binary'
         }, # 'binary'
 
+        'dynamical' : {
+            'Dynamical' : {
+                'get_plunge_time' : {
+                    'threshold_frac' : None,
+                    'threshold' : 0.05,
+                },
+            },
+        }, # 'dynamical'
+
         # Settings for obtaining the radiative flux of output files which
         # originate from simulations that use radiative cooling in Hatfull et
         # al. (in prep).

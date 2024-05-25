@@ -118,7 +118,7 @@ def subplots(
         **kwargs
 ):
     """
-    Similar to :func:`matplotlib.pyplot.subplots`, except allows for the 
+    Similar to :func:`matplotlib.pyplot.subplots`\, except allows for the 
     use of custom :class:`matplotlib.figure.Figure` and 
     :class:`matplotlib.axes.Axes` classes.
 
@@ -127,15 +127,15 @@ def subplots(
     FigureClass : str, Figure class, None, default = 'Figure'
         The kind of :class:`matplotlib.figure.Figure` to create. If a `str` is 
         given, it is an identifier which should match a ``name`` property of one
-        of the custom Figure subclasses in :mod:`~.mpl.figure`. If a Figure 
-        class is given, it is used. If `None`, the regular 
+        of the custom Figure subclasses in :mod:`~.mpl.figure`\. If a Figure 
+        class is given, it is used. If `None`\, the regular 
         :class:`matplotlib.figure.Figure` class is used.
 
     AxesClass : str, Axes class, None, default = 'Axes'
         The kind of :class:`matplotlib.axes.Axes` to create. If a `str` is 
         given, it is an identifier which should match a ``name`` property of one
-        of the custom Axes subclasses in :mod:`~.mpl.figure`. If an Axes class 
-        is given, it is used. If `None`, the regular 
+        of the custom Axes subclasses in :mod:`~.mpl.figure`\. If an Axes class 
+        is given, it is used. If `None`\, the regular 
         :class:`matplotlib.axes.Axes` class is used. If you provide your own
         class, it must be registered as a projection with Matplotlib first.
 
@@ -145,14 +145,14 @@ def subplots(
 
     subplot_kw : dict, None, defualt = None
         The same as keyword ``subplot_kw`` in 
-        :func:`matplotlib.pyplot.subplots`, except the key ``'projection'`` will
-        always be set to the value of keyword argument ``AxesClass`` if it is 
-        not `None`. If this keyword is `None` and ``AxesClass`` is not `None`, 
-        then a new ``subplot_kw`` :py:class:`dict` will be created.
+        :func:`matplotlib.pyplot.subplots`\, except the key ``'projection'`` 
+        will always be set to the value of keyword argument ``AxesClass`` if it
+        is not `None`\. If this keyword is `None` and ``AxesClass`` is not 
+        `None`\, then a new ``subplot_kw`` :py:class:`dict` will be created.
 
     **kwargs
         Other keyword arguments are passed directly to 
-        :func:`matplotlib.pyplot.subplots`.
+        :func:`matplotlib.pyplot.subplots`\.
 
     Returns
     -------

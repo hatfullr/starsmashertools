@@ -114,7 +114,7 @@ class BilinearInterpolator(Interpolator, object):
         
         Returns
         -------
-        mask : np.ndarray
+        mask : :class:`numpy.ndarray`
             A boolean mask where `True` indicates that the point is within the
             interpolation bounds and `False` indicates that the point is outside
             the interpolation bounds.

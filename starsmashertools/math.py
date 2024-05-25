@@ -84,7 +84,7 @@ def rotate(
         zangle : float | int | np.float_ | np.integer = 0,
 ):
     """
-    Rotate the given ``x``, ``y``, and ``z`` points using an Euler rotation.
+    Rotate the given ``x``\, ``y``\, and ``z`` points using an Euler rotation.
 
     An Euler rotation can be understood as follows. Imagine the x, y, and z axes
     as wooden dowels. First the z-axis dowel is rotated `zangle` degrees
@@ -93,29 +93,29 @@ def rotate(
 
     Parameters
     ----------
-    x : list, tuple, np.ndarray
+    x : list, tuple, :class:`numpy.ndarray`
         The x components.
     
-    y : list, tuple, np.ndarray
+    y : list, tuple, :class:`numpy.ndarray`
         The y components.
 
-    z : list, tuple, np.ndarray
+    z : list, tuple, :class:`numpy.ndarray`
         The z components.
 
-    xangle : float, int, np.float_, np.integer, default = 0
+    xangle : float, int, :class:`numpy.float_`\, :class:`numpy.integer`\, default = 0
         The x component of an Euler rotation in degrees.
 
-    yangle : float, int, np.float_, np.integer, default = 0
+    yangle : float, int, :class:`numpy.float_`\, :class:`numpy.integer`\, default = 0
         The y component of an Euler rotation in degrees.
 
-    zangle : float, int, np.float_, np.integer, default = 0
+    zangle : float, int, :class:`numpy.float_`\, :class:`numpy.integer`\, default = 0
         The z component of an Euler rotation in degrees.
     
     Returns
     -------
     x, y, z
         A copy of the x, y, z components which were given as inputs, rotated
-        by ``xangle``, ``yangle``, and ``zangle``.
+        by ``xangle``\, ``yangle``\, and ``zangle``\.
     """
     import copy
 
@@ -161,12 +161,12 @@ def rotate_spherical(
     Parameters
     ----------
     *args
-        Positional arguments are passed directly to :func:`~.rotate`.
+        Positional arguments are passed directly to :func:`~.rotate`\.
 
-    theta : float, int, np.float_, np.integer, default = 0
+    theta : float, int, :class:`numpy.float_`\, :class:`numpy.integer`\, default = 0
         The polar angle in degrees.
 
-    phi : float, int, np.float_, np.integer, default = 0
+    phi : float, int, :class:`numpy.float_`\, :class:`numpy.integer`\, default = 0
         The azimuthal angle in degrees.
     
     Returns

@@ -1,4 +1,5 @@
 import starsmashertools.preferences
+from starsmashertools.preferences import Pref
 from starsmashertools.helpers.apidecorator import api
 import starsmashertools.helpers.argumentenforcer
 import starsmashertools.helpers.readonlydict
@@ -6,12 +7,12 @@ import starsmashertools.helpers.readonlydict
 @starsmashertools.preferences.use
 class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
     """
-    This class holds information about inputs that are sent to a StarSmasher
-    simulation. It is a dictionary whose keys are StarSmasher code variable
+    This class holds information about inputs that are sent to a ``StarSmasher``
+    simulation. It is a dictionary whose keys are ``StarSmasher`` code variable
     names and the values are the actual values that those variables have in
-    StarSmasher at runtime. We accomplish this by reading the StarSmasher source
-    code available in the simulation directory as well as the input list
-    (usually called 'sph.input') to determine each value.
+    ``StarSmasher`` at runtime. We accomplish this by reading the 
+    ``StarSmasher`` source code available in the simulation directory as well as
+    the input list (usually called ``'sph.input'``) to determine each value.
     """
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
@@ -26,7 +27,7 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
     @property
     def src(self):
         """
-        The StarSmasher source directory.
+        The ``StarSmasher`` source directory.
         """
         import starsmashertools.helpers.path
         if self._src is None:
@@ -38,17 +39,23 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
         if item not in list(self.keys()) and not self._initialized: self.initialize()
         return super(Input, self).__getitem__(item, **kwargs)
 
-    def get_init_file(self):
+    @api
+    def get_init_file(
+            self,
+            filename : str = Pref('src init filename', 'init.f'),
+    ):
         """
-        Obtain the "init.f" file that StarSmasher uses to initialize the
+        Obtain the ``'init.f'`` file that ``StarSmasher`` uses to initialize the
         simulation.
+        
+        Parameters
+        ----------
+        filename : str, default = ``Pref('src init filename', 'init.f')``
+            The filename to search for.
         """
         import starsmashertools.helpers.path
         return starsmashertools.helpers.path.realpath(
-            starsmashertools.helpers.path.join(
-                self.src,
-                self.preferences.get('src init filename'),
-            ),
+            starsmashertools.helpers.path.join(self.src, filename),
         )
 
     def _isolate_get_input_subroutine(self, lines):
@@ -74,7 +81,7 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
             if 'namelist' in line and '/' in line:
                 ret += [line.split('/')[1].strip()]
         return ret
-
+    
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     def get_namelist_name(
             self,
@@ -109,7 +116,7 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
                             return name, path
         
         raise Exception("Failed to find the input namelist name in '%s'" % init_file)
-
+    
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     def get_namelist(
             self,
@@ -140,36 +147,37 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
         content = ''.join(lines[start_idx:stop_idx])
         content = content.replace('$','').replace('&','')
         return [item.strip() for item in content.split('/')[2].split(',')], stop_idx
-        
+
+    @api
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     def get_input_filename(
             self,
-            init_file : str | type(None) = None,
+            init_file : str | type(None) = None
     ):
         """
-        Open up the init.f file to figure out what it reads as the input file.
-        We search for the "namelist" block in the variable declarations of
+        Open up the ``init.f`` file to figure out what it reads as the input 
+        file. We search for the "namelist" block in the variable declarations of
         init.f and then search the simulation directory's files for one whose
         first line matches the namelist name.
 
         Parameters
         ----------
         init_file : str, None, default = None
-            A path to the init.f file in the StarSmasher source code. If `None`,
-            then the value is set to the return value of
-            :func:`~.get_init_file`.
-
+            A path to the init.f file in the ``StarSmasher`` source code. If 
+            `None`\, then the value is set to the return value of 
+            :meth:`~.get_init_file`\.
+        
         Returns
         -------
         str
-            A path to the name of the input file, which is "sph.input" by
-            default unless "init.f" in the StarSmasher source code has been
-            modified.
+            A path to the name of the input file, which is ``'sph.input'`` by
+            default unless ``'init.f'`` in the ``StarSmasher`` source code has 
+            been modified.
         """
         import starsmashertools.helpers.file
         
         if init_file is None: init_file = self.get_init_file()
-
+        
         with starsmashertools.helpers.file.open(init_file, 'r', lock = False) as f:
             lines = f.read().split('\n')
 
@@ -290,9 +298,9 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
     @api
     def initialize(self):
         """
-        Read the StarSmasher input file and the "init.f" file to determine the
-        value of each StarSmasher input variable. Fills this object with keys
-        and values.
+        Read the ``StarSmasher`` input file and the ``'init.f'`` file to 
+        determine the value of each ``StarSmasher`` input variable. Fills this 
+        object with keys and values.
         """
         if self._initialized: raise Exception("Cannot initialize an Input object that is already initialized")
         super(Input, self).__init__(self.get_input_values())

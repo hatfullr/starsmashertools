@@ -21,17 +21,17 @@ if sourcefile is not None: # Not in interactive mode
     bin_directory = os.path.join(SOURCE_DIRECTORY, 'bin')
     test_directory = os.path.join(SOURCE_DIRECTORY, 'tests')
     _execution_in_source = False
-    if current_directory.startswith(SOURCE_DIRECTORY):
-        if current_directory != os.path.join(test_directory, 'flux'):
-            if current_directory not in [bin_directory, test_directory]:
-                if not sourcefile.endswith("check_leaks"):
-                    _execution_in_source = True
+
+    if (current_directory.startswith(SOURCE_DIRECTORY) and
+        (current_directory != os.path.join(test_directory, 'flux')) and
+        (bin_directory not in current_directory) and
+        (test_directory not in current_directory)
+        ):
+        _execution_in_source = True
     
     del current_directory, SOURCE_DIRECTORY
 
 del sourcefile
-
-
 
 
 class NoDefaultPreference(object): pass
@@ -47,7 +47,9 @@ class Pref(object):
     Examples
     --------
 
-    In a fake example module ``starsmashertools.example``, we define::
+    In a fake example module ``starsmashertools.example``\, we define:
+    
+    .. code-block:: python
 
          import starsmashertools.preferences
          from starsmashertools.preferences import Pref
@@ -60,7 +62,7 @@ class Pref(object):
          A()
     
     Let the preferences files contain an identifier ``example.A.val`` with a
-    value of ``'foo'``. The above code will print ``'foo'`` to the terminal.
+    value of ``'foo'``\. The above code will print ``'foo'`` to the terminal.
     
     """
     
@@ -135,17 +137,17 @@ class PreferenceExcludedError(Exception, object): pass
 class Preferences(object):
     """
     An object to handle user and default preferences with respect to a given
-    class that was decorated by :func:`~.use`.
+    class that was decorated by :meth:`~.use`\.
 
-    The user's preferences file contains a :py:class:`dict` called ``user``, 
+    The user's preferences file contains a :py:class:`dict` called ``user``\, 
     which is a branching tree of dictionaries. The leaves of the tree can have 
-    types :py:class:`int`, :py:class:`float`, :py:class:`complex`, 
-    :py:class:`bool`, :py:class:`str`, :py:class:`bytes`, or ``None``.
+    types :py:class:`int`\, :py:class:`float`\, :py:class:`complex`\, 
+    :py:class:`bool`\, :py:class:`str`\, :py:class:`bytes`\, or ``None``\.
 
     To obtain a preference, first the ``user`` :py:class:`dict` is traversed 
-    using keys from a string identifier (see :meth:`~.get`). Each key is 
+    using keys from a string identifier (see :meth:`~.get`\). Each key is 
     followed in order. At each step, the key is checked against the ``exclude``
-    :py:func:`dict` in the user's preferences and a 
+    :py:class:`dict` in the user's preferences and a 
     :class:`~.PreferenceExcludedError` is raised if it matches. After the last 
     key in the identifier has been found, the resulting object is returned as 
     the requested preference. If the preference wasn't found in ``user`` and it
@@ -153,7 +155,7 @@ class Preferences(object):
     :py:class:`dict` is checked. If the identifier still isn't found, a 
     :class:`~.PreferenceNotFoundError` is raised.
 
-    Each leaf of the ``exclude`` :py:class:`dict` is of type :py:class:`list`.
+    Each leaf of the ``exclude`` :py:class:`dict` is of type :py:class:`list`\.
     Whenever a key in the identifier is checked, the ``exclude`` dict is also
     checked for the corresponding key. If the current key being checked is
     included in the leaf, a :class:`~.PreferenceExcludedError` is raised.
@@ -161,6 +163,8 @@ class Preferences(object):
     Examples
     --------
     Suppose the preference dictionaries are defined as follows:
+    
+    .. code-block:: python
     
         # data/user/preferences.py
         prefs = {
@@ -218,6 +222,8 @@ class Preferences(object):
     Let there exist a class ``module.Class`` (such as in a file called 
     "module.py"):
         
+    .. code-block:: python
+    
         import starsmashertools.preferences
         
         @starsmashertools.preferences.use
@@ -348,21 +354,21 @@ class Preferences(object):
         found.
         
         Raises a :class:`~.PreferenceExcludedError` if the identifier is in the
-        ``exclude`` :py:class:`dict`.
+        ``exclude`` :py:class:`dict`\.
 
         Parameters
         ----------
         identifier : str
-            See :meth:`~.get`.
+            See :meth:`~.get`\.
 
         Returns
         -------
-        :py:class:`dict`, :py:class:`int`, :py:class:`float`, :py:class:`complex`, :py:class:`bool`, :py:class:`str`, :py:class:`bytes`, or ``None``
+        :py:class:`dict`\, :py:class:`int`\, :py:class:`float`\, :py:class:`complex`\, :py:class:`bool`\, :py:class:`str`\, :py:class:`bytes`\, or ``None``
             The value of the preference requested.
         
         See Also
         --------
-        :meth:`~.get`, :meth:`~.get_default`
+        :meth:`~.get`\, :meth:`~.get_default`
         """
         if identifier in self.exclude: raise PreferenceExcludedError
         return self._traverse(self.user, identifier)
@@ -376,7 +382,7 @@ class Preferences(object):
         Parameters
         ----------
         identifier : str
-            See :meth:`~.get`.
+            See :meth:`~.get`\.
 
         Returns
         -------
@@ -385,26 +391,26 @@ class Preferences(object):
 
         See Also
         --------
-        :meth:`~.get`, :meth:`~.get_user`
+        :meth:`~.get`\, :meth:`~.get_user`
         """
         return self._traverse(self.default, identifier)
     
     def get(self, identifier : str):
         """
-        Obtain the preference given by ``identifier``, either in the user's 
+        Obtain the preference given by ``identifier``\, either in the user's 
         preferences or in the default preferences.
 
         Raises a :class:`~.PreferenceMissingError` if the preference wasn't
         found in either the ``user`` :py:class:`dict` or the ``default`` 
-        :py:class:`dict`.
+        :py:class:`dict`\.
 
         Parameters
         ----------
         identifier : str
             A string delimited by '.', which describes the keys on which to
             traverse the preference dictionaries. Appears as 
-            ``'key1.key2.key3'``, etc. Two keys are automatically inserted: 
-            ``'module.class.key1.key2.key3'``, where ``'module'`` is the name of
+            ``'key1.key2.key3'``\, etc. Two keys are automatically inserted: 
+            ``'module.class.key1.key2.key3'``\, where ``'module'`` is the name of
             the module to which ``'class'`` belongs. The class is the same as 
             that which was decorated with the :func:`~.use` function.
         
@@ -422,7 +428,7 @@ class Preferences(object):
     def get_static(identifier : str):
         """
         Search the preferences for the given full identifier, which must appear
-        as, e.g., ``starsmashertools.lib.simulation.Simulation``, where the
+        as, e.g., ``starsmashertools.lib.simulation.Simulation``\, where the
         ``Simulation`` class in module ``starsmashertools.lib.simulation`` has
         the ``starsmashertools.preferences.use`` decorator.
         """

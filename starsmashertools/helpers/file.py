@@ -192,9 +192,9 @@ def get_lock_files(path : str):
     -------
     generator : str
         A generator which yields str paths to lock files associated with the 
-        file at ``path``. The base name of each lock file equals the full path 
+        file at ``path``\. The base name of each lock file equals the full path 
         of the original file, but with the file separators replaced with 
-        ``'_'``. The file separator is that which is given by :py:attr:`os.sep`.
+        ``'_'``\. The file separator is that which is given by :attr:`os.sep`\.
     """
     if not starsmashertools.helpers.path.isfile(path): return False
     from starsmashertools import LOCK_DIRECTORY
@@ -214,7 +214,7 @@ def is_locked(path : str):
     Check if the given path to a file is currently considered locked by
     starsmashertools. Starsmashertools avoids simultaneous read/write operations
     on files, such as in the case of using :class:`~.lib.archive.Archive` 
-    objects in :py:mod:`multiprocessing` environments.
+    objects in :mod:`multiprocessing` environments.
 
     Parameters
     ----------
@@ -224,7 +224,8 @@ def is_locked(path : str):
     Returns
     -------
     locked : bool
-        `True` if the file is locked, `False` otherwise or if it isn't a file.
+        ``True`` if the file is locked, ``False`` otherwise or if it isn't a 
+        file.
     """
     return len(list(get_lock_files(path))) > 0
 
@@ -242,7 +243,7 @@ def unlock(path : str, mode : str | type(None) = None):
     Other Parameters
     ----------------
     mode : str, None, default = None
-        The mode for which to remove a lock file. If `None`, lock files of all
+        The mode for which to remove a lock file. If `None`\, lock files of all
         modes are removed. Otherwise, a valid mode should be given (see
         :meth:`~.open` for details).
     """
@@ -444,22 +445,21 @@ def get_phrase(
     """
     Return instances of the given phrase in the given file as a list of strings
     where each element is the contents of the file after the phrase appears, up
-    to the specified `end`, or the next instance of the phrase.
+    to the specified `end`\, or the next instance of the phrase.
     
     Parameters
     ----------
     path : str
         The path to the file to read.
     phrase : str
-        The phrase to search for in the file specified by `path`. Whatever is
+        The phrase to search for in the file specified by `path`\. Whatever is
         between `phrase` and `end` will be returned.
-    end : str, default = '\n'
-        The ending to search for after finding `phrase`.
-
+    end : str, default = '\\n'
+        The ending to search for after finding `phrase`\.
+    
     Returns
     -------
     str
-
     """
     import mmap
     

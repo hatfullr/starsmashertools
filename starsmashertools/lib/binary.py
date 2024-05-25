@@ -279,48 +279,45 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
     ):
         """
         Obtain the output file that corresponds with the time of Roche lobe
-        overflow (RLOF). RLOF is detected using `~.get_fRLOF` to obtain the
-        fraction of the Roche lobe that is filled fRLOF in the output files. The
-        output files are searched to locate the one whose fRLOF value is closest
-        to `threshold` and the file just before that one is returned.
-
+        overflow (RLOF). RLOF is detected using :meth:`~.get_fRLOF` to obtain 
+        the fraction of the Roche lobe that is filled fRLOF in the output files.
+        The output files are searched to locate the one whose fRLOF value is 
+        closest to ``threshold`` and the file just before that one is returned.
+        
         Parameters
         ----------
-        which : str, default = 'primary'
+        which : str, default = ``'primary'``
             The star(s) for which to find the RLOF condition. Must be one of the
-            following: 'primary', 'secondary', or 'both'. If 'primary' or 
-            'secondary', a single `starsmashertools.lib.output.Output` object is
-            returned, and if 'both' then two are returned, which are the primary
-            and secondary stars' RLOF times repsectively.
+            following: ``'primary'``\, ``'secondary'``\, or ``'both'``\. If 
+            ``'primary'`` or ``'secondary'``, a single 
+            :class:`~.lib.output.Output` object is returned, and if ``'both'``
+            then two are returned, which are the primary and secondary stars' 
+            RLOF times repsectively.
 
         threshold : float, int,  default = 1.
             The threshold for detecting Roche lobe overflow. This value is
-            compared with fRLOF from `~.get_fRLOF`.
+            compared with fRLOF from :meth:`~.get_fRLOF`\.
 
-        CLI_output_window : int, default = Pref('get_RLOF.CLI output window', 6)
+        CLI_output_window : int, default = ``Pref('get_RLOF.CLI output window', 6)``
             How many output files to show in the CLI. Only applies when running
             starsmashertools in CLI mode.
 
         Returns
         -------
-        `starsmashertools.lib.output.Output` or `None` if `which` is 'primary'
-        or 'secondary'
+        :class:`~.lib.output.Output` or None if ``which = 'primary'`` or ``which = 'secondary'``
             The output file corresponding to the time of Roche lobe overflow for
-            the star specified by `which`. If the star has only a single
-            particle, returns `None`.
+            the star specified by ``which``\. If the star has only a single
+            particle, returns `None`\.
 
-        `starsmashertools.lib.output.Output` or `None`,
-        `starsmashertools.lib.output.Output` or `None` if `which` is `both`
-            The output file corresponding to the time of Roche lobe overflow for
-            the primary star and secondary star respectively. The first returned
-            element is `None` if the primary is a single particle and the second
-            returned element is `None` if the secondary is a single particle.
+        list of length 2 if ``which = 'both'``
+            Each element in the list is either a :class:`~.lib.output.Output` or
+            `None`. The first element is for the primary star and the second
+            element is for the secondary star.
 
         See Also
         --------
-        `~.get_fRLOF`
+        :meth:`~.get_fRLOF`
         """
-
         import starsmashertools.helpers.path
         import starsmashertools.helpers.midpoint
         import starsmashertools.helpers.string
@@ -535,17 +532,17 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
         star, if it has a core particle. The log files are checked first, which
         is usually faster than checking the outputs. If something goes wrong 
         with checking the log files, the first output file is checked instead,
-        using :func:`~.lib.output.Output.get_core_particles`.
+        using :meth:`~.lib.output.Output.get_core_particles`\.
 
         Returns
         -------
-        float or None
+        float or `None`
             The mass of the core particle in the primary (usually the donor)
-            star. If there is no core particle, returns `None`.
+            star. If there is no core particle, returns `None`\.
 
         See Also
         --------
-        :func:`~.get_secondary_core_mass`, :func:`~.lib.output.Output.get_core_particles`
+        :meth:`~.get_secondary_core_mass`\, :meth:`~.lib.output.Output.get_core_particles`
         """
         import starsmashertools.helpers.path
         import starsmashertools.lib.logfile
@@ -590,17 +587,17 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
         companion) star, if it has a core particle. The log files are checked 
         first, which is usually faster than checking the outputs. If something 
         goes wrong with checking the log files, the first output file is checked
-        instead, using :func:`~.lib.output.Output.get_core_particles`.
+        instead, using :func:`~.lib.output.Output.get_core_particles`\.
 
         Returns
         -------
-        float or None
+        float or `None`
             The mass of the core particle in the secondary (usually the
-            companion) star. If there is no core particle, returns `None`.
+            companion) star. If there is no core particle, returns `None`\.
         
         See Also
         --------
-        :func:`~.get_primary_core_mass`, :func:`~.lib.output.Output.get_core_particles`
+        :func:`~.get_primary_core_mass`\, :func:`~.lib.output.Output.get_core_particles`
         """
         import starsmashertools.helpers.path
         import starsmashertools.lib.output

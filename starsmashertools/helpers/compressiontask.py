@@ -102,7 +102,7 @@ class CompressionTask(object):
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     def isCompressedFile(filename : str):
         """
-        Check if the given filename was compressed by :func:`compress`.
+        Check if the given filename was compressed by :meth:`~.compress`\.
 
         Parameters
         ----------
@@ -111,7 +111,7 @@ class CompressionTask(object):
 
         Returns
         -------
-            `True` if the filename was compressed by :func:`compress` and
+            `True` if the filename was compressed by :meth:`~.compress` and
             `False` otherwise.
         """
         if not starsmashertools.helpers.path.isfile(filename):
@@ -216,7 +216,7 @@ class CompressionTask(object):
         preserving file creation times.
         
         A special file is added to the final compressed file for identification 
-        later when using :func:`decompress`.
+        later when using :meth:`~.decompress`\.
         
         Parameters
         ----------
@@ -227,18 +227,18 @@ class CompressionTask(object):
             Name of the resulting compressed file.
 
         delete : bool, default = True
-            If `True`, the files which are compressed are deleted.
+            If `True`\, the files which are compressed are deleted.
 
         delete_after : bool, default = True
-            If `True`, compressed files are deleted only after all files have
-            been compressed. If `False`, each file is deleted after it has been
+            If `True`\, compressed files are deleted only after all files have
+            been compressed. If `False`\, each file is deleted after it has been
             compressed. If `delete` is `False` this option is ignored.
 
         verbose : callable, bool, default = True
             Determines if the compressed file names should be printed to the
             console when they are about to be compressed.
 
-            If `True`, debug messages are printed to the console. If a callable
+            If `True`\, debug messages are printed to the console. If a callable
             function is given, it is called with a string passed as the first
             argument instead of printing to the console.
 
@@ -248,9 +248,9 @@ class CompressionTask(object):
 
         See Also
         --------
-        :func:`compress_serial`
-        :func:`compress_parallel`
-        :func:`decompress`
+        :meth:`~.compress_serial`
+        :meth:`~.compress_parallel`
+        :meth:`~.decompress`
         """
         
         if nprocs == 0:
@@ -297,25 +297,25 @@ class CompressionTask(object):
             Name of the resulting compressed file.
 
         delete : bool, default = True
-            If `True`, the files which are compressed are deleted.
+            If `True`\, the files which are compressed are deleted.
 
         delete_after : bool, default = True
-            If `True`, compressed files are deleted only after all files have
-            been compressed. If `False`, each file is deleted after it has been
+            If `True`\, compressed files are deleted only after all files have
+            been compressed. If `False`\, each file is deleted after it has been
             compressed. If `delete` is `False` this option is ignored.
 
         verbose : callable, bool, default = True
             Determines if the compressed file names should be printed to the
             console when they are about to be compressed.
             
-            If `True`, messages are printed to the console. If a callable
+            If `True`\, messages are printed to the console. If a callable
             function is given, it is called with a string passed as the first
             argument instead of printing to the console.
 
         See Also
         --------
-        :func:`compress_parallel`
-        :func:`decompress`
+        :meth:`~.compress_parallel`
+        :meth:`~.decompress`
         """
         
         if starsmashertools.helpers.path.isfile(filename):
@@ -367,7 +367,7 @@ class CompressionTask(object):
     ):
         """
         Perform compression in parallel mode. The list of files is divvied up
-        among processes, who each do :func:`compress_serial`. When all processes
+        among processes, who each do :meth:`~.compress_serial`\. When all processes
         are finished each zip file is added to the final main zip file.
 
         Parameters
@@ -382,11 +382,11 @@ class CompressionTask(object):
         ----------------
         kwargs : dict
             Other keyword arguments are passed directly to
-            :func:`compress_serial`.
+            :meth:`~.compress_serial`\.
 
         See Also
         --------
-        :func:`compress_serial`
+        :meth:`~.compress_serial`
         """
 
         if starsmashertools.helpers.path.isfile(filename):
@@ -435,7 +435,7 @@ class CompressionTask(object):
             verbose : typing.Callable | bool = False,
     ):
         """
-        Decompress a file created by :func:`compress`.
+        Decompress a file created by :meth:`~.compress`\.
 
         Parameters
         ----------
@@ -443,19 +443,19 @@ class CompressionTask(object):
             The filename to decompress.
         
         delete : bool, default = True
-            If `True`, the compressed file is deleted after decompression.
+            If `True`\, the compressed file is deleted after decompression.
         
         verbose : callable, bool, default = True
             Determines if the decompressed file names should be printed to the
             console when they are about to be decompressed.
             
-            If `True`, debug messages are printed to the console. If a callable
+            If `True`\, debug messages are printed to the console. If a callable
             function is given, it is called with a string passed as the first
             argument instead of printing to the console.
         
         See Also
         --------
-        :func:`compress`
+        :meth:`~.compress`
         """
 
         if not starsmashertools.helpers.path.isfile(filename):

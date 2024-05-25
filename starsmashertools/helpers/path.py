@@ -41,7 +41,7 @@ def islink(path):
 
 def getsize(path : str):
     """
-    Return the size, in bytes, of `path`.
+    Return the size, in bytes, of `path`\.
 
     Parameters
     ----------
@@ -51,7 +51,7 @@ def getsize(path : str):
     Returns
     -------
     int
-        The size, in bytes, of `path`.
+        The size, in bytes, of `path`\.
     """
     if starsmashertools.helpers.ssh.isRemote(path):
         address, remote_path = starsmashertools.helpers.ssh.split_address(path)
