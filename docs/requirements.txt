@@ -62,5 +62,5 @@ urllib3>=2.0.5
     # via requests
 numpy>=1.22.4
     # via starsmashertools (I added this because of an issue with readthedocs)
-starsmashertools>=14.0.0
-    # come on, really?
+matplotlib>=3.7.0
+    # via common sense
