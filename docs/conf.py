@@ -90,8 +90,8 @@ def autodoc_skip_member(app, what, name, obj, skip, options):
     try:
         mod = obj.__module__
 
-        if not mod.startswith('starsmashertools'): return True
-
+        if 'starsmashertools' not in mod: return True
+        
         # Only include API-decorated objects
         for decorator in get_decorators(obj):
             if decorator == 'api': return False
