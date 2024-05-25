@@ -51,13 +51,20 @@ napoleon_include_special_with_doc = True
 #autodoc_typehints = 'none'
 
 templates_path = ['_templates']
-exclude_patterns = ['build', '_templates', 'Thumbs.db', '.DS_Store']
+exclude_patterns = [] #['build', 'Thumbs.db', '.DS_Store']
+
+# -- Options for EPUB output
+epub_show_urls = "footnote"
+
+pygments_style = 'sphinx'
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = 'alabaster'
+html_theme = "sphinx_rtd_theme"
+#html_theme = 'alabaster'
 
+html_static_path = ['_static']
 
 def remove_python_comments(content):
     import re
