@@ -57,7 +57,6 @@ exclude_patterns = ['build', '_templates', 'Thumbs.db', '.DS_Store']
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = 'alabaster'
-html_static_path = ['_static']
 
 
 def remove_python_comments(content):
