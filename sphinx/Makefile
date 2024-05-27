@@ -29,3 +29,4 @@ show:
 %: Makefile
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 	\cp -r "$(SOURCEDIR)/$(BUILDDIR)/html" "$(DOCSDIR)"
+	\touch "$(DOCSDIR)/.nojekyll"
