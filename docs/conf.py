@@ -6,13 +6,23 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-import starsmashertools
+from starsmashertools import __version__ as version
+import inspect
+#import starsmashertools
 import sys
 import os
+import subprocess
 
-sys.path.insert(0, starsmashertools.SOURCE_DIRECTORY)
+curdir = os.getcwd()
+os.chdir(os.path.abspath('..'))
+print(os.getcwd())
+p = subprocess.Popen(['./install'])
+p.wait()
+os.chdir(curdir)
 
-release = starsmashertools.__version__
+sys.path.insert(0, os.path.abspath('..'))
+
+release = version
 
 project = 'starsmashertools'
 copyright = '2024, Roger Hatfull'
@@ -49,17 +59,20 @@ napoleon_include_special_with_doc = True
 #autodoc_typehints = 'none'
 
 templates_path = ['_templates']
-exclude_patterns = ['build', '_templates', 'Thumbs.db', '.DS_Store']
+exclude_patterns = [] #['build', 'Thumbs.db', '.DS_Store']
+
+# -- Options for EPUB output
+epub_show_urls = "footnote"
+
+pygments_style = 'sphinx'
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = 'alabaster'
+html_theme = "sphinx_rtd_theme"
+#html_theme = 'alabaster'
+
 html_static_path = ['_static']
-
-
-import starsmashertools.helpers.apidecorator
-import inspect
 
 def remove_python_comments(content):
     import re
@@ -85,8 +98,8 @@ def autodoc_skip_member(app, what, name, obj, skip, options):
     try:
         mod = obj.__module__
 
-        if not mod.startswith('starsmashertools'): return True
-
+        if 'starsmashertools' not in mod: return True
+        
         # Only include API-decorated objects
         for decorator in get_decorators(obj):
             if decorator == 'api': return False
