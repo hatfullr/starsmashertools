@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>starsmashertools.lib.binary &mdash; starsmashertools 14.12.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../../../_static/documentation_options.js?v=61ccec80"></script>
+        <script src="../../../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            starsmashertools
+          </a>
+              <div class="version">
+                14.12.0
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../index.html">Home</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../gettingstarted.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cliprograms.html">CLI Programs</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.helpers.file.html">starsmashertools.helpers.file</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.archive.html">starsmashertools.lib.archive</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.binary.html">starsmashertools.lib.binary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.dynamical.html">starsmashertools.lib.dynamical</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.energyfile.html">starsmashertools.lib.energyfile</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.flux.html">starsmashertools.lib.flux</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.input.html">starsmashertools.lib.input</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.logfile.html">starsmashertools.lib.logfile</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.output.html">starsmashertools.lib.output</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.ray.html">starsmashertools.lib.ray</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.relaxation.html">starsmashertools.lib.relaxation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.report.html">starsmashertools.lib.report</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.simulation.html">starsmashertools.lib.simulation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.units.html">starsmashertools.lib.units</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.math.html">starsmashertools.math</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.mpl.artists.html">starsmashertools.mpl.artists</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.mpl.figure.html">starsmashertools.mpl.figure</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">starsmashertools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">starsmashertools.lib.binary</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for starsmashertools.lib.binary</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">starsmashertools.preferences</span>
+<span class="kn">from</span> <span class="nn">starsmashertools.preferences</span> <span class="kn">import</span> <span class="n">Pref</span>
+<span class="kn">import</span> <span class="nn">starsmashertools.lib.simulation</span>
+<span class="kn">import</span> <span class="nn">starsmashertools.lib.output</span>
+<span class="kn">from</span> <span class="nn">starsmashertools.helpers.apidecorator</span> <span class="kn">import</span> <span class="n">api</span>
+<span class="kn">from</span> <span class="nn">starsmashertools.helpers.clidecorator</span> <span class="kn">import</span> <span class="n">cli</span><span class="p">,</span> <span class="n">clioptions</span>
+<span class="kn">import</span> <span class="nn">starsmashertools.helpers.argumentenforcer</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<div class="viewcode-block" id="Binary">
+<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary">[docs]</a>
+<span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">preferences</span><span class="o">.</span><span class="n">use</span>
+<span class="k">class</span> <span class="nc">Binary</span><span class="p">(</span><span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">Simulation</span><span class="p">,</span> <span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Binary</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_n1</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_n2</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1"># Returns the particles in the output file which correspond</span>
+    <span class="c1"># to the primary star (usually the donor)</span>
+<div class="viewcode-block" id="Binary.get_primary">
+<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.get_primary">[docs]</a>
+    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="nf">get_primary</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span> <span class="p">:</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">Output</span><span class="p">):</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools</span>
+        <span class="k">if</span> <span class="n">output</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Argument &#39;output&#39; must be an output file from simulation &#39;</span><span class="si">%s</span><span class="s2">&#39;, not &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">directory</span><span class="p">,</span> <span class="n">output</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">directory</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">get_particles</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_primary_IDs</span><span class="p">())</span></div>
+
+
+<div class="viewcode-block" id="Binary.get_secondary">
+<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.get_secondary">[docs]</a>
+    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="nf">get_secondary</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span> <span class="p">:</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">Output</span><span class="p">):</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools</span>
+        <span class="k">if</span> <span class="n">output</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Argument &#39;output&#39; must be an output file from simulation &#39;</span><span class="si">%s</span><span class="s2">&#39;, not &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">directory</span><span class="p">,</span> <span class="n">output</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">directory</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">get_particles</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_secondary_IDs</span><span class="p">())</span></div>
+
+
+<div class="viewcode-block" id="Binary.get_n1">
+<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.get_n1">[docs]</a>
+    <span class="nd">@api</span>
+    <span class="nd">@cli</span><span class="p">(</span><span class="s1">&#39;starsmashertools&#39;</span><span class="p">)</span>
+    <span class="nd">@clioptions</span><span class="p">(</span><span class="n">display_name</span> <span class="o">=</span> <span class="s1">&#39;Primary star number of particles&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">get_n1</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cli</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n1</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_n1_n2</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n1</span></div>
+
+
+<div class="viewcode-block" id="Binary.get_n2">
+<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.get_n2">[docs]</a>
+    <span class="nd">@api</span>
+    <span class="nd">@cli</span><span class="p">(</span><span class="s1">&#39;starsmashertools&#39;</span><span class="p">)</span>
+    <span class="nd">@clioptions</span><span class="p">(</span><span class="n">display_name</span> <span class="o">=</span> <span class="s1">&#39;Secondary star number of particles&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">get_n2</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cli</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n2</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_n1_n2</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n2</span></div>
+
+
+    <span class="k">def</span> <span class="nf">_get_n1_n2</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.path</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.lib.logfile</span>
+        
+        <span class="n">logfiles</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_logfiles</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">logfiles</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_n1</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">logfiles</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;n1=&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;n1=&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+            <span class="k">except</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">logfile</span><span class="o">.</span><span class="n">LogFile</span><span class="o">.</span><span class="n">PhraseNotFoundError</span><span class="p">:</span>
+                <span class="c1"># I think this means the primary is a point mass</span>
+                <span class="k">pass</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_n2</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">logfiles</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;n2=&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;n2=&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+            <span class="k">except</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">logfile</span><span class="o">.</span><span class="n">LogFile</span><span class="o">.</span><span class="n">PhraseNotFoundError</span><span class="p">:</span>
+                <span class="c1"># I think this means the primary is a point mass</span>
+                <span class="k">pass</span>
+        
+        <span class="k">if</span> <span class="kc">None</span> <span class="ow">in</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_n1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n2</span><span class="p">]:</span>
+            <span class="c1"># If there&#39;s no log files then check for sph.start files</span>
+            <span class="n">start1u</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_start1u</span><span class="p">()</span>
+            <span class="n">start2u</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_start2u</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">start1u</span><span class="p">):</span>
+                <span class="n">header</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">start1u</span><span class="p">,</span> <span class="n">return_headers</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">return_data</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_n1</span> <span class="o">=</span> <span class="n">header</span><span class="p">[</span><span class="s1">&#39;ntot&#39;</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span> <span class="c1"># Must be a point mass</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_n1</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">start2u</span><span class="p">):</span>
+                <span class="n">header</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">start2u</span><span class="p">,</span> <span class="n">return_headers</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">return_data</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_n2</span> <span class="o">=</span> <span class="n">header</span><span class="p">[</span><span class="s1">&#39;ntot&#39;</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span> <span class="c1"># Must be a point mass</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_n2</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="c1"># Returns True if the primary is a point mass</span>
+<div class="viewcode-block" id="Binary.isPrimaryPointMass">
+<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.isPrimaryPointMass">[docs]</a>
+    <span class="nd">@api</span>
+    <span class="nd">@cli</span><span class="p">(</span><span class="s1">&#39;starsmashertools&#39;</span><span class="p">)</span>
+    <span class="nd">@clioptions</span><span class="p">(</span><span class="n">display_name</span> <span class="o">=</span> <span class="s1">&#39;Show if the primary star is a point mass&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">isPrimaryPointMass</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cli</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span> <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_n1</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span></div>
+
+    
+    <span class="c1"># Returns True if the secondary is a point mass</span>
+<div class="viewcode-block" id="Binary.isSecondaryPointMass">
+<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.isSecondaryPointMass">[docs]</a>
+    <span class="nd">@api</span>
+    <span class="nd">@cli</span><span class="p">(</span><span class="s1">&#39;starsmashertools&#39;</span><span class="p">)</span>
+    <span class="nd">@clioptions</span><span class="p">(</span><span class="n">display_name</span> <span class="o">=</span> <span class="s1">&#39;Show if the secondary star is a point mass&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">isSecondaryPointMass</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cli</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span> <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_n2</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span></div>
+
+
+<div class="viewcode-block" id="Binary.get_start1u">
+<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.get_start1u">[docs]</a>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="nf">get_start1u</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.path</span>
+        <span class="k">return</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">directory</span><span class="p">,</span> <span class="s2">&quot;sph.start1u&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Binary.get_start2u">
+<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.get_start2u">[docs]</a>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="nf">get_start2u</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.path</span>
+        <span class="k">return</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">directory</span><span class="p">,</span> <span class="s2">&quot;sph.start2u&quot;</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span> <span class="nf">_get_children</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">verbose</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.lib.relaxation</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.lib.simulation</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.path</span>
+        <span class="n">search_directory</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">Simulation</span><span class="o">.</span><span class="n">preferences</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="s1">&#39;search directory&#39;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">search_directory</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">realpath</span><span class="p">(</span><span class="n">search_directory</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">isPrimaryPointMass</span><span class="p">():</span>
+            <span class="n">children</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;point mass&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">duplicate</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">find_duplicate_file</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_start1u</span><span class="p">(),</span> <span class="n">search_directory</span><span class="p">,</span> <span class="n">throw_error</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">children</span> <span class="o">=</span> <span class="p">[</span><span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">relaxation</span><span class="o">.</span><span class="n">Relaxation</span><span class="p">(</span><span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">duplicate</span><span class="p">))]</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">isSecondaryPointMass</span><span class="p">():</span>
+            <span class="n">children</span> <span class="o">+=</span> <span class="p">[</span><span class="s1">&#39;point mass&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">duplicate</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">find_duplicate_file</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_start2u</span><span class="p">(),</span> <span class="n">search_directory</span><span class="p">,</span> <span class="n">throw_error</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">children</span> <span class="o">+=</span> <span class="p">[</span><span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">relaxation</span><span class="o">.</span><span class="n">Relaxation</span><span class="p">(</span><span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">duplicate</span><span class="p">))]</span>
+
+        <span class="k">return</span> <span class="n">children</span>
+
+<div class="viewcode-block" id="Binary.get_primary_IDs">
+<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.get_primary_IDs">[docs]</a>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="nf">get_primary_IDs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_n1</span><span class="p">())</span></div>
+
+
+<div class="viewcode-block" id="Binary.get_secondary_IDs">
+<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.get_secondary_IDs">[docs]</a>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="nf">get_secondary_IDs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">n1</span><span class="p">,</span> <span class="n">n2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_n1</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_n2</span><span class="p">()</span>
+        <span class="c1"># This needs checked</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n1</span><span class="p">,</span> <span class="n">n1</span> <span class="o">+</span> <span class="n">n2</span><span class="p">)</span></div>
+
+
+    <span class="c1"># Get the centers of mass of both stars</span>
+<div class="viewcode-block" id="Binary.get_COMs">
+<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.get_COMs">[docs]</a>
+    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="nf">get_COMs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span> <span class="p">:</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">Output</span> <span class="o">|</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">OutputIterator</span><span class="p">):</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.math</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.lib.simulation</span>
+        
+        <span class="k">if</span> <span class="n">output</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">Simulation</span><span class="o">.</span><span class="n">OutputNotInSimulationError</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">OutputIterator</span><span class="p">):</span>
+            <span class="n">com1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">output</span><span class="p">),</span> <span class="mi">3</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+            <span class="n">com2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">output</span><span class="p">),</span> <span class="mi">3</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">o</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">output</span><span class="p">):</span>
+                <span class="n">com1</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">com2</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_COMs</span><span class="p">(</span><span class="n">o</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">com1</span><span class="p">,</span> <span class="n">com2</span>
+        
+        <span class="n">primary_IDs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_primary_IDs</span><span class="p">()</span>
+        <span class="n">secondary_IDs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_secondary_IDs</span><span class="p">()</span>
+        
+        <span class="k">with</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">mask</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">primary_IDs</span><span class="p">)</span> <span class="k">as</span> <span class="n">masked</span><span class="p">:</span>
+            <span class="n">xcom1</span><span class="p">,</span> <span class="n">ycom1</span><span class="p">,</span> <span class="n">zcom1</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">center_of_mass</span><span class="p">(</span>
+                <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;am&#39;</span><span class="p">],</span>
+                <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">],</span>
+                <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">],</span>
+                <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;z&#39;</span><span class="p">],</span>
+            <span class="p">)</span>
+
+        <span class="k">with</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">mask</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">secondary_IDs</span><span class="p">)</span> <span class="k">as</span> <span class="n">masked</span><span class="p">:</span>
+            <span class="n">xcom2</span><span class="p">,</span> <span class="n">ycom2</span><span class="p">,</span> <span class="n">zcom2</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">center_of_mass</span><span class="p">(</span>
+                <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;am&#39;</span><span class="p">],</span>
+                <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">],</span>
+                <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">],</span>
+                <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;z&#39;</span><span class="p">],</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">xcom1</span><span class="p">,</span> <span class="n">ycom1</span><span class="p">,</span> <span class="n">zcom1</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">xcom2</span><span class="p">,</span> <span class="n">ycom2</span><span class="p">,</span> <span class="n">zcom2</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="Binary.get_separation">
+<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.get_separation">[docs]</a>
+    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="nf">get_separation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span> <span class="p">:</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">Output</span> <span class="o">|</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">OutputIterator</span><span class="p">):</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.lib.output</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.lib.simulation</span>
+        
+        <span class="k">if</span> <span class="n">output</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">Simulation</span><span class="o">.</span><span class="n">OutputNotInSimulationError</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">OutputIterator</span><span class="p">):</span>
+            <span class="n">separation</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">output</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">o</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">output</span><span class="p">):</span>
+                <span class="n">separation</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_separation</span><span class="p">(</span><span class="n">o</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">separation</span>
+        
+        <span class="n">com1</span><span class="p">,</span> <span class="n">com2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_COMs</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">com1</span> <span class="o">-</span> <span class="n">com2</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="Binary.get_period">
+<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.get_period">[docs]</a>
+    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="nf">get_period</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span> <span class="p">:</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">Output</span> <span class="o">|</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">OutputIterator</span><span class="p">):</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.math</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.lib.simulation</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.lib.output</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools</span>
+        
+        <span class="k">if</span> <span class="n">output</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">Simulation</span><span class="o">.</span><span class="n">OutputNotInSimulationError</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">OutputIterator</span><span class="p">):</span>
+            <span class="n">period</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">output</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">o</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">output</span><span class="p">):</span>
+                <span class="n">period</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_period</span><span class="p">(</span><span class="n">o</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">period</span>
+
+        <span class="n">separation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_separation</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+        
+        <span class="n">primary_IDs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_primary_IDs</span><span class="p">()</span>
+        <span class="n">secondary_IDs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_secondary_IDs</span><span class="p">()</span>
+        <span class="k">with</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">mask</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">primary_IDs</span><span class="p">)</span> <span class="k">as</span> <span class="n">masked</span><span class="p">:</span>
+            <span class="n">m1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">masked</span><span class="p">[</span><span class="s1">&#39;am&#39;</span><span class="p">])</span>
+        <span class="k">with</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">mask</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">secondary_IDs</span><span class="p">)</span> <span class="k">as</span> <span class="n">masked</span><span class="p">:</span>
+            <span class="n">m2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">masked</span><span class="p">[</span><span class="s1">&#39;am&#39;</span><span class="p">])</span>
+        <span class="n">m1</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">mass</span>
+        <span class="n">m2</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">mass</span>
+        <span class="n">separation</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">length</span>
+        <span class="k">return</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">period</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">m1</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="n">m2</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="n">separation</span><span class="p">))</span></div>
+
+        
+
+    <span class="c1"># Obtain the Roche lobe filling fraction fRLOF for the given output</span>
+    <span class="c1"># object. If None, then finds fRLOF for all the output files.</span>
+<div class="viewcode-block" id="Binary.get_fRLOF">
+<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.get_fRLOF">[docs]</a>
+    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="nf">get_fRLOF</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span> <span class="p">:</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">Output</span> <span class="o">|</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">OutputIterator</span><span class="p">):</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.math</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.lib.simulation</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.lib.output</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools</span>
+        <span class="kn">import</span> <span class="nn">warnings</span>
+        
+        <span class="k">if</span> <span class="n">output</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">Simulation</span><span class="o">.</span><span class="n">OutputNotInSimulationError</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">OutputIterator</span><span class="p">):</span>
+            <span class="n">fRLOF1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">output</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+            <span class="n">fRLOF2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">output</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">o</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">output</span><span class="p">):</span>
+                <span class="n">fRLOF1</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">fRLOF2</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_fRLOF</span><span class="p">(</span><span class="n">o</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">fRLOF1</span><span class="p">,</span> <span class="n">fRLOF2</span>
+        
+        <span class="n">separation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_separation</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+
+        <span class="n">primary</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_primary_IDs</span><span class="p">()</span>
+        <span class="n">secondary</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_secondary_IDs</span><span class="p">()</span>
+
+        <span class="k">with</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">mask</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">primary</span><span class="p">)</span> <span class="k">as</span> <span class="n">masked</span><span class="p">:</span>
+            <span class="n">m1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">masked</span><span class="p">[</span><span class="s1">&#39;am&#39;</span><span class="p">])</span>
+            <span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s1">&#39;ignore&#39;</span><span class="p">)</span>
+                <span class="n">V1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">masked</span><span class="p">[</span><span class="s1">&#39;am&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;rho&#39;</span><span class="p">])</span>
+
+        <span class="k">with</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">mask</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">secondary</span><span class="p">)</span> <span class="k">as</span> <span class="n">masked</span><span class="p">:</span>
+            <span class="n">m2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">masked</span><span class="p">[</span><span class="s1">&#39;am&#39;</span><span class="p">])</span>
+            <span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s1">&#39;ignore&#39;</span><span class="p">)</span>
+                <span class="n">V2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">masked</span><span class="p">[</span><span class="s1">&#39;am&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;rho&#39;</span><span class="p">])</span>
+
+        <span class="n">r_RL1</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">rocheradius</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">m1</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="n">m2</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="n">separation</span><span class="p">))</span>
+        <span class="n">r_RL2</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">rocheradius</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">m2</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="n">m1</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="n">separation</span><span class="p">))</span>
+        
+        <span class="k">return</span> <span class="p">(</span><span class="mf">0.75</span> <span class="o">*</span> <span class="n">V1</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="mf">3.</span><span class="p">)</span> <span class="o">/</span> <span class="n">r_RL1</span><span class="p">,</span> <span class="p">(</span><span class="mf">0.75</span> <span class="o">*</span> <span class="n">V2</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="mf">1.</span><span class="o">/</span><span class="mf">3.</span><span class="p">)</span> <span class="o">/</span> <span class="n">r_RL2</span></div>
+
+
+<div class="viewcode-block" id="Binary.get_RLOF">
+<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.get_RLOF">[docs]</a>
+    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+    <span class="nd">@api</span>
+    <span class="nd">@cli</span><span class="p">(</span><span class="s1">&#39;starsmashertools&#39;</span><span class="p">)</span>
+    <span class="nd">@clioptions</span><span class="p">(</span><span class="n">display_name</span> <span class="o">=</span> <span class="s1">&#39;Get Roche lobe overflow factor f_RLOF&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">get_RLOF</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">which</span> <span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;primary&#39;</span><span class="p">,</span>
+            <span class="n">threshold</span> <span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">=</span> <span class="mf">1.</span><span class="p">,</span>
+            <span class="n">CLI_output_window</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Pref</span><span class="p">(</span><span class="s1">&#39;get_RLOF.CLI output window&#39;</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span>
+            <span class="n">cli</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Obtain the output file that corresponds with the time of Roche lobe</span>
+<span class="sd">        overflow (RLOF). RLOF is detected using :meth:`~.get_fRLOF` to obtain </span>
+<span class="sd">        the fraction of the Roche lobe that is filled fRLOF in the output files.</span>
+<span class="sd">        The output files are searched to locate the one whose fRLOF value is </span>
+<span class="sd">        closest to ``threshold`` and the file just before that one is returned.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        which : str, default = ``&#39;primary&#39;``</span>
+<span class="sd">            The star(s) for which to find the RLOF condition. Must be one of the</span>
+<span class="sd">            following: ``&#39;primary&#39;``\, ``&#39;secondary&#39;``\, or ``&#39;both&#39;``\. If </span>
+<span class="sd">            ``&#39;primary&#39;`` or ``&#39;secondary&#39;``, a single </span>
+<span class="sd">            :class:`~.lib.output.Output` object is returned, and if ``&#39;both&#39;``</span>
+<span class="sd">            then two are returned, which are the primary and secondary stars&#39; </span>
+<span class="sd">            RLOF times repsectively.</span>
+
+<span class="sd">        threshold : float, int,  default = 1.</span>
+<span class="sd">            The threshold for detecting Roche lobe overflow. This value is</span>
+<span class="sd">            compared with fRLOF from :meth:`~.get_fRLOF`\.</span>
+
+<span class="sd">        CLI_output_window : int, default = ``Pref(&#39;get_RLOF.CLI output window&#39;, 6)``</span>
+<span class="sd">            How many output files to show in the CLI. Only applies when running</span>
+<span class="sd">            starsmashertools in CLI mode.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        :class:`~.lib.output.Output` or None if ``which = &#39;primary&#39;`` or ``which = &#39;secondary&#39;``</span>
+<span class="sd">            The output file corresponding to the time of Roche lobe overflow for</span>
+<span class="sd">            the star specified by ``which``\. If the star has only a single</span>
+<span class="sd">            particle, returns `None`\.</span>
+
+<span class="sd">        list of length 2 if ``which = &#39;both&#39;``</span>
+<span class="sd">            Each element in the list is either a :class:`~.lib.output.Output` or</span>
+<span class="sd">            `None`. The first element is for the primary star and the second</span>
+<span class="sd">            element is for the secondary star.</span>
+
+<span class="sd">        See Also</span>
+<span class="sd">        --------</span>
+<span class="sd">        :meth:`~.get_fRLOF`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.path</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.midpoint</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.string</span>
+        <span class="kn">import</span> <span class="nn">os</span>
+        
+        <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcevalues</span><span class="p">({</span>
+            <span class="s1">&#39;which&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="s1">&#39;primary&#39;</span><span class="p">,</span> <span class="s1">&#39;secondary&#39;</span><span class="p">,</span> <span class="s1">&#39;both&#39;</span><span class="p">],</span>
+        <span class="p">})</span>
+        <span class="n">outputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_output</span><span class="p">()</span>
+        <span class="n">midpoint</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">midpoint</span><span class="o">.</span><span class="n">Midpoint</span><span class="p">(</span><span class="n">outputs</span><span class="p">)</span>
+
+        <span class="n">output1</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">output2</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">fRLOF1</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">fRLOF2</span> <span class="o">=</span> <span class="kc">None</span>
+        
+        <span class="k">if</span> <span class="n">which</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;primary&#39;</span><span class="p">,</span> <span class="s1">&#39;both&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_n1</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">midpoint</span><span class="o">.</span><span class="n">set_criteria</span><span class="p">(</span>
+                <span class="k">lambda</span> <span class="n">output</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_fRLOF</span><span class="p">(</span><span class="n">output</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">threshold</span><span class="p">,</span>
+                <span class="k">lambda</span> <span class="n">output</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_fRLOF</span><span class="p">(</span><span class="n">output</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">threshold</span><span class="p">,</span>
+                <span class="k">lambda</span> <span class="n">output</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_fRLOF</span><span class="p">(</span><span class="n">output</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">threshold</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">output1</span><span class="p">,</span> <span class="n">index1</span> <span class="o">=</span> <span class="n">midpoint</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">favor</span><span class="o">=</span><span class="s1">&#39;low&#39;</span><span class="p">,</span> <span class="n">return_index</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+            <span class="n">fRLOF1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_fRLOF</span><span class="p">(</span><span class="n">output1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">fRLOF1</span> <span class="o">&gt;</span> <span class="n">threshold</span><span class="p">:</span> <span class="n">output1</span> <span class="o">=</span> <span class="n">outputs</span><span class="p">[</span><span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">index1</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)]</span>
+        <span class="k">if</span> <span class="n">which</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;secondary&#39;</span><span class="p">,</span> <span class="s1">&#39;both&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_n2</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_n2</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span> <span class="n">output2</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">midpoint</span><span class="o">.</span><span class="n">set_criteria</span><span class="p">(</span>
+                <span class="k">lambda</span> <span class="n">output</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_fRLOF</span><span class="p">(</span><span class="n">output</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">threshold</span><span class="p">,</span>
+                <span class="k">lambda</span> <span class="n">output</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_fRLOF</span><span class="p">(</span><span class="n">output</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">threshold</span><span class="p">,</span>
+                <span class="k">lambda</span> <span class="n">output</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_fRLOF</span><span class="p">(</span><span class="n">output</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">threshold</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">output2</span><span class="p">,</span> <span class="n">index2</span> <span class="o">=</span> <span class="n">midpoint</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">favor</span><span class="o">=</span><span class="s1">&#39;low&#39;</span><span class="p">,</span> <span class="n">return_index</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+            <span class="n">fRLOF2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_fRLOF</span><span class="p">(</span><span class="n">output2</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">fRLOF2</span> <span class="o">&gt;</span> <span class="n">threshold</span><span class="p">:</span> <span class="n">output2</span> <span class="o">=</span> <span class="n">outputs</span><span class="p">[</span><span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">index2</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)]</span>
+        
+        
+        <span class="k">if</span> <span class="n">cli</span><span class="p">:</span>
+            <span class="c1"># Give some additional fRLOF values in the vicinity of the found output files</span>
+            <span class="n">outputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_output</span><span class="p">()</span>
+
+            <span class="c1"># Get all the output files we will be using</span>
+            <span class="n">all_outputs</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">tops</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
+            <span class="n">bottoms</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">which</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;primary&#39;</span><span class="p">,</span> <span class="s1">&#39;both&#39;</span><span class="p">]:</span>
+                <span class="n">idx</span> <span class="o">=</span> <span class="n">outputs</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">output1</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">idx</span> <span class="o">+</span> <span class="n">CLI_output_window</span><span class="o">/</span><span class="mi">2</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">outputs</span><span class="p">):</span>
+                    <span class="n">tops</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">outputs</span><span class="p">)</span>
+                    <span class="n">bottoms</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">tops</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">CLI_output_window</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">idx</span> <span class="o">-</span> <span class="n">CLI_output_window</span><span class="o">/</span><span class="mi">2</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">bottoms</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+                    <span class="n">tops</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">CLI_output_window</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">outputs</span><span class="p">))</span>
+                <span class="n">all_outputs</span> <span class="o">+=</span> <span class="n">outputs</span><span class="p">[</span><span class="n">bottoms</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="n">tops</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+            <span class="k">if</span> <span class="n">which</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;secondary&#39;</span><span class="p">,</span> <span class="s1">&#39;both&#39;</span><span class="p">]:</span>
+                <span class="n">idx</span> <span class="o">=</span> <span class="n">outputs</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">output2</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">idx</span> <span class="o">+</span> <span class="n">CLI_output_window</span><span class="o">/</span><span class="mi">2</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">outputs</span><span class="p">):</span>
+                    <span class="n">tops</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">outputs</span><span class="p">)</span>
+                    <span class="n">bottoms</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">tops</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">CLI_output_window</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">idx</span> <span class="o">-</span> <span class="n">CLI_output_window</span><span class="o">/</span><span class="mi">2</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">bottoms</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+                    <span class="n">tops</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">CLI_output_window</span><span class="o">*</span><span class="mi">2</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">outputs</span><span class="p">))</span>
+                <span class="n">all_outputs</span> <span class="o">+=</span> <span class="n">outputs</span><span class="p">[</span><span class="n">bottoms</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span><span class="n">tops</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+            <span class="n">all_outputs</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">all_outputs</span><span class="p">))</span>
+            <span class="n">fRLOFs</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;primary&#39;</span><span class="p">:{},</span> <span class="s1">&#39;secondary&#39;</span><span class="p">:{}}</span>
+            <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">all_outputs</span><span class="p">:</span>
+                <span class="n">primary</span><span class="p">,</span> <span class="n">secondary</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_fRLOF</span><span class="p">(</span><span class="n">o</span><span class="p">)</span>
+                <span class="n">fRLOFs</span><span class="p">[</span><span class="s1">&#39;primary&#39;</span><span class="p">][</span><span class="n">o</span><span class="p">]</span> <span class="o">=</span> <span class="n">primary</span>
+                <span class="n">fRLOFs</span><span class="p">[</span><span class="s1">&#39;secondary&#39;</span><span class="p">][</span><span class="n">o</span><span class="p">]</span> <span class="o">=</span> <span class="n">secondary</span>
+            
+            <span class="n">widths</span> <span class="o">=</span> <span class="p">[</span><span class="mi">15</span><span class="p">,</span> <span class="mi">13</span><span class="p">]</span>
+            <span class="n">header_fmt</span> <span class="o">=</span> <span class="s1">&#39;{name:&gt;</span><span class="si">%d</span><span class="s1">}&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">widths</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">fmt</span> <span class="o">=</span> <span class="s1">&#39;{name:&gt;</span><span class="si">%d</span><span class="s1">s}</span><span class="si">{pick:1s}</span><span class="s1">{value:</span><span class="si">%d</span><span class="s1">.</span><span class="si">%d</span><span class="s1">f}&#39;</span> <span class="o">%</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">widths</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">widths</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="mi">7</span><span class="p">])</span>
+            <span class="n">strings</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="p">[</span><span class="n">header_fmt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;Primary&#39;</span><span class="p">)],</span>
+                <span class="p">[</span><span class="n">header_fmt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;Secondary&#39;</span><span class="p">)],</span>
+            <span class="p">]</span>
+            
+            <span class="k">if</span> <span class="n">which</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;primary&#39;</span><span class="p">,</span> <span class="s1">&#39;both&#39;</span><span class="p">]:</span>
+                <span class="n">idx</span> <span class="o">=</span> <span class="n">outputs</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">output1</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">outputs</span><span class="p">[</span><span class="n">bottoms</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="n">tops</span><span class="p">[</span><span class="mi">0</span><span class="p">]]:</span>
+                    <span class="n">name</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">string</span><span class="o">.</span><span class="n">shorten</span><span class="p">(</span>
+                        <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">o</span><span class="o">.</span><span class="n">path</span><span class="p">),</span>
+                        <span class="n">widths</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                        <span class="n">where</span> <span class="o">=</span> <span class="s1">&#39;left&#39;</span><span class="p">,</span>
+                    <span class="p">)</span>
+                    <span class="n">strings</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+=</span> <span class="p">[</span><span class="n">fmt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+                        <span class="n">value</span><span class="o">=</span><span class="n">fRLOFs</span><span class="p">[</span><span class="s1">&#39;primary&#39;</span><span class="p">][</span><span class="n">o</span><span class="p">],</span>
+                        <span class="n">pick</span><span class="o">=</span><span class="s1">&#39;*&#39;</span> <span class="k">if</span> <span class="n">o</span> <span class="o">==</span> <span class="n">output1</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
+                    <span class="p">)]</span>
+            <span class="k">if</span> <span class="n">which</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;secondary&#39;</span><span class="p">,</span> <span class="s1">&#39;both&#39;</span><span class="p">]:</span>
+                <span class="n">idx</span> <span class="o">=</span> <span class="n">outputs</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">output2</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">outputs</span><span class="p">[</span><span class="n">bottoms</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span><span class="n">tops</span><span class="p">[</span><span class="mi">1</span><span class="p">]]:</span>
+                    <span class="n">name</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">string</span><span class="o">.</span><span class="n">shorten</span><span class="p">(</span>
+                        <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">o</span><span class="o">.</span><span class="n">path</span><span class="p">),</span>
+                        <span class="n">widths</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                        <span class="n">where</span> <span class="o">=</span> <span class="s1">&#39;left&#39;</span><span class="p">,</span>
+                    <span class="p">)</span>
+                    <span class="n">strings</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+=</span> <span class="p">[</span><span class="n">fmt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+                        <span class="n">value</span><span class="o">=</span><span class="n">fRLOFs</span><span class="p">[</span><span class="s1">&#39;secondary&#39;</span><span class="p">][</span><span class="n">o</span><span class="p">],</span>
+                        <span class="n">pick</span><span class="o">=</span><span class="s1">&#39;*&#39;</span> <span class="k">if</span> <span class="n">o</span> <span class="o">==</span> <span class="n">output2</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
+                    <span class="p">)]</span>
+            
+            <span class="k">if</span> <span class="n">which</span> <span class="o">==</span> <span class="s1">&#39;primary&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">strings</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">which</span> <span class="o">==</span> <span class="s1">&#39;secondary&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">strings</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">which</span> <span class="o">==</span> <span class="s1">&#39;both&#39;</span><span class="p">:</span>
+                <span class="c1"># Normalize the lengths</span>
+                <span class="n">length</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">strings</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="nb">len</span><span class="p">(</span><span class="n">strings</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">length</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">strings</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span> <span class="n">strings</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">&quot;&quot;</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">strings</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span> <span class="n">strings</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">&quot;&quot;</span><span class="p">]</span>
+                <span class="n">string</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">length</span><span class="p">):</span>
+                    <span class="n">string</span> <span class="o">+=</span> <span class="n">strings</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">strings</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
+                <span class="k">return</span> <span class="n">string</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Bad which value &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="n">which</span><span class="p">))</span>
+        
+        <span class="k">if</span> <span class="n">which</span> <span class="o">==</span> <span class="s1">&#39;primary&#39;</span><span class="p">:</span> <span class="k">return</span> <span class="n">output1</span>
+        <span class="k">if</span> <span class="n">which</span> <span class="o">==</span> <span class="s1">&#39;secondary&#39;</span><span class="p">:</span> <span class="k">return</span> <span class="n">output2</span>
+        <span class="k">return</span> <span class="n">output1</span><span class="p">,</span> <span class="n">output2</span></div>
+
+        
+        
+<div class="viewcode-block" id="Binary.get_primary_mass">
+<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.get_primary_mass">[docs]</a>
+    <span class="nd">@api</span>
+    <span class="nd">@cli</span><span class="p">(</span><span class="s1">&#39;starsmashertools&#39;</span><span class="p">)</span>
+    <span class="nd">@clioptions</span><span class="p">(</span><span class="n">display_name</span> <span class="o">=</span> <span class="s1">&#39;Mass of primary star&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">get_primary_mass</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cli</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the mass of the primary star (usually the donor). First the log</span>
+<span class="sd">        files are searched, and if no log files are found then the first output</span>
+<span class="sd">        file is checked. If there are no output files then the sph.start1u file</span>
+<span class="sd">        is checked, and if it doesn&#39;t exist then an error is raised.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        float</span>
+<span class="sd">            The mass of the primary (usually the donor) star.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.path</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.lib.logfile</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.lib.output</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools</span>
+        
+        <span class="n">logfiles</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_logfiles</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">logfiles</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">logfiles</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;mass1=&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;mass1=&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+            <span class="k">except</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">logfile</span><span class="o">.</span><span class="n">LogFile</span><span class="o">.</span><span class="n">PhraseNotFoundError</span><span class="p">:</span>
+                <span class="c1"># I think this means the primary is a point mass</span>
+                <span class="k">pass</span>
+        <span class="c1"># If the log files failed, check the first output file</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_output</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">output</span><span class="p">:</span>
+            <span class="c1"># If there&#39;s no output files, then try to get sph.start1u</span>
+            <span class="n">start1u</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_start1u</span><span class="p">()</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">start1u</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="s2">&quot;Cannot get the primary&#39;s mass because the simulation has no log files, no output files, and the sph.start1u file is missing, in &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">directory</span><span class="p">)</span>
+            <span class="n">output</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">Output</span><span class="p">(</span><span class="n">start1u</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">mask</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_primary_IDs</span><span class="p">())</span> <span class="k">as</span> <span class="n">masked</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">masked</span><span class="p">[</span><span class="s1">&#39;am&#39;</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="Binary.get_secondary_mass">
+<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.get_secondary_mass">[docs]</a>
+    <span class="nd">@api</span>
+    <span class="nd">@cli</span><span class="p">(</span><span class="s1">&#39;starsmashertools&#39;</span><span class="p">)</span>
+    <span class="nd">@clioptions</span><span class="p">(</span><span class="n">display_name</span> <span class="o">=</span> <span class="s1">&#39;Mass of secondary star&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">get_secondary_mass</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cli</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the mass of the secondary star (usually the accretor). First the</span>
+<span class="sd">        log files are searched, and if no log files are found then the first</span>
+<span class="sd">        output file is checked. If there are no output files then the</span>
+<span class="sd">        sph.start2u file is checked, and if it doesn&#39;t exist then an error is</span>
+<span class="sd">        raised.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        float</span>
+<span class="sd">            The mass of the secondary (usually the accretor) star.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.path</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.lib.logfile</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.lib.output</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools</span>
+        
+        <span class="n">logfiles</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_logfiles</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">logfiles</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">logfiles</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;mass2=&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;mass2=&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+            <span class="k">except</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">logfile</span><span class="o">.</span><span class="n">LogFile</span><span class="o">.</span><span class="n">PhraseNotFoundError</span><span class="p">:</span>
+                <span class="c1"># I think this means the primary is a point mass</span>
+                <span class="k">pass</span>
+        <span class="c1"># If the log files failed, check the first output file</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_output</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">output</span><span class="p">:</span>
+            <span class="c1"># If there&#39;s no output files, then try to get sph.start2u</span>
+            <span class="n">start2u</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_start2u</span><span class="p">()</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">start2u</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="s2">&quot;Cannot get the secondary&#39;s mass because the simulation has no log files, no output files, and the sph.start2u file is missing, in &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">directory</span><span class="p">)</span>
+            <span class="n">output</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">Output</span><span class="p">(</span><span class="n">start2u</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+        
+        <span class="k">with</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">mask</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_secondary_IDs</span><span class="p">())</span> <span class="k">as</span> <span class="n">masked</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">masked</span><span class="p">[</span><span class="s1">&#39;am&#39;</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="Binary.get_primary_core_mass">
+<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.get_primary_core_mass">[docs]</a>
+    <span class="nd">@api</span>
+    <span class="nd">@cli</span><span class="p">(</span><span class="s1">&#39;starsmashertools&#39;</span><span class="p">)</span>
+    <span class="nd">@clioptions</span><span class="p">(</span><span class="n">display_name</span> <span class="o">=</span> <span class="s1">&#39;Mass of primary star core particle&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">get_primary_core_mass</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cli</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the mass of the core particle in the primary (usually the donor)</span>
+<span class="sd">        star, if it has a core particle. The log files are checked first, which</span>
+<span class="sd">        is usually faster than checking the outputs. If something goes wrong </span>
+<span class="sd">        with checking the log files, the first output file is checked instead,</span>
+<span class="sd">        using :meth:`~.lib.output.Output.get_core_particles`\.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        float or `None`</span>
+<span class="sd">            The mass of the core particle in the primary (usually the donor)</span>
+<span class="sd">            star. If there is no core particle, returns `None`\.</span>
+
+<span class="sd">        See Also</span>
+<span class="sd">        --------</span>
+<span class="sd">        :meth:`~.get_secondary_core_mass`\, :meth:`~.lib.output.Output.get_core_particles`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.path</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.lib.logfile</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.lib.output</span>
+        
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_n1</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span> <span class="c1"># The primary is a point mass particle</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;mbh&#39;</span><span class="p">]</span>
+        
+        <span class="n">logfiles</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_logfiles</span><span class="p">()</span>
+        <span class="n">search_string</span> <span class="o">=</span> <span class="s1">&#39;is a corepoint of mass&#39;</span>
+        <span class="k">if</span> <span class="n">logfiles</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">logfiles</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">search_string</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">search_string</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+            <span class="k">except</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">logfile</span><span class="o">.</span><span class="n">LogFile</span><span class="o">.</span><span class="n">PhraseNotFoundError</span><span class="p">:</span>
+                <span class="c1"># I think this means the primary has no core particle</span>
+                <span class="k">return</span> <span class="kc">None</span>
+            
+        <span class="c1"># If there&#39;s no log files, then check for output files</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_output</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">output</span><span class="p">:</span>
+            <span class="c1"># If there&#39;s no output files, then try to get sph.start1u</span>
+            <span class="n">start1u</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_start1u</span><span class="p">()</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">start1u</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="s2">&quot;Cannot get the primary&#39;s core mass because there is more than 1 particle for the primary star and the simulation has no log files, no output files, and the sph.start1u file is missing, in &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">directory</span><span class="p">)</span>
+            <span class="n">output</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">Output</span><span class="p">(</span><span class="n">start1u</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+
+        <span class="n">cores</span> <span class="o">=</span> <span class="n">output</span><span class="o">.</span><span class="n">get_core_particles</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">cores</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> <span class="k">return</span> <span class="kc">None</span>
+        <span class="n">primary_IDs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_primary_IDs</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">cores</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">c</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">primary_IDs</span><span class="p">:</span> <span class="k">continue</span>
+            <span class="k">return</span> <span class="n">output</span><span class="p">[</span><span class="s1">&#39;am&#39;</span><span class="p">][</span><span class="n">c</span><span class="p">]</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;The primary star has multiple core particles&quot;</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="Binary.get_secondary_core_mass">
+<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.get_secondary_core_mass">[docs]</a>
+    <span class="nd">@api</span>
+    <span class="nd">@cli</span><span class="p">(</span><span class="s1">&#39;starsmashertools&#39;</span><span class="p">)</span>
+    <span class="nd">@clioptions</span><span class="p">(</span><span class="n">display_name</span> <span class="o">=</span> <span class="s1">&#39;Mass of secondary core particle&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">get_secondary_core_mass</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cli</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the mass of the core particle in the secondary (usually the</span>
+<span class="sd">        companion) star, if it has a core particle. The log files are checked </span>
+<span class="sd">        first, which is usually faster than checking the outputs. If something </span>
+<span class="sd">        goes wrong with checking the log files, the first output file is checked</span>
+<span class="sd">        instead, using :func:`~.lib.output.Output.get_core_particles`\.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        float or `None`</span>
+<span class="sd">            The mass of the core particle in the secondary (usually the</span>
+<span class="sd">            companion) star. If there is no core particle, returns `None`\.</span>
+<span class="sd">        </span>
+<span class="sd">        See Also</span>
+<span class="sd">        --------</span>
+<span class="sd">        :func:`~.get_primary_core_mass`\, :func:`~.lib.output.Output.get_core_particles`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.path</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.lib.output</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_n2</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span> <span class="c1"># The secondary is a point mass particle</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;mbh&#39;</span><span class="p">]</span>
+        
+        <span class="c1"># We can&#39;t rely on log files for the secondary, because StarSmasher only</span>
+        <span class="c1"># gives us hints for the primary core particle.</span>
+        
+        <span class="c1"># Check for output files</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_output</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">output</span><span class="p">:</span>
+            <span class="c1"># If there&#39;s no output files, then try to get sph.start1u</span>
+            <span class="n">start2u</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_start2u</span><span class="p">()</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">start2u</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="s2">&quot;Cannot get the secondary&#39;s core mass because there is more than 1 particle for the secondary star, the simulation has no output files, and the sph.start2u file is missing, in &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">directory</span><span class="p">)</span>
+            <span class="n">output</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">Output</span><span class="p">(</span><span class="n">start2u</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+
+        <span class="n">cores</span> <span class="o">=</span> <span class="n">output</span><span class="o">.</span><span class="n">get_core_particles</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">cores</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> <span class="k">return</span> <span class="kc">None</span>
+        <span class="n">secondary_IDs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_secondary_IDs</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">cores</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">c</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">secondary_IDs</span><span class="p">:</span> <span class="k">continue</span>
+            <span class="k">return</span> <span class="n">output</span><span class="p">[</span><span class="s1">&#39;am&#39;</span><span class="p">][</span><span class="n">c</span><span class="p">]</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;The secondary star has multiple core particles&quot;</span><span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Roger Hatfull.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

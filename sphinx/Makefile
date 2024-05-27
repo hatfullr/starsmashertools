@@ -7,6 +7,7 @@ SPHINXOPTS    ?=
 SPHINXBUILD   ?= sphinx-build
 SOURCEDIR     = .
 BUILDDIR      = build
+DOCSDIR       = ../docs
 
 # Put it first so that "make" without argument is like "make help".
 help:
@@ -18,6 +19,7 @@ clean:
 	@$(SPHINXBUILD) -M clean "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 	\rm -rf "$(BUILDDIR)"
 	\rm -rf _autosummary
+	\rm -rf "$(DOCSDIR)"
 
 show:
 	@python -c "import webbrowser; webbrowser.open_new_tab('file://$(shell pwd)/build/html/index.html')"
@@ -26,3 +28,5 @@ show:
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
 %: Makefile
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+	\cp -r "$(SOURCEDIR)/$(BUILDDIR)/html" "$(DOCSDIR)"
+	\touch "$(DOCSDIR)/.nojekyll"

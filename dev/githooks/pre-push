@@ -9,8 +9,13 @@ test_dir = os.path.join(
     starsmashertools.SOURCE_DIRECTORY,
     'tests',
 )
+sphinx_dir = os.path.join(
+    starsmashertools.SOURCE_DIRECTORY,
+    'sphinx',
+)
 
-curdir = os.getcwd()
+# First pass the tests
+
 os.chdir(test_dir)
 try:
     p = subprocess.run(
@@ -28,4 +33,37 @@ except subprocess.CalledProcessError as e:
     print(e.output)
     sys.exit(1)
 
+
+# Now build the docs
+os.chdir(sphinx_dir)
+try:
+    p = subprocess.run(
+        ['make', 'clean'],
+        check = True,
+        text = True,
+        stdout = subprocess.PIPE,
+        stderr = subprocess.STDOUT,
+    ) # We don't care if this fails.
+except subprocess.CalledProcessError as e:
+    print(e.returncode)
+    print(e.output)
+    sys.exit(1)
+
+try:
+    p = subprocess.run(
+        ['make', 'html'],
+        check = True,
+        text = True,
+        stdout = subprocess.PIPE,
+        stderr = subprocess.STDOUT,
+    )
+    if not 'build succeeded' in p.stdout:
+        print(p.stdout)
+        sys.exit(1)
+except subprocess.CalledProcessError as e:
+    print(e.returncode)
+    print(e.output)
+    sys.exit(1)
+
+    
 sys.exit(0)

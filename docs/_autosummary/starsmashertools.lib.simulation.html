@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>starsmashertools.lib.simulation &mdash; starsmashertools 14.12.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../_static/documentation_options.js?v=61ccec80"></script>
+        <script src="../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="starsmashertools.lib.units" href="starsmashertools.lib.units.html" />
+    <link rel="prev" title="starsmashertools.lib.report" href="starsmashertools.lib.report.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            starsmashertools
+          </a>
+              <div class="version">
+                14.12.0
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../index.html">Home</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../gettingstarted.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cliprograms.html">CLI Programs</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="starsmashertools.helpers.file.html">starsmashertools.helpers.file</a></li>
+<li class="toctree-l1"><a class="reference internal" href="starsmashertools.lib.archive.html">starsmashertools.lib.archive</a></li>
+<li class="toctree-l1"><a class="reference internal" href="starsmashertools.lib.binary.html">starsmashertools.lib.binary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="starsmashertools.lib.dynamical.html">starsmashertools.lib.dynamical</a></li>
+<li class="toctree-l1"><a class="reference internal" href="starsmashertools.lib.energyfile.html">starsmashertools.lib.energyfile</a></li>
+<li class="toctree-l1"><a class="reference internal" href="starsmashertools.lib.flux.html">starsmashertools.lib.flux</a></li>
+<li class="toctree-l1"><a class="reference internal" href="starsmashertools.lib.input.html">starsmashertools.lib.input</a></li>
+<li class="toctree-l1"><a class="reference internal" href="starsmashertools.lib.logfile.html">starsmashertools.lib.logfile</a></li>
+<li class="toctree-l1"><a class="reference internal" href="starsmashertools.lib.output.html">starsmashertools.lib.output</a></li>
+<li class="toctree-l1"><a class="reference internal" href="starsmashertools.lib.ray.html">starsmashertools.lib.ray</a></li>
+<li class="toctree-l1"><a class="reference internal" href="starsmashertools.lib.relaxation.html">starsmashertools.lib.relaxation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="starsmashertools.lib.report.html">starsmashertools.lib.report</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">starsmashertools.lib.simulation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation"><code class="docutils literal notranslate"><span class="pre">Simulation</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.__contains__"><code class="docutils literal notranslate"><span class="pre">Simulation.__contains__()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.__eq__"><code class="docutils literal notranslate"><span class="pre">Simulation.__eq__()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.__getitem__"><code class="docutils literal notranslate"><span class="pre">Simulation.__getitem__()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.__init__"><code class="docutils literal notranslate"><span class="pre">Simulation.__init__()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.compress"><code class="docutils literal notranslate"><span class="pre">Simulation.compress()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.decompress"><code class="docutils literal notranslate"><span class="pre">Simulation.decompress()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_children"><code class="docutils literal notranslate"><span class="pre">Simulation.get_children()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_compressed_properties"><code class="docutils literal notranslate"><span class="pre">Simulation.get_compressed_properties()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_current_time"><code class="docutils literal notranslate"><span class="pre">Simulation.get_current_time()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_energy"><code class="docutils literal notranslate"><span class="pre">Simulation.get_energy()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_energyfiles"><code class="docutils literal notranslate"><span class="pre">Simulation.get_energyfiles()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_file"><code class="docutils literal notranslate"><span class="pre">Simulation.get_file()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_flux"><code class="docutils literal notranslate"><span class="pre">Simulation.get_flux()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_logfiles"><code class="docutils literal notranslate"><span class="pre">Simulation.get_logfiles()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_output"><code class="docutils literal notranslate"><span class="pre">Simulation.get_output()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_output_at_time"><code class="docutils literal notranslate"><span class="pre">Simulation.get_output_at_time()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_output_headers"><code class="docutils literal notranslate"><span class="pre">Simulation.get_output_headers()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_output_iterator"><code class="docutils literal notranslate"><span class="pre">Simulation.get_output_iterator()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_outputfiles"><code class="docutils literal notranslate"><span class="pre">Simulation.get_outputfiles()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_search_directory"><code class="docutils literal notranslate"><span class="pre">Simulation.get_search_directory()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_size"><code class="docutils literal notranslate"><span class="pre">Simulation.get_size()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_start_file"><code class="docutils literal notranslate"><span class="pre">Simulation.get_start_file()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_start_time"><code class="docutils literal notranslate"><span class="pre">Simulation.get_start_time()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_stop_time"><code class="docutils literal notranslate"><span class="pre">Simulation.get_stop_time()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.items"><code class="docutils literal notranslate"><span class="pre">Simulation.items()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.join"><code class="docutils literal notranslate"><span class="pre">Simulation.join()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.keys"><code class="docutils literal notranslate"><span class="pre">Simulation.keys()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.plot_animation"><code class="docutils literal notranslate"><span class="pre">Simulation.plot_animation()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.plot_energy"><code class="docutils literal notranslate"><span class="pre">Simulation.plot_energy()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.set_children"><code class="docutils literal notranslate"><span class="pre">Simulation.set_children()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.split"><code class="docutils literal notranslate"><span class="pre">Simulation.split()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.started_from"><code class="docutils literal notranslate"><span class="pre">Simulation.started_from()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.valid_directory"><code class="docutils literal notranslate"><span class="pre">Simulation.valid_directory()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.values"><code class="docutils literal notranslate"><span class="pre">Simulation.values()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="starsmashertools.lib.units.html">starsmashertools.lib.units</a></li>
+<li class="toctree-l1"><a class="reference internal" href="starsmashertools.math.html">starsmashertools.math</a></li>
+<li class="toctree-l1"><a class="reference internal" href="starsmashertools.mpl.artists.html">starsmashertools.mpl.artists</a></li>
+<li class="toctree-l1"><a class="reference internal" href="starsmashertools.mpl.figure.html">starsmashertools.mpl.figure</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">starsmashertools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">starsmashertools.lib.simulation</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/_autosummary/starsmashertools.lib.simulation.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-starsmashertools.lib.simulation">
+<span id="starsmashertools-lib-simulation"></span><h1>starsmashertools.lib.simulation<a class="headerlink" href="#module-starsmashertools.lib.simulation" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="starsmashertools.lib.simulation.Simulation">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Simulation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">directory</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/simulation.html#Simulation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.simulation.Simulation" title="Link to this definition"></a></dt>
+<dd><dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.simulation.Simulation.__contains__">
+<span class="sig-name descname"><span class="pre">__contains__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">item</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/simulation.html#Simulation.__contains__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.simulation.Simulation.__contains__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.simulation.Simulation.__eq__">
+<span class="sig-name descname"><span class="pre">__eq__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/simulation.html#Simulation.__eq__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.simulation.Simulation.__eq__" title="Link to this definition"></a></dt>
+<dd><p>Return self==value.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.simulation.Simulation.__getitem__">
+<span class="sig-name descname"><span class="pre">__getitem__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/simulation.html#Simulation.__getitem__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.simulation.Simulation.__getitem__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.simulation.Simulation.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">directory</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/simulation.html#Simulation.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.simulation.Simulation.__init__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.simulation.Simulation.compress">
+<span class="sig-name descname"><span class="pre">compress</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">patterns</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><span class="pre">list</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">['out*.sph',</span> <span class="pre">'log*.sph',</span> <span class="pre">'energy*.sph',</span> <span class="pre">'col*.sph',</span> <span class="pre">'restartrad.sph*']</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">recursive</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delete</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delete_after</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/simulation.html#Simulation.compress"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.simulation.Simulation.compress" title="Link to this definition"></a></dt>
+<dd><p>Create a compressed version of the Simulation. File creation times are
+preserved.</p>
+<p>Does not compress any joined simulations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filename</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a><em>, </em><em>None</em><em>, </em><em>default = None</em>) – The name of the resulting compressed file. If <cite>None</cite> then the name
+of the file will be the name of the simulation directory with
+<code class="docutils literal notranslate"><span class="pre">'.zip'</span></code> on the end.</p></li>
+<li><p><strong>patterns</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><em>list</em></a><em>, </em><em>default = Pref</em><em>(</em><em>'state files'</em><em>)</em>) – File name patterns to include in the compression.</p></li>
+<li><p><strong>recursive</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><em>bool</em></a><em>, </em><em>default = True</em>) – If <cite>True</cite>, subdirectories are also searched for files matching the
+given patterns. If <cite>False</cite>, only searches the main simulation
+directory.</p></li>
+<li><p><strong>delete</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><em>bool</em></a><em>, </em><em>default = True</em>) – If <cite>True</cite>, the files which are compressed are deleted.</p></li>
+<li><p><strong>delete_after</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><em>bool</em></a><em>, </em><em>default = True</em>) – If <cite>True</cite>, compressed files are deleted only after all files have
+been compressed. If <cite>False</cite>, each file is deleted after it has
+been compressed. If <code class="docutils literal notranslate"><span class="pre">delete</span> <span class="pre">=</span> <span class="pre">False</span></code> this option is ignored.</p></li>
+<li><p><strong>**kwargs</strong> – Remaining keyword arguments are passed directly to
+<code class="xref py py-meth docutils literal notranslate"><span class="pre">starsmashertools.helpers.compressiontask.CompressionTask.compress()</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.decompress" title="starsmashertools.lib.simulation.Simulation.decompress"><code class="xref py py-meth docutils literal notranslate"><span class="pre">decompress()</span></code></a>, <code class="xref py py-meth docutils literal notranslate"><span class="pre">starsmashertools.helpers.compressiontask.CompressionTask.compress()</span></code>, <code class="xref py py-mod docutils literal notranslate"><span class="pre">starsmashertools.preferences</span></code></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.simulation.Simulation.decompress">
+<span class="sig-name descname"><span class="pre">decompress</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delete</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/simulation.html#Simulation.decompress"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.simulation.Simulation.decompress" title="Link to this definition"></a></dt>
+<dd><p>Decompress the simulation from the given filename.</p>
+<p>Does not decompress any joined simulations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filename</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a><em>, </em><em>None default = None</em>) – The filename to decompress. If <cite>None</cite>, the simulation directory is
+searched for a compressed file whose path ends with <code class="docutils literal notranslate"><span class="pre">'.zip'</span></code>.
+The file chosen is one which has a <code class="docutils literal notranslate"><span class="pre">compression.sstools</span></code> file
+included in it, which created by
+<code class="xref py py-meth docutils literal notranslate"><span class="pre">starsmashertools.helpers.compressiontask.CompressionTask.compress()</span></code>.</p></li>
+<li><p><strong>delete</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><em>bool</em></a><em>, </em><em>default = True</em>) – If <cite>True</cite>, the compressed file is deleted after decompression.</p></li>
+<li><p><strong>**kwargs</strong> – Remaining keyword arguments are passed directly to
+<cite>starsmashertools.helpers.compressiontask.CompressionTask.decompress</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.compress" title="starsmashertools.lib.simulation.Simulation.compress"><code class="xref py py-meth docutils literal notranslate"><span class="pre">compress()</span></code></a>, <code class="xref py py-meth docutils literal notranslate"><span class="pre">starsmashertools.helpers.compresisontask.CompressionTask.decompress()</span></code></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.simulation.Simulation.get_children">
+<span class="sig-name descname"><span class="pre">get_children</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/simulation.html#Simulation.get_children"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.simulation.Simulation.get_children" title="Link to this definition"></a></dt>
+<dd><p>Return a list of <a class="reference internal" href="#starsmashertools.lib.simulation.Simulation" title="starsmashertools.lib.simulation.Simulation"><code class="xref py py-class docutils literal notranslate"><span class="pre">Simulation</span></code></a> objects that were used to create
+this simulation. For example, if this simulation is a dynamical
+simulation (<code class="docutils literal notranslate"><span class="pre">nrelax</span> <span class="pre">=</span> <span class="pre">0</span></code>), then it has one child, which is the binary
+scan that it originated from. Similarly, a binary scan has two children,
+which are each the stellar relaxations that make up the two stars in the
+binary.</p>
+<p>If the children are already known because they ahve been saved in this
+simulation’s <a class="reference internal" href="starsmashertools.lib.archive.html#starsmashertools.lib.archive.SimulationArchive" title="starsmashertools.lib.archive.SimulationArchive"><code class="xref py py-class docutils literal notranslate"><span class="pre">SimulationArchive</span></code></a>, then the children
+will be recovered from the archive. Otherwise, <code class="xref py py-meth docutils literal notranslate"><span class="pre">_get_children()</span></code>
+is called and the result is saved to the archive. You can edit the
+children in the archive using the <code class="docutils literal notranslate"><span class="pre">starsmashertools</span></code> CLI by selecting
+<a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.set_children" title="starsmashertools.lib.simulation.Simulation.set_children"><code class="xref py py-meth docutils literal notranslate"><span class="pre">set_children()</span></code></a> in the main menu. This can save time on searching
+the file system for child simulations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>verbose</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><em>bool</em></a><em>, </em><em>default = False</em>) – If <cite>True</cite>, debug messages will be printed to the console.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A list of the child simulations.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)">list</a></p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.set_children" title="starsmashertools.lib.simulation.Simulation.set_children"><code class="xref py py-meth docutils literal notranslate"><span class="pre">set_children()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.simulation.Simulation.get_compressed_properties">
+<span class="sig-name descname"><span class="pre">get_compressed_properties</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/simulation.html#Simulation.get_compressed_properties"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.simulation.Simulation.get_compressed_properties" title="Link to this definition"></a></dt>
+<dd><p>Get a dictionary of properties on the files contained in the compressed
+archive.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A dictionary whose keys are the names of the files in the compressed
+archive that they would have if the archive were decompressed. Each
+value is a dictionary holding various values corresponding to each
+file in the archive.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.12)">dict</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.simulation.Simulation.get_current_time">
+<span class="sig-name descname"><span class="pre">get_current_time</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">use_logfiles</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_joined</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/simulation.html#Simulation.get_current_time"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.simulation.Simulation.get_current_time" title="Link to this definition"></a></dt>
+<dd><p>Obtain the time which the <a class="reference internal" href="#starsmashertools.lib.simulation.Simulation" title="starsmashertools.lib.simulation.Simulation"><code class="xref py py-class docutils literal notranslate"><span class="pre">Simulation</span></code></a> is currently at.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>use_logfiles</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><em>bool</em></a><em>, </em><em>default = False</em>) – If <cite>True</cite>, only the simulation’s log files are used, which will in
+general return larger time values than when using just the output
+files. If <cite>False</cite>, this method is equivalent to the value of
+<code class="docutils literal notranslate"><span class="pre">'t'</span></code> in the header of the very last output file which was written
+in this simulation.</p></li>
+<li><p><strong>include_joined</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><em>bool</em></a><em>, </em><em>default = True</em>) – If <cite>True</cite> then the simulations which are joined to this simulation
+will be considered. Otherwise only this simulation will be
+considered.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The simulation time in seconds when this simulation stopped running.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="starsmashertools.lib.units.html#starsmashertools.lib.units.Unit" title="starsmashertools.lib.units.Unit"><code class="xref py py-class docutils literal notranslate"><span class="pre">Unit</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.simulation.Simulation.get_energy">
+<span class="sig-name descname"><span class="pre">get_energy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sort</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_rows</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_joined</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/simulation.html#Simulation.get_energy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.simulation.Simulation.get_energy" title="Link to this definition"></a></dt>
+<dd><p>Obtain all the simulation energies as a function of simulation time.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sort</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a><em>, </em><em>None</em><em>, </em><em>default = None</em>) – Sort the resulting dictionary by the given string key. Raises an
+error if that key doesn’t exist.</p></li>
+<li><p><strong>skip_rows</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><em>int</em></a><em>, </em><em>None</em><em>, </em><em>default = None</em>) – Only read every <span class="math notranslate nohighlight">\(\mathrm{N^{th}}\)</span> line of each energy file.
+If <cite>None</cite>, uses the default value in
+<a class="reference internal" href="starsmashertools.lib.energyfile.html#starsmashertools.lib.energyfile.EnergyFile.__init__" title="starsmashertools.lib.energyfile.EnergyFile.__init__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">__init__()</span></code></a>.</p></li>
+<li><p><strong>include_joined</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><em>bool</em></a><em>, </em><em>default = True</em>) – If <cite>True</cite>, the joined simulations will be included in the search.
+Otherwise, only this simulation will be searched.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A dictionary of <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.26)"><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></a>. If no energy files were
+found, returns <cite>None</cite> instead.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.12)">dict</a> or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.simulation.Simulation.get_energyfiles">
+<span class="sig-name descname"><span class="pre">get_energyfiles</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">skip_rows</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_joined</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/simulation.html#Simulation.get_energyfiles"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.simulation.Simulation.get_energyfiles" title="Link to this definition"></a></dt>
+<dd><p>Get the <a class="reference internal" href="starsmashertools.lib.energyfile.html#starsmashertools.lib.energyfile.EnergyFile" title="starsmashertools.lib.energyfile.EnergyFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">EnergyFile</span></code></a> objects associated with this
+simulation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>skip_rows</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><em>int</em></a><em>, </em><em>None</em><em>, </em><em>default = None</em>) – Only read every Nth line of each energy file. If <cite>None</cite>, uses the
+default value in <a class="reference internal" href="starsmashertools.lib.energyfile.html#starsmashertools.lib.energyfile.EnergyFile.__init__" title="starsmashertools.lib.energyfile.EnergyFile.__init__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">__init__()</span></code></a>.</p></li>
+<li><p><strong>include_joined</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><em>bool</em></a><em>, </em><em>default = True</em>) – If <cite>True</cite>, the joined simulations will be included in the search.
+Otherwise, only this simulation will be searched.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A list of <a class="reference internal" href="starsmashertools.lib.energyfile.html#starsmashertools.lib.energyfile.EnergyFile" title="starsmashertools.lib.energyfile.EnergyFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">EnergyFile</span></code></a> objects.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)">list</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.simulation.Simulation.get_file">
+<span class="sig-name descname"><span class="pre">get_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename_or_pattern</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">recursive</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/simulation.html#Simulation.get_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.simulation.Simulation.get_file" title="Link to this definition"></a></dt>
+<dd><p>Search the simulation directory for a file or files that match a
+pattern.</p>
+<p>Only returns files belonging to this simulation’s directory, and ignores
+any joined simulations’ directories.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filename_or_pattern</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a>) – A file name in the simulation directory or a pattern (e.g.,
+<code class="docutils literal notranslate"><span class="pre">out*.sph</span></code>)</p></li>
+<li><p><strong>recursive</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><em>bool</em></a><em>, </em><em>default = True</em>) – If <cite>True</cite>, searches all sub directories in the simulation. If
+<cite>False</cite>, searches just the top level simulation directory.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A list of paths which match the given pattern or filenames.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)">list</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.simulation.Simulation.get_flux">
+<span class="sig-name descname"><span class="pre">get_flux</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">outputs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parallel</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/simulation.html#Simulation.get_flux"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.simulation.Simulation.get_flux" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.simulation.Simulation.get_logfiles">
+<span class="sig-name descname"><span class="pre">get_logfiles</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">include_joined</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/simulation.html#Simulation.get_logfiles"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.simulation.Simulation.get_logfiles" title="Link to this definition"></a></dt>
+<dd><p>Get a list of <a class="reference internal" href="starsmashertools.lib.logfile.html#starsmashertools.lib.logfile.LogFile" title="starsmashertools.lib.logfile.LogFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">LogFile</span></code></a>, sorted by oldest-to-newest,
+including those in subdirectories in the simulation directory.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>**kwargs</strong> – Passed directly to <code class="xref py py-meth docutils literal notranslate"><span class="pre">find()</span></code>.</p></li>
+<li><p><strong>include_joined</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><em>bool</em></a><em>, </em><em>default = True</em>) – If <cite>True</cite>, the joined simulations will be included in the search.
+Otherwise, only this simulation will be searched.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A list of <a class="reference internal" href="starsmashertools.lib.logfile.html#starsmashertools.lib.logfile.LogFile" title="starsmashertools.lib.logfile.LogFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">LogFile</span></code></a> sorted from oldest-to-newest by
+system modification times.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)">list</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.simulation.Simulation.get_output">
+<span class="sig-name descname"><span class="pre">get_output</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stop</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">times</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><span class="pre">float</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="starsmashertools.lib.units.html#starsmashertools.lib.units.Unit" title="starsmashertools.lib.units.Unit"><span class="pre">Unit</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><span class="pre">list</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.12)"><span class="pre">tuple</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.26)"><span class="pre">ndarray</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_range</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><span class="pre">list</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.12)"><span class="pre">tuple</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">indices</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><span class="pre">list</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.12)"><span class="pre">tuple</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.26)"><span class="pre">ndarray</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_joined</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/simulation.html#Simulation.get_output"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.simulation.Simulation.get_output" title="Link to this definition"></a></dt>
+<dd><p>Obtain a list of <a class="reference internal" href="starsmashertools.lib.output.html#starsmashertools.lib.output.Output" title="starsmashertools.lib.output.Output"><code class="xref py py-class docutils literal notranslate"><span class="pre">Output</span></code></a> objects associated with this
+simulation. Returns all outputs if no arguments are specified.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>start</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><em>int</em></a><em>, </em><em>None</em><em>, </em><em>default = None</em>) – The starting index of a slice of the list of all output files.</p></li>
+<li><p><strong>stop</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><em>int</em></a><em>, </em><em>None</em><em>, </em><em>default = None</em>) – The ending index in the slice of the list of all output files.</p></li>
+<li><p><strong>step</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><em>int</em></a><em>, </em><em>None</em><em>, </em><em>default = None</em>) – How many output files to skip in the slice.</p></li>
+<li><p><strong>times</strong> (int, float, <a class="reference internal" href="starsmashertools.lib.units.html#starsmashertools.lib.units.Unit" title="starsmashertools.lib.units.Unit"><code class="xref py py-class docutils literal notranslate"><span class="pre">Unit</span></code></a>, list, tuple, <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.26)"><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></a>, default = None) – If given, returns the output files that are closest to the given
+simulation time or collection of times. This can possibly include
+duplicate items.</p></li>
+<li><p><strong>time_range</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><em>list</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.12)"><em>tuple</em></a><em>, </em><em>None</em><em>, </em><em>default = None</em>) – If not <cite>None</cite>, this must be an iterable of 2 elements, the first
+being the lower time bound and the second being the upper time
+bound. If either bounds are <cite>None</cite> then only one bound will be used.</p></li>
+<li><p><strong>indices</strong> (list, tuple, <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.26)"><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></a>, default = None) – If given, returns the output files at each index from the result of
+<a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_outputfiles" title="starsmashertools.lib.simulation.Simulation.get_outputfiles"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_outputfiles()</span></code></a>.</p></li>
+<li><p><strong>include_joined</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><em>bool</em></a><em>, </em><em>default = True</em>) – If <cite>True</cite>, the joined simulations will be included in the search.
+Otherwise, only this simulation will be searched.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A list of <a class="reference internal" href="starsmashertools.lib.output.html#starsmashertools.lib.output.Output" title="starsmashertools.lib.output.Output"><code class="xref py py-class docutils literal notranslate"><span class="pre">Output</span></code></a> objects. If the list contains
+only a single item, that item is returned instead.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list, <a class="reference internal" href="starsmashertools.lib.output.html#starsmashertools.lib.output.Output" title="starsmashertools.lib.output.Output"><code class="xref py py-class docutils literal notranslate"><span class="pre">Output</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.simulation.Simulation.get_output_at_time">
+<span class="sig-name descname"><span class="pre">get_output_at_time</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><span class="pre">float</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="starsmashertools.lib.units.html#starsmashertools.lib.units.Unit" title="starsmashertools.lib.units.Unit"><span class="pre">Unit</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_joined</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/simulation.html#Simulation.get_output_at_time"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.simulation.Simulation.get_output_at_time" title="Link to this definition"></a></dt>
+<dd><p>Return the <a class="reference internal" href="starsmashertools.lib.output.html#starsmashertools.lib.output.Output" title="starsmashertools.lib.output.Output"><code class="xref py py-class docutils literal notranslate"><span class="pre">Output</span></code></a> object of this simulation whose time
+best matches the given time. Raises a <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ValueError</span></code></a> if the
+given time is out of bounds.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>time</strong> (int, float, <a class="reference internal" href="starsmashertools.lib.units.html#starsmashertools.lib.units.Unit" title="starsmashertools.lib.units.Unit"><code class="xref py py-class docutils literal notranslate"><span class="pre">Unit</span></code></a>) – The simulation time to locate. If an <cite>int</cite> or <cite>float</cite> are given then
+this value represents time in the simulation units. If a
+<a class="reference internal" href="starsmashertools.lib.units.html#starsmashertools.lib.units.Unit" title="starsmashertools.lib.units.Unit"><code class="xref py py-class docutils literal notranslate"><span class="pre">Unit</span></code></a> is given, it will be converted to this
+simulation’s time unit from <code class="xref py py-attr docutils literal notranslate"><span class="pre">units</span></code>.</p></li>
+<li><p><strong>include_joined</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><em>bool</em></a><em>, </em><em>default = True</em>) – If <cite>True</cite>, the joined simulations will be included in the search.
+Otherwise, only this simulation will be searched.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The <a class="reference internal" href="starsmashertools.lib.output.html#starsmashertools.lib.output.Output" title="starsmashertools.lib.output.Output"><code class="xref py py-class docutils literal notranslate"><span class="pre">Output</span></code></a> object closest to the given time.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="starsmashertools.lib.output.html#starsmashertools.lib.output.Output" title="starsmashertools.lib.output.Output"><code class="xref py py-class docutils literal notranslate"><span class="pre">Output</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.simulation.Simulation.get_output_headers">
+<span class="sig-name descname"><span class="pre">get_output_headers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/simulation.html#Simulation.get_output_headers"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.simulation.Simulation.get_output_headers" title="Link to this definition"></a></dt>
+<dd><p>Read all the headers of the output files in this simulation and return
+them as a dictionary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>keys</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><em>list</em></a>) – The keys to query the output file headers for.</p></li>
+<li><p><strong>kwargs</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.12)"><em>dict</em></a>) – Extra keyword arguments passed to <a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_output_iterator" title="starsmashertools.lib.simulation.Simulation.get_output_iterator"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_output_iterator()</span></code></a>.
+Note that keyword <code class="docutils literal notranslate"><span class="pre">return_headers</span></code> is always <cite>True</cite> and
+<code class="docutils literal notranslate"><span class="pre">return_data</span></code> is always <cite>False</cite>. Keyword <code class="docutils literal notranslate"><span class="pre">asynchronous</span></code> is set
+to <cite>False</cite> by default because reading headers is often faster that
+way.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Each key is a <a class="reference internal" href="starsmashertools.lib.output.html#starsmashertools.lib.output.Output" title="starsmashertools.lib.output.Output"><code class="xref py py-class docutils literal notranslate"><span class="pre">Output</span></code></a> object and each value is the
+entire header.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.12)">dict</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.simulation.Simulation.get_output_iterator">
+<span class="sig-name descname"><span class="pre">get_output_iterator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stop</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_joined</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/simulation.html#Simulation.get_output_iterator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.simulation.Simulation.get_output_iterator" title="Link to this definition"></a></dt>
+<dd><p>Return a <a class="reference internal" href="starsmashertools.lib.output.html#starsmashertools.lib.output.OutputIterator" title="starsmashertools.lib.output.OutputIterator"><code class="xref py py-class docutils literal notranslate"><span class="pre">OutputIterator</span></code></a> containing all the
+<a class="reference internal" href="starsmashertools.lib.output.html#starsmashertools.lib.output.Output" title="starsmashertools.lib.output.Output"><code class="xref py py-class docutils literal notranslate"><span class="pre">Output</span></code></a> objects present in this simulation.</p>
+<p>The iterator includes output files from any joined simulations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>start</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><em>int</em></a><em>, </em><em>None</em><em>, </em><em>default = None</em>) – Passed directly to <a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_output" title="starsmashertools.lib.simulation.Simulation.get_output"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_output()</span></code></a>.</p></li>
+<li><p><strong>stop</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><em>int</em></a><em>, </em><em>None</em><em>, </em><em>default = None</em>) – Passed directly to <a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_output" title="starsmashertools.lib.simulation.Simulation.get_output"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_output()</span></code></a>.</p></li>
+<li><p><strong>step</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><em>int</em></a><em>, </em><em>None</em><em>, </em><em>default = None</em>) – Passed directly to <a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_output" title="starsmashertools.lib.simulation.Simulation.get_output"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_output()</span></code></a>.</p></li>
+<li><p><strong>include_joined</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><em>bool</em></a><em>, </em><em>default = True</em>) – If <cite>True</cite>, the joined simulations will be included in the search.
+Otherwise, only this simulation will be searched. Passed directly to
+<a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_output" title="starsmashertools.lib.simulation.Simulation.get_output"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_output()</span></code></a>.</p></li>
+<li><p><strong>**kwargs</strong> – Other keyword arguments are passed directly to
+<a class="reference internal" href="starsmashertools.lib.output.html#starsmashertools.lib.output.OutputIterator" title="starsmashertools.lib.output.OutputIterator"><code class="xref py py-class docutils literal notranslate"><span class="pre">OutputIterator</span></code></a>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The created <a class="reference internal" href="starsmashertools.lib.output.html#starsmashertools.lib.output.OutputIterator" title="starsmashertools.lib.output.OutputIterator"><code class="xref py py-class docutils literal notranslate"><span class="pre">OutputIterator</span></code></a> instance.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>iterator</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.simulation.Simulation.get_outputfiles">
+<span class="sig-name descname"><span class="pre">get_outputfiles</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pattern</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'out*.sph'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_joined</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/simulation.html#Simulation.get_outputfiles"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.simulation.Simulation.get_outputfiles" title="Link to this definition"></a></dt>
+<dd><p>Returns a list of output file locations. If this simulation has any
+joined simulations, then each of those simulations’ output file paths
+are returned as well. The result is sorted by simulation times.</p>
+<p>For joined simulations, it is possible that one or more of the joined
+simulations are a “continuation” of this current simulation, or this
+current simulation is a “continuation” of one of its joined simulations.
+Here, a “continuation” is a simulation which was started by copying an
+output file from another simulation and calling it
+<code class="docutils literal notranslate"><span class="pre">'restartrad.sph.orig'</span></code>, without changing the simulation type
+(<code class="docutils literal notranslate"><span class="pre">'nrelax'</span></code> in <code class="docutils literal notranslate"><span class="pre">sph.input</span></code>). Only the joined simulations will be
+checked for a file which is identical to this simulation’s
+<code class="docutils literal notranslate"><span class="pre">restartrad.sph.orig</span></code> file (the actual name depends on the user’s
+preferences, in <code class="xref py py-mod docutils literal notranslate"><span class="pre">preferences</span></code>).</p>
+<p>For example, consider that simulation <code class="docutils literal notranslate"><span class="pre">A</span></code> produced output files
+<code class="docutils literal notranslate"><span class="pre">'A/out0000.sph'</span></code>, <code class="docutils literal notranslate"><span class="pre">'A/out0001.sph'</span></code>, and <code class="docutils literal notranslate"><span class="pre">'A/out0002.sph'</span></code>.
+Then, simulation <code class="docutils literal notranslate"><span class="pre">B</span></code> was created by copying <code class="docutils literal notranslate"><span class="pre">'A/out0001.sph'</span></code> and
+renaming it as <code class="docutils literal notranslate"><span class="pre">'B/restartrad.sph.orig'</span></code>, and then
+<code class="docutils literal notranslate"><span class="pre">'B/restartrad.sph.orig'</span></code> was copied to <code class="docutils literal notranslate"><span class="pre">'B/restartrad.sph'</span></code> before
+starting simulation <code class="docutils literal notranslate"><span class="pre">B</span></code>. Suppose then that simulation <code class="docutils literal notranslate"><span class="pre">B</span></code> creates
+output files <code class="docutils literal notranslate"><span class="pre">'B/out0001.sph'</span></code>, <code class="docutils literal notranslate"><span class="pre">'B/out0002.sph'</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">'B/out0003.sph'</span></code> and that simulations <code class="docutils literal notranslate"><span class="pre">A</span></code> and <code class="docutils literal notranslate"><span class="pre">B</span></code> are joined. The
+expected output of this function would be
+<code class="docutils literal notranslate"><span class="pre">['A/out0000.sph',</span> <span class="pre">'B/out0001.sph',</span> <span class="pre">'B/out0002.sph',</span> <span class="pre">'B/out0003.sph']</span></code>.
+Note that the actual files simulation <code class="docutils literal notranslate"><span class="pre">B</span></code> would create depends on its
+input parameters, such as <code class="docutils literal notranslate"><span class="pre">'dtout'</span></code> in <code class="docutils literal notranslate"><span class="pre">'B/sph.input'</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pattern</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a><em>, </em><em>default = Pref</em><em>(</em><em>'get_outputfiles.output files'</em><em>, </em><em>'out*.sph'</em><em>)</em>) – Passed directly to <a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_file" title="starsmashertools.lib.simulation.Simulation.get_file"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_file()</span></code></a>.</p></li>
+<li><p><strong>include_joined</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><em>bool</em></a><em>, </em><em>default = True</em>) – If <cite>True</cite>, the joined simulations will be included in the search.
+Otherwise, only this simulation will be searched.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A list of output file paths belonging to this simulation and any
+joined simulations, unsorted.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)">list</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.simulation.Simulation.get_search_directory">
+<span class="sig-name descname"><span class="pre">get_search_directory</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/simulation.html#Simulation.get_search_directory"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.simulation.Simulation.get_search_directory" title="Link to this definition"></a></dt>
+<dd><p>Get the default search directory from the preferences.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The <code class="xref py py-meth docutils literal notranslate"><span class="pre">os.path.realpath()</span></code> of the default search directory.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.simulation.Simulation.get_size">
+<span class="sig-name descname"><span class="pre">get_size</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/simulation.html#Simulation.get_size"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.simulation.Simulation.get_size" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The size of the simulation in bytes. Does not include any joined
+simulations.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)">int</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.simulation.Simulation.get_start_file">
+<span class="sig-name descname"><span class="pre">get_start_file</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/simulation.html#Simulation.get_start_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.simulation.Simulation.get_start_file" title="Link to this definition"></a></dt>
+<dd><p>Return the path to the output file that this simulation started from,
+as identified by <code class="docutils literal notranslate"><span class="pre">'Simulation/start</span> <span class="pre">file'</span></code> in
+<code class="xref py py-mod docutils literal notranslate"><span class="pre">preferences</span></code>. If this simulation doesn’t
+have a file matching that name, instead return the first output file
+this simulation produced. If this simulation has not produced any output
+files, a <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#FileNotFoundError" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">FileNotFoundError</span></code></a> is raised.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The path to the output file this simulation started from.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.simulation.Simulation.get_start_time">
+<span class="sig-name descname"><span class="pre">get_start_time</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">include_joined</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/simulation.html#Simulation.get_start_time"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.simulation.Simulation.get_start_time" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>include_joined</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><em>bool</em></a><em>, </em><em>default = True</em>) – If <cite>True</cite> then the simulations which are joined to this simulation
+will be considered. Otherwise only this simulation will be
+considered.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The simulation time in seconds when this simulation started running.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="starsmashertools.lib.units.html#starsmashertools.lib.units.Unit" title="starsmashertools.lib.units.Unit"><code class="xref py py-class docutils literal notranslate"><span class="pre">Unit</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.simulation.Simulation.get_stop_time">
+<span class="sig-name descname"><span class="pre">get_stop_time</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">include_joined</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/simulation.html#Simulation.get_stop_time"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.simulation.Simulation.get_stop_time" title="Link to this definition"></a></dt>
+<dd><p>Obtain the time at which the <a class="reference internal" href="#starsmashertools.lib.simulation.Simulation" title="starsmashertools.lib.simulation.Simulation"><code class="xref py py-class docutils literal notranslate"><span class="pre">Simulation</span></code></a> is expected to stop
+running. This is set by the <code class="docutils literal notranslate"><span class="pre">'tf'</span></code> parameter in the StarSmasher input
+file <code class="docutils literal notranslate"><span class="pre">sph.input</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>include_joined</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><em>bool</em></a><em>, </em><em>default = True</em>) – If <cite>True</cite>, the joined simulations will be included.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>tf</strong> – The stop time for this Simulation.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="starsmashertools.lib.units.html#starsmashertools.lib.units.Unit" title="starsmashertools.lib.units.Unit"><code class="xref py py-class docutils literal notranslate"><span class="pre">Unit</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.simulation.Simulation.items">
+<span class="sig-name descname"><span class="pre">items</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/simulation.html#Simulation.items"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.simulation.Simulation.items" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.simulation.Simulation.join">
+<span class="sig-name descname"><span class="pre">join</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/simulation.html#Simulation.join"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.simulation.Simulation.join" title="Link to this definition"></a></dt>
+<dd><p>Merge two simulations of the same type together, by having
+starsmashertools retrieve the output files of all joined simulations
+whenever the <code class="docutils literal notranslate"><span class="pre">include_joined</span></code> flag is set to <cite>True</cite> (default) in
+<a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_output" title="starsmashertools.lib.simulation.Simulation.get_output"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_output()</span></code></a>, <a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_output_at_time" title="starsmashertools.lib.simulation.Simulation.get_output_at_time"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_output_at_time()</span></code></a>,
+<a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_output_iterator" title="starsmashertools.lib.simulation.Simulation.get_output_iterator"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_output_iterator()</span></code></a>, <a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_outputfiles" title="starsmashertools.lib.simulation.Simulation.get_outputfiles"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_outputfiles()</span></code></a>,
+<a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_logfiles" title="starsmashertools.lib.simulation.Simulation.get_logfiles"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_logfiles()</span></code></a>, <a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_energyfiles" title="starsmashertools.lib.simulation.Simulation.get_energyfiles"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_energyfiles()</span></code></a>, and
+<a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_energy" title="starsmashertools.lib.simulation.Simulation.get_energy"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_energy()</span></code></a>.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">restartrad.sph.orig</span></code> file (or equivalent from
+<code class="xref py py-mod docutils literal notranslate"><span class="pre">starsmashertools.preferences</span></code>) must originate from <code class="docutils literal notranslate"><span class="pre">other</span></code>,
+or <code class="docutils literal notranslate"><span class="pre">other</span></code> must have a <code class="docutils literal notranslate"><span class="pre">restartrad.sph.orig</span></code> file which originates
+from this simulation. Otherwise, a <code class="xref py py-class docutils literal notranslate"><span class="pre">JoinError</span></code> is raised.</p>
+<p>To undo this operation, use <a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.split" title="starsmashertools.lib.simulation.Simulation.split"><code class="xref py py-meth docutils literal notranslate"><span class="pre">split()</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>other</strong> (str, <a class="reference internal" href="#starsmashertools.lib.simulation.Simulation" title="starsmashertools.lib.simulation.Simulation"><code class="xref py py-class docutils literal notranslate"><span class="pre">Simulation</span></code></a>) – The other simulation to merge with, or a path to a simulation
+directory.</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.split" title="starsmashertools.lib.simulation.Simulation.split"><code class="xref py py-meth docutils literal notranslate"><span class="pre">split()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.simulation.Simulation.keys">
+<span class="sig-name descname"><span class="pre">keys</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/simulation.html#Simulation.keys"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.simulation.Simulation.keys" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.simulation.Simulation.plot_animation">
+<span class="sig-name descname"><span class="pre">plot_animation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'x'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'y'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logx</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/simulation.html#Simulation.plot_animation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.simulation.Simulation.plot_animation" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.simulation.Simulation.plot_energy">
+<span class="sig-name descname"><span class="pre">plot_energy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><span class="pre">list</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.12)"><span class="pre">tuple</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.26)"><span class="pre">ndarray</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">(1.0,</span> <span class="pre">1.5)</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/simulation.html#Simulation.plot_energy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.simulation.Simulation.plot_energy" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.simulation.Simulation.set_children">
+<span class="sig-name descname"><span class="pre">set_children</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">children</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><span class="pre">list</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.12)"><span class="pre">tuple</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/simulation.html#Simulation.set_children"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.simulation.Simulation.set_children" title="Link to this definition"></a></dt>
+<dd><p>Set the list of <a class="reference internal" href="#starsmashertools.lib.simulation.Simulation" title="starsmashertools.lib.simulation.Simulation"><code class="xref py py-class docutils literal notranslate"><span class="pre">Simulation</span></code></a> objects that were used to create
+this simulation. This can save time on searching the file system for
+child simulations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>children</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><em>list</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.12)"><em>tuple</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a>) – If a <cite>list</cite> or <cite>tuple</cite> is given, this simulation’s children become
+the contents of <code class="docutils literal notranslate"><span class="pre">children</span></code>. Thus, each element must at least be of
+type <a class="reference internal" href="#starsmashertools.lib.simulation.Simulation" title="starsmashertools.lib.simulation.Simulation"><code class="xref py py-class docutils literal notranslate"><span class="pre">Simulation</span></code></a>. If a <cite>str</cite> or <a class="reference internal" href="#starsmashertools.lib.simulation.Simulation" title="starsmashertools.lib.simulation.Simulation"><code class="xref py py-class docutils literal notranslate"><span class="pre">Simulation</span></code></a> is
+given, then <code class="xref py py-meth docutils literal notranslate"><span class="pre">starsmashertools.get_simulation()</span></code> will be called
+if it is a <cite>str</cite>, and then this simulation will have one child.</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_children" title="starsmashertools.lib.simulation.Simulation.get_children"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_children()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.simulation.Simulation.split">
+<span class="sig-name descname"><span class="pre">split</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">which</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/simulation.html#Simulation.split"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.simulation.Simulation.split" title="Link to this definition"></a></dt>
+<dd><p>The opposite of <a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.join" title="starsmashertools.lib.simulation.Simulation.join"><code class="xref py py-meth docutils literal notranslate"><span class="pre">join()</span></code></a>. Split this simulation apart from each
+simulation it is joined to. Any simulation joined to this one will also
+be split apart from it.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>which</strong> (str, <a class="reference internal" href="#starsmashertools.lib.simulation.Simulation" title="starsmashertools.lib.simulation.Simulation"><code class="xref py py-class docutils literal notranslate"><span class="pre">Simulation</span></code></a>, None, default = None) – Which simulation to split from the joined simulations. If a <cite>str</cite> is
+given, it must match exactly one of the directory strings stored in
+this simulation’s archive file. If a <a class="reference internal" href="#starsmashertools.lib.simulation.Simulation" title="starsmashertools.lib.simulation.Simulation"><code class="xref py py-class docutils literal notranslate"><span class="pre">Simulation</span></code></a> is given,
+it must have a directory which matches one of those directory
+strings. Otherwise, if <cite>None</cite>, this simulation will be split apart
+from all of its joined simulations.</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.join" title="starsmashertools.lib.simulation.Simulation.join"><code class="xref py py-meth docutils literal notranslate"><span class="pre">join()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.simulation.Simulation.started_from">
+<span class="sig-name descname"><span class="pre">started_from</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">simulation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation" title="starsmashertools.lib.simulation.Simulation"><span class="pre">Simulation</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/simulation.html#Simulation.started_from"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.simulation.Simulation.started_from" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>simulation</strong> (<a class="reference internal" href="#starsmashertools.lib.simulation.Simulation" title="starsmashertools.lib.simulation.Simulation"><code class="xref py py-class docutils literal notranslate"><span class="pre">Simulation</span></code></a>)</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><cite>True</cite> if this simulation was started from <code class="docutils literal notranslate"><span class="pre">simulation</span></code>, in the
+sense that this simulation both has a “start file” (returned by
+<a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_start_file" title="starsmashertools.lib.simulation.Simulation.get_start_file"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_start_file()</span></code></a>) and the start file is identical to one of
+the output files in <code class="docutils literal notranslate"><span class="pre">simulation</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)">bool</a></p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_file" title="starsmashertools.lib.simulation.Simulation.get_file"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_file()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.simulation.Simulation.valid_directory">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">valid_directory</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">directory</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/simulation.html#Simulation.valid_directory"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.simulation.Simulation.valid_directory" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.simulation.Simulation.values">
+<span class="sig-name descname"><span class="pre">values</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/simulation.html#Simulation.values"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.simulation.Simulation.values" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="starsmashertools.lib.report.html" class="btn btn-neutral float-left" title="starsmashertools.lib.report" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="starsmashertools.lib.units.html" class="btn btn-neutral float-right" title="starsmashertools.lib.units" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Roger Hatfull.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

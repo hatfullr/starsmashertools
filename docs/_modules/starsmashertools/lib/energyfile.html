@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>starsmashertools.lib.energyfile &mdash; starsmashertools 14.12.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../../../_static/documentation_options.js?v=61ccec80"></script>
+        <script src="../../../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            starsmashertools
+          </a>
+              <div class="version">
+                14.12.0
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../index.html">Home</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../gettingstarted.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cliprograms.html">CLI Programs</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.helpers.file.html">starsmashertools.helpers.file</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.archive.html">starsmashertools.lib.archive</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.binary.html">starsmashertools.lib.binary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.dynamical.html">starsmashertools.lib.dynamical</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.energyfile.html">starsmashertools.lib.energyfile</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.flux.html">starsmashertools.lib.flux</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.input.html">starsmashertools.lib.input</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.logfile.html">starsmashertools.lib.logfile</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.output.html">starsmashertools.lib.output</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.ray.html">starsmashertools.lib.ray</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.relaxation.html">starsmashertools.lib.relaxation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.report.html">starsmashertools.lib.report</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.simulation.html">starsmashertools.lib.simulation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.units.html">starsmashertools.lib.units</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.math.html">starsmashertools.math</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.mpl.artists.html">starsmashertools.mpl.artists</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.mpl.figure.html">starsmashertools.mpl.figure</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">starsmashertools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">starsmashertools.lib.energyfile</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for starsmashertools.lib.energyfile</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">starsmashertools.helpers.argumentenforcer</span>
+<span class="kn">from</span> <span class="nn">starsmashertools.helpers.apidecorator</span> <span class="kn">import</span> <span class="n">api</span>
+<span class="kn">import</span> <span class="nn">starsmashertools.helpers.readonlydict</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">collections</span>
+<span class="kn">import</span> <span class="nn">mmap</span>
+
+<div class="viewcode-block" id="EnergyFile">
+<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.energyfile.html#starsmashertools.lib.energyfile.EnergyFile">[docs]</a>
+<span class="k">class</span> <span class="nc">EnergyFile</span><span class="p">(</span><span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">readonlydict</span><span class="o">.</span><span class="n">ReadOnlyDict</span><span class="p">,</span> <span class="nb">object</span><span class="p">):</span>
+    <span class="n">names</span> <span class="o">=</span> <span class="p">{}</span>
+    
+<div class="viewcode-block" id="EnergyFile.__init__">
+<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.energyfile.html#starsmashertools.lib.energyfile.EnergyFile.__init__">[docs]</a>
+    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">logfile</span><span class="p">,</span> <span class="n">skip_rows</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.path</span>
+        <span class="kn">import</span> <span class="nn">re</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.warnings</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.lib.logfile</span>
+
+        <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span><span class="p">({</span>
+            <span class="s1">&#39;logfile&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">logfile</span><span class="o">.</span><span class="n">LogFile</span><span class="p">],</span>
+            <span class="s1">&#39;skip_rows&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)],</span>
+        <span class="p">})</span>
+
+        <span class="k">if</span> <span class="n">skip_rows</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">skip_rows</span> <span class="o">=</span> <span class="mi">1000</span>
+        
+        <span class="c1"># Get the energy file path</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">logfile</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;writing energy data to &#39;</span><span class="p">)</span>
+        <span class="n">directory</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">logfile</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">skip_rows</span> <span class="o">=</span> <span class="n">skip_rows</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="s2">&quot;&#39;</span><span class="si">%s</span><span class="s2">&#39;. Make sure all energy*.sph files are stored directly next to the log*.sph files they correspond to.&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">logfile</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">directory</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">EnergyFile</span><span class="o">.</span><span class="n">names</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+        
+            <span class="n">src</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">get_src</span><span class="p">(</span><span class="n">logfile</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">directory</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">src</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="n">src</span><span class="p">)</span>
+
+            <span class="n">extensions</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;.f&#39;</span><span class="p">,</span> <span class="s1">&#39;.f90&#39;</span><span class="p">]</span>
+            <span class="n">src_files</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">dirpath</span><span class="p">,</span> <span class="n">dirnames</span><span class="p">,</span> <span class="n">filenames</span> <span class="ow">in</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">walk</span><span class="p">(</span><span class="n">src</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">filename</span> <span class="ow">in</span> <span class="n">filenames</span><span class="p">:</span>
+                    <span class="n">_path</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
+                    <span class="c1"># Skip filenames that don&#39;t end in one of the extensions listed</span>
+                    <span class="k">for</span> <span class="n">extension</span> <span class="ow">in</span> <span class="n">extensions</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">filename</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="n">extension</span><span class="p">)</span> <span class="ow">and</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">_path</span><span class="p">):</span> <span class="k">break</span>
+                    <span class="k">else</span><span class="p">:</span> <span class="k">continue</span>
+
+                    <span class="n">src_files</span> <span class="o">+=</span> <span class="p">[</span><span class="n">_path</span><span class="p">]</span>
+
+            <span class="n">descriptor</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">for</span> <span class="n">_path</span> <span class="ow">in</span> <span class="n">src_files</span><span class="p">:</span>
+                <span class="n">descriptor</span> <span class="o">=</span> <span class="n">EnergyFile</span><span class="o">.</span><span class="n">get_energy_file_descriptor</span><span class="p">(</span><span class="n">_path</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">descriptor</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span> <span class="k">break</span>
+
+            <span class="k">if</span> <span class="n">descriptor</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Failed to find the energy file descriptor in the StarSmasher source code.&quot;</span><span class="p">)</span>
+
+            <span class="k">with</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">lock</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">ncolumns</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">())</span>
+
+            <span class="n">possible</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">_path</span> <span class="ow">in</span> <span class="n">src_files</span><span class="p">:</span>
+                <span class="n">lines</span> <span class="o">=</span> <span class="n">EnergyFile</span><span class="o">.</span><span class="n">get_write_energy_descriptor_lines</span><span class="p">(</span><span class="n">_path</span><span class="p">,</span> <span class="n">descriptor</span><span class="p">)</span>
+                <span class="c1"># One of these lines was used to write to the energy file. We don&#39;t</span>
+                <span class="c1"># really have a great way of figuring out which one was used. We&#39;ll</span>
+                <span class="c1"># just take the first line that matches the number of columns in the</span>
+                <span class="c1"># energy file.</span>
+                <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">))</span> <span class="o">!=</span> <span class="n">ncolumns</span><span class="p">:</span> <span class="k">continue</span>
+                    <span class="n">possible</span> <span class="o">+=</span> <span class="p">[</span><span class="n">line</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">possible</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Failed to parse the StarSmasher source code for the names of the variables which were written to the energy file &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">possible</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Found multiple lines in the StarSmasher source code which write to the energy file the same number of columns found in the energy file. The descriptors in the energy file might not be accurate&quot;</span><span class="p">)</span>
+
+            <span class="n">EnergyFile</span><span class="o">.</span><span class="n">names</span><span class="p">[</span><span class="n">logfile</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">directory</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">name</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">possible</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)]</span>
+        
+        <span class="n">data</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">OrderedDict</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">EnergyFile</span><span class="o">.</span><span class="n">names</span><span class="p">[</span><span class="n">logfile</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">directory</span><span class="p">]:</span>
+            <span class="n">data</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        
+        <span class="n">keys</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+        <span class="k">with</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">lock</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">lines</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
+        
+        <span class="n">lines</span> <span class="o">=</span> <span class="n">lines</span><span class="p">[::</span><span class="bp">self</span><span class="o">.</span><span class="n">skip_rows</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">()):</span>
+                <span class="n">data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">+=</span> <span class="p">[</span><span class="n">val</span><span class="p">]</span>
+                
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">object</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+        
+        <span class="nb">super</span><span class="p">(</span><span class="n">EnergyFile</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.string</span>
+        <span class="k">return</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">string</span><span class="o">.</span><span class="n">shorten</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="mi">25</span><span class="p">,</span> <span class="n">where</span> <span class="o">=</span> <span class="s1">&#39;left&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__repr__</span><span class="p">()</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">normalize_file_content</span><span class="p">(</span><span class="n">content</span><span class="p">):</span>
+        <span class="kn">import</span> <span class="nn">re</span>
+
+        <span class="n">expressions</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="c1"># Matches all comment lines that begin with &quot;c&quot;, &quot;C&quot;, &quot;d&quot;, &quot;D&quot;, &quot;*&quot;,</span>
+            <span class="c1"># or &quot;\&quot;</span>
+            <span class="sa">r</span><span class="s2">&quot;^[cCdD*</span><span class="se">\\</span><span class="s2">].*\n&quot;</span><span class="p">,</span>
+            <span class="c1"># Matches all content after a &quot;!&quot; character up to the newline</span>
+            <span class="sa">r</span><span class="s2">&quot;\!.*\n&quot;</span>
+        <span class="p">]</span>
+        
+        <span class="c1"># Remove all comments</span>
+        <span class="k">for</span> <span class="n">expression</span> <span class="ow">in</span> <span class="n">expressions</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">content</span><span class="p">,</span> <span class="n">flags</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">MULTILINE</span><span class="p">):</span>
+                <span class="n">content</span> <span class="o">=</span> <span class="n">content</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Join lines together who are split by &#39;$&#39; characters or &#39;&amp;&#39; characters</span>
+        <span class="n">expressions</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="c1"># Match all &quot;$&quot; continuations</span>
+            <span class="sa">r</span><span class="s2">&quot;\s*\n\s*\$\s*&quot;</span><span class="p">,</span>
+            <span class="c1"># Match all &quot;&amp;&quot; continuations at end of line</span>
+            <span class="sa">r</span><span class="s2">&quot;&amp;\s*\n\s*&quot;</span><span class="p">,</span>
+            <span class="c1"># Match all &quot;&amp;&quot; continuations at beginning of line</span>
+            <span class="sa">r</span><span class="s2">&quot;\n\s*&amp;\s*&quot;</span><span class="p">,</span>
+        <span class="p">]</span>
+
+        <span class="c1"># Remove all line-joining characters</span>
+        <span class="k">for</span> <span class="n">expression</span> <span class="ow">in</span> <span class="n">expressions</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">content</span><span class="p">,</span> <span class="n">flags</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">MULTILINE</span><span class="p">):</span>
+                <span class="n">content</span> <span class="o">=</span> <span class="n">content</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+                
+        <span class="k">return</span> <span class="n">content</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">get_energy_file_descriptor</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.file</span>
+        <span class="kn">import</span> <span class="nn">re</span>
+
+        <span class="k">with</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">lock</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">content</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+
+        <span class="n">content</span> <span class="o">=</span> <span class="n">EnergyFile</span><span class="o">.</span><span class="n">normalize_file_content</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
+
+        <span class="n">expression</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;^.*[wW][rR][iI][tT][eE]\(.*\)&#39;writing energy data to &#39;,.*[^,|\s]&quot;</span>
+        <span class="n">m</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">content</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="n">re</span><span class="o">.</span><span class="n">MULTILINE</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">m</span><span class="p">:</span> <span class="k">return</span> <span class="kc">None</span>
+        
+        <span class="n">text</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">variable_name</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="c1"># Now search for where this variable name is opened</span>
+        <span class="n">expression</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;^.*[oO][pP][eE][nN]\(.*[fF][iI][lL][eE].*=\s*energyfile.*&quot;</span>
+        <span class="n">m</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">content</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="n">re</span><span class="o">.</span><span class="n">MULTILINE</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">m</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="k">return</span> <span class="kc">None</span>
+        
+        <span class="n">text</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;open&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;(&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">get_write_energy_descriptor_lines</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">descriptor</span><span class="p">):</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.file</span>
+        <span class="kn">import</span> <span class="nn">re</span>
+
+        <span class="c1">#print(filename)</span>
+        <span class="k">with</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">lock</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">content</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+
+        <span class="c1"># Fix up the content so that it is easily parseable</span>
+        <span class="n">content</span> <span class="o">=</span> <span class="n">EnergyFile</span><span class="o">.</span><span class="n">normalize_file_content</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
+
+        <span class="c1"># Find lines where energy file is being written</span>
+        <span class="n">expression</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;[wW][rR][iI][tT][eE]\(</span><span class="si">%d</span><span class="s2">.*&quot;</span> <span class="o">%</span> <span class="n">descriptor</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">content</span><span class="p">,</span> <span class="n">flags</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">MULTILINE</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">lines</span><span class="p">):</span>
+            <span class="n">omit</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;[wW][rR][iI][tT][eE]\(\S*\)&quot;</span><span class="p">,</span> <span class="n">line</span><span class="p">,</span> <span class="n">flags</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">MULTILINE</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">omit</span><span class="p">:</span>
+                <span class="n">lines</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">lines</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">lines</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Roger Hatfull.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
