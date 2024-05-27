@@ -8,19 +8,8 @@
 
 from starsmashertools import __version__ as version
 import inspect
-#import starsmashertools
 import sys
 import os
-import subprocess
-
-curdir = os.getcwd()
-os.chdir(os.path.abspath('..'))
-print(os.getcwd())
-p = subprocess.Popen(['./install'])
-p.wait()
-os.chdir(curdir)
-
-sys.path.insert(0, os.path.abspath('..'))
 
 release = version
 
@@ -69,7 +58,7 @@ pygments_style = 'sphinx'
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = "sphinx_rtd_theme"
+#html_theme = "sphinx_rtd_theme"
 #html_theme = 'alabaster'
 
 html_static_path = ['_static']
