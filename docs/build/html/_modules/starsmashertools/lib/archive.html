@@ -1,0 +1,1474 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>starsmashertools.lib.archive &#8212; starsmashertools 13.1.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/alabaster.css?v=12dfc556" />
+    <script src="../../../_static/documentation_options.js?v=9e6d8536"></script>
+    <script src="../../../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for starsmashertools.lib.archive</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">starsmashertools.preferences</span>
+<span class="kn">from</span> <span class="nn">starsmashertools.preferences</span> <span class="kn">import</span> <span class="n">Pref</span>
+<span class="kn">import</span> <span class="nn">starsmashertools.helpers.argumentenforcer</span>
+<span class="kn">from</span> <span class="nn">starsmashertools.helpers.apidecorator</span> <span class="kn">import</span> <span class="n">api</span>
+<span class="kn">from</span> <span class="nn">starsmashertools.helpers.clidecorator</span> <span class="kn">import</span> <span class="n">cli</span><span class="p">,</span> <span class="n">clioptions</span>
+<span class="kn">import</span> <span class="nn">contextlib</span>
+<span class="kn">import</span> <span class="nn">zipfile</span>
+<span class="kn">import</span> <span class="nn">atexit</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">gc</span>
+<span class="kn">import</span> <span class="nn">binascii</span>
+<span class="kn">import</span> <span class="nn">_pickle</span>
+
+<span class="k">def</span> <span class="nf">get_file_info</span><span class="p">():</span>
+    <span class="kn">import</span> <span class="nn">starsmashertools.helpers.pickler</span>
+    <span class="k">return</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">pickler</span><span class="o">.</span><span class="n">pickle_object</span><span class="p">({</span>
+        <span class="s1">&#39;__version__&#39;</span> <span class="p">:</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">__version__</span><span class="p">,</span>
+    <span class="p">})</span>
+
+<span class="k">def</span> <span class="nf">load_file_info</span><span class="p">(</span><span class="n">info</span><span class="p">):</span>
+    <span class="kn">import</span> <span class="nn">starsmashertools.helpers.jsonfile</span>
+    <span class="kn">import</span> <span class="nn">starsmashertools.helpers.pickler</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">pickler</span><span class="o">.</span><span class="n">unpickle_object</span><span class="p">(</span><span class="n">info</span><span class="p">)</span>
+    <span class="k">except</span> <span class="p">(</span><span class="n">binascii</span><span class="o">.</span><span class="n">Error</span><span class="p">,</span> <span class="n">_pickle</span><span class="o">.</span><span class="n">UnpicklingError</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">jsonfile</span><span class="o">.</span><span class="n">load_bytes</span><span class="p">(</span><span class="n">info</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">update_archive_version</span><span class="p">(</span>
+        <span class="n">old_path</span> <span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">new_path</span> <span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">verbose</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convert old-style :class:`~.Archive` files to new-style files. This </span>
+<span class="sd">    function does nothing if the given :class:`~.Archive` is already in the</span>
+<span class="sd">    latest format.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    old_path : str</span>
+<span class="sd">        The file path to the old :class:`~.Archive` to convert.</span>
+
+<span class="sd">    Other Parameters</span>
+<span class="sd">    ----------------</span>
+<span class="sd">    new_path : str, None, default = None</span>
+<span class="sd">        If a `str` is given, the updated :class:`~.Archive` will be saved at</span>
+<span class="sd">        that file path. Otherwise it will be saved at the old </span>
+<span class="sd">        :class:`~.Archive`\&#39;s path, overwriting it.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span> <span class="nn">starsmashertools.helpers.file</span>
+    <span class="kn">import</span> <span class="nn">starsmashertools.helpers.jsonfile</span>
+    <span class="kn">import</span> <span class="nn">tempfile</span>
+    <span class="kn">import</span> <span class="nn">shutil</span>
+    <span class="kn">import</span> <span class="nn">starsmashertools.helpers.warnings</span>
+    <span class="kn">import</span> <span class="nn">starsmashertools.helpers.string</span>
+    <span class="kn">import</span> <span class="nn">starsmashertools.helpers.pickler</span>
+    
+    <span class="k">if</span> <span class="n">new_path</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="n">new_path</span> <span class="o">=</span> <span class="n">old_path</span>
+
+    <span class="k">def</span> <span class="nf">do_atexit</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="kn">import</span> <span class="nn">os</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">new_archive</span><span class="o">.</span><span class="n">filename</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">new_archive</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+
+    <span class="n">new_archive</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">archive</span><span class="o">.</span><span class="n">Archive</span><span class="p">(</span>
+        <span class="s1">&#39;new_archive.temp&#39;</span><span class="p">,</span>
+        <span class="n">auto_save</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="c1"># In case we fail to write the new archive, delete it</span>
+    <span class="n">atexit</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">do_atexit</span><span class="p">)</span>
+
+    <span class="n">format_detected</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">with</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">open</span><span class="p">(</span>
+            <span class="n">old_path</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">Archive</span><span class="o">.</span><span class="n">open_method_kwargs</span>
+    <span class="p">)</span> <span class="k">as</span> <span class="n">zfile</span><span class="p">:</span>
+        <span class="n">namelist</span> <span class="o">=</span> <span class="n">zfile</span><span class="o">.</span><span class="n">namelist</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">namelist</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">namelist</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;file info&#39;</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">string</span><span class="o">.</span><span class="n">loading_message</span><span class="p">(</span><span class="s2">&quot;Reading &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="n">Archive</span><span class="o">.</span><span class="n">to_str</span><span class="p">(</span><span class="n">old_path</span><span class="p">))</span> <span class="k">as</span> <span class="n">l</span><span class="p">:</span>
+                <span class="n">content</span> <span class="o">=</span> <span class="n">zfile</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">namelist</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">data</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">pickler</span><span class="o">.</span><span class="n">unpickle_object</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
+                <span class="k">except</span> <span class="p">(</span><span class="n">binascii</span><span class="o">.</span><span class="n">Error</span><span class="p">,</span> <span class="n">_pickle</span><span class="o">.</span><span class="n">UnpicklingError</span><span class="p">):</span>
+                    <span class="n">data</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">jsonfile</span><span class="o">.</span><span class="n">load_bytes</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
+                <span class="k">del</span> <span class="n">content</span>
+        <span class="k">else</span><span class="p">:</span> <span class="c1"># If we were not able to detect the old Archive format</span>
+            <span class="n">format_detected</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="k">if</span> <span class="n">format_detected</span><span class="p">:</span>
+        <span class="n">new_archive</span><span class="o">.</span><span class="n">_buffers</span><span class="p">[</span><span class="s1">&#39;add&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span><span class="n">ArchiveValue</span><span class="p">(</span>
+            <span class="n">key</span><span class="p">,</span>
+            <span class="n">val</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">],</span>
+            <span class="n">origin</span> <span class="o">=</span> <span class="n">val</span><span class="p">[</span><span class="s1">&#39;origin&#39;</span><span class="p">],</span>
+            <span class="n">mtime</span> <span class="o">=</span> <span class="n">val</span><span class="p">[</span><span class="s1">&#39;mtime&#39;</span><span class="p">],</span>
+        <span class="p">)</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="k">del</span> <span class="n">data</span>
+    
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">format_detected</span><span class="p">:</span>
+        <span class="k">with</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">open</span><span class="p">(</span>
+                <span class="n">old_path</span><span class="p">,</span> <span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">Archive</span><span class="o">.</span><span class="n">open_method_kwargs</span>
+        <span class="p">)</span> <span class="k">as</span> <span class="n">zfile</span><span class="p">:</span>
+            <span class="c1"># We assume it is in the latest format, so just update the</span>
+            <span class="c1"># version info</span>
+            <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="n">action</span> <span class="o">=</span> <span class="s1">&#39;ignore&#39;</span><span class="p">)</span>
+
+            <span class="k">while</span> <span class="s1">&#39;file info&#39;</span> <span class="ow">in</span> <span class="n">zfile</span><span class="o">.</span><span class="n">namelist</span><span class="p">():</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">_remove_zipfile_member</span><span class="p">(</span><span class="n">zfile</span><span class="p">,</span> <span class="s1">&#39;file info&#39;</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span> <span class="k">break</span>
+            
+            <span class="n">zfile</span><span class="o">.</span><span class="n">writestr</span><span class="p">(</span><span class="s1">&#39;file info&#39;</span><span class="p">,</span> <span class="n">get_file_info</span><span class="p">())</span>
+            
+            <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">warnings</span><span class="o">.</span><span class="n">resetwarnings</span><span class="p">()</span>
+            <span class="k">return</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">new_archive</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+        
+        <span class="c1"># Now change file names</span>
+        <span class="n">shutil</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="n">new_archive</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="n">new_path</span><span class="p">)</span>
+    
+    <span class="n">atexit</span><span class="o">.</span><span class="n">unregister</span><span class="p">(</span><span class="n">do_atexit</span><span class="p">)</span>
+
+    <span class="k">del</span> <span class="n">new_archive</span>
+    <span class="k">del</span> <span class="n">format_detected</span>
+    
+
+
+<span class="k">def</span> <span class="nf">_remove_zipfile_member</span><span class="p">(</span><span class="n">zfile</span><span class="p">,</span> <span class="n">member</span><span class="p">):</span>
+    <span class="c1"># With help from:</span>
+    <span class="c1"># https://github.com/python/cpython/blob/659eb048cc9cac73c46349eb29845bc5cd630f09/Lib/zipfile.py#L1717</span>
+    <span class="c1"># get a sorted filelist by header offset, in case the dir order</span>
+    <span class="c1"># doesn&#39;t match the actual entry order</span>
+    <span class="kn">from</span> <span class="nn">operator</span> <span class="kn">import</span> <span class="n">attrgetter</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">member</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">member</span> <span class="o">=</span> <span class="n">zfile</span><span class="o">.</span><span class="n">getinfo</span><span class="p">(</span><span class="n">member</span><span class="p">)</span>
+
+    <span class="c1"># We need to replace the system excepthook such that whenever an exception</span>
+    <span class="c1"># is thrown, we finish modifying the file and then throw the exception</span>
+    <span class="c1"># afterwards.</span>
+    
+    <span class="n">fp</span> <span class="o">=</span> <span class="n">zfile</span><span class="o">.</span><span class="n">fp</span>
+    <span class="n">entry_offset</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">filelist</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">zfile</span><span class="o">.</span><span class="n">filelist</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">attrgetter</span><span class="p">(</span><span class="s1">&#39;header_offset&#39;</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">filelist</span><span class="p">)):</span>
+        <span class="n">info</span> <span class="o">=</span> <span class="n">filelist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="c1"># find the target member</span>
+        <span class="k">if</span> <span class="n">info</span><span class="o">.</span><span class="n">header_offset</span> <span class="o">&lt;</span> <span class="n">member</span><span class="o">.</span><span class="n">header_offset</span><span class="p">:</span>
+            <span class="k">continue</span>
+
+        <span class="c1"># get the total size of the entry</span>
+        <span class="n">entry_size</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">filelist</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">entry_size</span> <span class="o">=</span> <span class="n">zfile</span><span class="o">.</span><span class="n">start_dir</span> <span class="o">-</span> <span class="n">info</span><span class="o">.</span><span class="n">header_offset</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">entry_size</span> <span class="o">=</span> <span class="n">filelist</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">header_offset</span> <span class="o">-</span> <span class="n">info</span><span class="o">.</span><span class="n">header_offset</span>
+
+        <span class="c1"># found the member, set the entry offset</span>
+        <span class="k">if</span> <span class="n">member</span> <span class="o">==</span> <span class="n">info</span><span class="p">:</span>
+            <span class="n">entry_offset</span> <span class="o">=</span> <span class="n">entry_size</span>
+            <span class="k">continue</span>
+
+        <span class="c1"># Move entry</span>
+        <span class="c1"># read the actual entry data</span>
+        <span class="n">fp</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">header_offset</span><span class="p">)</span>
+        <span class="n">entry_data</span> <span class="o">=</span> <span class="n">fp</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">entry_size</span><span class="p">)</span>
+
+        <span class="c1"># update the header</span>
+        <span class="n">info</span><span class="o">.</span><span class="n">header_offset</span> <span class="o">-=</span> <span class="n">entry_offset</span>
+
+        <span class="c1"># write the entry to the new position</span>
+        <span class="n">fp</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">header_offset</span><span class="p">)</span>
+        <span class="n">fp</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">entry_data</span><span class="p">)</span>
+        <span class="n">fp</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+
+    <span class="c1"># update state</span>
+    <span class="n">zfile</span><span class="o">.</span><span class="n">start_dir</span> <span class="o">-=</span> <span class="n">entry_offset</span>
+    <span class="n">zfile</span><span class="o">.</span><span class="n">filelist</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">member</span><span class="p">)</span>
+    <span class="k">del</span> <span class="n">zfile</span><span class="o">.</span><span class="n">NameToInfo</span><span class="p">[</span><span class="n">member</span><span class="o">.</span><span class="n">filename</span><span class="p">]</span>
+    <span class="n">zfile</span><span class="o">.</span><span class="n">_didModify</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="c1"># seek to the start of the central dir</span>
+    <span class="n">fp</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="n">zfile</span><span class="o">.</span><span class="n">start_dir</span><span class="p">)</span>
+
+
+
+
+    
+
+<div class="viewcode-block" id="ArchiveValue">
+<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.archive.html#starsmashertools.lib.archive.ArchiveValue">[docs]</a>
+<span class="k">class</span> <span class="nc">ArchiveValue</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<div class="viewcode-block" id="ArchiveValue.__init__">
+<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.archive.html#starsmashertools.lib.archive.ArchiveValue.__init__">[docs]</a>
+    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">identifier</span> <span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="n">value</span><span class="p">,</span>
+            <span class="n">origin</span> <span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">mtime</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        ArchiveValue constructor.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        identifier : str</span>
+<span class="sd">            A unique string identifier that is used by :class:`~.Archive` </span>
+<span class="sd">            objects when storing and accessing data in the archive.</span>
+<span class="sd">        </span>
+<span class="sd">        value : serializable types</span>
+<span class="sd">            A value that is one of the serializable types, found in the keys of</span>
+<span class="sd">            :attr:`~.helpers.jsonfile.serialization_methods`\.</span>
+<span class="sd">        </span>
+<span class="sd">        origin : str, None, default = None</span>
+<span class="sd">            Path to the file from which this value originated.</span>
+
+<span class="sd">        mtime : int, float, None, default = None</span>
+<span class="sd">            The modification time of the file specified by ``origin``\. If not</span>
+<span class="sd">            `None` then ``origin`` can be a file which doesn&#39;t currently exist.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.path</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">serialized</span> <span class="o">=</span> <span class="kc">None</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">identifier</span> <span class="o">=</span> <span class="n">identifier</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">origin</span> <span class="o">=</span> <span class="n">origin</span>
+        
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">origin</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">mtime</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">mtime</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getmtime</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">origin</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mtime</span> <span class="o">=</span> <span class="n">mtime</span>
+            
+        <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span></div>
+
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s1">&#39;ArchiveValue(</span><span class="si">%s</span><span class="s1">)&#39;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">ArchiveValue</span><span class="p">):</span> <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">serialized</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">serialized</span>
+    
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">size</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">serialized</span><span class="o">.</span><span class="n">__sizeof__</span><span class="p">()</span>
+    
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">value</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_value</span>
+    <span class="nd">@value</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_value</span><span class="p">):</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.pickler</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_value</span> <span class="o">=</span> <span class="n">new_value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">serialized</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">pickler</span><span class="o">.</span><span class="n">pickle_object</span><span class="p">({</span>
+            <span class="s1">&#39;value&#39;</span> <span class="p">:</span> <span class="n">new_value</span><span class="p">,</span>
+            <span class="s1">&#39;origin&#39;</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">origin</span><span class="p">,</span>
+            <span class="s1">&#39;mtime&#39;</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">mtime</span><span class="p">,</span>
+        <span class="p">})</span>
+    
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span><span class="n">identifier</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a :class:`~.ArchiveValue` object from the given json object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.jsonfile</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.pickler</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">o</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">pickler</span><span class="o">.</span><span class="n">unpickle_object</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+        <span class="k">except</span> <span class="p">(</span><span class="n">binascii</span><span class="o">.</span><span class="n">Error</span><span class="p">,</span> <span class="n">_pickle</span><span class="o">.</span><span class="n">UnpicklingError</span><span class="p">):</span>
+            <span class="n">o</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">jsonfile</span><span class="o">.</span><span class="n">load_bytes</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="n">ArchiveValue</span><span class="p">(</span><span class="n">identifier</span><span class="p">,</span> <span class="n">o</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">],</span> <span class="n">o</span><span class="p">[</span><span class="s1">&#39;origin&#39;</span><span class="p">],</span> <span class="n">o</span><span class="p">[</span><span class="s1">&#39;mtime&#39;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">ret</span></div>
+
+
+
+<span class="k">class</span> <span class="nc">ArchiveItems</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; An iterator to help with reading an Archive. &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">verbose</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">=</span> <span class="n">verbose</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_file</span> <span class="o">=</span> <span class="kc">None</span>
+        
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">archive</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="n">archive</span><span class="o">.</span><span class="n">thread_safe</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_keys</span> <span class="o">=</span> <span class="n">archive</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_keys</span> <span class="o">=</span> <span class="n">archive</span><span class="o">.</span><span class="n">_keys</span>
+
+            <span class="c1"># Reading all the contents of an Archive usually isn&#39;t what takes</span>
+            <span class="c1"># the most time. It&#39;s the deserializing that is costly.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_values</span> <span class="o">=</span> <span class="n">archive</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_keys</span><span class="p">,</span> <span class="n">deserialize</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_values</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_values</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_values</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_keys</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_values</span> <span class="o">=</span> <span class="n">args</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">_iterator</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_process</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_keys</span><span class="p">)</span>
+    <span class="k">def</span> <span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">def</span> <span class="fm">__next__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_iterator</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="c1"># Serial</span>
+                <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_iterator</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span> <span class="c1"># Multiprocessing</span>
+                <span class="n">index</span><span class="p">,</span> <span class="n">archive_value</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_iterator</span><span class="p">)</span>
+                <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="o">=</span> <span class="n">archive_value</span><span class="o">.</span><span class="n">identifier</span><span class="p">,</span> <span class="n">archive_value</span>
+            <span class="k">return</span> <span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">do_deserialize</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">StopIteration</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+            <span class="k">raise</span>
+    
+    <span class="k">def</span> <span class="nf">do_deserialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">ArchiveValue</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">ArchiveValue</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">value</span>
+
+    <span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.asynchronous</span>
+
+        <span class="n">nprocs</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span>
+            <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">asynchronous</span><span class="o">.</span><span class="n">max_processes</span><span class="p">,</span>
+            <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_keys</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_process</span> <span class="o">=</span> <span class="kc">None</span>
+        
+        <span class="k">if</span> <span class="n">nprocs</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">asynchronous</span><span class="o">.</span><span class="n">is_main_process</span><span class="p">():</span>
+            <span class="c1"># Run in serial</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_iterator</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_keys</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_values</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">arguments</span> <span class="o">=</span> <span class="p">[[</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_keys</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_values</span><span class="p">)]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_process</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">asynchronous</span><span class="o">.</span><span class="n">ParallelFunction</span><span class="p">(</span>
+                <span class="n">target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">do_deserialize</span><span class="p">,</span>
+                <span class="n">args</span> <span class="o">=</span> <span class="n">arguments</span><span class="p">,</span>
+                <span class="n">nprocs</span> <span class="o">=</span> <span class="n">nprocs</span><span class="p">,</span>
+                <span class="n">start</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_iterator</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process</span><span class="o">.</span><span class="n">get_output</span><span class="p">(</span><span class="n">sort</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.asynchronous</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_process</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_iterator</span> <span class="o">=</span> <span class="kc">None</span>
+
+
+<span class="k">def</span> <span class="nf">REPLACE_OLD</span><span class="p">(</span>
+        <span class="n">old_value</span> <span class="p">:</span> <span class="n">ArchiveValue</span><span class="p">,</span>
+        <span class="n">new_value</span> <span class="p">:</span> <span class="n">ArchiveValue</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A function that decides whether or not to replace an old value. The old</span>
+<span class="sd">    value is replaced if its file modification time is less than the new</span>
+<span class="sd">    value&#39;s. This function can be registered as a replacement checker in an</span>
+<span class="sd">    :class:`~.Archive`\. This is a valid flag for the `replacement_flags`</span>
+<span class="sd">    keyword in the constructor of an :class:`~.Archive`\.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    old_value : :class:`~.ArchiveValue`</span>
+<span class="sd">        The old value found in the archive.</span>
+
+<span class="sd">    new_value : :class:`~.ArchiveValue`</span>
+<span class="sd">        The new value whose identifier matches that of the `old_value` and who</span>
+<span class="sd">        will replace ``old_value`` if this function returns `True`\.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    bool</span>
+<span class="sd">        If `True` then ``new_value`` will replace ``old_value`` in the archive.</span>
+<span class="sd">        Otherwise, no replacement is made.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">new_value</span><span class="o">.</span><span class="n">mtime</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">old_value</span><span class="o">.</span><span class="n">mtime</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">return</span> <span class="n">new_value</span><span class="o">.</span><span class="n">mtime</span> <span class="o">&gt;</span> <span class="n">old_value</span><span class="o">.</span><span class="n">mtime</span>
+
+<span class="k">def</span> <span class="nf">REPLACE_NEQ</span><span class="p">(</span>
+        <span class="n">old_value</span> <span class="p">:</span> <span class="n">ArchiveValue</span><span class="p">,</span>
+        <span class="n">new_value</span> <span class="p">:</span> <span class="n">ArchiveValue</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="k">return</span> <span class="n">new_value</span><span class="o">.</span><span class="n">value</span> <span class="o">!=</span> <span class="n">old_value</span><span class="o">.</span><span class="n">value</span>
+
+
+<div class="viewcode-block" id="Archive">
+<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.archive.html#starsmashertools.lib.archive.Archive">[docs]</a>
+<span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">preferences</span><span class="o">.</span><span class="n">use</span>
+<span class="k">class</span> <span class="nc">Archive</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    An Archive object stores :class:`ArchiveValue`\s in a single file for quick </span>
+<span class="sd">    access. Note that :class:`ArchiveValue` can only store data that is JSON</span>
+<span class="sd">    serializable. This typically includes only standard types str, bool, float,</span>
+<span class="sd">    int, list, tuple, and dict. However, additional types such as </span>
+<span class="sd">    :class:`numpy.ndarray`, :class:`numpy.integer`, and more can also be stored</span>
+<span class="sd">    as specified in :mod:`~.starsmashertools.helpers.jsonfile`\, which you can</span>
+<span class="sd">    update to include additional data types. See</span>
+<span class="sd">    :attr:`~.helpers.jsonfile.serialization_methods` for details.</span>
+<span class="sd">    </span>
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    Suppose you have many StarSmasher output files and you want to store the</span>
+<span class="sd">    total number of particles each one has in a file called ``mydata.dat``\:</span>
+<span class="sd">    </span>
+<span class="sd">    .. code-block:: python</span>
+<span class="sd">    </span>
+<span class="sd">        import starsmashertools</span>
+<span class="sd">        import starsmashertools.lib.archive</span>
+<span class="sd">        </span>
+<span class="sd">        simulation = starsmashertools.get_simulation(&quot;.&quot;)</span>
+<span class="sd">        archive = starsmashertools.lib.archive.Archive(&quot;mydata.dat&quot;)</span>
+<span class="sd">        </span>
+<span class="sd">        for output in simulation.get_output_iterator():</span>
+<span class="sd">            archive.add(</span>
+<span class="sd">                output.path, # Some unique string identifier</span>
+<span class="sd">                output.header[&#39;ntot&#39;], # The value to store</span>
+<span class="sd">                origin = output.path, # The file the value originated from</span>
+<span class="sd">            )</span>
+<span class="sd">            # Write the archive to mydata.dat. If we save it on every loop</span>
+<span class="sd">            # iteration, then interrupting the program won&#39;t cause us to lose</span>
+<span class="sd">            # any data we already calculated.</span>
+<span class="sd">            archive.save()</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">open_method_kwargs</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;method&#39;</span> <span class="p">:</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipFile</span><span class="p">,</span>
+        <span class="s1">&#39;compression&#39;</span> <span class="p">:</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZIP_DEFLATED</span><span class="p">,</span>
+        <span class="s1">&#39;compresslevel&#39;</span> <span class="p">:</span> <span class="mi">9</span><span class="p">,</span>
+        <span class="c1">#&#39;lock&#39; : True,</span>
+    <span class="p">}</span>
+
+    <span class="k">class</span> <span class="nc">ReadOnlyError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">,</span> <span class="nb">object</span><span class="p">):</span>
+        <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+            <span class="n">message</span> <span class="o">=</span> <span class="s2">&quot;Cannot modify readonly archive: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+            <span class="nb">super</span><span class="p">(</span><span class="n">Archive</span><span class="o">.</span><span class="n">ReadOnlyError</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+    <span class="k">class</span> <span class="nc">CorruptFileError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">,</span> <span class="nb">object</span><span class="p">):</span> <span class="k">pass</span>
+    <span class="k">class</span> <span class="nc">MissingIdentifierError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">,</span> <span class="nb">object</span><span class="p">):</span> <span class="k">pass</span>
+    <span class="k">class</span> <span class="nc">FormatError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">,</span> <span class="nb">object</span><span class="p">):</span> <span class="k">pass</span>
+    <span class="k">class</span> <span class="nc">ThreadSafeError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">,</span> <span class="nb">object</span><span class="p">):</span> <span class="k">pass</span>
+            
+    
+<div class="viewcode-block" id="Archive.__init__">
+<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.archive.html#starsmashertools.lib.archive.Archive.__init__">[docs]</a>
+    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">filename</span> <span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="n">replacement_flags</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">=</span> <span class="n">Pref</span><span class="p">(</span><span class="s1">&#39;replacement flags&#39;</span><span class="p">),</span>
+            <span class="n">auto_save</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="n">readonly</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+            <span class="n">verbose</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="n">max_buffer_size</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Pref</span><span class="p">(</span><span class="s1">&#39;max buffer size&#39;</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="mf">1e5</span><span class="p">)),</span>
+            <span class="n">thread_safe</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Constructor for :class:`~.Archive`\.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        filename : str</span>
+<span class="sd">            The name of the file to use as the archive.</span>
+
+<span class="sd">        Other Parameters</span>
+<span class="sd">        ----------------</span>
+<span class="sd">        replacement_flags : list, tuple, default = ``Pref(&#39;replacement flags&#39;)``</span>
+<span class="sd">            A list of flags to use to determine if a replacement should happen</span>
+<span class="sd">            in the archive whenever a new :class:`ArchiveValue` is about to be</span>
+<span class="sd">            written to a pre-existing identifier. Each element of in </span>
+<span class="sd">            ``replacement_flags`` must be a function which accepts two </span>
+<span class="sd">            arguments, each is :class:`~.ArchiveValue`\. The first argument is </span>
+<span class="sd">            the old value and the second the new value. Each function must </span>
+<span class="sd">            return a bool-like value which will be evaluated by an ``if``</span>
+<span class="sd">            statement.</span>
+<span class="sd">        </span>
+<span class="sd">            If an empty list is given, values in the archive will be</span>
+<span class="sd">            overwritten (no checks performed), unless if ``readonly`` is </span>
+<span class="sd">            `True`\.</span>
+
+<span class="sd">        auto_save : bool, default = True</span>
+<span class="sd">            If `True`\, values will automatically be written to the file on the</span>
+<span class="sd">            system whenever they are edited. If `False`\, it is the user&#39;s</span>
+<span class="sd">            responsibility to call :meth:`~.save` to save the contents.</span>
+
+<span class="sd">        readonly : bool, default = False</span>
+<span class="sd">            If `True`\, a :class:`~.Archive.ReadOnlyError` is raised whenever</span>
+<span class="sd">            :meth:`~.Archive.save` is called on this object.</span>
+<span class="sd">            </span>
+<span class="sd">        verbose : bool, default = True</span>
+<span class="sd">            If `False`\, messages are suppressed. Otherwise messages are</span>
+<span class="sd">            printed to the standard output.</span>
+
+<span class="sd">        max_buffer_size : int, default = ``Pref(&#39;max buffer size&#39;, int(1e5))``</span>
+<span class="sd">            The maximum allowed size in bytes that the buffer can have when auto</span>
+<span class="sd">            save is disabled. When the buffer exceeds this value the archive is</span>
+<span class="sd">            saved.</span>
+
+<span class="sd">        thread_safe : bool, default = False</span>
+<span class="sd">            If `True` then we will try to make thread-safe assumptions about </span>
+<span class="sd">            the state of the archive, such as reading the file on the system to</span>
+<span class="sd">            determine its contents whenever a value is modified. If `False`\,</span>
+<span class="sd">            then it is assumed that this archive was created on the main</span>
+<span class="sd">            process, such that we can use faster operations for determining the</span>
+<span class="sd">            current state of the archive.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.path</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.asynchronous</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_previous_mtime</span> <span class="o">=</span> <span class="kc">None</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="n">filename</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">replacement_flags</span> <span class="o">=</span> <span class="n">replacement_flags</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">auto_save</span> <span class="o">=</span> <span class="n">auto_save</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">readonly</span> <span class="o">=</span> <span class="n">readonly</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">=</span> <span class="n">verbose</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_max_buffer_size</span> <span class="o">=</span> <span class="n">max_buffer_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">thread_safe</span> <span class="o">=</span> <span class="n">thread_safe</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">thread_safe</span> <span class="ow">and</span>
+            <span class="ow">not</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">asynchronous</span><span class="o">.</span><span class="n">is_main_process</span><span class="p">()):</span>
+            <span class="k">raise</span> <span class="n">Archive</span><span class="o">.</span><span class="n">ThreadSafeError</span><span class="p">(</span><span class="s2">&quot;Cannot open an Archive on processes which aren&#39;t the main process when keyword &#39;thread_safe&#39; is True&quot;</span><span class="p">)</span>
+        
+        <span class="nb">super</span><span class="p">(</span><span class="n">Archive</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        
+        <span class="k">if</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_check_and_update_format</span><span class="p">()</span>
+        
+        <span class="c1"># If the program is about to quit, make sure the Archive has been saved</span>
+        <span class="n">atexit</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_on_quit</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">_buffers</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;add&#39;</span> <span class="p">:</span> <span class="p">{},</span>
+            <span class="s1">&#39;remove&#39;</span> <span class="p">:</span> <span class="p">[],</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_buffer_size</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_nosave_holders</span> <span class="o">=</span> <span class="mi">0</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">_keys</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;_keys_internal&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_keys_internal</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_keys_from_file</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_keys_internal</span>
+
+    <span class="nd">@_keys</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">_keys</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_keys_internal</span> <span class="o">=</span> <span class="n">value</span>
+    
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">to_str</span><span class="p">(</span><span class="n">filename</span> <span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.string</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">string</span><span class="o">.</span><span class="n">shorten</span><span class="p">(</span>
+            <span class="n">filename</span><span class="p">,</span>
+            <span class="mi">50</span><span class="p">,</span>
+            <span class="n">where</span> <span class="o">=</span> <span class="s1">&#39;left&#39;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="s2">&quot;Archive(&#39;</span><span class="si">%s</span><span class="s2">&#39;)&quot;</span> <span class="o">%</span> <span class="n">path</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">to_repr</span><span class="p">(</span><span class="n">filename</span> <span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;Archive(&#39;</span><span class="si">%s</span><span class="s2">&#39;)&quot;</span> <span class="o">%</span> <span class="n">archive</span><span class="o">.</span><span class="n">filename</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="k">return</span> <span class="n">Archive</span><span class="o">.</span><span class="n">to_str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="k">return</span> <span class="n">Archive</span><span class="o">.</span><span class="n">to_repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">_on_quit</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">readonly</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_auto_save</span><span class="p">()</span>
+        <span class="n">atexit</span><span class="o">.</span><span class="n">unregister</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_on_quit</span><span class="p">)</span>
+    
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">modified</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.path</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">):</span> <span class="k">return</span> <span class="kc">False</span>
+        <span class="n">current_mtime</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getmtime</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">current_mtime</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_previous_mtime</span>
+    
+    <span class="k">def</span> <span class="nf">__copy__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+    <span class="k">def</span> <span class="nf">__deepcopy__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+    
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.string</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">string</span><span class="o">.</span><span class="n">shorten</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span>
+            <span class="mi">30</span><span class="p">,</span>
+            <span class="n">where</span> <span class="o">=</span> <span class="s1">&#39;left&#39;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="s2">&quot;Archive(&#39;</span><span class="si">%s</span><span class="s2">&#39;)&quot;</span> <span class="o">%</span> <span class="n">path</span>
+    
+    <span class="k">def</span> <span class="nf">_clear_buffers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_buffers</span><span class="p">[</span><span class="s1">&#39;add&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_buffers</span><span class="p">[</span><span class="s1">&#39;remove&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_buffer_size</span> <span class="o">=</span> <span class="mi">0</span>
+    
+    <span class="nd">@contextlib</span><span class="o">.</span><span class="n">contextmanager</span>
+    <span class="k">def</span> <span class="nf">nosave</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; A context manager for temporarily disabling auto save. Entering this</span>
+<span class="sd">        context will first save the Archive. Then, saving is disabled until the</span>
+<span class="sd">        context is exited, even if auto save is enabled. Upon exiting, the </span>
+<span class="sd">        buffers are cleared. &quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">copy</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">thread_safe</span><span class="p">:</span>
+            <span class="n">previous_keys</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_keys</span><span class="p">)</span>
+        
+        <span class="c1"># This clears the buffers</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+        
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_nosave_holders</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">yield</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="c1"># Clear the buffers</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_clear_buffers</span><span class="p">()</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">thread_safe</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_keys</span> <span class="o">=</span> <span class="n">previous_keys</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_nosave_holders</span> <span class="o">-=</span> <span class="mi">1</span>
+    
+    <span class="k">def</span> <span class="nf">open</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">mode</span> <span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="n">verbose</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">message</span> <span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">progress_max</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; Used for opening the Archive for file manipulation. &quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.string</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.file</span>
+
+        <span class="k">if</span> <span class="n">verbose</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="n">verbose</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span>
+
+        <span class="k">return</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">open</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span> <span class="n">verbose</span> <span class="o">=</span> <span class="n">verbose</span><span class="p">,</span>
+            <span class="n">message</span> <span class="o">=</span> <span class="n">message</span><span class="p">,</span> <span class="n">progress_max</span> <span class="o">=</span> <span class="n">progress_max</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">Archive</span><span class="o">.</span><span class="n">open_method_kwargs</span>
+        <span class="p">)</span>
+        
+<div class="viewcode-block" id="Archive.__contains__">
+<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.archive.html#starsmashertools.lib.archive.Archive.__contains__">[docs]</a>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="fm">__contains__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span> <span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">ArchiveValue</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; If an :class:`~.ArchiveValue` is specified, calls </span>
+<span class="sd">        :meth:`~.values`\, which reads the entire Archive file and can be </span>
+<span class="sd">        quite I/O intensive. Use sparingly. Otherwise, if a str is given then</span>
+<span class="sd">        the string is checked against the keys, which is faster. &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">ArchiveValue</span><span class="p">):</span> <span class="n">key</span> <span class="o">=</span> <span class="n">key</span><span class="o">.</span><span class="n">identifier</span>
+        <span class="k">return</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="Archive.__delitem__">
+<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.archive.html#starsmashertools.lib.archive.Archive.__delitem__">[docs]</a>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="fm">__delitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; Remove the given key from the Archive. If auto save is enabled, the</span>
+<span class="sd">        Archive file will be modified. &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span> <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+
+        <span class="c1"># Move the key out of the &#39;add&#39; buffer and into the &#39;remove&#39; buffer.</span>
+        <span class="c1"># Note that this doesn&#39;t change the overall buffer size. Thus, when</span>
+        <span class="c1"># the &#39;remove&#39; buffer becomes large enough the archive will be saved</span>
+        <span class="c1"># on the file system.</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_buffers</span><span class="p">[</span><span class="s1">&#39;add&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_buffers</span><span class="p">[</span><span class="s1">&#39;remove&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="p">[</span><span class="n">key</span><span class="p">]</span>
+        
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">thread_safe</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_keys</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">_auto_save</span><span class="p">()</span></div>
+
+
+    <span class="k">def</span> <span class="nf">_get_keys_from_file</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; Return a list of keys as read from the file on the system. &quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.path</span>
+        <span class="c1"># If the file doesn&#39;t exist yet, then it has no keys!</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">):</span> <span class="k">return</span> <span class="p">[]</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">open</span><span class="p">(</span>
+                    <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">message</span> <span class="o">=</span> <span class="s1">&#39;Loading keys in </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="bp">self</span>
+            <span class="p">)</span> <span class="k">as</span> <span class="n">zfile</span><span class="p">:</span>
+                <span class="n">keys</span> <span class="o">=</span> <span class="n">zfile</span><span class="o">.</span><span class="n">namelist</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">Archive</span><span class="o">.</span><span class="n">CorruptFileError</span><span class="p">(</span><span class="s2">&quot;Failed to load keys from the archive file. Perhaps it did not save correctly. All data in this archive is lost. Please delete the file and try again: &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+
+        <span class="k">while</span> <span class="s1">&#39;file info&#39;</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">:</span> <span class="n">keys</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s1">&#39;file info&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">keys</span>
+        
+<div class="viewcode-block" id="Archive.keys">
+<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.archive.html#starsmashertools.lib.archive.Archive.keys">[docs]</a>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="nf">keys</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; Return a list of Archive identifiers from the file. &quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.path</span>
+        <span class="kn">import</span> <span class="nn">copy</span>
+
+        <span class="n">keys</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">thread_safe</span><span class="p">:</span>
+            <span class="c1"># Obtain a copy so that we do not accidentally hand the user</span>
+            <span class="c1"># our _keys list. This prevents the user from accidentally</span>
+            <span class="c1"># editing the _keys list.</span>
+            <span class="n">keys</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_keys</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">):</span>
+            <span class="n">keys</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_keys_from_file</span><span class="p">()</span>
+        
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_buffers</span><span class="p">[</span><span class="s1">&#39;remove&#39;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">:</span> <span class="k">continue</span>
+            <span class="n">keys</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_buffers</span><span class="p">[</span><span class="s1">&#39;add&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">:</span> <span class="n">keys</span> <span class="o">+=</span> <span class="p">[</span><span class="n">key</span><span class="p">]</span>
+        
+        <span class="k">return</span> <span class="n">keys</span></div>
+
+
+<div class="viewcode-block" id="Archive.items">
+<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.archive.html#starsmashertools.lib.archive.Archive.items">[docs]</a>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="nf">items</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; Return all keys and values in the Archive. This is I/O intensive, </span>
+<span class="sd">        so use it sparingly. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">ArchiveItems</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">verbose</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="Archive.values">
+<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.archive.html#starsmashertools.lib.archive.Archive.values">[docs]</a>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="nf">values</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; Return all the values in the Archive. This reads the entire Archive</span>
+<span class="sd">        file, so use it sparingly. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">value</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">items</span><span class="p">()]</span></div>
+
+    
+<div class="viewcode-block" id="Archive.clear">
+<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.archive.html#starsmashertools.lib.archive.Archive.clear">[docs]</a>
+    <span class="nd">@api</span>
+    <span class="nd">@cli</span><span class="p">(</span><span class="s1">&#39;ssarchive&#39;</span><span class="p">)</span>
+    <span class="nd">@clioptions</span><span class="p">(</span><span class="n">display_name</span> <span class="o">=</span> <span class="s2">&quot;Remove all values&quot;</span><span class="p">,</span> <span class="n">confirm</span> <span class="o">=</span> <span class="s2">&quot;Are you sure? This will remove all contents and delete the archive file.&quot;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cli</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; Clears all contents from the archive and deletes the file if auto</span>
+<span class="sd">        save is enabled. &quot;&quot;&quot;</span>
+        <span class="c1"># We can allow the &#39;remove&#39; buffer to go over max_buffer_size here,</span>
+        <span class="c1"># because we kinda have to.</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_buffers</span><span class="p">[</span><span class="s1">&#39;remove&#39;</span><span class="p">]:</span> <span class="k">continue</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_buffers</span><span class="p">[</span><span class="s1">&#39;remove&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="p">[</span><span class="n">key</span><span class="p">]</span>
+            
+        <span class="bp">self</span><span class="o">.</span><span class="n">_buffers</span><span class="p">[</span><span class="s1">&#39;add&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">thread_safe</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_keys</span> <span class="o">=</span> <span class="p">[]</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">_auto_save</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="Archive.__setitem__">
+<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.archive.html#starsmashertools.lib.archive.Archive.__setitem__">[docs]</a>
+    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="fm">__setitem__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">key</span><span class="p">,</span>
+            <span class="n">value</span> <span class="p">:</span> <span class="n">ArchiveValue</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; Similar to :py:meth:`dict.__setitem__` except the archive file is</span>
+<span class="sd">        modified if auto save is enabled. Also the replacement flag functions</span>
+<span class="sd">        specified in :meth:`~.__init__` are checked. If all the functions </span>
+<span class="sd">        return `True` then the value is overwritten. Otherwise, nothing </span>
+<span class="sd">        happens. &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="c1"># Check all the replacement flag functions. If any fail, do nothing.</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">flag</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">replacement_flags</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">flag</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span> <span class="k">return</span>
+        
+        <span class="c1"># Either add a new key or overwrite an old key</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_buffers</span><span class="p">[</span><span class="s1">&#39;add&#39;</span><span class="p">][</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_buffers</span><span class="p">[</span><span class="s1">&#39;remove&#39;</span><span class="p">]:</span> <span class="c1"># Move from &#39;remove&#39; into &#39;add&#39;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_buffers</span><span class="p">[</span><span class="s1">&#39;remove&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span> <span class="c1"># Only add to &#39;add&#39;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_buffer_size</span> <span class="o">+=</span> <span class="n">value</span><span class="o">.</span><span class="n">size</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">thread_safe</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_keys</span> <span class="o">+=</span> <span class="p">[</span><span class="n">key</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_auto_save</span><span class="p">()</span></div>
+
+
+    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">thread_safe</span> <span class="ow">and</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_keys</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        
+        <span class="c1"># If we do have the key in the buffer, fetch its value</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_buffers</span><span class="p">[</span><span class="s1">&#39;remove&#39;</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_buffers</span><span class="p">[</span><span class="s1">&#39;add&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_buffers</span><span class="p">[</span><span class="s1">&#39;add&#39;</span><span class="p">][</span><span class="n">key</span><span class="p">]</span>
+
+        <span class="c1"># Check the archive</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">open</span><span class="p">(</span>
+                    <span class="s1">&#39;r&#39;</span><span class="p">,</span>
+                    <span class="n">message</span> <span class="o">=</span> <span class="s2">&quot;Loading key &#39;</span><span class="si">%s</span><span class="s2">&#39; in </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">key</span><span class="p">),</span> <span class="bp">self</span><span class="p">)</span>
+            <span class="p">)</span> <span class="k">as</span> <span class="n">zfile</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">thread_safe</span><span class="p">:</span>
+                    <span class="n">keys</span> <span class="o">=</span> <span class="n">zfile</span><span class="o">.</span><span class="n">namelist</span><span class="p">()</span>
+                    <span class="k">while</span> <span class="s1">&#39;file info&#39;</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">:</span> <span class="n">keys</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s1">&#39;file info&#39;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span> <span class="n">keys</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_keys</span>
+                <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="n">zfile</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="ne">KeyError</span><span class="p">):</span> <span class="k">raise</span>
+            <span class="k">raise</span> <span class="n">Archive</span><span class="o">.</span><span class="n">CorruptFileError</span><span class="p">(</span><span class="s2">&quot;Failed to load key &#39;</span><span class="si">%s</span><span class="s2">&#39; from the archive file. Perhaps it did not save correctly. All data in this archive is lost. Please delete the file and try again: &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">))</span> <span class="kn">from</span> <span class="nn">e</span>
+        <span class="k">return</span> <span class="n">ArchiveValue</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">_check_and_update_format</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.warnings</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.path</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">):</span> <span class="k">return</span>
+        
+        <span class="c1"># We can&#39;t update the file if we&#39;re in readonly mode.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">readonly</span><span class="p">:</span> <span class="k">return</span>
+
+        
+        <span class="n">should_update</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">info</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">open</span><span class="p">(</span>
+                    <span class="s1">&#39;r&#39;</span><span class="p">,</span>
+                    <span class="n">message</span> <span class="o">=</span> <span class="s2">&quot;Getting file info from </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="bp">self</span>
+            <span class="p">)</span> <span class="k">as</span> <span class="n">zfile</span><span class="p">:</span>
+                <span class="k">if</span> <span class="s1">&#39;file info&#39;</span> <span class="ow">in</span> <span class="n">zfile</span><span class="o">.</span><span class="n">namelist</span><span class="p">():</span>
+                    <span class="n">info</span> <span class="o">=</span> <span class="n">zfile</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s1">&#39;file info&#39;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">Archive</span><span class="o">.</span><span class="n">CorruptFileError</span><span class="p">(</span><span class="s2">&quot;Failed to load file info from archive file. Perhaps it did not save correctly. All data in this archive is lost. Please delete the file and try again: &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+
+        <span class="k">if</span> <span class="n">info</span><span class="p">:</span>
+            <span class="n">info</span> <span class="o">=</span> <span class="n">load_file_info</span><span class="p">(</span><span class="n">info</span><span class="p">)</span>
+
+        <span class="n">old_version</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">info</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="n">should_update</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">elif</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">_is_version_older</span><span class="p">(</span><span class="n">info</span><span class="p">[</span><span class="s1">&#39;__version__&#39;</span><span class="p">]):</span>
+            <span class="n">should_update</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">old_version</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="s1">&#39;__version__&#39;</span><span class="p">]</span>
+
+        <span class="n">user_allowed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">preferences</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;auto update format&#39;</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="n">old_version</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">message</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> was written by starsmashertools version &#39;</span><span class="si">%s</span><span class="s2">&#39;, but the current version is &#39;</span><span class="si">%s</span><span class="s2">&#39;. This Archive will be updated to the latest format.&quot;</span>
+            <span class="n">message</span> <span class="o">=</span> <span class="n">message</span> <span class="o">%</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span> <span class="n">old_version</span><span class="p">,</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">__version__</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">message</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> was written by an older starsmashertools version, but the current version is &#39;</span><span class="si">%s</span><span class="s2">&#39;. This Archive will be updated to the latest format.&quot;</span>
+            <span class="n">message</span> <span class="o">=</span> <span class="n">message</span> <span class="o">%</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">__version__</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">should_update</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">user_allowed</span><span class="p">:</span> <span class="k">raise</span> <span class="n">Archive</span><span class="o">.</span><span class="n">FormatError</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+            <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+            <span class="n">update_archive_version</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="n">verbose</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_auto_save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">auto_save</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_buffer_size</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_max_buffer_size</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Archive.save">
+<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.archive.html#starsmashertools.lib.archive.Archive.save">[docs]</a>
+    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+    <span class="c1">#@starsmashertools.helpers.defer_keyboardinterrupt(message = &quot;KeyboardInterrupt raised, but stopping execution might corrupt an archive. Raise KeyboardInterrupt again to stop execution.&quot;)</span>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">verbose</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Update the archive file with the current data.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        verbose : bool, None, default = None</span>
+<span class="sd">            Overrides the :attr:`~.verbose` option in :meth:`~.__init__`\.</span>
+<span class="sd">            If `None` then :attr:`~.verbose` is used instead.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.path</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.asynchronous</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.warnings</span>
+        
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">asynchronous</span><span class="o">.</span><span class="n">is_main_process</span><span class="p">():</span>
+            <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Archive.save() is being called by a process that is not the main process. Archive.save() is not thread safe, so make sure you are calling Archive.save() from a single process only. You can suppress this warning with warnings.filterwarnings(action = &#39;ignore&#39;).&quot;</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">readonly</span><span class="p">:</span> <span class="k">raise</span> <span class="n">Archive</span><span class="o">.</span><span class="n">ReadOnlyError</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nosave_holders</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span> <span class="k">return</span>
+        
+        <span class="n">exists</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+        
+        <span class="c1"># If nothing changed since the last time we saved</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">exists</span> <span class="ow">and</span> 
+            <span class="p">(</span><span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_buffers</span><span class="p">[</span><span class="s1">&#39;add&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_buffers</span><span class="p">[</span><span class="s1">&#39;remove&#39;</span><span class="p">])</span>
+            <span class="p">):</span> <span class="k">return</span>
+        
+        <span class="c1"># Serialize the data we will add</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span><span class="n">val</span><span class="o">.</span><span class="n">serialized</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_buffers</span><span class="p">[</span><span class="s1">&#39;add&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        
+        <span class="c1"># Get file info</span>
+        <span class="n">info</span> <span class="o">=</span> <span class="n">get_file_info</span><span class="p">()</span>
+        
+        <span class="c1"># These are the keys that will change in the file</span>
+        <span class="n">remove_keys</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_buffers</span><span class="p">[</span><span class="s1">&#39;remove&#39;</span><span class="p">])</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+
+        <span class="n">directory</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span>
+            <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">realpath</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="n">dir_exists</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">directory</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">dir_exists</span><span class="p">:</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">directory</span><span class="p">)</span>
+        
+        <span class="n">current_keys</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">open</span><span class="p">(</span>
+                    <span class="s1">&#39;a&#39;</span> <span class="k">if</span> <span class="n">exists</span> <span class="k">else</span> <span class="s1">&#39;w&#39;</span><span class="p">,</span>
+                    <span class="n">verbose</span> <span class="o">=</span> <span class="n">verbose</span><span class="p">,</span>
+                    <span class="n">message</span> <span class="o">=</span> <span class="s2">&quot;Saving </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="p">,</span>
+                    <span class="n">progress_max</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">()),</span>
+            <span class="p">)</span> <span class="k">as</span> <span class="n">zfile</span><span class="p">:</span>
+                <span class="c1"># Update the file info</span>
+                <span class="k">while</span> <span class="s1">&#39;file info&#39;</span> <span class="ow">in</span> <span class="n">zfile</span><span class="o">.</span><span class="n">namelist</span><span class="p">():</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">_remove_zipfile_member</span><span class="p">(</span><span class="n">zfile</span><span class="p">,</span> <span class="s1">&#39;file info&#39;</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span> <span class="k">break</span>
+                <span class="n">keys</span> <span class="o">=</span> <span class="n">zfile</span><span class="o">.</span><span class="n">namelist</span><span class="p">()</span>
+                <span class="n">zfile</span><span class="o">.</span><span class="n">writestr</span><span class="p">(</span><span class="s1">&#39;file info&#39;</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span>
+                <span class="c1"># Remove all keys that are going to change</span>
+                <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">remove_keys</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">:</span> <span class="k">continue</span>
+                    <span class="n">_remove_zipfile_member</span><span class="p">(</span><span class="n">zfile</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
+                <span class="c1"># Add keys that need to be added</span>
+                <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="n">zfile</span><span class="o">.</span><span class="n">writestr</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+                    <span class="c1"># Only true when verbose is True and in the main process. See</span>
+                    <span class="c1"># helpers/file.py for details</span>
+                    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">zfile</span><span class="p">,</span> <span class="s1">&#39;progress&#39;</span><span class="p">):</span>
+                        <span class="n">zfile</span><span class="o">.</span><span class="n">progress</span><span class="o">.</span><span class="n">increment</span><span class="p">()</span>
+                <span class="n">current_keys</span> <span class="o">=</span> <span class="n">zfile</span><span class="o">.</span><span class="n">namelist</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">Archive</span><span class="o">.</span><span class="n">CorruptFileError</span><span class="p">(</span><span class="s2">&quot;Failed to save archive file. Perhaps it did not save correctly. All data in this archive is lost. Please delete the file and try again: &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+        
+        <span class="k">while</span> <span class="s1">&#39;file info&#39;</span> <span class="ow">in</span> <span class="n">current_keys</span><span class="p">:</span> <span class="n">current_keys</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s1">&#39;file info&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Clear the buffers</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_clear_buffers</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">current_keys</span><span class="p">:</span>
+            <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+
+        <span class="k">del</span> <span class="n">exists</span>
+        <span class="k">del</span> <span class="n">data</span>
+        <span class="k">del</span> <span class="n">info</span>
+        <span class="k">del</span> <span class="n">remove_keys</span>
+        <span class="k">del</span> <span class="n">directory</span>
+        <span class="k">del</span> <span class="n">dir_exists</span>
+        <span class="k">del</span> <span class="n">current_keys</span>
+        <span class="k">del</span> <span class="n">keys</span>
+        <span class="n">gc</span><span class="o">.</span><span class="n">collect</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="Archive.add">
+<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.archive.html#starsmashertools.lib.archive.Archive.add">[docs]</a>
+    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="nf">add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a new :class:`ArchiveValue` and add it to the archive. If there</span>
+<span class="sd">        already exists a :class:`ArchiveValue` with the same ``identifier`` in </span>
+<span class="sd">        the archive, then if the origin file is different we overwrite the old</span>
+<span class="sd">        value. Otherwise, if the file&#39;s modification time is more recent than</span>
+<span class="sd">        the archived value, we also overwrite the old value.</span>
+
+<span class="sd">        Other Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        *args</span>
+<span class="sd">            Positional arguments are passed directly to :class:`ArchiveValue`\.</span>
+
+<span class="sd">        **kwargs</span>
+<span class="sd">            Keyword arguments are passed directly to :class:`ArchiveValue`\.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">ArchiveValue</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="p">[</span><span class="n">value</span><span class="o">.</span><span class="n">identifier</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span></div>
+
+
+<div class="viewcode-block" id="Archive.set">
+<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.archive.html#starsmashertools.lib.archive.Archive.set">[docs]</a>
+    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+    <span class="nd">@api</span>
+    <span class="nd">@cli</span><span class="p">(</span><span class="s1">&#39;ssarchive&#39;</span><span class="p">)</span>
+    <span class="nd">@clioptions</span><span class="p">(</span><span class="n">display_name</span> <span class="o">=</span> <span class="s1">&#39;Set/add a value&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        A simple alias for :meth:`~.add`\.</span>
+
+<span class="sd">        See Also</span>
+<span class="sd">        --------</span>
+<span class="sd">        :meth:`~.add`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Archive.get">
+<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.archive.html#starsmashertools.lib.archive.Archive.get">[docs]</a>
+    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">keys</span> <span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">,</span>
+            <span class="n">deserialize</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Obtain the key or keys given. This is useful for if you want to retrieve</span>
+<span class="sd">        many values from the archive without opening and closing the file each</span>
+<span class="sd">        time. Raises a :class:`KeyError` if any of the keys weren&#39;t found.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        keys : str, list, tuple</span>
+<span class="sd">            If a `str`\, the behavior is equivalent to </span>
+<span class="sd">            :meth:`~.Archive.__getitem__`\. If a `list` or `tuple`\, each </span>
+<span class="sd">            element must be type `str`\. Then the archive is opened and the </span>
+<span class="sd">            values for the given keys are returned in the same order as </span>
+<span class="sd">            ``keys``\.</span>
+
+<span class="sd">        Other Parameters</span>
+<span class="sd">        ----------------</span>
+<span class="sd">        deserialize : bool, default = True</span>
+<span class="sd">            If `True`\, the values in the :class:`~.Archive` are converted from</span>
+<span class="sd">            their raw format as stored in the file on the system into Python</span>
+<span class="sd">            objects. Otherwise, the raw values are returned.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        :class:`~.ArchiveValue` or `list`</span>
+<span class="sd">            If a `str` was given for ``keys``\, a :class:`~.ArchiveValue` is </span>
+<span class="sd">            returned. Otherwise, a `list` of :class:`~.ArchiveValue` objects is</span>
+<span class="sd">            returned.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.string</span>
+        
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+            <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span> <span class="k">continue</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Argument &#39;keys&#39; must contain only elements of type &#39;str&#39;, not &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">key</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span> <span class="n">keys</span> <span class="o">=</span> <span class="p">[</span><span class="n">keys</span><span class="p">]</span>
+
+        <span class="n">remaining_keys</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span>
+        <span class="c1"># Search the buffers first before loading the file values</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">key</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">keys</span><span class="p">):</span>
+            <span class="c1"># If we do have the key in the buffer, fetch its value</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_buffers</span><span class="p">[</span><span class="s1">&#39;remove&#39;</span><span class="p">]:</span> <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_buffers</span><span class="p">[</span><span class="s1">&#39;add&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="n">values</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_buffers</span><span class="p">[</span><span class="s1">&#39;add&#39;</span><span class="p">][</span><span class="n">key</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span> <span class="n">remaining_keys</span> <span class="o">+=</span> <span class="p">[[</span><span class="n">i</span><span class="p">,</span> <span class="n">key</span><span class="p">]]</span>
+
+        <span class="k">if</span> <span class="kc">None</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">values</span><span class="p">:</span> <span class="c1"># We only had to search the buffers! :)</span>
+            <span class="k">return</span> <span class="n">values</span>
+
+        <span class="c1"># Check the archive file</span>
+        <span class="n">to_deserialize</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">open</span><span class="p">(</span>
+                <span class="s1">&#39;r&#39;</span><span class="p">,</span>
+                <span class="n">message</span> <span class="o">=</span> <span class="s2">&quot;Loading values in </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="p">,</span>
+                <span class="n">progress_max</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">remaining_keys</span><span class="p">),</span>
+        <span class="p">)</span> <span class="k">as</span> <span class="n">zfile</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">file_keys</span> <span class="o">=</span> <span class="n">zfile</span><span class="o">.</span><span class="n">namelist</span><span class="p">()</span>
+                <span class="k">while</span> <span class="s1">&#39;file info&#39;</span> <span class="ow">in</span> <span class="n">file_keys</span><span class="p">:</span> <span class="n">file_keys</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s1">&#39;file info&#39;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">Archive</span><span class="o">.</span><span class="n">CorruptFileError</span><span class="p">(</span><span class="s2">&quot;Failed to load a key from the archive file. Perhaps it did not save correctly. All data in this archive is lost. Please delete the file and try again: &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">))</span> <span class="kn">from</span> <span class="nn">e</span>
+                
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">remaining_keys</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">file_keys</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+                <span class="n">values</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">zfile</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+                <span class="n">to_deserialize</span> <span class="o">+=</span> <span class="p">[[</span><span class="n">i</span><span class="p">,</span> <span class="n">key</span><span class="p">]]</span>
+                <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">zfile</span><span class="p">,</span> <span class="s1">&#39;progress&#39;</span><span class="p">):</span>
+                    <span class="n">zfile</span><span class="o">.</span><span class="n">progress</span><span class="o">.</span><span class="n">increment</span><span class="p">()</span>
+
+        <span class="n">keys_to_deserialize</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">vals_to_deserialize</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">to_deserialize</span><span class="p">:</span>
+            <span class="n">keys_to_deserialize</span> <span class="o">+=</span> <span class="p">[</span><span class="n">key</span><span class="p">]</span>
+            <span class="n">vals_to_deserialize</span> <span class="o">+=</span> <span class="p">[</span><span class="n">values</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span>
+
+        <span class="k">if</span> <span class="n">deserialize</span><span class="p">:</span>
+            <span class="n">deserialized_vals</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_deserialize</span><span class="p">(</span>
+                <span class="n">keys_to_deserialize</span><span class="p">,</span> <span class="n">vals_to_deserialize</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">to_deserialize</span><span class="p">:</span>
+                <span class="n">values</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">deserialized_vals</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+        <span class="k">del</span> <span class="n">keys_to_deserialize</span>
+        <span class="k">del</span> <span class="n">vals_to_deserialize</span>
+        <span class="k">del</span> <span class="n">to_deserialize</span>
+        <span class="k">del</span> <span class="n">remaining_keys</span>
+        <span class="n">gc</span><span class="o">.</span><span class="n">collect</span><span class="p">()</span>
+        
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span> <span class="k">return</span> <span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">values</span></div>
+
+            
+<div class="viewcode-block" id="Archive.remove">
+<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.archive.html#starsmashertools.lib.archive.Archive.remove">[docs]</a>
+    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+    <span class="nd">@api</span>
+    <span class="nd">@cli</span><span class="p">(</span><span class="s1">&#39;ssarchive&#39;</span><span class="p">)</span>
+    <span class="nd">@clioptions</span><span class="p">(</span><span class="n">display_name</span> <span class="o">=</span> <span class="s1">&#39;Remove a key&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span> <span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">cli</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Remove an identifier from the Archive. Calls :meth:`~.save` if auto</span>
+<span class="sd">        save is enabled.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        key : str</span>
+<span class="sd">            The identifier key to remove.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">del</span> <span class="bp">self</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">cli</span><span class="p">:</span> <span class="k">return</span> <span class="s1">&#39;Success&#39;</span></div>
+
+    
+<div class="viewcode-block" id="Archive.combine">
+<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.archive.html#starsmashertools.lib.archive.Archive.combine">[docs]</a>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="nf">combine</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Merge the contents of ``other`` with this :class:`~.Archive`\, according</span>
+<span class="sd">        to this :class:`~.Archive`\&#39;s replacement flags.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        other : str, Archive</span>
+<span class="sd">            The Archive whose contents will be merged into this </span>
+<span class="sd">            :class:`~.Archive`\. Only this :class:`~.Archive` will be affected.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">copy</span>
+
+        <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span><span class="p">({</span>
+            <span class="s1">&#39;other&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Archive</span><span class="p">],</span>
+        <span class="p">})</span>
+        
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span> <span class="n">other</span> <span class="o">=</span> <span class="n">Archive</span><span class="p">(</span>
+                <span class="n">other</span><span class="p">,</span>
+                <span class="n">thread_safe</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">thread_safe</span><span class="p">,</span>
+                <span class="n">readonly</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                <span class="n">auto_save</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">previous_auto_save</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">auto_save</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">auto_save</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">other</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="bp">self</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">auto_save</span> <span class="o">=</span> <span class="n">previous_auto_save</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_auto_save</span><span class="p">()</span></div>
+
+
+    <span class="c1"># Some convenience methods for the CLI only</span>
+    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+    <span class="nd">@cli</span><span class="p">(</span><span class="s1">&#39;ssarchive&#39;</span><span class="p">)</span>
+    <span class="nd">@clioptions</span><span class="p">(</span><span class="n">display_name</span> <span class="o">=</span> <span class="s1">&#39;Show keys&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">show_keys</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cli</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.bintools</span>
+        <span class="n">newline</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">bintools</span><span class="o">.</span><span class="n">Style</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;characters&#39;</span><span class="p">,</span> <span class="s1">&#39;newline&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">newline</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
+
+    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+    <span class="nd">@cli</span><span class="p">(</span><span class="s1">&#39;ssarchive&#39;</span><span class="p">)</span>
+    <span class="nd">@clioptions</span><span class="p">(</span><span class="n">display_name</span> <span class="o">=</span> <span class="s1">&#39;Show a value&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">show_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span> <span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">cli</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.jsonfile</span>
+
+        <span class="n">newline</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">bintools</span><span class="o">.</span><span class="n">Style</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;characters&#39;</span><span class="p">,</span> <span class="s1">&#39;newline&#39;</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">cli</span><span class="p">:</span> <span class="k">return</span> <span class="s2">&quot;No key &#39;</span><span class="si">%s</span><span class="s2">&#39; found in the Archive&quot;</span> <span class="o">%</span> <span class="n">key</span>
+            <span class="k">else</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+
+        <span class="c1"># Use JSON format for human-readable formatting</span>
+        <span class="k">return</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">jsonfile</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+    
+    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+    <span class="nd">@cli</span><span class="p">(</span><span class="s1">&#39;ssarchive&#39;</span><span class="p">)</span>
+    <span class="nd">@clioptions</span><span class="p">(</span><span class="n">display_name</span> <span class="o">=</span> <span class="s1">&#39;Show a raw value&#39;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">show_raw_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span> <span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">cli</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.bintools</span>
+        
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">cli</span><span class="p">:</span> <span class="k">return</span> <span class="s2">&quot;No key &#39;</span><span class="si">%s</span><span class="s2">&#39; found in the Archive&quot;</span> <span class="o">%</span> <span class="n">key</span>
+            <span class="k">else</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+
+        <span class="n">newline</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">bintools</span><span class="o">.</span><span class="n">Style</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;characters&#39;</span><span class="p">,</span> <span class="s1">&#39;newline&#39;</span><span class="p">)</span>
+        
+        <span class="n">val</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">newline</span><span class="o">.</span><span class="n">join</span><span class="p">([</span>
+            <span class="s1">&#39;origin = &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">val</span><span class="o">.</span><span class="n">origin</span><span class="p">),</span>
+            <span class="s1">&#39;mtime = &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">val</span><span class="o">.</span><span class="n">mtime</span><span class="p">),</span>
+            <span class="s1">&#39;value = &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">val</span><span class="o">.</span><span class="n">value</span><span class="p">),</span>
+        <span class="p">])</span>
+    
+    <span class="k">def</span> <span class="nf">_deserialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">keys</span> <span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">values</span> <span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; Deserialize many :class:`~.ArchiveValue` objects efficiently. Uses</span>
+<span class="sd">        parallel processing to speed things up. &quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.asynchronous</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.string</span>
+
+        <span class="n">nprocs</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span>
+            <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">asynchronous</span><span class="o">.</span><span class="n">max_processes</span><span class="p">,</span>
+            <span class="nb">len</span><span class="p">(</span><span class="n">keys</span><span class="p">),</span>
+        <span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">func</span><span class="p">(</span><span class="n">progress_message</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">if</span> <span class="n">nprocs</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">asynchronous</span><span class="o">.</span><span class="n">is_main_process</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">progress_message</span><span class="p">:</span>
+                    <span class="n">progress_message</span><span class="o">.</span><span class="n">message</span> <span class="o">+=</span> <span class="s2">&quot; in serial&quot;</span>
+                <span class="c1"># Run in serial</span>
+                <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="n">values</span><span class="p">):</span>
+                    <span class="n">ret</span> <span class="o">+=</span> <span class="p">[</span><span class="n">ArchiveValue</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)]</span>
+                    <span class="n">progress</span><span class="o">.</span><span class="n">increment</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">progress_message</span><span class="p">:</span>
+                    <span class="n">progress_message</span><span class="o">.</span><span class="n">message</span> <span class="o">+=</span> <span class="s2">&quot; on </span><span class="si">%d</span><span class="s2"> processes&quot;</span> <span class="o">%</span> <span class="n">nprocs</span>
+                <span class="n">arguments</span> <span class="o">=</span> <span class="p">[[</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="n">values</span><span class="p">)]</span>
+                <span class="n">p</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">asynchronous</span><span class="o">.</span><span class="n">ParallelFunction</span><span class="p">(</span>
+                    <span class="n">target</span> <span class="o">=</span> <span class="n">ArchiveValue</span><span class="o">.</span><span class="n">deserialize</span><span class="p">,</span>
+                    <span class="n">args</span> <span class="o">=</span> <span class="n">arguments</span><span class="p">,</span>
+                    <span class="n">nprocs</span> <span class="o">=</span> <span class="n">nprocs</span><span class="p">,</span>
+                    <span class="n">progress_message</span> <span class="o">=</span> <span class="n">progress</span><span class="p">,</span>
+                    <span class="n">start</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="n">ret</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">get_output</span><span class="p">()</span>
+                <span class="k">del</span> <span class="n">p</span>
+            <span class="k">return</span> <span class="n">ret</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">string</span><span class="o">.</span><span class="n">progress_message</span><span class="p">(</span>
+                    <span class="n">message</span> <span class="o">=</span> <span class="s2">&quot;Deserializing archive values&quot;</span><span class="p">,</span>
+                    <span class="nb">max</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">keys</span><span class="p">),</span> <span class="n">delay</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
+            <span class="p">)</span> <span class="k">as</span> <span class="n">progress</span><span class="p">:</span>
+                <span class="n">ret</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span><span class="n">progress_message</span> <span class="o">=</span> <span class="n">progress</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span> <span class="n">ret</span> <span class="o">=</span> <span class="n">func</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">ret</span>
+
+    <span class="k">def</span> <span class="nf">find_old_values</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Using :attr:`~.replacement_flags`\, locate the </span>
+<span class="sd">        :class:`~.ArchiveValue` objects whose origins have a newer modification</span>
+<span class="sd">        time than that which is currently saved in the :class:`~.Archive`\. This</span>
+<span class="sd">        is useful for detecting which values need to be updated in an Archive.</span>
+<span class="sd">        </span>
+<span class="sd">        Ignores any :class:`~.ArchiveValue` object with an origin that is not </span>
+<span class="sd">        currently on the file system or whose origin is `None`\, or whose mtime</span>
+<span class="sd">        value is `None`\.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        list</span>
+<span class="sd">            A list of :class:`~.ArchiveValue` objects that are out-of-date</span>
+<span class="sd">            compared to the files currently on the system.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.path</span>
+        <span class="n">old_values</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">value</span><span class="o">.</span><span class="n">origin</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">value</span><span class="o">.</span><span class="n">mtime</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="k">continue</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">origin</span><span class="p">):</span> <span class="k">continue</span>
+            <span class="n">current_mtime</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getmtime</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">origin</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">current_mtime</span> <span class="o">&gt;</span> <span class="n">value</span><span class="o">.</span><span class="n">mtime</span><span class="p">:</span> <span class="n">old_values</span> <span class="o">+=</span> <span class="p">[</span><span class="n">value</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">old_values</span></div>
+
+
+
+<div class="viewcode-block" id="SimulationArchive">
+<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.archive.html#starsmashertools.lib.archive.SimulationArchive">[docs]</a>
+<span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">preferences</span><span class="o">.</span><span class="n">use</span>
+<span class="k">class</span> <span class="nc">SimulationArchive</span><span class="p">(</span><span class="n">Archive</span><span class="p">,</span> <span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    When working with data from a :class:`~.lib.simulation.Simulation`\, it is</span>
+<span class="sd">    common to want to save results of calculations in a way that is easily</span>
+<span class="sd">    retrievable again in the future, such as getting the sum of total energies</span>
+<span class="sd">    etc. Such operations can take a very long time if there are a lot of output</span>
+<span class="sd">    files. If the work is interrupted then all the calculations are lost and we</span>
+<span class="sd">    have to start over again. To mitigate this we can use a </span>
+<span class="sd">    :class:`~.SimulationArchive`\.</span>
+
+<span class="sd">    Example</span>
+<span class="sd">    -------</span>
+<span class="sd">    </span>
+<span class="sd">    .. code-block:: python</span>
+<span class="sd">    </span>
+<span class="sd">        import starsmashertools</span>
+<span class="sd">        import starsmashertools.lib.archive</span>
+<span class="sd">        simulation = starsmashertools.get_simulation(&quot;.&quot;)</span>
+<span class="sd">        archive = starsmashertools.lib.archive.SimulationArchive(simulation)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+<div class="viewcode-block" id="SimulationArchive.__init__">
+<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.archive.html#starsmashertools.lib.archive.SimulationArchive.__init__">[docs]</a>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">simulation</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Constructor for a :class:`SimulationArchive`\. Note that a</span>
+<span class="sd">        :class:`~.SimulationArchive` is not directly loaded or saved. This</span>
+<span class="sd">        rather happens automatically as archived values are accessed/modified.</span>
+
+<span class="sd">        There are no replacement flags available, as all values are forcibly </span>
+<span class="sd">        overwritten always.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        simulation : str, :class:`~.simulation.Simulation`</span>
+<span class="sd">            The simulation to which this archive belongs, or a string path to a</span>
+<span class="sd">            simulation directory or a simulation archive within a simulation</span>
+<span class="sd">            directory.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.path</span>
+
+        <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span><span class="p">({</span>
+            <span class="s1">&#39;simulation&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">Simulation</span><span class="p">],</span>
+        <span class="p">})</span>
+        
+        <span class="n">basename</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">preferences</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;filename&#39;</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">simulation</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">simulation</span><span class="p">):</span>
+                <span class="c1"># It&#39;s a simulation directory</span>
+                <span class="n">filename</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                    <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">realpath</span><span class="p">(</span><span class="n">simulation</span><span class="p">),</span>
+                    <span class="n">basename</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">elif</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">simulation</span><span class="p">):</span>
+                <span class="c1"># It&#39;s supposedly a simulation archive file path</span>
+                <span class="n">filename</span> <span class="o">=</span> <span class="n">simulation</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Ensure that the filename is located in the simulation directory</span>
+            <span class="n">filename</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                <span class="n">simulation</span><span class="o">.</span><span class="n">directory</span><span class="p">,</span>
+                <span class="n">basename</span>
+            <span class="p">)</span>
+        
+        <span class="nb">super</span><span class="p">(</span><span class="n">SimulationArchive</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">filename</span><span class="p">,</span>
+            <span class="n">replacement_flags</span> <span class="o">=</span> <span class="p">[],</span>
+            <span class="n">auto_save</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="n">readonly</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">del</span> <span class="n">basename</span>
+        <span class="k">del</span> <span class="n">filename</span></div>
+</div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">starsmashertools</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../index.html">Home</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../gettingstarted.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cliprograms.html">CLI Programs</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.helpers.file.html">starsmashertools.helpers.file</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.archive.html">starsmashertools.lib.archive</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.binary.html">starsmashertools.lib.binary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.dynamical.html">starsmashertools.lib.dynamical</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.energyfile.html">starsmashertools.lib.energyfile</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.flux.html">starsmashertools.lib.flux</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.input.html">starsmashertools.lib.input</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.logfile.html">starsmashertools.lib.logfile</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.output.html">starsmashertools.lib.output</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.ray.html">starsmashertools.lib.ray</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.relaxation.html">starsmashertools.lib.relaxation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.report.html">starsmashertools.lib.report</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.simulation.html">starsmashertools.lib.simulation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.units.html">starsmashertools.lib.units</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.math.html">starsmashertools.math</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.mpl.artists.html">starsmashertools.mpl.artists</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.mpl.figure.html">starsmashertools.mpl.figure</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, Roger Hatfull.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.3.7</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
