@@ -1,42 +1,133 @@
 <!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
-<html lang="en" data-content_root="../">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>starsmashertools.lib.archive &mdash; starsmashertools 14.12.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
 
-    <title>starsmashertools.lib.archive &#8212; starsmashertools 14.12.0 documentation</title>
-    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
-    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=12dfc556" />
-    <script src="../_static/documentation_options.js?v=61ccec80"></script>
-    <script src="../_static/doctools.js?v=9a2dae69"></script>
-    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../_static/documentation_options.js?v=61ccec80"></script>
+        <script src="../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="starsmashertools.lib.binary" href="starsmashertools.lib.binary.html" />
-    <link rel="prev" title="starsmashertools.helpers.file" href="starsmashertools.helpers.file.html" />
-   
-  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
-  
+    <link rel="prev" title="starsmashertools.helpers.file" href="starsmashertools.helpers.file.html" /> 
+</head>
 
-  
-  
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
 
-  </head><body>
-  
-
-    <div class="document">
-      <div class="documentwrapper">
-        <div class="bodywrapper">
           
+          
+          <a href="../index.html" class="icon icon-home">
+            starsmashertools
+          </a>
+              <div class="version">
+                14.12.0
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../index.html">Home</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../gettingstarted.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cliprograms.html">CLI Programs</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="starsmashertools.helpers.file.html">starsmashertools.helpers.file</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">starsmashertools.lib.archive</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#starsmashertools.lib.archive.Archive"><code class="docutils literal notranslate"><span class="pre">Archive</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.archive.Archive.__contains__"><code class="docutils literal notranslate"><span class="pre">Archive.__contains__()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.archive.Archive.__delitem__"><code class="docutils literal notranslate"><span class="pre">Archive.__delitem__()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.archive.Archive.__init__"><code class="docutils literal notranslate"><span class="pre">Archive.__init__()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.archive.Archive.__setitem__"><code class="docutils literal notranslate"><span class="pre">Archive.__setitem__()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.archive.Archive.add"><code class="docutils literal notranslate"><span class="pre">Archive.add()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.archive.Archive.clear"><code class="docutils literal notranslate"><span class="pre">Archive.clear()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.archive.Archive.combine"><code class="docutils literal notranslate"><span class="pre">Archive.combine()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.archive.Archive.get"><code class="docutils literal notranslate"><span class="pre">Archive.get()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.archive.Archive.items"><code class="docutils literal notranslate"><span class="pre">Archive.items()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.archive.Archive.keys"><code class="docutils literal notranslate"><span class="pre">Archive.keys()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.archive.Archive.remove"><code class="docutils literal notranslate"><span class="pre">Archive.remove()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.archive.Archive.save"><code class="docutils literal notranslate"><span class="pre">Archive.save()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.archive.Archive.set"><code class="docutils literal notranslate"><span class="pre">Archive.set()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.archive.Archive.values"><code class="docutils literal notranslate"><span class="pre">Archive.values()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#starsmashertools.lib.archive.ArchiveValue"><code class="docutils literal notranslate"><span class="pre">ArchiveValue</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.archive.ArchiveValue.__init__"><code class="docutils literal notranslate"><span class="pre">ArchiveValue.__init__()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#starsmashertools.lib.archive.SimulationArchive"><code class="docutils literal notranslate"><span class="pre">SimulationArchive</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.archive.SimulationArchive.__init__"><code class="docutils literal notranslate"><span class="pre">SimulationArchive.__init__()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="starsmashertools.lib.binary.html">starsmashertools.lib.binary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="starsmashertools.lib.dynamical.html">starsmashertools.lib.dynamical</a></li>
+<li class="toctree-l1"><a class="reference internal" href="starsmashertools.lib.energyfile.html">starsmashertools.lib.energyfile</a></li>
+<li class="toctree-l1"><a class="reference internal" href="starsmashertools.lib.flux.html">starsmashertools.lib.flux</a></li>
+<li class="toctree-l1"><a class="reference internal" href="starsmashertools.lib.input.html">starsmashertools.lib.input</a></li>
+<li class="toctree-l1"><a class="reference internal" href="starsmashertools.lib.logfile.html">starsmashertools.lib.logfile</a></li>
+<li class="toctree-l1"><a class="reference internal" href="starsmashertools.lib.output.html">starsmashertools.lib.output</a></li>
+<li class="toctree-l1"><a class="reference internal" href="starsmashertools.lib.ray.html">starsmashertools.lib.ray</a></li>
+<li class="toctree-l1"><a class="reference internal" href="starsmashertools.lib.relaxation.html">starsmashertools.lib.relaxation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="starsmashertools.lib.report.html">starsmashertools.lib.report</a></li>
+<li class="toctree-l1"><a class="reference internal" href="starsmashertools.lib.simulation.html">starsmashertools.lib.simulation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="starsmashertools.lib.units.html">starsmashertools.lib.units</a></li>
+<li class="toctree-l1"><a class="reference internal" href="starsmashertools.math.html">starsmashertools.math</a></li>
+<li class="toctree-l1"><a class="reference internal" href="starsmashertools.mpl.artists.html">starsmashertools.mpl.artists</a></li>
+<li class="toctree-l1"><a class="reference internal" href="starsmashertools.mpl.figure.html">starsmashertools.mpl.figure</a></li>
+</ul>
 
-          <div class="body" role="main">
-            
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">starsmashertools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">starsmashertools.lib.archive</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/_autosummary/starsmashertools.lib.archive.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
   <section id="module-starsmashertools.lib.archive">
-<span id="starsmashertools-lib-archive"></span><h1>starsmashertools.lib.archive<a class="headerlink" href="#module-starsmashertools.lib.archive" title="Link to this heading">¶</a></h1>
+<span id="starsmashertools-lib-archive"></span><h1>starsmashertools.lib.archive<a class="headerlink" href="#module-starsmashertools.lib.archive" title="Link to this heading"></a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="starsmashertools.lib.archive.Archive">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Archive</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">replacement_flags:</span> <span class="pre">list</span> <span class="pre">|</span> <span class="pre">tuple</span> <span class="pre">=</span> <span class="pre">(&lt;function</span> <span class="pre">REPLACE_OLD&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">&lt;function</span> <span class="pre">REPLACE_NEQ&gt;)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">auto_save:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">readonly:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_buffer_size:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">100000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thread_safe:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/archive.html#Archive"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.archive.Archive" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Archive</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">replacement_flags:</span> <span class="pre">list</span> <span class="pre">|</span> <span class="pre">tuple</span> <span class="pre">=</span> <span class="pre">(&lt;function</span> <span class="pre">REPLACE_OLD&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">&lt;function</span> <span class="pre">REPLACE_NEQ&gt;)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">auto_save:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">readonly:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_buffer_size:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">100000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thread_safe:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/archive.html#Archive"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.archive.Archive" title="Link to this definition"></a></dt>
 <dd><p>An Archive object stores <a class="reference internal" href="#starsmashertools.lib.archive.ArchiveValue" title="starsmashertools.lib.archive.ArchiveValue"><code class="xref py py-class docutils literal notranslate"><span class="pre">ArchiveValue</span></code></a>s in a single file for quick
 access. Note that <a class="reference internal" href="#starsmashertools.lib.archive.ArchiveValue" title="starsmashertools.lib.archive.ArchiveValue"><code class="xref py py-class docutils literal notranslate"><span class="pre">ArchiveValue</span></code></a> can only store data that is JSON
 serializable. This typically includes only standard types str, bool, float,
@@ -104,7 +195,7 @@ current state of the archive.</p></li>
 </dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="starsmashertools.lib.archive.Archive.__contains__">
-<span class="sig-name descname"><span class="pre">__contains__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="#starsmashertools.lib.archive.ArchiveValue" title="starsmashertools.lib.archive.ArchiveValue"><span class="pre">ArchiveValue</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/archive.html#Archive.__contains__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.archive.Archive.__contains__" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">__contains__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="#starsmashertools.lib.archive.ArchiveValue" title="starsmashertools.lib.archive.ArchiveValue"><span class="pre">ArchiveValue</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/archive.html#Archive.__contains__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.archive.Archive.__contains__" title="Link to this definition"></a></dt>
 <dd><p>If an <a class="reference internal" href="#starsmashertools.lib.archive.ArchiveValue" title="starsmashertools.lib.archive.ArchiveValue"><code class="xref py py-class docutils literal notranslate"><span class="pre">ArchiveValue</span></code></a> is specified, calls
 <a class="reference internal" href="#starsmashertools.lib.archive.Archive.values" title="starsmashertools.lib.archive.Archive.values"><code class="xref py py-meth docutils literal notranslate"><span class="pre">values()</span></code></a>, which reads the entire Archive file and can be
 quite I/O intensive. Use sparingly. Otherwise, if a str is given then
@@ -113,14 +204,14 @@ the string is checked against the keys, which is faster.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="starsmashertools.lib.archive.Archive.__delitem__">
-<span class="sig-name descname"><span class="pre">__delitem__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/archive.html#Archive.__delitem__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.archive.Archive.__delitem__" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">__delitem__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/archive.html#Archive.__delitem__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.archive.Archive.__delitem__" title="Link to this definition"></a></dt>
 <dd><p>Remove the given key from the Archive. If auto save is enabled, the
 Archive file will be modified.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="starsmashertools.lib.archive.Archive.__init__">
-<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">replacement_flags:</span> <span class="pre">list</span> <span class="pre">|</span> <span class="pre">tuple</span> <span class="pre">=</span> <span class="pre">(&lt;function</span> <span class="pre">REPLACE_OLD&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">&lt;function</span> <span class="pre">REPLACE_NEQ&gt;)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">auto_save:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">readonly:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_buffer_size:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">100000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thread_safe:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/archive.html#Archive.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.archive.Archive.__init__" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">replacement_flags:</span> <span class="pre">list</span> <span class="pre">|</span> <span class="pre">tuple</span> <span class="pre">=</span> <span class="pre">(&lt;function</span> <span class="pre">REPLACE_OLD&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">&lt;function</span> <span class="pre">REPLACE_NEQ&gt;)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">auto_save:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">readonly:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_buffer_size:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">100000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thread_safe:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/archive.html#Archive.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.archive.Archive.__init__" title="Link to this definition"></a></dt>
 <dd><p>Constructor for <a class="reference internal" href="#starsmashertools.lib.archive.Archive" title="starsmashertools.lib.archive.Archive"><code class="xref py py-class docutils literal notranslate"><span class="pre">Archive</span></code></a>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -161,7 +252,7 @@ current state of the archive.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="starsmashertools.lib.archive.Archive.__setitem__">
-<span class="sig-name descname"><span class="pre">__setitem__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#starsmashertools.lib.archive.ArchiveValue" title="starsmashertools.lib.archive.ArchiveValue"><span class="pre">ArchiveValue</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/archive.html#Archive.__setitem__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.archive.Archive.__setitem__" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">__setitem__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#starsmashertools.lib.archive.ArchiveValue" title="starsmashertools.lib.archive.ArchiveValue"><span class="pre">ArchiveValue</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/archive.html#Archive.__setitem__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.archive.Archive.__setitem__" title="Link to this definition"></a></dt>
 <dd><p>Similar to <code class="xref py py-meth docutils literal notranslate"><span class="pre">dict.__setitem__()</span></code> except the archive file is
 modified if auto save is enabled. Also the replacement flag functions
 specified in <a class="reference internal" href="#starsmashertools.lib.archive.Archive.__init__" title="starsmashertools.lib.archive.Archive.__init__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">__init__()</span></code></a> are checked. If all the functions
@@ -171,7 +262,7 @@ happens.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="starsmashertools.lib.archive.Archive.add">
-<span class="sig-name descname"><span class="pre">add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/archive.html#Archive.add"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.archive.Archive.add" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/archive.html#Archive.add"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.archive.Archive.add" title="Link to this definition"></a></dt>
 <dd><p>Create a new <a class="reference internal" href="#starsmashertools.lib.archive.ArchiveValue" title="starsmashertools.lib.archive.ArchiveValue"><code class="xref py py-class docutils literal notranslate"><span class="pre">ArchiveValue</span></code></a> and add it to the archive. If there
 already exists a <a class="reference internal" href="#starsmashertools.lib.archive.ArchiveValue" title="starsmashertools.lib.archive.ArchiveValue"><code class="xref py py-class docutils literal notranslate"><span class="pre">ArchiveValue</span></code></a> with the same <code class="docutils literal notranslate"><span class="pre">identifier</span></code> in
 the archive, then if the origin file is different we overwrite the old
@@ -189,14 +280,14 @@ the archived value, we also overwrite the old value.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="starsmashertools.lib.archive.Archive.clear">
-<span class="sig-name descname"><span class="pre">clear</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/archive.html#Archive.clear"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.archive.Archive.clear" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">clear</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/archive.html#Archive.clear"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.archive.Archive.clear" title="Link to this definition"></a></dt>
 <dd><p>Clears all contents from the archive and deletes the file if auto
 save is enabled.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="starsmashertools.lib.archive.Archive.combine">
-<span class="sig-name descname"><span class="pre">combine</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/archive.html#Archive.combine"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.archive.Archive.combine" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">combine</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/archive.html#Archive.combine"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.archive.Archive.combine" title="Link to this definition"></a></dt>
 <dd><p>Merge the contents of <code class="docutils literal notranslate"><span class="pre">other</span></code> with this <a class="reference internal" href="#starsmashertools.lib.archive.Archive" title="starsmashertools.lib.archive.Archive"><code class="xref py py-class docutils literal notranslate"><span class="pre">Archive</span></code></a>, according
 to this <a class="reference internal" href="#starsmashertools.lib.archive.Archive" title="starsmashertools.lib.archive.Archive"><code class="xref py py-class docutils literal notranslate"><span class="pre">Archive</span></code></a>’s replacement flags.</p>
 <dl class="field-list simple">
@@ -209,7 +300,7 @@ to this <a class="reference internal" href="#starsmashertools.lib.archive.Archiv
 
 <dl class="py method">
 <dt class="sig sig-object py" id="starsmashertools.lib.archive.Archive.get">
-<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">keys</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><span class="pre">list</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.12)"><span class="pre">tuple</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">deserialize</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/archive.html#Archive.get"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.archive.Archive.get" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">keys</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><span class="pre">list</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.12)"><span class="pre">tuple</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">deserialize</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/archive.html#Archive.get"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.archive.Archive.get" title="Link to this definition"></a></dt>
 <dd><p>Obtain the key or keys given. This is useful for if you want to retrieve
 many values from the archive without opening and closing the file each
 time. Raises a <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#KeyError" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">KeyError</span></code></a> if any of the keys weren’t found.</p>
@@ -239,20 +330,20 @@ returned.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="starsmashertools.lib.archive.Archive.items">
-<span class="sig-name descname"><span class="pre">items</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/archive.html#Archive.items"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.archive.Archive.items" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">items</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/archive.html#Archive.items"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.archive.Archive.items" title="Link to this definition"></a></dt>
 <dd><p>Return all keys and values in the Archive. This is I/O intensive,
 so use it sparingly.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="starsmashertools.lib.archive.Archive.keys">
-<span class="sig-name descname"><span class="pre">keys</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/archive.html#Archive.keys"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.archive.Archive.keys" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">keys</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/archive.html#Archive.keys"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.archive.Archive.keys" title="Link to this definition"></a></dt>
 <dd><p>Return a list of Archive identifiers from the file.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="starsmashertools.lib.archive.Archive.remove">
-<span class="sig-name descname"><span class="pre">remove</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/archive.html#Archive.remove"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.archive.Archive.remove" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">remove</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/archive.html#Archive.remove"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.archive.Archive.remove" title="Link to this definition"></a></dt>
 <dd><p>Remove an identifier from the Archive. Calls <a class="reference internal" href="#starsmashertools.lib.archive.Archive.save" title="starsmashertools.lib.archive.Archive.save"><code class="xref py py-meth docutils literal notranslate"><span class="pre">save()</span></code></a> if auto
 save is enabled.</p>
 <dl class="field-list simple">
@@ -264,7 +355,7 @@ save is enabled.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="starsmashertools.lib.archive.Archive.save">
-<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/archive.html#Archive.save"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.archive.Archive.save" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/archive.html#Archive.save"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.archive.Archive.save" title="Link to this definition"></a></dt>
 <dd><p>Update the archive file with the current data.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -276,7 +367,7 @@ If <cite>None</cite> then <code class="xref py py-attr docutils literal notransl
 
 <dl class="py method">
 <dt class="sig sig-object py" id="starsmashertools.lib.archive.Archive.set">
-<span class="sig-name descname"><span class="pre">set</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/archive.html#Archive.set"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.archive.Archive.set" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">set</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/archive.html#Archive.set"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.archive.Archive.set" title="Link to this definition"></a></dt>
 <dd><p>A simple alias for <a class="reference internal" href="#starsmashertools.lib.archive.Archive.add" title="starsmashertools.lib.archive.Archive.add"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add()</span></code></a>.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
@@ -286,7 +377,7 @@ If <cite>None</cite> then <code class="xref py py-attr docutils literal notransl
 
 <dl class="py method">
 <dt class="sig sig-object py" id="starsmashertools.lib.archive.Archive.values">
-<span class="sig-name descname"><span class="pre">values</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/archive.html#Archive.values"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.archive.Archive.values" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">values</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/archive.html#Archive.values"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.archive.Archive.values" title="Link to this definition"></a></dt>
 <dd><p>Return all the values in the Archive. This reads the entire Archive
 file, so use it sparingly.</p>
 </dd></dl>
@@ -295,7 +386,7 @@ file, so use it sparingly.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="starsmashertools.lib.archive.ArchiveValue">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ArchiveValue</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">identifier</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">origin</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mtime</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><span class="pre">float</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/archive.html#ArchiveValue"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.archive.ArchiveValue" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ArchiveValue</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">identifier</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">origin</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mtime</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><span class="pre">float</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/archive.html#ArchiveValue"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.archive.ArchiveValue" title="Link to this definition"></a></dt>
 <dd><p>ArchiveValue constructor.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -312,7 +403,7 @@ objects when storing and accessing data in the archive.</p></li>
 </dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="starsmashertools.lib.archive.ArchiveValue.__init__">
-<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">identifier</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">origin</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mtime</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><span class="pre">float</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/archive.html#ArchiveValue.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.archive.ArchiveValue.__init__" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">identifier</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">origin</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mtime</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><span class="pre">float</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/archive.html#ArchiveValue.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.archive.ArchiveValue.__init__" title="Link to this definition"></a></dt>
 <dd><p>ArchiveValue constructor.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -333,7 +424,7 @@ objects when storing and accessing data in the archive.</p></li>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="starsmashertools.lib.archive.SimulationArchive">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">SimulationArchive</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">simulation</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/archive.html#SimulationArchive"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.archive.SimulationArchive" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">SimulationArchive</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">simulation</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/archive.html#SimulationArchive"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.archive.SimulationArchive" title="Link to this definition"></a></dt>
 <dd><p>When working with data from a <a class="reference internal" href="starsmashertools.lib.simulation.html#starsmashertools.lib.simulation.Simulation" title="starsmashertools.lib.simulation.Simulation"><code class="xref py py-class docutils literal notranslate"><span class="pre">Simulation</span></code></a>, it is
 common to want to save results of calculations in a way that is easily
 retrievable again in the future, such as getting the sum of total energies
@@ -362,7 +453,7 @@ directory.</p>
 </dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="starsmashertools.lib.archive.SimulationArchive.__init__">
-<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">simulation</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/archive.html#SimulationArchive.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.archive.SimulationArchive.__init__" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">simulation</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/archive.html#SimulationArchive.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.archive.SimulationArchive.__init__" title="Link to this definition"></a></dt>
 <dd><p>Constructor for a <a class="reference internal" href="#starsmashertools.lib.archive.SimulationArchive" title="starsmashertools.lib.archive.SimulationArchive"><code class="xref py py-class docutils literal notranslate"><span class="pre">SimulationArchive</span></code></a>. Note that a
 <a class="reference internal" href="#starsmashertools.lib.archive.SimulationArchive" title="starsmashertools.lib.archive.SimulationArchive"><code class="xref py py-class docutils literal notranslate"><span class="pre">SimulationArchive</span></code></a> is not directly loaded or saved. This
 rather happens automatically as archived values are accessed/modified.</p>
@@ -382,119 +473,34 @@ directory.</p>
 </section>
 
 
+           </div>
           </div>
-          
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="starsmashertools.helpers.file.html" class="btn btn-neutral float-left" title="starsmashertools.helpers.file" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="starsmashertools.lib.binary.html" class="btn btn-neutral float-right" title="starsmashertools.lib.binary" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Roger Hatfull.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
         </div>
       </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper">
-<h1 class="logo"><a href="../index.html">starsmashertools</a></h1>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
 
-
-
-
-
-
-
-
-<h3>Navigation</h3>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="../index.html">Home</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../gettingstarted.html">Getting Started</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../cliprograms.html">CLI Programs</a></li>
-</ul>
-<ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="starsmashertools.helpers.file.html">starsmashertools.helpers.file</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">starsmashertools.lib.archive</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#starsmashertools.lib.archive.Archive"><code class="docutils literal notranslate"><span class="pre">Archive</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.archive.Archive.__contains__"><code class="docutils literal notranslate"><span class="pre">Archive.__contains__()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.archive.Archive.__delitem__"><code class="docutils literal notranslate"><span class="pre">Archive.__delitem__()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.archive.Archive.__init__"><code class="docutils literal notranslate"><span class="pre">Archive.__init__()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.archive.Archive.__setitem__"><code class="docutils literal notranslate"><span class="pre">Archive.__setitem__()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.archive.Archive.add"><code class="docutils literal notranslate"><span class="pre">Archive.add()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.archive.Archive.clear"><code class="docutils literal notranslate"><span class="pre">Archive.clear()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.archive.Archive.combine"><code class="docutils literal notranslate"><span class="pre">Archive.combine()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.archive.Archive.get"><code class="docutils literal notranslate"><span class="pre">Archive.get()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.archive.Archive.items"><code class="docutils literal notranslate"><span class="pre">Archive.items()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.archive.Archive.keys"><code class="docutils literal notranslate"><span class="pre">Archive.keys()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.archive.Archive.remove"><code class="docutils literal notranslate"><span class="pre">Archive.remove()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.archive.Archive.save"><code class="docutils literal notranslate"><span class="pre">Archive.save()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.archive.Archive.set"><code class="docutils literal notranslate"><span class="pre">Archive.set()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.archive.Archive.values"><code class="docutils literal notranslate"><span class="pre">Archive.values()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#starsmashertools.lib.archive.ArchiveValue"><code class="docutils literal notranslate"><span class="pre">ArchiveValue</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.archive.ArchiveValue.__init__"><code class="docutils literal notranslate"><span class="pre">ArchiveValue.__init__()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#starsmashertools.lib.archive.SimulationArchive"><code class="docutils literal notranslate"><span class="pre">SimulationArchive</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.archive.SimulationArchive.__init__"><code class="docutils literal notranslate"><span class="pre">SimulationArchive.__init__()</span></code></a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="starsmashertools.lib.binary.html">starsmashertools.lib.binary</a></li>
-<li class="toctree-l1"><a class="reference internal" href="starsmashertools.lib.dynamical.html">starsmashertools.lib.dynamical</a></li>
-<li class="toctree-l1"><a class="reference internal" href="starsmashertools.lib.energyfile.html">starsmashertools.lib.energyfile</a></li>
-<li class="toctree-l1"><a class="reference internal" href="starsmashertools.lib.flux.html">starsmashertools.lib.flux</a></li>
-<li class="toctree-l1"><a class="reference internal" href="starsmashertools.lib.input.html">starsmashertools.lib.input</a></li>
-<li class="toctree-l1"><a class="reference internal" href="starsmashertools.lib.logfile.html">starsmashertools.lib.logfile</a></li>
-<li class="toctree-l1"><a class="reference internal" href="starsmashertools.lib.output.html">starsmashertools.lib.output</a></li>
-<li class="toctree-l1"><a class="reference internal" href="starsmashertools.lib.ray.html">starsmashertools.lib.ray</a></li>
-<li class="toctree-l1"><a class="reference internal" href="starsmashertools.lib.relaxation.html">starsmashertools.lib.relaxation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="starsmashertools.lib.report.html">starsmashertools.lib.report</a></li>
-<li class="toctree-l1"><a class="reference internal" href="starsmashertools.lib.simulation.html">starsmashertools.lib.simulation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="starsmashertools.lib.units.html">starsmashertools.lib.units</a></li>
-<li class="toctree-l1"><a class="reference internal" href="starsmashertools.math.html">starsmashertools.math</a></li>
-<li class="toctree-l1"><a class="reference internal" href="starsmashertools.mpl.artists.html">starsmashertools.mpl.artists</a></li>
-<li class="toctree-l1"><a class="reference internal" href="starsmashertools.mpl.figure.html">starsmashertools.mpl.figure</a></li>
-</ul>
-
-<div class="relations">
-<h3>Related Topics</h3>
-<ul>
-  <li><a href="../index.html">Documentation overview</a><ul>
-      <li>Previous: <a href="starsmashertools.helpers.file.html" title="previous chapter">starsmashertools.helpers.file</a></li>
-      <li>Next: <a href="starsmashertools.lib.binary.html" title="next chapter">starsmashertools.lib.binary</a></li>
-  </ul></li>
-</ul>
-</div>
-<search id="searchbox" style="display: none" role="search">
-  <h3 id="searchlabel">Quick search</h3>
-    <div class="searchformwrapper">
-    <form class="search" action="../search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
-      <input type="submit" value="Go" />
-    </form>
-    </div>
-</search>
-<script>document.getElementById('searchbox').style.display = "block"</script>
-
-
-
-
-
-
-
-
-        </div>
-      </div>
-      <div class="clearer"></div>
-    </div>
-    <div class="footer">
-      &#169;2024, Roger Hatfull.
-      
-      |
-      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.3.7</a>
-      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
-      
-      |
-      <a href="../_sources/_autosummary/starsmashertools.lib.archive.rst.txt"
-          rel="nofollow">Page source</a>
-    </div>
-
-    
-
-    
-  </body>
+</body>
 </html>

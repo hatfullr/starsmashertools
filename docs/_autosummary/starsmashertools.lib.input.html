@@ -1,125 +1,53 @@
 <!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
-<html lang="en" data-content_root="../">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>starsmashertools.lib.input &mdash; starsmashertools 14.12.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
 
-    <title>starsmashertools.lib.input &#8212; starsmashertools 14.12.0 documentation</title>
-    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
-    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=12dfc556" />
-    <script src="../_static/documentation_options.js?v=61ccec80"></script>
-    <script src="../_static/doctools.js?v=9a2dae69"></script>
-    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../_static/documentation_options.js?v=61ccec80"></script>
+        <script src="../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="starsmashertools.lib.logfile" href="starsmashertools.lib.logfile.html" />
-    <link rel="prev" title="starsmashertools.lib.flux" href="starsmashertools.lib.flux.html" />
-   
-  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
-  
+    <link rel="prev" title="starsmashertools.lib.flux" href="starsmashertools.lib.flux.html" /> 
+</head>
 
-  
-  
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
 
-  </head><body>
-  
-
-    <div class="document">
-      <div class="documentwrapper">
-        <div class="bodywrapper">
           
-
-          <div class="body" role="main">
-            
-  <section id="module-starsmashertools.lib.input">
-<span id="starsmashertools-lib-input"></span><h1>starsmashertools.lib.input<a class="headerlink" href="#module-starsmashertools.lib.input" title="Link to this heading">¶</a></h1>
-<dl class="py class">
-<dt class="sig sig-object py" id="starsmashertools.lib.input.Input">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Input</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">directory</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/input.html#Input"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.input.Input" title="Link to this definition">¶</a></dt>
-<dd><p>This class holds information about inputs that are sent to a <code class="docutils literal notranslate"><span class="pre">StarSmasher</span></code>
-simulation. It is a dictionary whose keys are <code class="docutils literal notranslate"><span class="pre">StarSmasher</span></code> code variable
-names and the values are the actual values that those variables have in
-<code class="docutils literal notranslate"><span class="pre">StarSmasher</span></code> at runtime. We accomplish this by reading the
-<code class="docutils literal notranslate"><span class="pre">StarSmasher</span></code> source code available in the simulation directory as well as
-the input list (usually called <code class="docutils literal notranslate"><span class="pre">'sph.input'</span></code>) to determine each value.</p>
-<dl class="py method">
-<dt class="sig sig-object py" id="starsmashertools.lib.input.Input.__getitem__">
-<span class="sig-name descname"><span class="pre">__getitem__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">item</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/input.html#Input.__getitem__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.input.Input.__getitem__" title="Link to this definition">¶</a></dt>
-<dd><p>x.__getitem__(y) &lt;==&gt; x[y]</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="starsmashertools.lib.input.Input.__init__">
-<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">directory</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/input.html#Input.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.input.Input.__init__" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="starsmashertools.lib.input.Input.get_init_file">
-<span class="sig-name descname"><span class="pre">get_init_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'init.f'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/input.html#Input.get_init_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.input.Input.get_init_file" title="Link to this definition">¶</a></dt>
-<dd><p>Obtain the <code class="docutils literal notranslate"><span class="pre">'init.f'</span></code> file that <code class="docutils literal notranslate"><span class="pre">StarSmasher</span></code> uses to initialize the
-simulation.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>filename</strong> (str, default = <code class="docutils literal notranslate"><span class="pre">Pref('src</span> <span class="pre">init</span> <span class="pre">filename',</span> <span class="pre">'init.f')</span></code>) – The filename to search for.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="starsmashertools.lib.input.Input.get_input_filename">
-<span class="sig-name descname"><span class="pre">get_input_filename</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">init_file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/input.html#Input.get_input_filename"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.input.Input.get_input_filename" title="Link to this definition">¶</a></dt>
-<dd><p>Open up the <code class="docutils literal notranslate"><span class="pre">init.f</span></code> file to figure out what it reads as the input
-file. We search for the “namelist” block in the variable declarations of
-init.f and then search the simulation directory’s files for one whose
-first line matches the namelist name.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>init_file</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a><em>, </em><em>None</em><em>, </em><em>default = None</em>) – A path to the init.f file in the <code class="docutils literal notranslate"><span class="pre">StarSmasher</span></code> source code. If
-<cite>None</cite>, then the value is set to the return value of
-<a class="reference internal" href="#starsmashertools.lib.input.Input.get_init_file" title="starsmashertools.lib.input.Input.get_init_file"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_init_file()</span></code></a>.</p>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>A path to the name of the input file, which is <code class="docutils literal notranslate"><span class="pre">'sph.input'</span></code> by
-default unless <code class="docutils literal notranslate"><span class="pre">'init.f'</span></code> in the <code class="docutils literal notranslate"><span class="pre">StarSmasher</span></code> source code has
-been modified.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)">str</a></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="starsmashertools.lib.input.Input.initialize">
-<span class="sig-name descname"><span class="pre">initialize</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/input.html#Input.initialize"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.input.Input.initialize" title="Link to this definition">¶</a></dt>
-<dd><p>Read the <code class="docutils literal notranslate"><span class="pre">StarSmasher</span></code> input file and the <code class="docutils literal notranslate"><span class="pre">'init.f'</span></code> file to
-determine the value of each <code class="docutils literal notranslate"><span class="pre">StarSmasher</span></code> input variable. Fills this
-object with keys and values.</p>
-</dd></dl>
-
-</dd></dl>
-
-</section>
-
-
-          </div>
           
-        </div>
-      </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper">
-<h1 class="logo"><a href="../index.html">starsmashertools</a></h1>
-
-
-
-
-
-
-
-
-<h3>Navigation</h3>
-<ul>
+          <a href="../index.html" class="icon icon-home">
+            starsmashertools
+          </a>
+              <div class="version">
+                14.12.0
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
 <li class="toctree-l1"><a class="reference internal" href="../index.html">Home</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../gettingstarted.html">Getting Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../cliprograms.html">CLI Programs</a></li>
@@ -154,51 +82,129 @@ object with keys and values.</p>
 <li class="toctree-l1"><a class="reference internal" href="starsmashertools.mpl.figure.html">starsmashertools.mpl.figure</a></li>
 </ul>
 
-<div class="relations">
-<h3>Related Topics</h3>
-<ul>
-  <li><a href="../index.html">Documentation overview</a><ul>
-      <li>Previous: <a href="starsmashertools.lib.flux.html" title="previous chapter">starsmashertools.lib.flux</a></li>
-      <li>Next: <a href="starsmashertools.lib.logfile.html" title="next chapter">starsmashertools.lib.logfile</a></li>
-  </ul></li>
-</ul>
-</div>
-<search id="searchbox" style="display: none" role="search">
-  <h3 id="searchlabel">Quick search</h3>
-    <div class="searchformwrapper">
-    <form class="search" action="../search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
-      <input type="submit" value="Go" />
-    </form>
-    </div>
-</search>
-<script>document.getElementById('searchbox').style.display = "block"</script>
-
-
-
-
-
-
-
-
         </div>
       </div>
-      <div class="clearer"></div>
-    </div>
-    <div class="footer">
-      &#169;2024, Roger Hatfull.
-      
-      |
-      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.3.7</a>
-      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
-      
-      |
-      <a href="../_sources/_autosummary/starsmashertools.lib.input.rst.txt"
-          rel="nofollow">Page source</a>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">starsmashertools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">starsmashertools.lib.input</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/_autosummary/starsmashertools.lib.input.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-starsmashertools.lib.input">
+<span id="starsmashertools-lib-input"></span><h1>starsmashertools.lib.input<a class="headerlink" href="#module-starsmashertools.lib.input" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="starsmashertools.lib.input.Input">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Input</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">directory</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/input.html#Input"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.input.Input" title="Link to this definition"></a></dt>
+<dd><p>This class holds information about inputs that are sent to a <code class="docutils literal notranslate"><span class="pre">StarSmasher</span></code>
+simulation. It is a dictionary whose keys are <code class="docutils literal notranslate"><span class="pre">StarSmasher</span></code> code variable
+names and the values are the actual values that those variables have in
+<code class="docutils literal notranslate"><span class="pre">StarSmasher</span></code> at runtime. We accomplish this by reading the
+<code class="docutils literal notranslate"><span class="pre">StarSmasher</span></code> source code available in the simulation directory as well as
+the input list (usually called <code class="docutils literal notranslate"><span class="pre">'sph.input'</span></code>) to determine each value.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.input.Input.__getitem__">
+<span class="sig-name descname"><span class="pre">__getitem__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">item</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/input.html#Input.__getitem__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.input.Input.__getitem__" title="Link to this definition"></a></dt>
+<dd><p>x.__getitem__(y) &lt;==&gt; x[y]</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.input.Input.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">directory</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/input.html#Input.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.input.Input.__init__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.input.Input.get_init_file">
+<span class="sig-name descname"><span class="pre">get_init_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'init.f'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/input.html#Input.get_init_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.input.Input.get_init_file" title="Link to this definition"></a></dt>
+<dd><p>Obtain the <code class="docutils literal notranslate"><span class="pre">'init.f'</span></code> file that <code class="docutils literal notranslate"><span class="pre">StarSmasher</span></code> uses to initialize the
+simulation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>filename</strong> (str, default = <code class="docutils literal notranslate"><span class="pre">Pref('src</span> <span class="pre">init</span> <span class="pre">filename',</span> <span class="pre">'init.f')</span></code>) – The filename to search for.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.input.Input.get_input_filename">
+<span class="sig-name descname"><span class="pre">get_input_filename</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">init_file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/input.html#Input.get_input_filename"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.input.Input.get_input_filename" title="Link to this definition"></a></dt>
+<dd><p>Open up the <code class="docutils literal notranslate"><span class="pre">init.f</span></code> file to figure out what it reads as the input
+file. We search for the “namelist” block in the variable declarations of
+init.f and then search the simulation directory’s files for one whose
+first line matches the namelist name.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>init_file</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a><em>, </em><em>None</em><em>, </em><em>default = None</em>) – A path to the init.f file in the <code class="docutils literal notranslate"><span class="pre">StarSmasher</span></code> source code. If
+<cite>None</cite>, then the value is set to the return value of
+<a class="reference internal" href="#starsmashertools.lib.input.Input.get_init_file" title="starsmashertools.lib.input.Input.get_init_file"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_init_file()</span></code></a>.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A path to the name of the input file, which is <code class="docutils literal notranslate"><span class="pre">'sph.input'</span></code> by
+default unless <code class="docutils literal notranslate"><span class="pre">'init.f'</span></code> in the <code class="docutils literal notranslate"><span class="pre">StarSmasher</span></code> source code has
+been modified.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.input.Input.initialize">
+<span class="sig-name descname"><span class="pre">initialize</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/input.html#Input.initialize"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.input.Input.initialize" title="Link to this definition"></a></dt>
+<dd><p>Read the <code class="docutils literal notranslate"><span class="pre">StarSmasher</span></code> input file and the <code class="docutils literal notranslate"><span class="pre">'init.f'</span></code> file to
+determine the value of each <code class="docutils literal notranslate"><span class="pre">StarSmasher</span></code> input variable. Fills this
+object with keys and values.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="starsmashertools.lib.flux.html" class="btn btn-neutral float-left" title="starsmashertools.lib.flux" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="starsmashertools.lib.logfile.html" class="btn btn-neutral float-right" title="starsmashertools.lib.logfile" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
-    
+  <hr/>
 
-    
-  </body>
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Roger Hatfull.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
 </html>
