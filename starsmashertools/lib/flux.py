@@ -421,36 +421,14 @@ class FluxFinder(object):
         T = np.asarray(T)
         kappa = np.asarray(kappa)
 
+        if self.dust_opacity is None: # No dust
+            return np.full(T.shape, False, dtype = bool)
+
         T_dust_min, T_dust_max = self.dust_Trange
-        if self.dust_opacity is not None:
-            if T_dust_max is None and T_dust_min is not None:
-                return np.logical_and(
-                    T > T_dust_min,
-                    kappa < self.dust_opacity,
-                )
-            elif T_dust_max is not None and T_dust_min is None:
-                return np.logical_and(
-                    T < T_dust_max,
-                    kappa < self.dust_opacity,
-                )
+        if T_dust_min is None: T_dust_min = 0
+        if T_dust_max is None: T_dust_max = np.nanmax(T[np.isfinite(T)])
 
-            if T_dust_max is None and T_dust_min is None:
-                return kappa < self.dust_opacity
-
-            return np.logical_and(
-                np.logical_and(
-                    T < T_dust_max,
-                    T > T_dust_min,
-                ),
-                kappa < self.dust_opacity,
-            )
-        if T_dust_max is None and T_dust_min is not None:
-            return T > T_dust_min
-        elif T_dust_max is not None and T_dust_min is None:
-            return T < T_dust_max
-            
-        return np.full(T.shape, False, dtype = bool)
-        
+        return (T_dust_min < T) & (T < T_dust_max) & (kappa < self.dust_opacity)
 
     def _apply_dust(self, kappa):
         idx = self.find_dust(kappa = kappa)
