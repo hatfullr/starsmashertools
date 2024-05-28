@@ -48,7 +48,6 @@ class FluxFinder(object):
             rays : bool = Pref('rays', True),
             tau_s : float | int = Pref('tau_s', 20.),
             tau_skip : float | int = Pref('tau_skip', 1.e-5),
-            teff_cut : float | int = Pref('teff_cut', 3500.),
             dust_opacity : float | int | type(None) = Pref('dust_opacity', 1),
             dust_Trange : list | tuple | type(None) = Pref('dust_Trange', (100, 1000)),
             flux_limit_min : int | float | type(None) = None,
@@ -98,7 +97,6 @@ class FluxFinder(object):
         self.rays = rays
         self.tau_s = tau_s
         self.tau_skip = tau_skip
-        self.teff_cut = teff_cut
         self.dust_opacity = dust_opacity
         self.dust_Trange = dust_Trange
         self.flux_limit_min = flux_limit_min
@@ -138,7 +136,6 @@ class FluxFinder(object):
 
         self.images = collections.OrderedDict()
         self.images['flux'] = FluxFinder.Image(self.resolution)
-        self.images['flux v'] = FluxFinder.Image(self.resolution)
 
         # We multiply by the flux later in _init_particles
         for i, array in enumerate(weighted_averages):
@@ -178,7 +175,6 @@ class FluxFinder(object):
         surf_t = np.zeros(self.images['flux'].array.shape, dtype = float)
         surf_t[:self.resolution[0]-1,:self.resolution[1]-1] = (area_br/float(constants['sigmaSB']))**0.25
         flux_tot = self.images['flux'].get_total()
-        flux_tot_v = np.sum(self.images['flux v'].array[:self.resolution[0]-1,:self.resolution[1]-1])
 
         # Vectorized:
         with warnings.catch_warnings():
@@ -187,14 +183,12 @@ class FluxFinder(object):
 
         # Units of energy/time/area
         flux_tot = starsmashertools.lib.units.Unit(flux_tot, 'g/s*s*s')
-        flux_tot_v = starsmashertools.lib.units.Unit(flux_tot_v, 'g/s*s*s')
         
-        # Finish the ltot and l_v calculations
+        # Finish the ltot calculations
         length = self.units.get('length', 1.)
         cell_area = self.dx * self.dy * length**2
         ltot = 4 * cell_area * flux_tot
-        l_v  = 4 * cell_area * flux_tot_v
-
+        
         self.spectrum.finalize()
         
         ltot_spectrum = 4 * cell_area * self.spectrum.flux['total']
@@ -204,14 +198,15 @@ class FluxFinder(object):
         self.result['image','teff_aver'] = teff_aver
         self.result['image','ltot'] = ltot
         self.result['image','flux_tot'] = flux_tot
-        self.result['image','l_v'] = l_v
-        self.result['spectrum','ltot_spectrum'] = ltot_spectrum
-        self.result['spectrum','l_spectrum'] = l_spectrum
+        self.result['spectrum','ltot'] = ltot_spectrum
+        self.result['spectrum','luminosities'] = l_spectrum
         self.result['spectrum','output'] = self.spectrum.output
         self.result['spectrum','teff'] = self.spectrum.teff
+        self.result['spectrum','teff_min'] = self.spectrum.teff_min
+        self.result['spectrum','teff_max'] = self.spectrum.teff_max
 
-        del area_br, surf_t, flux_tot, flux_tot_v, teff_aver, length, cell_area
-        del ltot, l_v, ltot_spectrum, l_spectrum
+        del area_br, surf_t, flux_tot, teff_aver, length, cell_area
+        del ltot, ltot_spectrum, l_spectrum
         gc.collect()
         
 
@@ -255,8 +250,9 @@ class FluxFinder(object):
         m = self.output['am'] * float(units['am'])
         rho = copy.deepcopy(self.output['rho']) * float(units['rho'])
         
-        i = np.logical_and(idx, ~cores)
-        if i.any():
+        i = idx & ~cores
+        # if uraddot_emerg[i] < uraddot_diff[i] and do_fluffy == 1:
+        if self.fluffy and i.any():
             self._rloc[i] = 2.*self.output['hp'][i] * float(units['hp'])
             rho[i]=m[i]/pow(self._rloc[i],3.)
             self._tau[i]=rho[i]*kappa[i]*self._rloc[i]*4./3.
@@ -265,8 +261,9 @@ class FluxFinder(object):
             flux_rad[i] = flux_em[i]
 
         temp = self.output['temperatures'] * float(self.output.simulation.units['temperatures'])
-        i = np.logical_and(~idx, ~cores)
-        if i.any():
+        i = ~idx & ~cores
+        # else:
+        if not self.fluffy or i.any():
             # this particle is considered in "dense" approximation
             self._rloc[i]=pow(m[i]/(4/3.*np.pi)/rho[i],0.33333)
             self._tau[i]=rho[i]*kappa[i]*self._rloc[i]*4./3.
@@ -276,25 +273,21 @@ class FluxFinder(object):
             dd=c_speed/kappa[i]/rho[i]
             gradt=a_const*pow(temp[i],4)/self._rloc[i]
             dedt=ad/3.*dd*gradt/m[i]
-            self._flux[i]=dedt*m[i]/ad
-            flux_rad[i] = dedt * m[i] / ad
 
+            flux_rad[i] = dedt * m[i] / ad
+            self._flux[i] = dedt * m[i] / ad
+            
             if self.rays:
                 ratio = np.full(self._flux.shape, np.nan)
-                ratio[i] = -uraddotcool[i]/dedt*12. # to figure out how many effective cooling rays
-                _idx1 = np.logical_and(
-                    ~cores,
-                    np.logical_and(i, ratio <= 6),
-                )
+                ratio[i] = np.abs(uraddotcool[i]/dedt*12.) # to figure out how many effective cooling rays
+                _idx1 = ~cores & i & (ratio <= 6)
+                # if ratio <= 6:
                 if _idx1.any():
                     ad_cool = 2.*np.pi*self._rloc[_idx1]*self._rloc[_idx1]
-                    self._flux[_idx1]=-uraddotcool[_idx1]*m[_idx1]/ad_cool
-
-
-                _idx2 = np.logical_and(
-                    ~cores,
-                    np.logical_and(i, ratio > 6),
-                )
+                    self._flux[_idx1]=np.abs(uraddotcool[_idx1]*m[_idx1]/ad_cool) # all what is cooled is to goes through the outer hemisphere
+                
+                _idx2 = ~cores & i & (ratio > 6)
+                # if ratio > 6:
                 if _idx2.any():
                     ad      = 4.*np.pi*self._rloc[_idx2]*self._rloc[_idx2]
                     gradt = a_const*pow(temp[_idx2],4)/self._rloc[_idx2]
@@ -304,10 +297,7 @@ class FluxFinder(object):
 
                 del ratio, _idx1, _idx2
 
-            _idx = np.logical_and(
-                ~cores,
-                np.logical_and(i, self._tau < 100),
-            )
+            _idx = ~cores & i & (self._tau < 100) # we anticipate that emergent flux computation breaks down at very large tau, where flux_em becomes zero and nullifies total flux is no limit on tau is placed
             if _idx.any():
                 self._flux[_idx] = np.minimum(self._flux[_idx], flux_em[_idx])
 
@@ -316,23 +306,13 @@ class FluxFinder(object):
 
         self._teff[~cores] = (flux_rad[~cores] / sigma_const)**0.25
 
-        #self.spectrum.spect_type[~cores] = 1 # black body
-        i = np.logical_and(
-            ~cores,
-            np.logical_and(flux_rad > flux_em, self._tau < 100),
-        )
+        i = ~cores & (flux_rad > flux_em) & (self._tau < 100)
         if i.any():
             self._teff[i] = temp[i]
-        #    self.spectrum.spect_type[i] = 2 # emerging
 
         self._rloc /= float(self.units.get('length', 1.))
-
         
-        flux_v = copy.deepcopy(self._flux)
-        flux_v[self._teff <= self.teff_cut] = 0
-
         self.images['flux'].particle_array = self._flux
-        self.images['flux v'].particle_array = flux_v
 
         # Finish adding the weights for the averages
         for key in self.images.keys():
@@ -347,7 +327,7 @@ class FluxFinder(object):
 
         del c_speed, sigma_const, a_const, units, kappa, uraddotcool
         del uraddot_emerg, uraddot_diff, flux_rad, flux_em, idx
-        del cores, m, rho, i, temp, flux_v
+        del cores, m, rho, i, temp
         gc.collect()
 
     def _init_grid(self):
@@ -420,7 +400,7 @@ class FluxFinder(object):
             kappa = self.output['popacity'] * float(self.output.simulation.units['popacity'])
         T = np.asarray(T)
         kappa = np.asarray(kappa)
-
+        
         if self.dust_opacity is None: # No dust
             return np.full(T.shape, False, dtype = bool)
 
@@ -554,8 +534,10 @@ class FluxFinder(object):
 
             surf_d[_slice][idx] = _z
             surf_id[_slice][idx] = i
-
+        
         tau_min=1
+        flux_min = float('inf')
+        flux_max = -float('inf')
 
         # Use only particles with large enough tau
         mask2 = mask & (self._tau >= self.tau_skip)
@@ -577,6 +559,8 @@ class FluxFinder(object):
             if not idx.any(): continue
             
             tau_min = min(tau_min, _tau)
+            flux_min = min(flux_min, self._flux[i])
+            flux_max = max(flux_max, self._flux[i])
 
             for ii, jj in grid_indices[_slice][idx]:
                 ray_id[ii, jj].append(i)
@@ -590,7 +574,9 @@ class FluxFinder(object):
             i_maxray, j_maxray = np.unravel_index(idx_maxray, ray_n.shape)
 
             print("maximum number of particles above the cut off optically thick surface is %d %d %d"%(max_ray,i_maxray,j_maxray))            
-            print("minimum tau account for is  is %f"%(tau_min))
+            print('minimum tau account for is  %f' % tau_min)
+            print('minimum flux account for is %le' % flux_min)
+            print('maximum flux account for is %le' % flux_max)
             del max_ray,idx_maxray, i_maxray, j_maxray
 
         
@@ -625,7 +611,7 @@ class FluxFinder(object):
         )
         for ii, (surf_id_row, ray_id_ii) in enumerate(zipped):
             for jj, (i, ray_id_iijj) in enumerate(zip(surf_id_row, ray_id_ii)):
-                tau_ray=0.    
+                tau_ray=0.
                 # Reversing an array is easy. This produces an iterator ('view'
                 # of the list) which runs faster than ray_id[ii][jj][::-1] and
                 # also faster than range(ray_n[ii][jj]-1, -1, -1).
@@ -635,9 +621,6 @@ class FluxFinder(object):
                     
                     for key, image in self.images.items():
                         image.add(ir, ii, jj, attenuation)
-                    
-                    if self.images['flux v'].array[ii,jj] > self.images['flux'].array[ii,jj]:
-                        raise Exception("part of the flux is larger than the whole flux? " + str(ir) + " "+ str(ii) + " " + str(jj))
                     
                     flux_from_contributors[ir] += f
                     self.spectrum.add(f, self._teff[ir])
@@ -650,9 +633,6 @@ class FluxFinder(object):
                     for key, image in self.images.items():
                         image.add(i, ii, jj, attenuation)
 
-                    if self.images['flux v'].array[ii,jj] > self.images['flux'].array[ii,jj]:
-                        raise Exception("part of the flux is larger than the whole flux? " + str(ir) + " "+ str(ii) + " " + str(jj))
-                    
                     flux_from_contributors[i] += f
                     
                     self.spectrum.add(f, self._teff[i])
@@ -679,7 +659,6 @@ class FluxFinder(object):
         self.result['particles','flux_from_contributors'] = flux_from_contributors[contributors]
         
         self.result['image','flux'] = self.images['flux'].array
-        self.result['image','flux_v'] = self.images['flux v'].array
         self.result['image','surf_d'] = surf_d
         self.result['image','surf_id'] = surf_id
         self.result['image','ray_n'] = ray_n
@@ -746,40 +725,53 @@ class FluxFinder(object):
             
             # Finish spectrum calculations
             self.teff = 0
-            max_flux = 0
             #ltot_spectrum = 0
             # [0.00000000e+00 7.39256413e-21 2.00355212e-07 6.82084616e-01
             #  4.39889814e+03 1.28926397e+06 6.63126098e+07 1.17342608e+09
             #  1.04031610e+10 5.80568647e+10]
-
+            
             self.flux = {
                 'total' : np.sum(self.spectrum[:self.il_max - 1] * self.dl * 1e-7),
             }
             for key in self.filters.keys(): self.flux[key] = 0.
             
+            max_flux = -10.
+            il_flux = 0
             for il in range(self.il_max - 1):
                 sp = self.spectrum[il]
                 #ltot_spectrum += sp * self.dl * 1e-7 # nanom = 1e-7
-                if sp <= 1: continue
-
+                if sp <= 0: continue
+                
                 sp = np.log10(sp)
                 lamb = self.lam[il] / 1e-7 # nanom = 1e-7
                 teff_loc = 2.9*1.e6/lamb
                 if sp > max_flux:
                     max_flux = sp
+                    il_flux = il
                     self.teff = teff_loc
-
+                
                 for key, (lamb_low, lamb_hi) in self.filters.items():
                     if lamb_low is not None and lamb < lamb_low: continue
                     if lamb_hi is not None and lamb > lamb_hi: continue
 
                     self.flux[key] += self.spectrum[il] * self.dl * 1e-7 # nanom = 1e-7
             
+            self.teff_min = self.teff
+            self.teff_max = self.teff
+            min_flux = 0.95 * 10**max_flux
+            for il in range(il_flux, 1, -1):
+                if self.spectrum[il] < min_flux: break
+                self.teff_max = 2.9 * 1.e6 / self.lam[il] * 1.e-7
+            
+            for il in range(il_flux, self.il_max - 1):
+                if self.spectrum[il] < min_flux: break
+                self.teff_min = 2.9 * 1.e6 / self.lam[il] * 1.e-7
+            
             self.output = []
             b_full = self._sigma / np.pi * self.teff**4
             for il in range(self.il_max - 1):
                 sp = self.spectrum[il]
-                if sp <= 1: continue
+                if sp <= 0: continue
                 sp = np.log10(sp)
                 lamb = self.lam[il] / 1e-7
                 teff_loc = 2.9*1.e6/lamb

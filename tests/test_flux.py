@@ -92,7 +92,7 @@ class TestFlux(basetest.BaseTest):
             m += "indices = %s\n" % str(np.where(~are_equal))
             m += "%s\n%s" % (a[~are_equal], b[~are_equal])
         
-        raise AssertionError(m)
+        raise AssertionError('expected != actual ' + m)
 
     def get_baseline(self, name):
         filename = os.path.join(self.simulation.directory, name)
@@ -101,7 +101,6 @@ class TestFlux(basetest.BaseTest):
         inputs = arr['inputs']
         outputs = arr['outputs']
         surf_br = arr['surf_br']
-        surf_br_v = arr['surf_br_v']
         surf_d = arr['surf_d']
         surf_id = arr['surf_id']
         surf_t = arr['surf_t']
@@ -124,15 +123,11 @@ class TestFlux(basetest.BaseTest):
         phi       = inputs[9]
         tau_s     = inputs[10]
         tau_skip  = inputs[11]
-        teff_cut  = inputs[12]
-        do_fluffy = int(inputs[13])
-        do_dust   = int(inputs[14])
-        
-        xmin = outputs[7]
-        xmax = outputs[8]
-        ymin = outputs[9]
-        ymax = outputs[10]
+        do_fluffy = int(inputs[12])
+        do_dust   = int(inputs[13])
 
+        time, ltot, l_v, l_r,l_i, teff_aver,teff_spectrum,teff_min_spectrum,teff_max_spectrum, rad_eff, xmin,xmax,ymin,ymax, dx,dy,flux_tot,ltot_spectrum = outputs
+        
         extent = [xmin, xmax, ymin, ymax]
 
         kwargs = {
@@ -144,7 +139,6 @@ class TestFlux(basetest.BaseTest):
             'rays' : True, # Constant in flux_main.py code
             'tau_s' : tau_s,
             'tau_skip' : tau_skip,
-            'teff_cut' : teff_cut,
             'dust_opacity' : None if not bool(do_dust) else 1.0, # Constant (kappa_dust)
             'dust_Trange' : [100.0, 1000.0], # Constant (T_dust_min, T_dust)
             'spectrum_size' : 1000, # Constant
@@ -157,12 +151,11 @@ class TestFlux(basetest.BaseTest):
             'factor1' : 1.191045e-05, # Constant (factor1)
             'factor2' : 1.438728e+00, # Constant (factor2)
             'filters' : {
-                'V' : [507, 595], # Constant
-                'R' : [589, 727], # Constant
+                'V' : [500, 600], # Constant
+                'R' : [590, 730], # Constant
+                'I' : [720, 880], # Constant
             },
         }
-
-        time, ltot, l_v, l_r, teff_aver,teff_spectrum, rad_eff, xmin,xmax,ymin,ymax, dx,dy,flux_tot,ltot_spectrum,l_spectrum_V, l_spectrum_R = outputs
 
         return starsmashertools.lib.flux.FluxResult({
             'version' : starsmashertools.__version__,
@@ -173,7 +166,6 @@ class TestFlux(basetest.BaseTest):
             'time' : time,
             'image' : {
                 'flux' : surf_br,
-                'flux_v' : surf_br_v,
                 'surf_d' : surf_d,
                 'surf_id' : surf_id,
                 'Teff_cell' : surf_t,
@@ -184,16 +176,18 @@ class TestFlux(basetest.BaseTest):
                 'teff_aver' : teff_aver,
                 'ltot' : ltot,
                 'flux_tot' : flux_tot,
-                'l_v' : l_v,
             },
             'spectrum' : {
-                'ltot_spectrum' : ltot_spectrum,
-                'l_spectrum' : {
-                    'V' : l_spectrum_V,
-                    'R' : l_spectrum_R,
+                'ltot' : ltot_spectrum,
+                'luminosities' : {
+                    'V' : l_v,
+                    'R' : l_r,
+                    'I' : l_i,
                 },
                 'output' : spectrum_output,
                 'teff' : teff_spectrum,
+                'teff_min' : teff_min_spectrum,
+                'teff_max' : teff_max_spectrum,
             },
             'extra' : {
                 'particle_flux'  : particle_flux,
@@ -241,7 +235,7 @@ class TestFlux(basetest.BaseTest):
             else:
                 self.assertEqual(a, b, msg = msg)
 
-        def compare(key_path, tested_paths = []):
+        def compare2(key_path, tested_paths = []):
             if key_path in TestFlux.ignore_keys: return
             
             if key_path in tested_paths: return
@@ -268,11 +262,11 @@ class TestFlux(basetest.BaseTest):
         # Test the priority items first
         tested_paths = []
         for path in TestFlux.priority:
-            compare(path, tested_paths = tested_paths)
+            compare2(path, tested_paths = tested_paths)
         
         # Run the actual comparison
         for key in to_test:
-            compare(key, tested_paths = tested_paths)
+            compare2(key, tested_paths = tested_paths)
 
 
     def testGrid(self):
@@ -325,7 +319,6 @@ class TestFlux(basetest.BaseTest):
     def testDustless(self): self.compare('dustless')
     def testFluffy(self): self.compare('fluffy')
     def testtau_s(self): self.compare('tau_s')
-    def testteff_cut(self): self.compare('teff_cut')
     def testtau_skip_low(self): self.compare('tau_skip_low')
     def testtau_skip_high(self): self.compare('tau_skip_high')
 
@@ -341,7 +334,6 @@ class TestLoader(unittest.TestLoader, object):
             'testDustless',
             'testFluffy',
             'testtau_s',
-            'testteff_cut',
             'testtau_skip_low',
             'testtau_skip_high',
         ]

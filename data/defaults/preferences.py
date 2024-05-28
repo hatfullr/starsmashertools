@@ -105,9 +105,7 @@ prefs = {
                 'tau_s' : 20.,
                 # Particles with tau < tau_skip are ignored entirely.
                 'tau_skip' : 1.e-5,
-                # Particles with Teff <= teff_cut are excluded in surf_br_v.
-                'teff_cut' : 3500.,
-
+                
                 # Dust
                 # Give a value in cm^2/g, or None to turn off artificial
                 # dust.
