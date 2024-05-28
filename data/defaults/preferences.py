@@ -162,7 +162,6 @@ prefs = {
                             'dx'        : True, # x cell size
                             'dy'        : True, # y cell size
                             'flux'      : True, # flux map
-                            'flux_v'    : True,
                             'surf_d'    : True, # distance map?
                             'surf_id'   : True, # maybe particle IDs at surface
                             'ray_n'     : True, # number of particles on rays
