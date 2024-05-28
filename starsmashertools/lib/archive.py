@@ -1013,12 +1013,12 @@ class Archive(object):
             if key in self._buffers['add'].keys():
                 values[i] = self._buffers['add'][key]
             else: remaining_keys += [[i, key]]
-
+        
         if None not in values: # We only had to search the buffers! :)
             return values
 
         # Check the archive file
-        to_deserialize = []
+        keys = []
         with self.open(
                 'r',
                 message = "Loading values in %s" % self,
@@ -1033,28 +1033,12 @@ class Archive(object):
             for i, key in remaining_keys:
                 if key not in file_keys: raise KeyError(key)
                 values[i] = zfile.read(key)
-                to_deserialize += [[i, key]]
+                keys += [key]
                 if hasattr(zfile, 'progress'):
                     zfile.progress.increment()
 
-        keys_to_deserialize = []
-        vals_to_deserialize = []
-        for i, key in to_deserialize:
-            keys_to_deserialize += [key]
-            vals_to_deserialize += [values[i]]
-
         if deserialize:
-            deserialized_vals = self._deserialize(
-                keys_to_deserialize, vals_to_deserialize,
-            )
-            for i, key in to_deserialize:
-                values[i] = deserialized_vals[i]
-
-        del keys_to_deserialize
-        del vals_to_deserialize
-        del to_deserialize
-        del remaining_keys
-        gc.collect()
+            values = list(self._deserialize(keys, values))        
         
         if len(values) == 1: return values[0]
         return values
@@ -1168,7 +1152,7 @@ class Archive(object):
                     progress_message.message += " in serial"
                 # Run in serial
                 for key, value in zip(keys, values):
-                    ret += [ArchiveValue.deserialize(key, value)]
+                    yield ArchiveValue.deserialize(key, value)
                     progress.increment()
             else:
                 if progress_message:
@@ -1181,18 +1165,16 @@ class Archive(object):
                     progress_message = progress,
                     start = True,
                 )
-                ret = p.get_output()
+                yield from p.get_output()
                 del p
-            return ret
-
+        
         if self.verbose:
             with starsmashertools.helpers.string.progress_message(
                     message = "Deserializing archive values",
                     max = len(keys), delay = 5,
             ) as progress:
-                ret = func(progress_message = progress)
-        else: ret = func()
-        return ret
+                yield from func(progress_message = progress)
+        else: yield from func()
 
     def find_old_values(self):
         """

@@ -104,9 +104,10 @@
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">re</span>
 <span class="kn">import</span> <span class="nn">fractions</span>
+<span class="kn">import</span> <span class="nn">copy</span>
 
 <span class="k">def</span> <span class="nf">get_all_labels</span><span class="p">():</span>
-    <span class="n">conversions</span> <span class="o">=</span> <span class="n">Unit</span><span class="o">.</span><span class="n">get_conversions</span><span class="p">()</span>
+    <span class="n">conversions</span> <span class="o">=</span> <span class="n">Unit</span><span class="o">.</span><span class="n">conversions</span>
     <span class="n">labels</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">conversion</span> <span class="ow">in</span> <span class="n">conversions</span><span class="p">:</span>
         <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">conversion</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
@@ -185,6 +186,8 @@
     <span class="p">}</span>
 
     <span class="n">_format_re</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;[^[a-zA-Z]*[a-zA-Z]</span><span class="si">{1}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+    <span class="n">conversions</span> <span class="o">=</span> <span class="kc">None</span>
     
     <span class="k">class</span> <span class="nc">InvalidLabelError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">,</span> <span class="nb">object</span><span class="p">):</span> <span class="k">pass</span>
     <span class="k">class</span> <span class="nc">InvalidTypeConversionError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">,</span> <span class="nb">object</span><span class="p">):</span> <span class="k">pass</span>
@@ -222,48 +225,32 @@
         <span class="k">else</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">label</span> <span class="o">=</span> <span class="n">label</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span></div>
 
-
+    
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">get_conversions</span><span class="p">():</span>
-        <span class="c1"># Get the user&#39;s conversions</span>
-        <span class="n">user</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">user</span> <span class="o">=</span> <span class="n">Unit</span><span class="o">.</span><span class="n">preferences</span><span class="o">.</span><span class="n">get_user</span><span class="p">(</span><span class="s1">&#39;conversions&#39;</span><span class="p">)</span>
-        <span class="k">except</span><span class="p">:</span> <span class="k">pass</span>
-        
-        <span class="c1"># Get the default conversions</span>
-        <span class="n">default</span> <span class="o">=</span> <span class="n">Unit</span><span class="o">.</span><span class="n">preferences</span><span class="o">.</span><span class="n">get_default</span><span class="p">(</span><span class="s1">&#39;conversions&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">Unit</span><span class="o">.</span><span class="n">conversions</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">Unit</span><span class="o">.</span><span class="n">conversions</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">Unit</span><span class="o">.</span><span class="n">preferences</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;conversions&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">value</span><span class="p">,</span> <span class="n">base</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
 
-        <span class="c1"># Collect all the conversions we can find</span>
-        <span class="n">default</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">user</span><span class="p">)</span>
-
-        <span class="c1"># These are all the possible keys, which we will now fetch individually</span>
-        <span class="c1"># to allow keys to be omitts</span>
-        <span class="n">all_keys</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">default</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
-
-        <span class="n">conversions</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">all_keys</span><span class="p">:</span>
-            <span class="n">c</span> <span class="o">=</span> <span class="n">Unit</span><span class="o">.</span><span class="n">preferences</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;conversions.</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">key</span><span class="p">)</span>
-            <span class="n">value</span><span class="p">,</span> <span class="n">base</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
-            <span class="n">value</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
-
-            <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">conversions</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">obj</span><span class="p">[</span><span class="s1">&#39;base&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">base</span><span class="p">:</span>
-                    <span class="n">obj</span><span class="p">[</span><span class="s1">&#39;conversions&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="p">[[</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">]]</span>
-                    <span class="k">break</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">conversions</span> <span class="o">+=</span> <span class="p">[{</span>
-                    <span class="s1">&#39;base&#39;</span> <span class="p">:</span> <span class="n">base</span><span class="p">,</span>
-                    <span class="s1">&#39;conversions&#39;</span> <span class="p">:</span> <span class="p">[[</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">]],</span>
-                <span class="p">}]</span>
-        <span class="k">return</span> <span class="n">conversions</span>
-            
+                <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">Unit</span><span class="o">.</span><span class="n">conversions</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">obj</span><span class="p">[</span><span class="s1">&#39;base&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">base</span><span class="p">:</span>
+                        <span class="n">obj</span><span class="p">[</span><span class="s1">&#39;conversions&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="p">[[</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">]]</span>
+                        <span class="k">break</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">Unit</span><span class="o">.</span><span class="n">conversions</span> <span class="o">+=</span> <span class="p">[{</span>
+                        <span class="s1">&#39;base&#39;</span> <span class="p">:</span> <span class="n">base</span><span class="p">,</span>
+                        <span class="s1">&#39;conversions&#39;</span> <span class="p">:</span> <span class="p">[[</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">]],</span>
+                    <span class="p">}]</span>
+        <span class="k">return</span> <span class="n">Unit</span><span class="o">.</span><span class="n">conversions</span>
+    
+    
     <span class="c1"># Decide on units that give the cleanest value</span>
 <div class="viewcode-block" id="Unit.auto">
 <a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.units.html#starsmashertools.lib.units.Unit.auto">[docs]</a>
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="nf">auto</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">conversions</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
-        <span class="kn">import</span> <span class="nn">copy</span>
         <span class="kn">import</span> <span class="nn">starsmashertools</span>
         
         <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span><span class="p">({</span>
@@ -287,13 +274,13 @@
             <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">conversion</span><span class="p">[</span><span class="s1">&#39;conversions&#39;</span><span class="p">]:</span>
                 <span class="c1"># Replace all the instances of the base unit with this new</span>
                 <span class="c1"># converted unit</span>
-                <span class="n">new_left</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">base</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">left</span><span class="p">)</span>
-                <span class="n">new_right</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">base</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">right</span><span class="p">)</span>
+                <span class="n">new_left</span> <span class="o">=</span> <span class="n">base</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">left</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                <span class="n">new_right</span> <span class="o">=</span> <span class="n">base</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">right</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
                 <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">item</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">new_left</span><span class="p">):</span>
                     <span class="k">if</span> <span class="n">item</span> <span class="o">==</span> <span class="n">conversion</span><span class="p">[</span><span class="s1">&#39;base&#39;</span><span class="p">]:</span> <span class="n">new_left</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">name</span>
                 <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">item</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">new_right</span><span class="p">):</span>
                     <span class="k">if</span> <span class="n">item</span> <span class="o">==</span> <span class="n">conversion</span><span class="p">[</span><span class="s1">&#39;base&#39;</span><span class="p">]:</span> <span class="n">new_right</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">name</span>
-                <span class="n">l</span> <span class="o">=</span> <span class="n">Unit</span><span class="o">.</span><span class="n">Label</span><span class="o">.</span><span class="n">get_string</span><span class="p">(</span><span class="n">new_left</span><span class="p">,</span> <span class="n">new_right</span><span class="p">)</span>
+                <span class="n">l</span> <span class="o">=</span> <span class="n">Unit</span><span class="o">.</span><span class="n">Label</span><span class="o">.</span><span class="n">_get_string</span><span class="p">(</span><span class="n">new_left</span><span class="p">,</span> <span class="n">new_right</span><span class="p">)</span>
                 <span class="n">possible_results</span> <span class="o">+=</span> <span class="p">[</span><span class="n">base</span><span class="o">.</span><span class="n">convert</span><span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="n">conversions</span><span class="o">=</span><span class="n">conversions</span><span class="p">)]</span>
         
         <span class="n">possible_results</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span>
@@ -412,7 +399,6 @@
 <span class="sd">        --------</span>
 <span class="sd">        :meth:`~.get_conversion_factor`</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">import</span> <span class="nn">copy</span>
         <span class="kn">import</span> <span class="nn">starsmashertools</span>
         
         <span class="k">if</span> <span class="n">to</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -473,7 +459,6 @@
 <a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.units.html#starsmashertools.lib.units.Unit.get_base">[docs]</a>
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="nf">get_base</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">conversions</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
-        <span class="kn">import</span> <span class="nn">copy</span>
         <span class="kn">import</span> <span class="nn">starsmashertools</span>
         
         <span class="k">if</span> <span class="n">conversions</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -789,12 +774,22 @@
         <span class="c1">#       and 2 &#39;g&#39; on the left side of the &#39;/&#39; and for 2 &#39;s&#39; on the right</span>
         <span class="c1">#       side. If we find enough of such symbols then we remove those</span>
         <span class="c1">#       symbols and insert &#39;erg&#39; on the left-most side, &#39;erg * cm&#39;.</span>
-        <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">base</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;cm&#39;</span><span class="p">,</span><span class="s1">&#39;g&#39;</span><span class="p">,</span><span class="s1">&#39;s&#39;</span><span class="p">,</span><span class="s1">&#39;K&#39;</span><span class="p">]):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">base</span> <span class="o">=</span> <span class="n">base</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">left</span> <span class="o">=</span> <span class="p">[]</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">right</span> <span class="o">=</span> <span class="p">[]</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
 
+        <span class="n">conversions</span> <span class="o">=</span> <span class="kc">None</span>
+        
+        <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+                <span class="bp">self</span><span class="p">,</span>
+                <span class="n">value</span> <span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">,</span>
+                <span class="n">base</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;cm&#39;</span><span class="p">,</span><span class="s1">&#39;g&#39;</span><span class="p">,</span><span class="s1">&#39;s&#39;</span><span class="p">,</span><span class="s1">&#39;K&#39;</span><span class="p">],</span>
+        <span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">base</span> <span class="o">=</span> <span class="n">base</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">left</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">right</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">right</span> <span class="o">=</span> <span class="n">value</span>
+        
         <span class="nd">@property</span>
         <span class="k">def</span> <span class="nf">isCompound</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
             <span class="c1"># &quot;Compound&quot; means this Label contains more than a single value,</span>
@@ -813,113 +808,130 @@
 
         <span class="nd">@staticmethod</span>
         <span class="k">def</span> <span class="nf">get_conversions</span><span class="p">():</span>
-            <span class="n">conversions</span> <span class="o">=</span> <span class="p">[]</span>
-            <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">Unit</span><span class="o">.</span><span class="n">Label</span><span class="o">.</span><span class="n">preferences</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;conversions&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-                <span class="n">conversions</span> <span class="o">+=</span> <span class="p">[[</span><span class="n">val</span><span class="p">,</span> <span class="n">key</span><span class="p">]]</span>
-            <span class="k">return</span> <span class="n">conversions</span>
+            <span class="k">if</span> <span class="n">Unit</span><span class="o">.</span><span class="n">Label</span><span class="o">.</span><span class="n">conversions</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">Unit</span><span class="o">.</span><span class="n">Label</span><span class="o">.</span><span class="n">conversions</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="p">[</span><span class="n">val</span><span class="p">,</span> <span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span><span class="n">val</span> <span class="ow">in</span> <span class="n">Unit</span><span class="o">.</span><span class="n">Label</span><span class="o">.</span><span class="n">preferences</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;conversions&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                <span class="p">]</span>
+            <span class="k">yield from</span> <span class="n">Unit</span><span class="o">.</span><span class="n">Label</span><span class="o">.</span><span class="n">conversions</span>
         
         <span class="nd">@property</span>
         <span class="k">def</span> <span class="nf">short</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-            <span class="kn">import</span> <span class="nn">copy</span>
-            
-            <span class="n">new_left</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="p">)</span>
-            <span class="n">new_right</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">right</span><span class="p">)</span>
+            <span class="n">new_left</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">new_right</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">right</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
             
             <span class="c1"># Search for unit conversions and then apply those conversions</span>
-            <span class="n">conversions</span> <span class="o">=</span> <span class="n">Unit</span><span class="o">.</span><span class="n">Label</span><span class="o">.</span><span class="n">get_conversions</span><span class="p">()</span>
-            
-            <span class="k">if</span> <span class="n">conversions</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="k">for</span> <span class="n">short</span><span class="p">,</span> <span class="n">values</span> <span class="ow">in</span> <span class="n">conversions</span><span class="p">:</span>
-                    <span class="n">short_lhs</span><span class="p">,</span> <span class="n">short_rhs</span> <span class="o">=</span> <span class="n">Unit</span><span class="o">.</span><span class="n">Label</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">short</span><span class="p">)</span>
-                    <span class="n">lhs</span><span class="p">,</span> <span class="n">rhs</span> <span class="o">=</span> <span class="n">Unit</span><span class="o">.</span><span class="n">Label</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">short</span><span class="p">,</span> <span class="n">values</span> <span class="ow">in</span> <span class="n">Unit</span><span class="o">.</span><span class="n">Label</span><span class="o">.</span><span class="n">get_conversions</span><span class="p">():</span>
+                <span class="n">short_lhs</span><span class="p">,</span> <span class="n">short_rhs</span> <span class="o">=</span> <span class="n">Unit</span><span class="o">.</span><span class="n">Label</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">short</span><span class="p">)</span>
+                <span class="n">lhs</span><span class="p">,</span> <span class="n">rhs</span> <span class="o">=</span> <span class="n">Unit</span><span class="o">.</span><span class="n">Label</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
 
-                    <span class="n">had_left</span> <span class="o">=</span> <span class="kc">False</span>
-                    <span class="n">left</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">new_left</span><span class="p">)</span>
-                    <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">lhs</span><span class="p">:</span>
-                        <span class="k">if</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">left</span><span class="p">:</span> <span class="n">left</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">l</span><span class="p">)</span>
-                        <span class="k">else</span><span class="p">:</span> <span class="k">break</span>
-                    <span class="k">else</span><span class="p">:</span> <span class="c1"># No break means success</span>
-                        <span class="n">had_left</span> <span class="o">=</span> <span class="kc">True</span>
-                    <span class="k">if</span> <span class="ow">not</span> <span class="n">had_left</span><span class="p">:</span> <span class="k">continue</span>
-                    
-                    <span class="n">had_right</span> <span class="o">=</span> <span class="kc">False</span>
-                    <span class="n">right</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">new_right</span><span class="p">)</span>
-                    <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">rhs</span><span class="p">:</span>
-                        <span class="k">if</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">right</span><span class="p">:</span> <span class="n">right</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
-                        <span class="k">else</span><span class="p">:</span> <span class="k">break</span>
-                    <span class="k">else</span><span class="p">:</span> <span class="c1"># No break means success</span>
-                        <span class="n">had_right</span> <span class="o">=</span> <span class="kc">True</span>
-                    <span class="k">if</span> <span class="ow">not</span> <span class="n">had_right</span><span class="p">:</span> <span class="k">continue</span>
+                <span class="n">had_left</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="n">left</span> <span class="o">=</span> <span class="n">new_left</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">lhs</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">left</span><span class="p">:</span> <span class="n">left</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">l</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span> <span class="k">break</span>
+                <span class="k">else</span><span class="p">:</span> <span class="c1"># No break means success</span>
+                    <span class="n">had_left</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">had_left</span><span class="p">:</span> <span class="k">continue</span>
 
-                    <span class="n">new_left</span> <span class="o">=</span> <span class="n">short_lhs</span> <span class="o">+</span> <span class="n">left</span>
-                    <span class="n">new_right</span> <span class="o">=</span> <span class="n">short_rhs</span> <span class="o">+</span> <span class="n">right</span>
+                <span class="n">had_right</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="n">right</span> <span class="o">=</span> <span class="n">new_right</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">rhs</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">right</span><span class="p">:</span> <span class="n">right</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span> <span class="k">break</span>
+                <span class="k">else</span><span class="p">:</span> <span class="c1"># No break means success</span>
+                    <span class="n">had_right</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">had_right</span><span class="p">:</span> <span class="k">continue</span>
+
+                <span class="n">new_left</span> <span class="o">=</span> <span class="n">short_lhs</span> <span class="o">+</span> <span class="n">left</span>
+                <span class="n">new_right</span> <span class="o">=</span> <span class="n">short_rhs</span> <span class="o">+</span> <span class="n">right</span>
             
-            <span class="k">return</span> <span class="n">Unit</span><span class="o">.</span><span class="n">Label</span><span class="o">.</span><span class="n">get_string</span><span class="p">(</span><span class="n">new_left</span><span class="p">,</span> <span class="n">new_right</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">Unit</span><span class="o">.</span><span class="n">Label</span><span class="o">.</span><span class="n">_get_string</span><span class="p">(</span><span class="n">new_left</span><span class="p">,</span> <span class="n">new_right</span><span class="p">)</span>
 
         <span class="nd">@property</span>
         <span class="k">def</span> <span class="nf">long</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-            <span class="k">return</span> <span class="n">Unit</span><span class="o">.</span><span class="n">Label</span><span class="o">.</span><span class="n">get_string</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">right</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">Unit</span><span class="o">.</span><span class="n">Label</span><span class="o">.</span><span class="n">_get_string</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">right</span><span class="p">)</span>
 
         <span class="nd">@staticmethod</span>
-        <span class="k">def</span> <span class="nf">get_string</span><span class="p">(</span><span class="n">left</span><span class="p">,</span> <span class="n">right</span><span class="p">):</span>
-            <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span><span class="p">({</span>
-                <span class="s1">&#39;left&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">],</span>
-                <span class="s1">&#39;right&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">],</span>
-            <span class="p">})</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">left</span> <span class="ow">and</span> <span class="n">right</span><span class="p">:</span>
-                <span class="n">string</span> <span class="o">=</span> <span class="s2">&quot;1&quot;</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">string</span> <span class="o">=</span> <span class="s2">&quot;*&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">left</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">right</span><span class="p">:</span> <span class="n">string</span> <span class="o">+=</span> <span class="s2">&quot;/&quot;</span><span class="o">+</span><span class="s2">&quot;*&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">right</span><span class="p">)</span>
-            <span class="k">return</span> <span class="n">string</span>
+        <span class="k">def</span> <span class="nf">_get_string</span><span class="p">(</span><span class="n">left</span><span class="p">,</span> <span class="n">right</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">left</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">right</span><span class="p">:</span> <span class="k">return</span> <span class="s1">&#39;*&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">left</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;/&#39;</span> <span class="o">+</span> <span class="s1">&#39;*&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">right</span><span class="p">)</span>
+                <span class="k">return</span> <span class="s1">&#39;*&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">left</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">right</span><span class="p">:</span> <span class="k">return</span> <span class="s1">&#39;1/&#39;</span> <span class="o">+</span> <span class="s1">&#39;*&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">right</span><span class="p">)</span>
+            <span class="k">return</span> <span class="s1">&#39;&#39;</span>
+
+        <span class="k">def</span> <span class="nf">get_base_string</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot; Return this label&#39;s string with all units converted down to the</span>
+<span class="sd">            base units. &quot;&quot;&quot;</span>
+            <span class="k">if</span> <span class="n">Unit</span><span class="o">.</span><span class="n">get_conversions</span><span class="p">()</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">long</span>
+
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span> <span class="n">newleft</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span> <span class="n">newleft</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">right</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span> <span class="n">newright</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">right</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span> <span class="n">newright</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">right</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+            <span class="k">for</span> <span class="n">conversion</span> <span class="ow">in</span> <span class="n">Unit</span><span class="o">.</span><span class="n">get_conversions</span><span class="p">():</span>
+                <span class="n">base</span> <span class="o">=</span> <span class="n">conversion</span><span class="p">[</span><span class="s1">&#39;base&#39;</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">conversion</span><span class="p">[</span><span class="s1">&#39;conversions&#39;</span><span class="p">]:</span>
+                    <span class="c1"># This is as fast as we can go</span>
+                    <span class="n">newleft</span><span class="p">[:]</span> <span class="o">=</span> <span class="p">[</span><span class="n">base</span> <span class="k">if</span> <span class="n">item</span> <span class="o">==</span> <span class="n">name</span> <span class="k">else</span> <span class="n">item</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">newleft</span><span class="p">]</span>
+                    <span class="n">newright</span><span class="p">[:]</span> <span class="o">=</span> <span class="p">[</span><span class="n">base</span> <span class="k">if</span> <span class="n">item</span> <span class="o">==</span> <span class="n">name</span> <span class="k">else</span> <span class="n">item</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">newright</span><span class="p">]</span>
+            
+            <span class="k">return</span> <span class="n">Unit</span><span class="o">.</span><span class="n">Label</span><span class="o">.</span><span class="n">_get_string</span><span class="p">(</span><span class="n">newleft</span><span class="p">,</span> <span class="n">newright</span><span class="p">)</span>
 
         <span class="k">def</span> <span class="nf">is_compatible</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
 <span class="w">            </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            Returns `True` if this Label can be safely converted to the other</span>
 <span class="sd">            Label.</span>
 <span class="sd">            &quot;&quot;&quot;</span>
-            <span class="kn">import</span> <span class="nn">copy</span>
-            <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span><span class="p">({</span>
-                <span class="s1">&#39;other&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Unit</span><span class="o">.</span><span class="n">Label</span><span class="p">],</span>
-            <span class="p">})</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Unit</span><span class="o">.</span><span class="n">Label</span><span class="p">)):</span> <span class="k">return</span> <span class="kc">False</span>
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span> <span class="n">other</span> <span class="o">=</span> <span class="n">Unit</span><span class="o">.</span><span class="n">Label</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">left</span><span class="p">):</span> <span class="k">return</span> <span class="kc">False</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">right</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">right</span><span class="p">):</span> <span class="k">return</span> <span class="kc">False</span>
 
-            <span class="n">conversions</span> <span class="o">=</span> <span class="n">Unit</span><span class="o">.</span><span class="n">get_conversions</span><span class="p">()</span>
-            <span class="n">cpy</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
-            <span class="n">othercpy</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
-            
-            <span class="k">if</span> <span class="n">conversions</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="c1"># Convert both this Label and the other Label into their base</span>
-                <span class="c1"># forms</span>
-                <span class="k">for</span> <span class="n">conversion</span> <span class="ow">in</span> <span class="n">conversions</span><span class="p">:</span>
-                    <span class="n">base</span> <span class="o">=</span> <span class="n">conversion</span><span class="p">[</span><span class="s1">&#39;base&#39;</span><span class="p">]</span>
-                    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">conversion</span><span class="p">[</span><span class="s1">&#39;conversions&#39;</span><span class="p">]:</span>
-                        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">cpy</span><span class="o">.</span><span class="n">left</span> <span class="ow">or</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">cpy</span><span class="o">.</span><span class="n">right</span><span class="p">:</span>
-                            <span class="n">cpy</span> <span class="o">=</span> <span class="n">cpy</span><span class="o">.</span><span class="n">convert</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">base</span><span class="p">)</span>
-                        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">othercpy</span><span class="o">.</span><span class="n">left</span> <span class="ow">or</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">othercpy</span><span class="o">.</span><span class="n">right</span><span class="p">:</span>
-                            <span class="n">othercpy</span> <span class="o">=</span> <span class="n">othercpy</span><span class="o">.</span><span class="n">convert</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">base</span><span class="p">)</span>
-            <span class="n">cpy</span><span class="o">.</span><span class="n">organize</span><span class="p">()</span>
-            <span class="n">othercpy</span><span class="o">.</span><span class="n">organize</span><span class="p">()</span>
-            <span class="k">return</span> <span class="n">cpy</span> <span class="o">==</span> <span class="n">othercpy</span>
+            <span class="c1">#conversions = Unit.get_conversions()</span>
+            <span class="c1">#cpy = self</span>
+            <span class="c1">#othercpy = other</span>
+
+            <span class="c1"># Comparing the labels as they are in their base forms tells us if</span>
+            <span class="c1"># they are compatible, regardless of how they have been converted.</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_base_string</span><span class="p">()</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">get_base_string</span><span class="p">()</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            if conversions is not None:</span>
+<span class="sd">                # Convert both this Label and the other Label into their base</span>
+<span class="sd">                # forms</span>
+<span class="sd">                new_label = </span>
+<span class="sd">                for conversion in conversions:</span>
+<span class="sd">                    base = conversion[&#39;base&#39;]</span>
+<span class="sd">                    for name, value in conversion[&#39;conversions&#39;]:</span>
+<span class="sd">                        if name in cpy.left or name in cpy.right:</span>
+<span class="sd">                            items1 += [(base, name)]</span>
+<span class="sd">                        if name in othercpy.left or name in othercpy.right:</span>
+<span class="sd">                            items2 += [(base, name)]</span>
+
+<span class="sd">                items1 = list(set(items1))</span>
+<span class="sd">                items2 = list(set(items2))</span>
+<span class="sd">                for base, name in items1:</span>
+<span class="sd">                    cpy = cpy.convert(name, base)</span>
+<span class="sd">                for base, name in items2:</span>
+<span class="sd">                    othercpy = othercpy.convert(name, base)</span>
+<span class="sd">                        #if name in cpy.left or name in cpy.right:</span>
+<span class="sd">                        #    cpy = cpy.convert(name, base)</span>
+<span class="sd">                        #if name in othercpy.left or name in othercpy.right:</span>
+<span class="sd">                        #    othercpy = othercpy.convert(name, base)</span>
+<span class="sd">            return cpy == othercpy</span>
+<span class="sd">            &quot;&quot;&quot;</span>
 
         <span class="c1"># Return a copy of this label with changes</span>
-        <span class="k">def</span> <span class="nf">convert</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">old_label</span><span class="p">,</span> <span class="n">new_label</span><span class="p">):</span>
-            <span class="kn">import</span> <span class="nn">copy</span>
-            <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span><span class="p">({</span>
-                <span class="s1">&#39;old_label&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="nb">str</span><span class="p">],</span>
-                <span class="s1">&#39;new_label&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="nb">str</span><span class="p">],</span>
-            <span class="p">})</span>
-            <span class="n">ret</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
-            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ret</span><span class="o">.</span><span class="n">left</span><span class="p">):</span>
-                <span class="k">if</span> <span class="n">val</span> <span class="o">==</span> <span class="n">old_label</span><span class="p">:</span> <span class="n">ret</span><span class="o">.</span><span class="n">left</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_label</span>
-            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ret</span><span class="o">.</span><span class="n">right</span><span class="p">):</span>
-                <span class="k">if</span> <span class="n">val</span> <span class="o">==</span> <span class="n">old_label</span><span class="p">:</span> <span class="n">ret</span><span class="o">.</span><span class="n">right</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_label</span>
-            <span class="k">return</span> <span class="n">ret</span>
+        <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+        <span class="k">def</span> <span class="nf">convert</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">old_label</span> <span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">new_label</span> <span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">Unit</span><span class="o">.</span><span class="n">Label</span><span class="p">(</span>
+                <span class="p">(</span>
+                    <span class="p">[</span><span class="n">new_label</span> <span class="k">if</span> <span class="n">val</span> <span class="o">==</span> <span class="n">old_label</span> <span class="k">else</span> <span class="n">val</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="p">],</span>
+                    <span class="p">[</span><span class="n">new_label</span> <span class="k">if</span> <span class="n">val</span> <span class="o">==</span> <span class="n">old_label</span> <span class="k">else</span> <span class="n">val</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">right</span><span class="p">],</span>
+                 <span class="p">),</span>
+            <span class="p">)</span>
 
         <span class="k">def</span> <span class="nf">simplify</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-            <span class="kn">import</span> <span class="nn">copy</span>
             <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">base</span><span class="p">:</span>
                 <span class="n">lc</span><span class="p">,</span> <span class="n">rc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">item</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">right</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
                 <span class="k">while</span> <span class="n">item</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">left</span> <span class="ow">and</span> <span class="n">item</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">right</span><span class="p">:</span>
@@ -931,66 +943,63 @@
                     <span class="n">lc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
                     <span class="n">rc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">right</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
                     <span class="k">if</span> <span class="n">lc</span> <span class="o">==</span> <span class="n">plc</span> <span class="ow">and</span> <span class="n">rc</span> <span class="o">==</span> <span class="n">prc</span><span class="p">:</span> <span class="k">break</span>
-
+        
         <span class="k">def</span> <span class="nf">set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">string</span><span class="p">):</span>
-            <span class="kn">import</span> <span class="nn">copy</span>
-            <span class="kn">import</span> <span class="nn">starsmashertools</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">right</span> <span class="o">=</span> <span class="n">Unit</span><span class="o">.</span><span class="n">Label</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">string</span><span class="p">)</span>
 
             <span class="c1"># Break down conversions as needed</span>
-            <span class="n">conversions</span> <span class="o">=</span> <span class="n">Unit</span><span class="o">.</span><span class="n">Label</span><span class="o">.</span><span class="n">get_conversions</span><span class="p">()</span>
-            <span class="k">if</span> <span class="n">conversions</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="k">for</span> <span class="n">short</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">conversions</span><span class="p">:</span>
-                    <span class="n">lhs</span><span class="p">,</span> <span class="n">rhs</span> <span class="o">=</span> <span class="n">Unit</span><span class="o">.</span><span class="n">Label</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
-                    <span class="n">left</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="p">)</span>
-                    <span class="n">right</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">right</span><span class="p">)</span>
-                    <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="p">:</span>
-                        <span class="k">if</span> <span class="n">val</span> <span class="o">==</span> <span class="n">short</span><span class="p">:</span>
-                            <span class="n">idx</span> <span class="o">=</span> <span class="n">left</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
-                            <span class="n">left</span> <span class="o">=</span> <span class="n">left</span><span class="p">[:</span><span class="n">idx</span><span class="p">]</span> <span class="o">+</span> <span class="n">lhs</span> <span class="o">+</span> <span class="n">left</span><span class="p">[</span><span class="n">idx</span><span class="o">+</span><span class="mi">1</span><span class="p">:]</span>
-                            <span class="n">right</span> <span class="o">+=</span> <span class="n">rhs</span>
-                    <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">right</span><span class="p">:</span>
-                        <span class="k">if</span> <span class="n">val</span> <span class="o">==</span> <span class="n">short</span><span class="p">:</span>
-                            <span class="n">idx</span> <span class="o">=</span> <span class="n">right</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
-                            <span class="n">right</span> <span class="o">=</span> <span class="n">right</span><span class="p">[:</span><span class="n">idx</span><span class="p">]</span> <span class="o">+</span> <span class="n">rhs</span> <span class="o">+</span> <span class="n">right</span><span class="p">[</span><span class="n">idx</span><span class="o">+</span><span class="mi">1</span><span class="p">:]</span>
-                            <span class="n">left</span> <span class="o">+=</span> <span class="n">lhs</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">left</span> <span class="o">=</span> <span class="n">left</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">right</span> <span class="o">=</span> <span class="n">right</span>
+            <span class="k">for</span> <span class="n">short</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">Unit</span><span class="o">.</span><span class="n">Label</span><span class="o">.</span><span class="n">get_conversions</span><span class="p">():</span>
+                <span class="n">lhs</span><span class="p">,</span> <span class="n">rhs</span> <span class="o">=</span> <span class="n">Unit</span><span class="o">.</span><span class="n">Label</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+                <span class="c1"># str are immutable, so this will create a copy</span>
+                <span class="n">left</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">left</span>
+                <span class="n">right</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">right</span>
+
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">left</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span> <span class="n">left</span> <span class="o">=</span> <span class="n">left</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">right</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span> <span class="n">right</span> <span class="o">=</span> <span class="n">right</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                
+                <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">val</span> <span class="o">==</span> <span class="n">short</span><span class="p">:</span>
+                        <span class="n">idx</span> <span class="o">=</span> <span class="n">left</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+                        <span class="n">left</span> <span class="o">=</span> <span class="n">left</span><span class="p">[:</span><span class="n">idx</span><span class="p">]</span> <span class="o">+</span> <span class="n">lhs</span> <span class="o">+</span> <span class="n">left</span><span class="p">[</span><span class="n">idx</span><span class="o">+</span><span class="mi">1</span><span class="p">:]</span>
+                        <span class="n">right</span> <span class="o">+=</span> <span class="n">rhs</span>
+                <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">right</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">val</span> <span class="o">==</span> <span class="n">short</span><span class="p">:</span>
+                        <span class="n">idx</span> <span class="o">=</span> <span class="n">right</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+                        <span class="n">right</span> <span class="o">=</span> <span class="n">right</span><span class="p">[:</span><span class="n">idx</span><span class="p">]</span> <span class="o">+</span> <span class="n">rhs</span> <span class="o">+</span> <span class="n">right</span><span class="p">[</span><span class="n">idx</span><span class="o">+</span><span class="mi">1</span><span class="p">:]</span>
+                        <span class="n">left</span> <span class="o">+=</span> <span class="n">lhs</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">left</span> <span class="o">=</span> <span class="n">left</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">right</span> <span class="o">=</span> <span class="n">right</span>
             
             <span class="bp">self</span><span class="o">.</span><span class="n">organize</span><span class="p">()</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">simplify</span><span class="p">()</span>
-
+        
         <span class="k">def</span> <span class="nf">organize</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-            <span class="kn">import</span> <span class="nn">copy</span>
-            
             <span class="c1"># Sort the left and right arrays starting with the base values first</span>
             <span class="c1"># and then any other values after.</span>
-            <span class="n">possible_left</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base</span><span class="p">)</span>
-            <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">item</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">possible_left</span><span class="p">:</span>
-                    <span class="n">possible_left</span> <span class="o">+=</span> <span class="p">[</span><span class="n">item</span><span class="p">]</span>
-            <span class="n">possible_right</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base</span><span class="p">)</span>
-            <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">right</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">item</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">possible_right</span><span class="p">:</span>
-                    <span class="n">possible_right</span> <span class="o">+=</span> <span class="p">[</span><span class="n">item</span><span class="p">]</span>
-            <span class="n">srt_left</span> <span class="o">=</span> <span class="p">{</span><span class="n">b</span><span class="p">:</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">b</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">possible_left</span><span class="p">)}</span>
-            <span class="n">srt_right</span> <span class="o">=</span> <span class="p">{</span><span class="n">b</span><span class="p">:</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">b</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">possible_right</span><span class="p">)}</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">left</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">srt_left</span><span class="p">[</span><span class="n">x</span><span class="p">])</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">right</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">right</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">srt_right</span><span class="p">[</span><span class="n">x</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">left</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span>
+                <span class="p">[</span><span class="n">b</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">left</span> <span class="k">if</span> <span class="n">b</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">base</span><span class="p">],</span>
+                <span class="n">key</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">x</span><span class="p">),</span>
+            <span class="p">)</span> <span class="o">+</span> <span class="nb">sorted</span><span class="p">(</span>
+                <span class="p">[</span><span class="n">b</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">left</span> <span class="k">if</span> <span class="n">b</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">base</span><span class="p">],</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">right</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span>
+                <span class="p">[</span><span class="n">b</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">right</span> <span class="k">if</span> <span class="n">b</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">base</span><span class="p">],</span>
+                <span class="n">key</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">x</span><span class="p">),</span>
+            <span class="p">)</span> <span class="o">+</span> <span class="nb">sorted</span><span class="p">(</span>
+                <span class="p">[</span><span class="n">b</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">right</span> <span class="k">if</span> <span class="n">b</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">base</span><span class="p">],</span>
+            <span class="p">)</span>
         
         <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">short</span>
         <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">long</span>
 
         <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
-            <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span><span class="p">(</span>
-                <span class="p">{</span><span class="s1">&#39;other&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="n">Unit</span><span class="o">.</span><span class="n">Label</span><span class="p">,</span> <span class="nb">str</span><span class="p">]}</span>
-            <span class="p">)</span>
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">Unit</span><span class="o">.</span><span class="n">Label</span><span class="p">):</span>
                 <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">long</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">long</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">long</span> <span class="o">==</span> <span class="n">other</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">long</span> <span class="o">==</span> <span class="n">other</span>
+            <span class="k">return</span> <span class="kc">False</span>
 
         <span class="k">def</span> <span class="fm">__mul__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
-            <span class="kn">import</span> <span class="nn">copy</span>
             <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span><span class="p">(</span>
                 <span class="p">{</span><span class="s1">&#39;other&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="n">Unit</span><span class="o">.</span><span class="n">Label</span><span class="p">,</span> <span class="nb">int</span><span class="p">]}</span>
             <span class="p">)</span>
@@ -1011,7 +1020,6 @@
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__mul__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
         <span class="k">def</span> <span class="fm">__truediv__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
-            <span class="kn">import</span> <span class="nn">copy</span>
             <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span><span class="p">(</span>
                 <span class="p">{</span><span class="s1">&#39;other&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="n">Unit</span><span class="o">.</span><span class="n">Label</span><span class="p">]}</span>
             <span class="p">)</span>
@@ -1027,7 +1035,6 @@
             <span class="k">return</span> <span class="n">ret</span>
 
         <span class="k">def</span> <span class="fm">__rtruediv__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
-            <span class="kn">import</span> <span class="nn">copy</span>
             
             <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span><span class="p">(</span>
                 <span class="p">{</span><span class="s1">&#39;other&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="n">Unit</span><span class="o">.</span><span class="n">Label</span><span class="p">,</span> <span class="nb">int</span><span class="p">]}</span>
@@ -1042,8 +1049,8 @@
                 <span class="n">ret</span><span class="o">.</span><span class="n">left</span> <span class="o">+=</span> <span class="n">other</span><span class="o">.</span><span class="n">left</span>
                 <span class="n">ret</span><span class="o">.</span><span class="n">right</span> <span class="o">+=</span> <span class="n">other</span><span class="o">.</span><span class="n">right</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">right</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">ret</span><span class="o">.</span><span class="n">right</span><span class="p">)</span>
-                <span class="n">ret</span><span class="o">.</span><span class="n">right</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">ret</span><span class="o">.</span><span class="n">left</span><span class="p">)</span>
+                <span class="n">right</span> <span class="o">=</span> <span class="n">ret</span><span class="o">.</span><span class="n">right</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                <span class="n">ret</span><span class="o">.</span><span class="n">right</span> <span class="o">=</span> <span class="n">ret</span><span class="o">.</span><span class="n">left</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
                 <span class="n">ret</span><span class="o">.</span><span class="n">left</span> <span class="o">=</span> <span class="n">right</span>
             <span class="n">ret</span><span class="o">.</span><span class="n">organize</span><span class="p">()</span>
             <span class="n">ret</span><span class="o">.</span><span class="n">simplify</span><span class="p">()</span>
@@ -1112,7 +1119,6 @@
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">simulation</span><span class="p">):</span>
         <span class="kn">import</span> <span class="nn">starsmashertools</span>
         <span class="kn">import</span> <span class="nn">starsmashertools.lib.simulation</span>
-        <span class="kn">import</span> <span class="nn">copy</span>
         
         <span class="c1"># Make sure the given simulation argument is of the right type</span>
         <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span><span class="p">({</span>

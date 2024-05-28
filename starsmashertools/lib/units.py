@@ -8,9 +8,10 @@ from starsmashertools.helpers.apidecorator import api
 import numpy as np
 import re
 import fractions
+import copy
 
 def get_all_labels():
-    conversions = Unit.get_conversions()
+    conversions = Unit.conversions
     labels = []
     for conversion in conversions:
         for key, val in conversion.items():
@@ -87,6 +88,8 @@ class Unit(object):
     }
 
     _format_re = re.compile(r'[^[a-zA-Z]*[a-zA-Z]{1}')
+
+    conversions = None
     
     class InvalidLabelError(Exception, object): pass
     class InvalidTypeConversionError(Exception, object): pass
@@ -121,46 +124,30 @@ class Unit(object):
             self.label = Unit.Label(label, self.base)
         else: self.label = label
         self.value = value
-
+    
     @staticmethod
     def get_conversions():
-        # Get the user's conversions
-        user = {}
-        try:
-            user = Unit.preferences.get_user('conversions')
-        except: pass
-        
-        # Get the default conversions
-        default = Unit.preferences.get_default('conversions')
+        if Unit.conversions is None:
+            Unit.conversions = []
+            for key, c in Unit.preferences.get('conversions').items():
+                value, base = c.split()
+                value = float(value)
 
-        # Collect all the conversions we can find
-        default.update(user)
-
-        # These are all the possible keys, which we will now fetch individually
-        # to allow keys to be omitts
-        all_keys = list(default.keys())
-
-        conversions = []
-        for key in all_keys:
-            c = Unit.preferences.get('conversions.%s' % key)
-            value, base = c.split()
-            value = float(value)
-
-            for obj in conversions:
-                if obj['base'] == base:
-                    obj['conversions'] += [[key, value]]
-                    break
-            else:
-                conversions += [{
-                    'base' : base,
-                    'conversions' : [[key, value]],
-                }]
-        return conversions
-            
+                for obj in Unit.conversions:
+                    if obj['base'] == base:
+                        obj['conversions'] += [[key, value]]
+                        break
+                else:
+                    Unit.conversions += [{
+                        'base' : base,
+                        'conversions' : [[key, value]],
+                    }]
+        return Unit.conversions
+    
+    
     # Decide on units that give the cleanest value
     @api
     def auto(self, threshold=100, conversions = None):
-        import copy
         import starsmashertools
         
         starsmashertools.helpers.argumentenforcer.enforcetypes({
@@ -184,13 +171,13 @@ class Unit(object):
             for name, value in conversion['conversions']:
                 # Replace all the instances of the base unit with this new
                 # converted unit
-                new_left = copy.deepcopy(base.label.left)
-                new_right = copy.deepcopy(base.label.right)
+                new_left = base.label.left.copy()
+                new_right = base.label.right.copy()
                 for i, item in enumerate(new_left):
                     if item == conversion['base']: new_left[i] = name
                 for i, item in enumerate(new_right):
                     if item == conversion['base']: new_right[i] = name
-                l = Unit.Label.get_string(new_left, new_right)
+                l = Unit.Label._get_string(new_left, new_right)
                 possible_results += [base.convert(l, conversions=conversions)]
         
         possible_results = sorted(
@@ -303,7 +290,6 @@ class Unit(object):
         --------
         :meth:`~.get_conversion_factor`
         """
-        import copy
         import starsmashertools
         
         if to is None:
@@ -361,7 +347,6 @@ class Unit(object):
     # Returns a copy of this object in its base units
     @api
     def get_base(self, conversions = None):
-        import copy
         import starsmashertools
         
         if conversions is None:
@@ -625,12 +610,22 @@ class Unit(object):
         #       and 2 'g' on the left side of the '/' and for 2 's' on the right
         #       side. If we find enough of such symbols then we remove those
         #       symbols and insert 'erg' on the left-most side, 'erg * cm'.
-        def __init__(self, value, base = ['cm','g','s','K']):
-            self.base = base
-            self.left = []
-            self.right = []
-            self.set(value)
 
+        conversions = None
+        
+        def __init__(
+                self,
+                value : str | list | tuple,
+                base = ['cm','g','s','K'],
+        ):
+            self.base = base
+            if isinstance(value, str):
+                self.left = []
+                self.right = []
+                self.set(value)
+            elif isinstance(value, (list, tuple)):
+                self.left, self.right = value
+        
         @property
         def isCompound(self):
             # "Compound" means this Label contains more than a single value,
@@ -649,113 +644,130 @@ class Unit(object):
 
         @staticmethod
         def get_conversions():
-            conversions = []
-            for key, val in Unit.Label.preferences.get('conversions').items():
-                conversions += [[val, key]]
-            return conversions
+            if Unit.Label.conversions is None:
+                Unit.Label.conversions = [
+                    [val, key] for key,val in Unit.Label.preferences.get('conversions').items()
+                ]
+            yield from Unit.Label.conversions
         
         @property
         def short(self):
-            import copy
-            
-            new_left = copy.deepcopy(self.left)
-            new_right = copy.deepcopy(self.right)
+            new_left = self.left.copy()
+            new_right = self.right.copy()
             
             # Search for unit conversions and then apply those conversions
-            conversions = Unit.Label.get_conversions()
-            
-            if conversions is not None:
-                for short, values in conversions:
-                    short_lhs, short_rhs = Unit.Label.split(short)
-                    lhs, rhs = Unit.Label.split(values)
+            for short, values in Unit.Label.get_conversions():
+                short_lhs, short_rhs = Unit.Label.split(short)
+                lhs, rhs = Unit.Label.split(values)
 
-                    had_left = False
-                    left = copy.deepcopy(new_left)
-                    for l in lhs:
-                        if l in left: left.remove(l)
-                        else: break
-                    else: # No break means success
-                        had_left = True
-                    if not had_left: continue
-                    
-                    had_right = False
-                    right = copy.deepcopy(new_right)
-                    for r in rhs:
-                        if r in right: right.remove(r)
-                        else: break
-                    else: # No break means success
-                        had_right = True
-                    if not had_right: continue
+                had_left = False
+                left = new_left.copy()
+                for l in lhs:
+                    if l in left: left.remove(l)
+                    else: break
+                else: # No break means success
+                    had_left = True
+                if not had_left: continue
 
-                    new_left = short_lhs + left
-                    new_right = short_rhs + right
+                had_right = False
+                right = new_right.copy()
+                for r in rhs:
+                    if r in right: right.remove(r)
+                    else: break
+                else: # No break means success
+                    had_right = True
+                if not had_right: continue
+
+                new_left = short_lhs + left
+                new_right = short_rhs + right
             
-            return Unit.Label.get_string(new_left, new_right)
+            return Unit.Label._get_string(new_left, new_right)
 
         @property
         def long(self):
-            return Unit.Label.get_string(self.left, self.right)
+            return Unit.Label._get_string(self.left, self.right)
 
         @staticmethod
-        def get_string(left, right):
-            starsmashertools.helpers.argumentenforcer.enforcetypes({
-                'left' : [list, tuple],
-                'right' : [list, tuple],
-            })
-            if not left and right:
-                string = "1"
-            else:
-                string = "*".join(left)
-            if right: string += "/"+"*".join(right)
-            return string
+        def _get_string(left, right):
+            if left:
+                if right: return '*'.join(left) + '/' + '*'.join(right)
+                return '*'.join(left)
+            if right: return '1/' + '*'.join(right)
+            return ''
+
+        def get_base_string(self):
+            """ Return this label's string with all units converted down to the
+            base units. """
+            if Unit.get_conversions() is None: return self.long
+
+            if isinstance(self.left, str): newleft = [self.left]
+            else: newleft = self.left.copy()
+            if isinstance(self.right, str): newright = [self.right]
+            else: newright = self.right.copy()
+
+            for conversion in Unit.get_conversions():
+                base = conversion['base']
+                for name, _ in conversion['conversions']:
+                    # This is as fast as we can go
+                    newleft[:] = [base if item == name else item for item in newleft]
+                    newright[:] = [base if item == name else item for item in newright]
+            
+            return Unit.Label._get_string(newleft, newright)
 
         def is_compatible(self, other):
             """
             Returns `True` if this Label can be safely converted to the other
             Label.
             """
-            import copy
-            starsmashertools.helpers.argumentenforcer.enforcetypes({
-                'other' : [str, Unit.Label],
-            })
+            if not isinstance(other, (str, Unit.Label)): return False
             if isinstance(other, str): other = Unit.Label(other)
             if len(self.left) != len(other.left): return False
             if len(self.right) != len(other.right): return False
 
-            conversions = Unit.get_conversions()
-            cpy = copy.deepcopy(self)
-            othercpy = copy.deepcopy(other)
-            
+            #conversions = Unit.get_conversions()
+            #cpy = self
+            #othercpy = other
+
+            # Comparing the labels as they are in their base forms tells us if
+            # they are compatible, regardless of how they have been converted.
+            return self.get_base_string() == other.get_base_string()
+            """
             if conversions is not None:
                 # Convert both this Label and the other Label into their base
                 # forms
+                new_label = 
                 for conversion in conversions:
                     base = conversion['base']
                     for name, value in conversion['conversions']:
                         if name in cpy.left or name in cpy.right:
-                            cpy = cpy.convert(name, base)
+                            items1 += [(base, name)]
                         if name in othercpy.left or name in othercpy.right:
-                            othercpy = othercpy.convert(name, base)
-            cpy.organize()
-            othercpy.organize()
+                            items2 += [(base, name)]
+
+                items1 = list(set(items1))
+                items2 = list(set(items2))
+                for base, name in items1:
+                    cpy = cpy.convert(name, base)
+                for base, name in items2:
+                    othercpy = othercpy.convert(name, base)
+                        #if name in cpy.left or name in cpy.right:
+                        #    cpy = cpy.convert(name, base)
+                        #if name in othercpy.left or name in othercpy.right:
+                        #    othercpy = othercpy.convert(name, base)
             return cpy == othercpy
+            """
 
         # Return a copy of this label with changes
-        def convert(self, old_label, new_label):
-            import copy
-            starsmashertools.helpers.argumentenforcer.enforcetypes({
-                'old_label' : [str],
-                'new_label' : [str],
-            })
-            ret = copy.deepcopy(self)
-            for i, val in enumerate(ret.left):
-                if val == old_label: ret.left[i] = new_label
-            for i, val in enumerate(ret.right):
-                if val == old_label: ret.right[i] = new_label
-            return ret
+        @starsmashertools.helpers.argumentenforcer.enforcetypes
+        def convert(self, old_label : str, new_label : str):
+            return Unit.Label(
+                (
+                    [new_label if val == old_label else val for val in self.left],
+                    [new_label if val == old_label else val for val in self.right],
+                 ),
+            )
 
         def simplify(self):
-            import copy
             for item in self.base:
                 lc, rc = self.left.count(item), self.right.count(item)
                 while item in self.left and item in self.right:
@@ -767,66 +779,63 @@ class Unit(object):
                     lc = self.left.count(item)
                     rc = self.right.count(item)
                     if lc == plc and rc == prc: break
-
+        
         def set(self, string):
-            import copy
-            import starsmashertools
             self.left, self.right = Unit.Label.split(string)
 
             # Break down conversions as needed
-            conversions = Unit.Label.get_conversions()
-            if conversions is not None:
-                for short, value in conversions:
-                    lhs, rhs = Unit.Label.split(value)
-                    left = copy.deepcopy(self.left)
-                    right = copy.deepcopy(self.right)
-                    for val in self.left:
-                        if val == short:
-                            idx = left.index(val)
-                            left = left[:idx] + lhs + left[idx+1:]
-                            right += rhs
-                    for val in self.right:
-                        if val == short:
-                            idx = right.index(val)
-                            right = right[:idx] + rhs + right[idx+1:]
-                            left += lhs
-                    self.left = left
-                    self.right = right
+            for short, value in Unit.Label.get_conversions():
+                lhs, rhs = Unit.Label.split(value)
+                # str are immutable, so this will create a copy
+                left = self.left
+                right = self.right
+
+                if not isinstance(left, str): left = left.copy()
+                if not isinstance(right, str): right = right.copy()
+                
+                for val in self.left:
+                    if val == short:
+                        idx = left.index(val)
+                        left = left[:idx] + lhs + left[idx+1:]
+                        right += rhs
+                for val in self.right:
+                    if val == short:
+                        idx = right.index(val)
+                        right = right[:idx] + rhs + right[idx+1:]
+                        left += lhs
+                self.left = left
+                self.right = right
             
             self.organize()
             self.simplify()
-
+        
         def organize(self):
-            import copy
-            
             # Sort the left and right arrays starting with the base values first
             # and then any other values after.
-            possible_left = copy.deepcopy(self.base)
-            for item in self.left:
-                if item not in possible_left:
-                    possible_left += [item]
-            possible_right = copy.deepcopy(self.base)
-            for item in self.right:
-                if item not in possible_right:
-                    possible_right += [item]
-            srt_left = {b:i for i,b in enumerate(possible_left)}
-            srt_right = {b:i for i,b in enumerate(possible_right)}
-            self.left = sorted(self.left, key=lambda x: srt_left[x])
-            self.right = sorted(self.right, key=lambda x: srt_right[x])
+            self.left = sorted(
+                [b for b in self.left if b in self.base],
+                key = lambda x: self.base.index(x),
+            ) + sorted(
+                [b for b in self.left if b not in self.base],
+            )
+            self.right = sorted(
+                [b for b in self.right if b in self.base],
+                key = lambda x: self.base.index(x),
+            ) + sorted(
+                [b for b in self.right if b not in self.base],
+            )
         
         def __str__(self): return self.short
         def __repr__(self): return self.long
 
         def __eq__(self, other):
-            starsmashertools.helpers.argumentenforcer.enforcetypes(
-                {'other' : [Unit.Label, str]}
-            )
             if isinstance(other, Unit.Label):
                 return self.long == other.long
-            return self.long == other
+            elif isinstance(other, str):
+                return self.long == other
+            return False
 
         def __mul__(self, other):
-            import copy
             starsmashertools.helpers.argumentenforcer.enforcetypes(
                 {'other' : [Unit.Label, int]}
             )
@@ -847,7 +856,6 @@ class Unit(object):
             return self.__mul__(*args, **kwargs)
 
         def __truediv__(self, other):
-            import copy
             starsmashertools.helpers.argumentenforcer.enforcetypes(
                 {'other' : [Unit.Label]}
             )
@@ -863,7 +871,6 @@ class Unit(object):
             return ret
 
         def __rtruediv__(self, other):
-            import copy
             
             starsmashertools.helpers.argumentenforcer.enforcetypes(
                 {'other' : [Unit.Label, int]}
@@ -878,8 +885,8 @@ class Unit(object):
                 ret.left += other.left
                 ret.right += other.right
             else:
-                right = copy.deepcopy(ret.right)
-                ret.right = copy.deepcopy(ret.left)
+                right = ret.right.copy()
+                ret.right = ret.left.copy()
                 ret.left = right
             ret.organize()
             ret.simplify()
@@ -943,7 +950,6 @@ class Units(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
     def __init__(self, simulation):
         import starsmashertools
         import starsmashertools.lib.simulation
-        import copy
         
         # Make sure the given simulation argument is of the right type
         starsmashertools.helpers.argumentenforcer.enforcetypes({
