@@ -158,7 +158,6 @@ prefs = {
                             'teff_aver' : True, # average effective temperature
                             'ltot'      : True, # total bolometric luminosity
                             'flux_tot'  : True, # total bolometric flux
-                            'l_v'       : True,
                             'extent'    : True, # x,y screen space limits
                             'dx'        : True, # x cell size
                             'dy'        : True, # y cell size
@@ -170,10 +169,12 @@ prefs = {
                             'weighted_averages' : True, # weighted average maps
                         },
                         'spectrum' : {
-                            'ltot_spectrum' : True, # spectral luminosity
-                            'l_spectrum'    : True, # L in filters
+                            'ltot'          : True, # total spectral luminosity
+                            'luminosities'  : True, # filter luminosities
                             'output'        : True, # spectrum information
                             'teff'          : True, # effective temperature
+                            'teff_min'      : True, # minimum Teff
+                            'teff_max'      : True, # maximum Teff
                         },
                     }, # 'exclude'
                 }, # 'save'
