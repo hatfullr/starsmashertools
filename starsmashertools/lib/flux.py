@@ -21,12 +21,6 @@ except ImportError:
     has_matplotlib = False
 
 
-def get(*args, **kwargs):
-    weighted_averages = kwargs.pop('weighted_averages', [])
-    finder = FluxFinder(*args, **kwargs)
-    finder.get()
-    return finder.result
-
 @starsmashertools.preferences.use
 class FluxFinder(object):
     @starsmashertools.helpers.argumentenforcer.enforcetypes
@@ -139,9 +133,20 @@ class FluxFinder(object):
 
         # We multiply by the flux later in _init_particles
         for i, array in enumerate(weighted_averages):
-            self.images['weightedaverage%d' % i] = FluxFinder.Image(
-                self.resolution, particle_array = copy.deepcopy(array),
-            )
+            if isinstance(array, str):
+                self.images['weightedaverage%d' % i] = FluxFinder.Image(
+                    self.resolution,
+                    # This should hopefully send a reference to the image for
+                    # use. This way, if the user wants to use, say, a
+                    # component of the particle velocity, then the value used
+                    # will be the one after rotations have been done.
+                    particle_array = self.output[array],
+                )
+            else:
+                self.images['weightedaverage%d' % i] = FluxFinder.Image(
+                    self.resolution,
+                    particle_array = array, # a reference (rotate)
+                )
 
         self.result = FluxResult({
             'version' : starsmashertools.__version__,
@@ -810,10 +815,10 @@ class FluxFinder(object):
         def get_total(self):
             # Vectorized. Same as Natasha's way of doing it.
             return np.sum(0.25 * (\
-                self.array[  :self.resolution[0]-1,  :self.resolution[1]-1 ] + \
-                self.array[  :self.resolution[0]-1, 1:self.resolution[1]   ] + \
-                self.array[ 1:self.resolution[0]  ,  :self.resolution[1]-1 ] + \
-                self.array[ 1:self.resolution[0]  , 1:self.resolution[1]   ]))
+                self.array[  :self.resolution[0]-1,  :self.resolution[1]-1] + \
+                self.array[  :self.resolution[0]-1, 1:self.resolution[1]  ] + \
+                self.array[ 1:self.resolution[0]  ,  :self.resolution[1]-1] + \
+                self.array[ 1:self.resolution[0]  , 1:self.resolution[1]  ]))
 
 
 
