@@ -70,6 +70,19 @@ except subprocess.CalledProcessError as e:
 os.chdir(starsmashertools.SOURCE_DIRECTORY)
 try:
     p = subprocess.run(
+        ['git', 'add', 'docs'],
+        check = True,
+        text = True,
+        stdout = subprocess.PIPE,
+        stderr = subprocess.STDOUT,
+    )
+except subprocess.CalledProcessError as e:
+    print(e.returncode)
+    print(e.output)
+    sys.exit(1)
+
+try:
+    p = subprocess.run(
         ['git', 'commit', '--amend', '-C', 'HEAD', '--no-verify'],
         check = True,
         text = True,
