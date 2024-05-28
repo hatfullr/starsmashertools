@@ -221,18 +221,23 @@ class TestNestedDict(basetest.BaseTest):
         })
 
         self.assertIn('1', d)
+        self.assertIn(('1',), d)
         self.assertIn(('1','1a'), d)
         self.assertIn(('1','1a','1ai'), d)
         self.assertIn(('1','1a','1aii'),d)
         self.assertIn(('1','1b'), d)
         self.assertIn(('1','1b','1bi'), d)
         self.assertIn('2', d)
-
-        self.assertNotIn(('1','1a','1aiii'), d)
-        self.assertNotIn(('1','1c'), d)
-        self.assertNotIn(('2',), d)
+        self.assertIn(('2',), d)
         self.assertNotIn(('2', None), d)
-        self.assertNotIn('3', d)
+        
+        branches = d.branches()
+        self.assertIn(('1','1a','1ai'), branches)
+        self.assertIn(('1','1a','1aii'),branches)
+        self.assertIn(('1','1b','1bi'), branches)
+        self.assertIn('2', branches)
+        self.assertIn(('2',), branches)
+        self.assertNotIn(('2', None), branches)
 
     def test_iter(self):
         d = starsmashertools.helpers.nesteddict.NestedDict({

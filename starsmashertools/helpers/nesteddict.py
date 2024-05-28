@@ -27,6 +27,11 @@ class nested_dict_keys(collections.abc.KeysView):
 
     def __reversed__(self): return reversed(self._mapping)
 
+    def __contains__(self, key):
+        if isinstance(key, tuple) and len(key) == 1:
+            return super(nested_dict_keys, self).__contains__(key[0])
+        return super(nested_dict_keys, self).__contains__(key)
+
 # This is what's done in the Python source code, so we'll do it too
 collections.abc.KeysView.register(nested_dict_keys)
 
@@ -51,6 +56,7 @@ class nested_dict_branches(nested_dict_keys):
         else:
             if len(path) == 1: yield path[0]
             elif len(path) > 1: yield path
+
 collections.abc.KeysView.register(nested_dict_branches)
 
 
