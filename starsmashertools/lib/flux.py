@@ -946,7 +946,9 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
 
         loaded = starsmashertools.helpers.nesteddict.NestedDict()
         keys = archive.keys()
-        for key, val in zip(keys, archive.get(keys, deserialize = deserialize)):
+        values = archive.get(keys, deserialize = deserialize)
+        if not isinstance(values, list): values = [values]
+        for key, val in zip(keys, values):
             if deserialize: loaded[key] = val.value
             else: loaded[key] = val
         if allowed:
