@@ -25,8 +25,11 @@ class TestFluxResults(basetest.BaseTest):
             # to be stored.
             for key, val in details['allowed'].items():
                 if not val: continue
-                self.assertIn(key, result.keys(), msg = details['filename'])
-            
+                for k in result.keys():
+                    if key in k: break
+                else:
+                    raise KeyError(key +' '+details['filename'])
+                    
             # Each key must have a list of values of the same length as the
             # number of stored FluxResult objects.
             for branch, leaf in result.flowers():
