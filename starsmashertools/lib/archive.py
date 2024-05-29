@@ -263,8 +263,7 @@ class ArchiveValue(object):
             o = starsmashertools.helpers.pickler.unpickle_object(obj)
         except (binascii.Error, _pickle.UnpicklingError):
             o = starsmashertools.helpers.jsonfile.load_bytes(obj)
-        ret = ArchiveValue(identifier, o['value'], o['origin'], o['mtime'])
-        return ret
+        return ArchiveValue(identifier, o['value'], o['origin'], o['mtime'])
 
 
 class ArchiveItems(object):
