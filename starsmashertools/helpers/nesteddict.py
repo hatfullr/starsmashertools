@@ -1,6 +1,19 @@
 import collections.abc
 import copy
 
+def is_path_from_stems(path, stems):
+    """ Check all the given stems to see if the given path starts with one of 
+    them. """
+    if isinstance(path, str): return path in stems
+    if len(path) == 0: return False
+    
+    for stem in stems:
+        if isinstance(stem, str):
+            if path[0] == stem: return True
+            continue
+        if path[:len(stem)] == stem: return True
+    return False
+
 class nested_dict_keys(collections.abc.KeysView):
     def __init__(self, mapping, stems = ()):
         if not isinstance(mapping, NestedDict):
@@ -11,14 +24,9 @@ class nested_dict_keys(collections.abc.KeysView):
     @staticmethod
     def _get_mapping_gen(obj, stems, path = ()):
         # If the path is in one of the stems, yield
-        if not stems:
+        if not stems or is_path_from_stems(path, stems):
             if len(path) == 1: yield path[0]
             elif len(path) > 1: yield path
-        elif any([path[:len(stem)] == stem for stem in stems]):
-            if len(path) == 1:
-                if path[0] not in stems: yield path[0]
-            elif len(path) > 1:
-                if path not in stems: yield path
         if isinstance(obj, NestedDict):
             for key, val in super(NestedDict, obj).items():
                 yield from nested_dict_keys._get_mapping_gen(
@@ -62,24 +70,18 @@ class nested_dict_branches(nested_dict_keys):
                 )
         else:
             # If the path is in one of the stems, yield
-            if not stems:
+            if not stems or is_path_from_stems(path, stems):
                 if len(path) == 1: yield path[0]
                 elif len(path) > 1: yield path
-            elif any([path[:len(stem)] == stem for stem in stems]):
-                if len(path) == 1:
-                    if path[0] not in stems: yield path[0]
-                elif len(path) > 1:
-                    if path not in stems: yield path
     @property
     def _mapping(self): return list(self._get_mapping_gen(self.mapping, self._stems))
 collections.abc.KeysView.register(nested_dict_branches)
 
 class nested_dict_stems(nested_dict_keys):
     """
-    Similar to :class:`~.nested_dict_keys`\, but the keys included are only
-    those which don't point to a leaf. That is, it is the same as
-    :class:`~.nested_dict_keys`\, but excluding the keys which correspond to
-    branches.
+    Similar to :class:`~.nested_dict_keys`\, but the keys included are either 
+    those which don't point to a leaf, or those which do point to a leaf but
+    have a path length of 1 (at the root of the tree).
     """
     @staticmethod
     def _get_mapping_gen(obj, stems, path = ()):
@@ -100,9 +102,7 @@ class nested_dict_values(collections.abc.ValuesView):
     @staticmethod
     def _get_mapping_gen(obj, stems, path = ()):
         if len(path) != 0:
-            if not stems: yield obj
-            elif any([path[:len(stem)] == stem for stem in stems]):
-                if path not in stems: yield obj
+            if not stems or is_path_from_stems(path, stems): yield obj
         if isinstance(obj, NestedDict):
             for key, val in super(NestedDict, obj).items():
                 yield from nested_dict_values._get_mapping_gen(
@@ -139,9 +139,7 @@ class nested_dict_leaves(nested_dict_values):
                     val, stems, path = tuple(list(path) + [key]),
                 )
         elif len(path) != 0:
-            if not stems: yield obj
-            elif any([path[:len(stem)] == stem for stem in stems]):
-                if path not in stems: yield obj
+            if not stems or is_path_from_stems(path, stems): yield obj
 collections.abc.ValuesView.register(nested_dict_leaves)
 
 
@@ -153,15 +151,9 @@ class nested_dict_items(collections.abc.ItemsView):
         self._stems = stems
     @staticmethod
     def _get_mapping_gen(obj, stems, path = ()):
-        if not stems:
+        if not stems or is_path_from_stems(path, stems):
             if len(path) == 1: yield path[0], obj
             elif len(path) > 1: yield path, obj
-        elif any([path[:len(stem)] == stem for stem in stems]):
-            if len(path) == 1:
-                if path[0] not in stems: yield path[0], obj
-            elif len(path) > 1:
-                if path not in stems: yield path, obj
-        
         if isinstance(obj, NestedDict):
             for key, val in super(NestedDict, obj).items():
                 yield from nested_dict_items._get_mapping_gen(
@@ -199,14 +191,9 @@ class nested_dict_flowers(nested_dict_items):
                     val, stems, path = tuple(list(path) + [key]),
                 )
         else:
-            if not stems:
+            if not stems or is_path_from_stems(path, stems):
                 if len(path) == 1: yield path[0], obj
                 elif len(path) > 1: yield path, obj
-            elif any([path[:len(stem)] == stem for stem in stems]):
-                if len(path) == 1:
-                    if path[0] not in stems: yield path[0], obj
-                elif len(path) > 1:
-                    if path not in stems: yield path, obj
 collections.abc.ItemsView.register(nested_dict_flowers)
 
 

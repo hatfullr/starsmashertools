@@ -71,15 +71,19 @@ class TestNestedDict(basetest.BaseTest):
             self.assertEqual(key1, key2)
             self.assertIn(key1, found)
 
-        expected = [('1', '1a', '1ai'), ('1', '1a', '1aii')]
+        expected = [('1', '1a'), ('1', '1a', '1ai'), ('1', '1a', '1aii')]
         found = d.keys(stems = [('1', '1a')])
         self.assertEqual(len(expected), len(found))
         for key1, key2 in zip(expected, found):
             self.assertEqual(key1, key2)
             self.assertIn(key1, found)
 
+        expected = ['2']
         found = d.keys(stems = ['2'])
-        self.assertEqual(0, len(found))
+        self.assertEqual(1, len(found))
+        for key1, key2 in zip(expected, found):
+            self.assertEqual(key1, key2)
+            self.assertIn(key1, found)
 
     def test_values(self):
         d = starsmashertools.helpers.nesteddict.NestedDict({
@@ -112,6 +116,7 @@ class TestNestedDict(basetest.BaseTest):
 
         
         expected = [
+            {'1ai': 1, '1aii': 2}, # d['1','1a']
             1, # d['1','1a','1ai']
             2, # d['1','1a','1aii']
         ]
@@ -121,8 +126,12 @@ class TestNestedDict(basetest.BaseTest):
             self.assertEqual(val1, val2, msg = 'key = %s: expected = %s, found = %s' % (key, val1, val2))
             self.assertIn(val1, found)
 
+        expected = [None]
         found = d.values(stems = ['2'])
-        self.assertEqual(0, len(found))
+        self.assertEqual(1, len(found))
+        for key, val1, val2 in zip(d.keys(), expected, found):
+            self.assertEqual(val1, val2, msg = 'key = %s: expected = %s, found = %s' % (key, val1, val2))
+            self.assertIn(val1, found)
 
 
     def test_items(self):
@@ -156,6 +165,7 @@ class TestNestedDict(basetest.BaseTest):
             self.assertIn(item1, found)
 
         expected = [
+            (('1','1a'), {'1ai': 1, '1aii': 2}), # d['1','1a']
             (('1','1a','1ai'), 1), # d['1','1a','1ai']
             (('1','1a','1aii'),2), # d['1','1a','1aii']
         ]
@@ -165,8 +175,12 @@ class TestNestedDict(basetest.BaseTest):
             self.assertEqual(item1, item2)
             self.assertIn(item1, found)
 
+        expected = [('2', None)]
         found = d.items(stems = ['2'])
-        self.assertEqual(0, len(found))
+        self.assertEqual(1, len(found))
+        for item1, item2 in zip(expected, found):
+            self.assertEqual(item1, item2)
+            self.assertIn(item1, found)
 
     def test_branches(self):
         d = starsmashertools.helpers.nesteddict.NestedDict({
@@ -204,8 +218,12 @@ class TestNestedDict(basetest.BaseTest):
             self.assertEqual(exp, branch)
             self.assertIn(exp, branches)
 
+        expected = ['2']
         branches = d.branches(stems = ['2'])
-        self.assertEqual(0, len(branches))
+        self.assertEqual(len(expected), len(branches))
+        for exp, branch in zip(expected, branches):
+            self.assertEqual(exp, branch)
+            self.assertIn(exp, branches)
     
     def test_stems(self):
         d = starsmashertools.helpers.nesteddict.NestedDict({
@@ -230,7 +248,7 @@ class TestNestedDict(basetest.BaseTest):
             self.assertEqual(exp, stem)
             self.assertIn(exp, stems)
 
-        expected = [('1', '1a', '1aiii')]
+        expected = [('1', '1a'), ('1', '1a', '1aiii')]
         stems = d.stems(stems = [('1', '1a')])
         self.assertEqual(len(expected), len(stems))
         for exp, stem in zip(expected, stems):
@@ -241,13 +259,10 @@ class TestNestedDict(basetest.BaseTest):
             ['1', ('1', '1a'), ('1', '1a', '1aiii')],
             list(d.get_stems(('1','1a','1aiii','1aiii1'))),
         )
-        # stems cannot be branches
-        self.assertEqual(0, len(tuple(d.get_stems('2'))))
-
-        branches = d.branches()
-        for stem in d.stems():
-            self.assertNotIn(stem, branches)
-        
+        # stems can be branches, branches can't be stems
+        stems = d.stems()
+        for branch in d.branches():
+            self.assertNotIn(branch, stems)
         
     def test_leaves(self):
         d = starsmashertools.helpers.nesteddict.NestedDict({
