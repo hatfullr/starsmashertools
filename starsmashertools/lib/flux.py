@@ -944,17 +944,16 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
         if isinstance(allowed, dict):
             allowed = starsmashertools.helpers.nesteddict.NestedDict(allowed)
 
-        toload = starsmashertools.helpers.nesteddict.NestedDict()
-        if allowed is not None: keys = [str(a) for a in allowed.branches()]
-        else: keys = archive.keys()
-        values = archive.get(keys, deserialize = deserialize)
-        if len(keys) == 1: values = [values]
-        for key, val in zip(keys, values):
-            try: key = eval(key)
-            except: pass
-            if deserialize: toload[key] = val.value
-            else: toload[key] = val
-        return FluxResult(toload)
+        loaded = starsmashertools.helpers.nesteddict.NestedDict()
+        keys = archive.keys()
+        for key, val in zip(keys, archive.get(keys, deserialize = deserialize)):
+            if deserialize: loaded[key] = val.value
+            else: loaded[key] = val
+        if allowed:
+            for branch, leaf in allowed.flowers():
+                if leaf: continue
+                loaded.pop(branch)
+        return FluxResult(loaded)
     
     if has_matplotlib:
         @starsmashertools.helpers.argumentenforcer.enforcetypes
@@ -1150,7 +1149,6 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
                     else:
                         if index is None: self[b] += [l]
                         else: self[b].insert(index, l)
-                    
         
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
