@@ -236,6 +236,18 @@ class TestNestedDict(basetest.BaseTest):
         for exp, stem in zip(expected, stems):
             self.assertEqual(exp, stem)
             self.assertIn(exp, stems)
+
+        self.assertEqual(
+            ['1', ('1', '1a'), ('1', '1a', '1aiii')],
+            list(d.get_stems(('1','1a','1aiii','1aiii1'))),
+        )
+        # stems cannot be branches
+        self.assertEqual(0, len(tuple(d.get_stems('2'))))
+
+        branches = d.branches()
+        for stem in d.stems():
+            self.assertNotIn(stem, branches)
+        
         
     def test_leaves(self):
         d = starsmashertools.helpers.nesteddict.NestedDict({

@@ -14,7 +14,7 @@ class nested_dict_keys(collections.abc.KeysView):
         if not stems:
             if len(path) == 1: yield path[0]
             elif len(path) > 1: yield path
-        elif any([path[:min(len(path), len(stem))] == stem for stem in stems]):
+        elif any([path[:len(stem)] == stem for stem in stems]):
             if len(path) == 1:
                 if path[0] not in stems: yield path[0]
             elif len(path) > 1:
@@ -65,7 +65,7 @@ class nested_dict_branches(nested_dict_keys):
             if not stems:
                 if len(path) == 1: yield path[0]
                 elif len(path) > 1: yield path
-            elif any([path[:min(len(path), len(stem))] == stem for stem in stems]):
+            elif any([path[:len(stem)] == stem for stem in stems]):
                 if len(path) == 1:
                     if path[0] not in stems: yield path[0]
                 elif len(path) > 1:
@@ -101,7 +101,7 @@ class nested_dict_values(collections.abc.ValuesView):
     def _get_mapping_gen(obj, stems, path = ()):
         if len(path) != 0:
             if not stems: yield obj
-            elif any([path[:min(len(path), len(stem))] == stem for stem in stems]):
+            elif any([path[:len(stem)] == stem for stem in stems]):
                 if path not in stems: yield obj
         if isinstance(obj, NestedDict):
             for key, val in super(NestedDict, obj).items():
@@ -140,7 +140,7 @@ class nested_dict_leaves(nested_dict_values):
                 )
         elif len(path) != 0:
             if not stems: yield obj
-            elif any([path[:min(len(path), len(stem))] == stem for stem in stems]):
+            elif any([path[:len(stem)] == stem for stem in stems]):
                 if path not in stems: yield obj
 collections.abc.ValuesView.register(nested_dict_leaves)
 
@@ -156,7 +156,7 @@ class nested_dict_items(collections.abc.ItemsView):
         if not stems:
             if len(path) == 1: yield path[0], obj
             elif len(path) > 1: yield path, obj
-        elif any([path[:min(len(path), len(stem))] == stem for stem in stems]):
+        elif any([path[:len(stem)] == stem for stem in stems]):
             if len(path) == 1:
                 if path[0] not in stems: yield path[0], obj
             elif len(path) > 1:
@@ -202,7 +202,7 @@ class nested_dict_flowers(nested_dict_items):
             if not stems:
                 if len(path) == 1: yield path[0], obj
                 elif len(path) > 1: yield path, obj
-            elif any([path[:min(len(path), len(stem))] == stem for stem in stems]):
+            elif any([path[:len(stem)] == stem for stem in stems]):
                 if len(path) == 1:
                     if path[0] not in stems: yield path[0], obj
                 elif len(path) > 1:
@@ -434,3 +434,14 @@ class NestedDict(dict, object):
             else: # A regular dict key
                 current[branch] = leaf
         return ret
+
+    def get_stems(self, branch):
+        """ Given a branch, return its stems. """
+        if branch not in self.branches(): raise KeyError(branch)
+        if isinstance(branch, str): branch = (branch,)
+        for stem in self.stems():
+            if isinstance(stem, tuple):
+                if branch[:len(stem)] != stem: continue
+            else:
+                if branch[0] != stem: continue
+            yield stem
