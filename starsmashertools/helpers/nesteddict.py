@@ -432,3 +432,28 @@ class NestedDict(dict, object):
             else:
                 if branch[0] != stem: continue
             yield stem
+
+    @staticmethod
+    def is_child_branch(
+            child : str | tuple,
+            parent : str | tuple,
+    ):
+        """ Returns `True` if the given ``child`` branch is contained within the
+        given ``parent`` branch, and `False` otherwise. For example, if
+        ``child = ('root', 'item', 'leaf')`` and ``parent = ('root',)``\, then
+        the result is `True`\. However, if ``parent = ('root', 'other')``\, then
+        the result is `False`\. 
+
+        If ``child`` and ``parent`` refer to identical branches, or ``child`` 
+        is a shorter path than ``parent``, returns `False`\.
+        """
+        if isinstance(child, str): child = (child,)
+        if isinstance(parent, str): parent = (parent,)
+
+        if len(child) <= len(parent): return False
+
+        for c, p in zip(child, parent):
+            if c != p: return False
+
+        return True
+        

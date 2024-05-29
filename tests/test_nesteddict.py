@@ -1,10 +1,11 @@
 import starsmashertools.helpers.nesteddict
 import unittest
-import basetest
 import copy
 import os
 
-class TestNestedDict(basetest.BaseTest):
+# It doesn't inherit from BaseTest because we don't need to extract the zipped
+# test data to perform our tests.
+class TestNestedDict(unittest.TestCase, object):
     def tearDown(self):
         if os.path.isfile('test.pickle'): os.remove('test.pickle')
         
@@ -751,8 +752,14 @@ class TestNestedDict(basetest.BaseTest):
         self.assertEqual(d['1','1a','1ai'], 1)
         self.assertEqual(d['1','1a','1aii'], 2)
         self.assertEqual(d['1','1b','1bi'], 3)
-        
-        
+
+    def test_is_child_branch(self):
+        d = starsmashertools.helpers.nesteddict.NestedDict
+        self.assertTrue(d.is_child_branch(('1', '1a', '1ai'), ('1',)))
+        self.assertTrue(d.is_child_branch(('1', '1a', '1ai'), '1'))
+        self.assertFalse(d.is_child_branch('2', '2'))
+        self.assertFalse(d.is_child_branch('1', ('1', '1a')))
+        self.assertFalse(d.is_child_branch(('1','1a'), ('1','1a')))
 
 class TestLoader(unittest.TestLoader, object):
     def getTestCaseNames(self, *args, **kwargs):
@@ -785,6 +792,7 @@ class TestLoader(unittest.TestLoader, object):
             'test_or_ior',
             'test_pickle',
             'test_convert_to_dict',
+            'test_is_child_branch',
         ]
 
 if __name__ == "__main__":
