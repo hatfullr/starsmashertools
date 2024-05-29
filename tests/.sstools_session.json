@@ -1,0 +1,12 @@
+{
+    "starsmashertools.lib.archive.Archive.show_value": {
+        "function path": "starsmashertools.lib.archive.Archive.show_value",
+        "class": "Archive",
+        "module": "starsmashertools.lib.archive",
+        "name": "show_value",
+        "positional": {
+            "key": "('kwargs', 'weighted_averages')"
+        },
+        "keyword": {}
+    }
+}

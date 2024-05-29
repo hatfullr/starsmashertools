@@ -3,7 +3,8 @@ import os
 import starsmashertools.lib.flux
 import basetest
 import test_fluxresult
-
+import starsmashertools.helpers.nesteddict
+    
 class TestFluxResults(basetest.BaseTest):
 
     test_filename = 'fluxresults_test.zip'
@@ -48,7 +49,7 @@ class TestFluxResults(basetest.BaseTest):
     
     def testAdd(self):
         details = test_fluxresult.load_fluxresult_details().fluxresult_details
-
+        
         total = starsmashertools.lib.flux.FluxResults()
         for i, detail in enumerate(details):
             path = os.path.join(test_fluxresult.fluxdir, detail['filename'])
@@ -57,7 +58,7 @@ class TestFluxResults(basetest.BaseTest):
             for branch, leaf in total.flowers():
                 self.assertEqual(i + 1, len(leaf))
         total.save(TestFluxResults.test_filename)
-
+        
         new = starsmashertools.lib.flux.FluxResults.load(TestFluxResults.test_filename)
         for branch, leaf in new.flowers():
             self.assertIn(branch, total.branches())
@@ -73,9 +74,10 @@ class TestFluxResults(basetest.BaseTest):
             path = os.path.join(test_fluxresult.fluxdir, detail['filename'])
             result = starsmashertools.lib.flux.FluxResult.load(path)
             total.add(result)
+            self.assertEqual(1, len(total.branches()))
+            self.assertEqual('time', list(total.branches())[0])
             for branch, leaf in total.flowers():
                 self.assertEqual(i + 1, len(leaf))
-            self.assertEqual(1, len(total.branches()))
 
         # Try with a difficult, nested 'allowed' keyword
         total = starsmashertools.lib.flux.FluxResults(allowed = {
@@ -105,7 +107,8 @@ class TestFluxResults(basetest.BaseTest):
             for branch, leaf in total.flowers():
                 self.assertEqual(i, len(leaf))
             self.assertNotEqual(2, len(total.branches()))
-
+            self.assertIn('simulation', total.branches())
+        
         os.remove(TestFluxResults.test_filename)
         total.save(TestFluxResults.test_filename)
 

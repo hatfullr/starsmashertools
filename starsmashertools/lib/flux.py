@@ -949,10 +949,14 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
         values = archive.get(keys, deserialize = deserialize)
         if not isinstance(values, list): values = [values]
         for key, val in zip(keys, values):
+            try: key = eval(key)
+            except: pass
             if deserialize: loaded[key] = val.value
             else: loaded[key] = val
         if allowed:
             for branch, leaf in allowed.flowers():
+                try: branch = eval(branch)
+                except: pass
                 if leaf: continue
                 loaded.pop(branch)
         return FluxResult(loaded)
@@ -1129,29 +1133,28 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
         index = None
         if order in self.branches():
             index = bisect.bisect(self.get(order), result.get(order))
-
-        stems = result.stems()
-        branches = result.branches()
-        for branch, leaf in self._allowed.flowers():
-            if not leaf: continue
-            # If the allowed dict branch is a branch in the result, add the
-            # branch value
-            if branch in branches:
-                if branch not in self.branches(): self[branch] = [result[branch]]
-                else:
-                    if index is None: self[branch] += [result[branch]]
-                    else: self[branch].insert(index, result[branch])
-                continue
-            
-            # If the allowed dict branch is a stem in the result, add all the
-            # branches off of that stem
-            if branch in stems:
-                for b, l in result.flowers(stems = (branch,)):
-                    if b not in self.branches(): self[b] = [l]
-                    else:
-                        if index is None: self[b] += [l]
-                        else: self[b].insert(index, l)
         
+        previous_branches = self.branches()
+        if len(previous_branches) == 0:
+            for branch, leaf in result.flowers():
+                try: branch = eval(branch)
+                except: pass
+                try:
+                    if not self._allowed[branch]: continue
+                except KeyError: continue
+                self[branch] = [leaf]
+        else:
+            for branch, leaf in result.flowers():
+                try: branch = eval(branch)
+                except: pass
+                try:
+                    if not self._allowed[branch]: continue
+                except KeyError: continue
+                if branch not in previous_branches:
+                    raise KeyError("Cannot add a FluxResult with missing branch '%s'" % str(branch))
+                if index is None: self[branch] += [leaf]
+                else: self[branch].insert(index, leaf)
+    
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def save(
