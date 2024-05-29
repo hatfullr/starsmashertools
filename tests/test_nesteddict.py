@@ -71,6 +71,16 @@ class TestNestedDict(basetest.BaseTest):
             self.assertEqual(key1, key2)
             self.assertIn(key1, found)
 
+        expected = [('1', '1a', '1ai'), ('1', '1a', '1aii')]
+        found = d.keys(stems = [('1', '1a')])
+        self.assertEqual(len(expected), len(found))
+        for key1, key2 in zip(expected, found):
+            self.assertEqual(key1, key2)
+            self.assertIn(key1, found)
+
+        found = d.keys(stems = ['2'])
+        self.assertEqual(0, len(found))
+
     def test_values(self):
         d = starsmashertools.helpers.nesteddict.NestedDict({
             '1' : {
@@ -99,6 +109,21 @@ class TestNestedDict(basetest.BaseTest):
         for key, val1, val2 in zip(d.keys(), expected, found):
             self.assertEqual(val1, val2, msg = 'key = %s: expected = %s, found = %s' % (key, val1, val2))
             self.assertIn(val1, found)
+
+        
+        expected = [
+            1, # d['1','1a','1ai']
+            2, # d['1','1a','1aii']
+        ]
+        found = d.values(stems = [('1', '1a')])
+        self.assertEqual(len(expected), len(found))
+        for key, val1, val2 in zip(d.keys(), expected, found):
+            self.assertEqual(val1, val2, msg = 'key = %s: expected = %s, found = %s' % (key, val1, val2))
+            self.assertIn(val1, found)
+
+        found = d.values(stems = ['2'])
+        self.assertEqual(0, len(found))
+
 
     def test_items(self):
         d = starsmashertools.helpers.nesteddict.NestedDict({
@@ -130,6 +155,19 @@ class TestNestedDict(basetest.BaseTest):
             self.assertEqual(item1, item2)
             self.assertIn(item1, found)
 
+        expected = [
+            (('1','1a','1ai'), 1), # d['1','1a','1ai']
+            (('1','1a','1aii'),2), # d['1','1a','1aii']
+        ]
+        found = d.items(stems = [('1','1a')])
+        self.assertEqual(len(expected), len(found))
+        for item1, item2 in zip(expected, found):
+            self.assertEqual(item1, item2)
+            self.assertIn(item1, found)
+
+        found = d.items(stems = ['2'])
+        self.assertEqual(0, len(found))
+
     def test_branches(self):
         d = starsmashertools.helpers.nesteddict.NestedDict({
             '1' : {
@@ -151,12 +189,33 @@ class TestNestedDict(basetest.BaseTest):
             self.assertEqual(exp, branch)
             self.assertIn(exp, branches)
 
+        expected = [('1','1a','1ai'), ('1','1a','1aii')]
+        branches = d.branches(stems = [('1', '1a')])
+        #for branch in branches: print(branch)
+        self.assertEqual(len(expected), len(branches))
+        for exp, branch in zip(expected, branches):
+            self.assertEqual(exp, branch)
+            self.assertIn(exp, branches)
+
+        expected = [('1','1b','1bi')]
+        branches = d.branches(stems = [('1', '1b')])
+        self.assertEqual(len(expected), len(branches))
+        for exp, branch in zip(expected, branches):
+            self.assertEqual(exp, branch)
+            self.assertIn(exp, branches)
+
+        branches = d.branches(stems = ['2'])
+        self.assertEqual(0, len(branches))
+    
     def test_stems(self):
         d = starsmashertools.helpers.nesteddict.NestedDict({
             '1' : {
                 '1a' : {
                     '1ai'  : 1,
                     '1aii' : 2,
+                    '1aiii' : {
+                        '1aiii1' : 1,
+                    },
                 },
                 '1b' : {
                     '1bi' : 3,
@@ -164,8 +223,15 @@ class TestNestedDict(basetest.BaseTest):
             },
             '2' : None,
         })
-        expected = ['1', ('1','1a'), ('1','1b')]
+        expected = ['1', ('1','1a'), ('1','1a','1aiii'), ('1','1b')]
         stems = d.stems()
+        self.assertEqual(len(expected), len(stems))
+        for exp, stem in zip(expected, stems):
+            self.assertEqual(exp, stem)
+            self.assertIn(exp, stems)
+
+        expected = [('1', '1a', '1aiii')]
+        stems = d.stems(stems = [('1', '1a')])
         self.assertEqual(len(expected), len(stems))
         for exp, stem in zip(expected, stems):
             self.assertEqual(exp, stem)
@@ -187,6 +253,13 @@ class TestNestedDict(basetest.BaseTest):
 
         expected = [1, 2, 3, None]
         leaves = d.leaves()
+        self.assertEqual(len(expected), len(leaves))
+        for exp, leaf in zip(expected, leaves):
+            self.assertEqual(exp, leaf)
+            self.assertIn(exp, leaves)
+
+        expected = [1, 2]
+        leaves = d.leaves(stems = [('1', '1a')])
         self.assertEqual(len(expected), len(leaves))
         for exp, leaf in zip(expected, leaves):
             self.assertEqual(exp, leaf)
@@ -214,6 +287,18 @@ class TestNestedDict(basetest.BaseTest):
         ]
 
         found = d.flowers()
+        self.assertEqual(len(expected), len(found))
+        for item1, item2 in zip(expected, found):
+            self.assertEqual(item1, item2)
+            self.assertIn(item1, found)
+
+
+        expected = [
+            (('1','1a','1ai'), 1), # d['1','1a','1ai']
+            (('1','1a','1aii'),2), # d['1','1a','1aii']
+        ]
+
+        found = d.flowers(stems = [('1', '1a')])
         self.assertEqual(len(expected), len(found))
         for item1, item2 in zip(expected, found):
             self.assertEqual(item1, item2)

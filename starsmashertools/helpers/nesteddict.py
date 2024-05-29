@@ -2,28 +2,36 @@ import collections.abc
 import copy
 
 class nested_dict_keys(collections.abc.KeysView):
-    def __init__(self, mapping):
+    def __init__(self, mapping, stems = ()):
         if not isinstance(mapping, NestedDict):
             raise TypeError("{0.__class__.__name__} can only be used with mappables of types NestedDict, not '{:s}'".format(self, type(mapping).__name__))
         self.mapping = mapping
+        self._stems = stems
 
     @staticmethod
-    def _get_mapping_gen(obj, path = ()):
-        if len(path) == 1: yield path[0]
-        elif len(path) > 1: yield path
+    def _get_mapping_gen(obj, stems, path = ()):
+        # If the path is in one of the stems, yield
+        if not stems:
+            if len(path) == 1: yield path[0]
+            elif len(path) > 1: yield path
+        elif any([path[:min(len(path), len(stem))] == stem for stem in stems]):
+            if len(path) == 1:
+                if path[0] not in stems: yield path[0]
+            elif len(path) > 1:
+                if path not in stems: yield path
         if isinstance(obj, NestedDict):
             for key, val in super(NestedDict, obj).items():
                 yield from nested_dict_keys._get_mapping_gen(
-                    val, path = tuple(list(path) + [key]),
+                    val, stems, path = tuple(list(path) + [key]),
                 )
         elif isinstance(obj, dict):
             for key, val in obj.items():
                 yield from nested_dict_keys._get_mapping_gen(
-                    val, path = tuple(list(path) + [key]),
+                    val, stems, path = tuple(list(path) + [key]),
                 )
     
     @property
-    def _mapping(self): return list(self._get_mapping_gen(self.mapping))
+    def _mapping(self): return list(self._get_mapping_gen(self.mapping, self._stems))
     def __reversed__(self): return reversed(self._mapping)
     def __contains__(self, key):
         if isinstance(key, tuple) and len(key) == 1:
@@ -41,23 +49,32 @@ class nested_dict_branches(nested_dict_keys):
     nested dict "tree". The values of these keys are the "leaves".
     """
     @staticmethod
-    def _get_mapping_gen(obj, path = ()):
+    def _get_mapping_gen(obj, stems, path = ()):
         if isinstance(obj, NestedDict):
             for key, val in super(NestedDict, obj).items():
                 yield from nested_dict_branches._get_mapping_gen(
-                    val, path = tuple(list(path) + [key]),
+                    val, stems, path = tuple(list(path) + [key]),
                 )
         elif isinstance(obj, dict):
             for key, val in obj.items():
                 yield from nested_dict_branches._get_mapping_gen(
-                    val, path = tuple(list(path) + [key]),
+                    val, stems, path = tuple(list(path) + [key]),
                 )
         else:
-            if len(path) == 1: yield path[0]
-            elif len(path) > 1: yield path
+            # If the path is in one of the stems, yield
+            if not stems:
+                if len(path) == 1: yield path[0]
+                elif len(path) > 1: yield path
+            elif any([path[:min(len(path), len(stem))] == stem for stem in stems]):
+                if len(path) == 1:
+                    if path[0] not in stems: yield path[0]
+                elif len(path) > 1:
+                    if path not in stems: yield path
+    @property
+    def _mapping(self): return list(self._get_mapping_gen(self.mapping, self._stems))
 collections.abc.KeysView.register(nested_dict_branches)
 
-class nested_dict_stems(nested_dict_branches, nested_dict_keys):
+class nested_dict_stems(nested_dict_keys):
     """
     Similar to :class:`~.nested_dict_keys`\, but the keys included are only
     those which don't point to a leaf. That is, it is the same as
@@ -65,36 +82,40 @@ class nested_dict_stems(nested_dict_branches, nested_dict_keys):
     branches.
     """
     @staticmethod
-    def _get_mapping_gen(obj, path = ()):
-        branches = list(nested_dict_branches._get_mapping_gen(obj, path = path))
-        for key in nested_dict_keys._get_mapping_gen(obj, path = path):
+    def _get_mapping_gen(obj, stems, path = ()):
+        branches = list(nested_dict_branches._get_mapping_gen(obj, stems, path = path))
+        for key in nested_dict_keys._get_mapping_gen(obj, stems, path = path):
             if key in branches: continue
             yield key
 collections.abc.KeysView.register(nested_dict_stems)
 
 
 class nested_dict_values(collections.abc.ValuesView):
-    def __init__(self, mapping):
+    def __init__(self, mapping, stems = ()):
         if not isinstance(mapping, NestedDict):
             raise TypeError("{0.__class__.__name__} can only be used with mappables of types NestedDict, not '{:s}'".format(self, type(mapping).__name__))
         self.mapping = mapping
+        self._stems = stems
 
     @staticmethod
-    def _get_mapping_gen(obj, path = ()):
-        if len(path) != 0: yield obj
+    def _get_mapping_gen(obj, stems, path = ()):
+        if len(path) != 0:
+            if not stems: yield obj
+            elif any([path[:min(len(path), len(stem))] == stem for stem in stems]):
+                if path not in stems: yield obj
         if isinstance(obj, NestedDict):
             for key, val in super(NestedDict, obj).items():
                 yield from nested_dict_values._get_mapping_gen(
-                    val, path = tuple(list(path) + [key]),
+                    val, stems, path = tuple(list(path) + [key]),
                 )
         elif isinstance(obj, dict):
             for key, val in obj.items():
                 yield from nested_dict_values._get_mapping_gen(
-                    val, path = tuple(list(path) + [key]),
+                    val, stems, path = tuple(list(path) + [key]),
                 )
                 
     @property
-    def _mapping(self): return list(self._get_mapping_gen(self.mapping))
+    def _mapping(self): return list(self._get_mapping_gen(self.mapping, self._stems))
     def __iter__(self): yield from self._mapping
     def __reversed__(self): return reversed(self._mapping)
     def __contains__(self, value): return value in self._mapping
@@ -106,44 +127,55 @@ class nested_dict_leaves(nested_dict_values):
     "tree". Leaves are never of type :py:class:`dict`\.
     """
     @staticmethod
-    def _get_mapping_gen(obj, path = ()):
+    def _get_mapping_gen(obj, stems, path = ()):
         if isinstance(obj, NestedDict):
             for key, val in super(NestedDict, obj).items():
                 yield from nested_dict_leaves._get_mapping_gen(
-                    val, path = tuple(list(path) + [key]),
+                    val, stems, path = tuple(list(path) + [key]),
                 )
         elif isinstance(obj, dict):
             for key, val in obj.items():
                 yield from nested_dict_leaves._get_mapping_gen(
-                    val, path = tuple(list(path) + [key]),
+                    val, stems, path = tuple(list(path) + [key]),
                 )
-        elif len(path) != 0: yield obj
+        elif len(path) != 0:
+            if not stems: yield obj
+            elif any([path[:min(len(path), len(stem))] == stem for stem in stems]):
+                if path not in stems: yield obj
 collections.abc.ValuesView.register(nested_dict_leaves)
 
 
 class nested_dict_items(collections.abc.ItemsView):
-    def __init__(self, mapping):
+    def __init__(self, mapping, stems = ()):
         if not isinstance(mapping, NestedDict):
             raise TypeError("{0.__class__.__name__} can only be used with mappables of types NestedDict, not '{:s}'".format(self, type(mapping).__name__))
         self.mapping = mapping
+        self._stems = stems
     @staticmethod
-    def _get_mapping_gen(obj, path = ()):
-        if len(path) == 1: yield path[0], obj
-        elif len(path) > 1: yield path, obj
+    def _get_mapping_gen(obj, stems, path = ()):
+        if not stems:
+            if len(path) == 1: yield path[0], obj
+            elif len(path) > 1: yield path, obj
+        elif any([path[:min(len(path), len(stem))] == stem for stem in stems]):
+            if len(path) == 1:
+                if path[0] not in stems: yield path[0], obj
+            elif len(path) > 1:
+                if path not in stems: yield path, obj
+        
         if isinstance(obj, NestedDict):
             for key, val in super(NestedDict, obj).items():
                 yield from nested_dict_items._get_mapping_gen(
-                    val, path = tuple(list(path) + [key]),
+                    val, stems, path = tuple(list(path) + [key]),
                 )
         elif isinstance(obj, dict):
             for key, val in obj.items():
                 yield from nested_dict_items._get_mapping_gen(
-                    val, path = tuple(list(path) + [key]),
+                    val, stems, path = tuple(list(path) + [key]),
                 )
 
     @property
     def _mapping(self):
-        return [(k,v) for k,v in self._get_mapping_gen(self.mapping)]
+        return [(k,v) for k,v in self._get_mapping_gen(self.mapping, self._stems)]
     def __iter__(self): yield from self._mapping
     def __reversed__(self): return reversed(self._mapping)
     def __contains__(self, item):
@@ -155,20 +187,26 @@ collections.abc.ItemsView.register(nested_dict_items)
 
 class nested_dict_flowers(nested_dict_items):
     @staticmethod
-    def _get_mapping_gen(obj, path = ()):
+    def _get_mapping_gen(obj, stems, path = ()):
         if isinstance(obj, NestedDict):
             for key, val in super(NestedDict, obj).items():
                 yield from nested_dict_flowers._get_mapping_gen(
-                    val, path = tuple(list(path) + [key]),
+                    val, stems, path = tuple(list(path) + [key]),
                 )
         elif isinstance(obj, dict):
             for key, val in obj.items():
                 yield from nested_dict_flowers._get_mapping_gen(
-                    val, path = tuple(list(path) + [key]),
+                    val, stems, path = tuple(list(path) + [key]),
                 )
         else:
-            if len(path) == 1: yield path[0], obj
-            elif len(path) > 1: yield path, obj
+            if not stems:
+                if len(path) == 1: yield path[0], obj
+                elif len(path) > 1: yield path, obj
+            elif any([path[:min(len(path), len(stem))] == stem for stem in stems]):
+                if len(path) == 1:
+                    if path[0] not in stems: yield path[0], obj
+                elif len(path) > 1:
+                    if path not in stems: yield path, obj
 collections.abc.ItemsView.register(nested_dict_flowers)
 
 
@@ -300,28 +338,28 @@ class NestedDict(dict, object):
 
     def __ne__(self, other): return not (self == other)
     
-    def branches(self):
+    def branches(self, *args, **kwargs):
         """ Keys in the nested dictionary which point to "leaves" in the nested
         dict "tree". Each "leaf" is not a :py:class:`dict`\, by definition. """
-        return nested_dict_branches(self)
-    def stems(self):
+        return nested_dict_branches(self, *args, **kwargs)
+    def stems(self, *args, **kwargs):
         """ Keys in the nested dictionary which don't point to "leaves" in the
         nested dict "tree", but rather point to further nesting levels in the
         tree. """
-        return nested_dict_stems(self)
-    def leaves(self):
+        return nested_dict_stems(self, *args, **kwargs)
+    def leaves(self, *args, **kwargs):
         """ Non-dict values in the nested dict "tree". Each of these values
         correspond to a key, given by :meth:`~.branches`\. """
-        return nested_dict_leaves(self)
+        return nested_dict_leaves(self, *args, **kwargs)
 
-    def flowers(self):
+    def flowers(self, *args, **kwargs):
         """ A combination of branches and leaves, in the same way that keys and
         values are combined to form "items" in a :py:class:`dict`\. """
-        return nested_dict_flowers(self)
+        return nested_dict_flowers(self, *args, **kwargs)
 
-    def keys(self): return nested_dict_keys(self)
-    def values(self): return nested_dict_values(self)
-    def items(self): return nested_dict_items(self)
+    def keys(self,*args,**kwargs): return nested_dict_keys(self,*args,**kwargs)
+    def values(self,*args,**kwargs): return nested_dict_values(self,*args,**kwargs)
+    def items(self,*args,**kwargs): return nested_dict_items(self,*args,**kwargs)
 
     @classmethod
     def fromkeys(cls, iterable, value = None):
