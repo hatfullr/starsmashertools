@@ -7,26 +7,24 @@ class nested_dict_keys(collections.abc.KeysView):
             raise TypeError("{0.__class__.__name__} can only be used with mappables of types NestedDict, not '{:s}'".format(self, type(mapping).__name__))
         self.mapping = mapping
 
-    def _get_mapping_gen(self, obj, path = ()):
+    @staticmethod
+    def _get_mapping_gen(obj, path = ()):
         if len(path) == 1: yield path[0]
         elif len(path) > 1: yield path
         if isinstance(obj, NestedDict):
             for key, val in super(NestedDict, obj).items():
-                yield from self._get_mapping_gen(
+                yield from nested_dict_keys._get_mapping_gen(
                     val, path = tuple(list(path) + [key]),
                 )
         elif isinstance(obj, dict):
             for key, val in obj.items():
-                yield from self._get_mapping_gen(
+                yield from nested_dict_keys._get_mapping_gen(
                     val, path = tuple(list(path) + [key]),
                 )
     
     @property
-    def _mapping(self):
-        return [k for k in self._get_mapping_gen(self.mapping)]
-
+    def _mapping(self): return list(self._get_mapping_gen(self.mapping))
     def __reversed__(self): return reversed(self._mapping)
-
     def __contains__(self, key):
         if isinstance(key, tuple) and len(key) == 1:
             return super(nested_dict_keys, self).__contains__(key[0])
@@ -42,26 +40,37 @@ class nested_dict_branches(nested_dict_keys):
     reference non-dict values are included. These are the "branches" of the 
     nested dict "tree". The values of these keys are the "leaves".
     """
-    def _get_mapping_gen(self, obj, path = ()):
+    @staticmethod
+    def _get_mapping_gen(obj, path = ()):
         if isinstance(obj, NestedDict):
             for key, val in super(NestedDict, obj).items():
-                yield from self._get_mapping_gen(
+                yield from nested_dict_branches._get_mapping_gen(
                     val, path = tuple(list(path) + [key]),
                 )
         elif isinstance(obj, dict):
             for key, val in obj.items():
-                yield from self._get_mapping_gen(
+                yield from nested_dict_branches._get_mapping_gen(
                     val, path = tuple(list(path) + [key]),
                 )
         else:
             if len(path) == 1: yield path[0]
             elif len(path) > 1: yield path
-
 collections.abc.KeysView.register(nested_dict_branches)
 
-
-
-    
+class nested_dict_stems(nested_dict_branches, nested_dict_keys):
+    """
+    Similar to :class:`~.nested_dict_keys`\, but the keys included are only
+    those which don't point to a leaf. That is, it is the same as
+    :class:`~.nested_dict_keys`\, but excluding the keys which correspond to
+    branches.
+    """
+    @staticmethod
+    def _get_mapping_gen(obj, path = ()):
+        branches = list(nested_dict_branches._get_mapping_gen(obj, path = path))
+        for key in nested_dict_keys._get_mapping_gen(obj, path = path):
+            if key in branches: continue
+            yield key
+collections.abc.KeysView.register(nested_dict_stems)
 
 
 class nested_dict_values(collections.abc.ValuesView):
@@ -70,25 +79,25 @@ class nested_dict_values(collections.abc.ValuesView):
             raise TypeError("{0.__class__.__name__} can only be used with mappables of types NestedDict, not '{:s}'".format(self, type(mapping).__name__))
         self.mapping = mapping
 
-    def _get_mapping_gen(self, obj, path = ()):
+    @staticmethod
+    def _get_mapping_gen(obj, path = ()):
         if len(path) != 0: yield obj
         if isinstance(obj, NestedDict):
             for key, val in super(NestedDict, obj).items():
-                yield from self._get_mapping_gen(
+                yield from nested_dict_values._get_mapping_gen(
                     val, path = tuple(list(path) + [key]),
                 )
         elif isinstance(obj, dict):
             for key, val in obj.items():
-                yield from self._get_mapping_gen(
+                yield from nested_dict_values._get_mapping_gen(
                     val, path = tuple(list(path) + [key]),
                 )
                 
     @property
-    def _mapping(self):
-        return [k for k in self._get_mapping_gen(self.mapping)]
+    def _mapping(self): return list(self._get_mapping_gen(self.mapping))
     def __iter__(self): yield from self._mapping
     def __reversed__(self): return reversed(self._mapping)
-    
+    def __contains__(self, value): return value in self._mapping
 collections.abc.ValuesView.register(nested_dict_values)
 
 class nested_dict_leaves(nested_dict_values):
@@ -96,15 +105,16 @@ class nested_dict_leaves(nested_dict_values):
     The "leaves" are the values at the end of each "branch" in the nested dict
     "tree". Leaves are never of type :py:class:`dict`\.
     """
-    def _get_mapping_gen(self, obj, path = ()):
+    @staticmethod
+    def _get_mapping_gen(obj, path = ()):
         if isinstance(obj, NestedDict):
             for key, val in super(NestedDict, obj).items():
-                yield from self._get_mapping_gen(
+                yield from nested_dict_leaves._get_mapping_gen(
                     val, path = tuple(list(path) + [key]),
                 )
         elif isinstance(obj, dict):
             for key, val in obj.items():
-                yield from self._get_mapping_gen(
+                yield from nested_dict_leaves._get_mapping_gen(
                     val, path = tuple(list(path) + [key]),
                 )
         elif len(path) != 0: yield obj
@@ -116,18 +126,18 @@ class nested_dict_items(collections.abc.ItemsView):
         if not isinstance(mapping, NestedDict):
             raise TypeError("{0.__class__.__name__} can only be used with mappables of types NestedDict, not '{:s}'".format(self, type(mapping).__name__))
         self.mapping = mapping
-
-    def _get_mapping_gen(self, obj, path = ()):
+    @staticmethod
+    def _get_mapping_gen(obj, path = ()):
         if len(path) == 1: yield path[0], obj
         elif len(path) > 1: yield path, obj
         if isinstance(obj, NestedDict):
             for key, val in super(NestedDict, obj).items():
-                yield from self._get_mapping_gen(
+                yield from nested_dict_items._get_mapping_gen(
                     val, path = tuple(list(path) + [key]),
                 )
         elif isinstance(obj, dict):
             for key, val in obj.items():
-                yield from self._get_mapping_gen(
+                yield from nested_dict_items._get_mapping_gen(
                     val, path = tuple(list(path) + [key]),
                 )
 
@@ -136,18 +146,24 @@ class nested_dict_items(collections.abc.ItemsView):
         return [(k,v) for k,v in self._get_mapping_gen(self.mapping)]
     def __iter__(self): yield from self._mapping
     def __reversed__(self): return reversed(self._mapping)
+    def __contains__(self, item):
+        key, value = item
+        try: v = self.mapping[key]
+        except KeyError: return False
+        else: return v is value or v == value
 collections.abc.ItemsView.register(nested_dict_items)
 
 class nested_dict_flowers(nested_dict_items):
-    def _get_mapping_gen(self, obj, path = ()):
+    @staticmethod
+    def _get_mapping_gen(obj, path = ()):
         if isinstance(obj, NestedDict):
             for key, val in super(NestedDict, obj).items():
-                yield from self._get_mapping_gen(
+                yield from nested_dict_flowers._get_mapping_gen(
                     val, path = tuple(list(path) + [key]),
                 )
         elif isinstance(obj, dict):
             for key, val in obj.items():
-                yield from self._get_mapping_gen(
+                yield from nested_dict_flowers._get_mapping_gen(
                     val, path = tuple(list(path) + [key]),
                 )
         else:
@@ -288,6 +304,11 @@ class NestedDict(dict, object):
         """ Keys in the nested dictionary which point to "leaves" in the nested
         dict "tree". Each "leaf" is not a :py:class:`dict`\, by definition. """
         return nested_dict_branches(self)
+    def stems(self):
+        """ Keys in the nested dictionary which don't point to "leaves" in the
+        nested dict "tree", but rather point to further nesting levels in the
+        tree. """
+        return nested_dict_stems(self)
     def leaves(self):
         """ Non-dict values in the nested dict "tree". Each of these values
         correspond to a key, given by :meth:`~.branches`\. """
