@@ -838,21 +838,6 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
         self._output = None
         super(FluxResult, self).__init__(*args, **kwargs)
     
-    @property
-    def simulation(self):
-        if self._simulation is None:
-            import starsmashertools
-            self._simulation = starsmashertools.get_simulation(self['simulation'])
-        return self._simulation
-
-    @property
-    def output(self):
-        if self._output is None:
-            self._output = starsmashertools.lib.output.Output(
-                self['output'], self.simulation,
-            )
-        return self._output
-    
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def save(
@@ -892,22 +877,31 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
         """
         import starsmashertools.lib.archive
         
-        if not isinstance(allowed, starsmashertools.helpers.nesteddict.NestedDict):
+        if isinstance(allowed, dict):
             allowed = starsmashertools.helpers.nesteddict.NestedDict(allowed)
 
-        allowed_branches = allowed.branches()
+        current_branches = self.branches()
+        origin = self.get('output', None)
+        
         kwargs['auto_save'] = False
         archive = starsmashertools.lib.archive.Archive(filename, **kwargs)
+        branches = self.branches()
         for branch, leaf in allowed.flowers():
-            if branch not in allowed_branches: continue
-            if not allowed[branch]: continue
-            archive.add(
-                str(branch),
-                self[branch],
-                origin = self['output'],
-            )
+            if not leaf: continue
+            if branch in self.stems():
+                for b, l in self.flowers(stems = (branch,)):
+                    archive.add(
+                        str(b),
+                        self[b],
+                        origin = origin,
+                    )
+            elif branch in branches:
+                archive.add(
+                    str(branch),
+                    self[branch],
+                    origin = origin,
+                )
         archive.save()
-
         return archive
     
     @staticmethod
@@ -915,7 +909,7 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
     @api
     def load(
             filename : str,
-            allowed : dict | starsmashertools.helpers.nesteddict.NestedDict = Pref('save.allowed'),
+            allowed : dict | starsmashertools.helpers.nesteddict.NestedDict | type(None) = None,
             deserialize : bool = True,
     ):
         """
@@ -928,8 +922,10 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
 
         Other Parameters
         ----------------
-        allowed : dict, :class:`~.helpers.nesteddict.NestedDict`\, default = ``Pref('save.allowed')``
-            The same as ``allowed`` in :meth:`~.save`\.
+        allowed : dict, :class:`~.helpers.nesteddict.NestedDict`\, None, default = None
+            Similar to ``allowed`` in :meth:`~.save`\. If `None` is given, then
+            all the archived values will be loaded into the returned
+            :class:`~.FluxResult` object.
 
         deserialize : bool, default = True
             Given to :meth:`~.lib.archive.Archive.get`\.
@@ -945,12 +941,15 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
         import starsmashertools.lib.archive
         archive = starsmashertools.lib.archive.Archive(filename, readonly=True)
 
-        if not isinstance(allowed, starsmashertools.helpers.nesteddict.NestedDict):
+        if isinstance(allowed, dict):
             allowed = starsmashertools.helpers.nesteddict.NestedDict(allowed)
 
         toload = starsmashertools.helpers.nesteddict.NestedDict()
-        keys = [str(a) for a in allowed.branches()]
-        for key, val in zip(keys, archive.get(keys, deserialize=deserialize)):
+        if allowed is not None: keys = [str(a) for a in allowed.branches()]
+        else: keys = archive.keys()
+        values = archive.get(keys, deserialize = deserialize)
+        if len(keys) == 1: values = [values]
+        for key, val in zip(keys, values):
             try: key = eval(key)
             except: pass
             if deserialize: toload[key] = val.value
@@ -1124,25 +1123,35 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
         import bisect
         
         if isinstance(result, str):
-            result = FluxResult.load(
-                result,
-                allowed = self._allowed,
-            )
-
+            result = FluxResult.load(result, allowed = self._allowed)
+        
         index = None
         if order in self.branches():
             index = bisect.bisect(self.get(order), result.get(order))
 
-        for branch, leaf in result.flowers():
-            if not self._allowed.get(branch, False): continue
+        stems = result.stems()
+        branches = result.branches()
+        for branch, leaf in self._allowed.flowers():
+            if not leaf: continue
+            # If the allowed dict branch is a branch in the result, add the
+            # branch value
+            if branch in branches:
+                if branch not in self.branches(): self[branch] = [result[branch]]
+                else:
+                    if index is None: self[branch] += [result[branch]]
+                    else: self[branch].insert(index, result[branch])
+                continue
             
-            if branch not in self.branches():
-                self[branch] = [leaf]
-            else:
-                if index is None: index = len(self[branch])
-                self[branch].insert(index, leaf)
-                
-    
+            # If the allowed dict branch is a stem in the result, add all the
+            # branches off of that stem
+            if branch in stems:
+                for b, l in result.flowers(stems = (branch,)):
+                    if b not in self.branches(): self[b] = [l]
+                    else:
+                        if index is None: self[b] += [l]
+                        else: self[b].insert(index, l)
+                    
+        
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def save(
