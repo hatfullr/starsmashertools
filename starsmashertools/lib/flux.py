@@ -1095,8 +1095,27 @@ class FluxResults(starsmashertools.lib.archive2.Archive, object):
         super(FluxResults, self).__init__(*args, **kwargs)
 
     def _set(self, identifier : str, *args, **kwargs):
-        try: _identifier = eval(identifier)
-        except: pass
-        if _identifier not in self._allowed.branches(): return
-        if not self._allowed[_identifier]: return
+        try: branch = eval(identifier)
+        except: branch = identifier
+        if not self.is_allowed(branch): return
         return super(FluxResults, self)._set(identifier, *args, **kwargs)
+
+    def is_allowed(self, branch):
+        for b, l in self._allowed.flowers():
+            if not leaf: continue
+            if branch == b or starsmashertools.helpers.nesteddict.NestedDict.is_child_branch(branch, b):
+                return True
+        return False
+
+    def add(self, result : str | FluxResult):
+        if isinstance(result, str):
+            result = FluxResult.load(result, deserialize = False)
+        for branch, leaf in result.flowers():
+            if not self.is_allowed(branch): continue
+            
+            identifier = str(branch)
+            if identifier in self:
+                orig = self.get_raw(identifier)
+                self.set_raw(identifier, orig + leaf)
+            else:
+                self.set_raw(identifier, leaf)

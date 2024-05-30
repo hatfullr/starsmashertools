@@ -1,6 +1,5 @@
 import os
 import struct
-import pickle
 import collections
 import mmap
 import gzip
@@ -8,6 +7,7 @@ import contextlib
 import shutil
 import starsmashertools.helpers.path
 import starsmashertools.helpers.file
+import starsmashertools.helpers.pickler
 
 class InvalidArchiveError(Exception): pass
 class InvalidIdentifierError(Exception): pass
@@ -102,12 +102,11 @@ class Archive:
     def _set(
             self,
             identifier : str,
-            data,
+            data : bytes,
             _buffer,
     ):
-        new = pickle.dumps(data)
         if identifier in self._footer:
-            diff = len(new) - len(self.get_raw(identifier))
+            diff = len(data) - len(self.get_raw(identifier))
             # We are SOL, here. There's no possible way to insert/delete file
             # contents in the middle. We have to use mmap as our crutch.
             orig_size = _buffer.size()
@@ -132,7 +131,7 @@ class Archive:
 
             # Now replace the old content with the new content
             _buffer.seek(self._footer[identifier].start)
-            _buffer.write(new)
+            _buffer.write(data)
             self._footer[identifier].stop = _buffer.tell()
 
             _buffer.flush(
@@ -153,7 +152,7 @@ class Archive:
             if self._footer:
                 _buffer.seek(list(self._footer.values())[-1].stop)
             start = _buffer.tell()
-            _buffer.write(new)
+            _buffer.write(data)
             self._footer[identifier] = Meta(identifier, start, _buffer.tell())
 
     def _write_footer(self, f = None):
@@ -224,18 +223,14 @@ class Archive:
             return self._get(identifier, f)
     
     def get(self, *args, **kwargs):
-        return pickle.loads(self.get_raw(*args, **kwargs))
+        return starsmashertools.helpers.pickler.unpickle(self.get_raw(*args, **kwargs))
 
     def get_many(self, identifiers):
         with self._open('rb') as f:
             for identifier in identifiers:
                 yield self._get(identifier, f)
     
-    def set(
-            self,
-            identifier : str,
-            data,
-    ):
+    def set_raw(self, identifier : str, data : bytes):
         """ Given some ``identifier``\, add ``data`` to the Archive. If 
         ``identifier`` is already in the Archive, its contents are replaced.
         Otherwise, the data is appended to the Archive. This is appropriate only 
@@ -258,6 +253,9 @@ class Archive:
             else:
                 self._set(identifier, data, f)
             self._write_footer(f = f)
+
+    def set(self, identifier : str, data):
+        return self.set_raw(starsmashertools.helpers.pickler.pickle(data))
 
     def set_many(self, identifiers, data):
         # Doing it in this way ensures that generators aren't consumed improperly
