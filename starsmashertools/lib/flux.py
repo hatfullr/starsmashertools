@@ -1117,10 +1117,9 @@ class FluxResults(starsmashertools.lib.archive2.Archive, object):
             
                 identifier = str(branch)
                 if identifier in self:
-                    orig = self.get(identifier, raw = True)
-                    yield identifier, orig + leaf
+                    yield identifier, self.get(identifier, raw = True) + leaf
                 else:
                     yield identifier, leaf
-
+        
         self.set_many(get_identifiers_and_data(), raw = True)
 

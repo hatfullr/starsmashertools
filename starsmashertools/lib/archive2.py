@@ -134,11 +134,8 @@ class Archive:
             _buffer.write(data)
             self._footer[identifier].stop = _buffer.tell()
 
-            _buffer.flush(
-                self._footer[identifier].start,
-                new_size - self._footer[identifier].start,
-            )
-
+            _buffer.flush()
+            
             past = False
             for key, val in self._footer.items():
                 if key == identifier:
@@ -199,8 +196,7 @@ class Archive:
                 shutil.copyfileobj(f_in, f_out)
         os.replace(self.path + '.tmp', self.path)
 
-    @staticmethod
-    def get_footer(path):
+    def get_footer(self, path):
         with self._open('rb', lock = False) as f:
             f.seek(-4, 2)
             length = f.read(4)
