@@ -212,30 +212,30 @@ class Archive:
         return collections.OrderedDict({
             m.identifier : m for m in [Meta.from_bytes(b) for b in footer.split(Archive.footer_delimiter)]
         })
-
-    def get_raw(
-            self,
-            identifier : str,
-    ):
+    
+    def get(self, identifier : str, raw : bool = False):
         """ Return the data (bytes) associated with the given :class:`~.Meta` 
         ``identifier``\. """
         with self._open('rb') as f:
-            return self._get(identifier, f)
-    
-    def get(self, *args, **kwargs):
-        return starsmashertools.helpers.pickler.unpickle(self.get_raw(*args, **kwargs))
+            result = self._get(identifier, f)
+        if raw: return result
+        return starsmashertools.helpers.pickler.unpickle(result)
 
-    def get_many(self, identifiers):
+    def get_many(self, identifiers, raw : bool = False):
         with self._open('rb') as f:
             for identifier in identifiers:
-                yield self._get(identifier, f)
-    
-    def set_raw(self, identifier : str, data : bytes):
+                if raw: yield self._get(identifier, f)
+                else: yield starsmashertools.helpers.pickler.unpickle(self._get(identifier, f))
+
+    def set(self, identifier : str, data, raw : bool = False):
         """ Given some ``identifier``\, add ``data`` to the Archive. If 
         ``identifier`` is already in the Archive, its contents are replaced.
         Otherwise, the data is appended to the Archive. This is appropriate only 
         for setting single values in the file. If setting multiple values, use 
         :meth:`~.set_many` instead. """
+        _data = data
+        if not raw: _data = starsmashertools.helpers.pickler.pickle(data)
+
         with self._open(self._mode) as f:
             if identifier in self._footer:
                 with mmap.mmap(
@@ -248,16 +248,13 @@ class Archive:
                     # edited, and that those edits should be reflected in any
                     # other process which has mapped this file.
                     _buffer.madvise(mmap.MAP_SHARED)
-                    self._set(identifier, data, _buffer)
+                    self._set(identifier, _data, _buffer)
                     _buffer.close()
             else:
-                self._set(identifier, data, f)
+                self._set(identifier, _data, f)
             self._write_footer(f = f)
-
-    def set(self, identifier : str, data):
-        return self.set_raw(starsmashertools.helpers.pickler.pickle(data))
-
-    def set_many(self, identifiers, data):
+    
+    def set_many(self, identifiers_and_data, raw : bool = False):
         # Doing it in this way ensures that generators aren't consumed improperly
         with self._open(self._mode) as f:
             with mmap.mmap(
@@ -271,11 +268,23 @@ class Archive:
                 # other process which has mapped this file.
                 _buffer.madvise(mmap.MAP_SHARED)
                 
-                for identifier, d in zip(identifiers, data):
+                for identifier, data in identifiers_and_data:
                     if identifier in self._footer:
-                        self._set(identifier, d, _buffer)
+                        if raw: self._set(identifier, data, _buffer)
+                        else:
+                            self._set(
+                                identifier,
+                                starsmashertools.helpers.pickler.pickle(data),
+                                _buffer,
+                            )
                     else:
-                        self._set(identifier, d, f)
+                        if raw: self._set(identifier, data, f)
+                        else:
+                            self._set(
+                                identifier,
+                                starsmashertools.helpers.pickler.pickle(data),
+                                f,
+                            )
                 
                 _buffer.close()
             self._write_footer(f = f)

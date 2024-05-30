@@ -1110,12 +1110,17 @@ class FluxResults(starsmashertools.lib.archive2.Archive, object):
     def add(self, result : str | FluxResult):
         if isinstance(result, str):
             result = FluxResult.load(result, deserialize = False)
-        for branch, leaf in result.flowers():
-            if not self.is_allowed(branch): continue
+
+        def get_identifiers_and_data():
+            for branch, leaf in result.flowers():
+                if not self.is_allowed(branch): continue
             
-            identifier = str(branch)
-            if identifier in self:
-                orig = self.get_raw(identifier)
-                self.set_raw(identifier, orig + leaf)
-            else:
-                self.set_raw(identifier, leaf)
+                identifier = str(branch)
+                if identifier in self:
+                    orig = self.get(identifier, raw = True)
+                    yield identifier, orig + leaf
+                else:
+                    yield identifier, leaf
+
+        self.set_many(get_identifiers_and_data(), raw = True)
+
