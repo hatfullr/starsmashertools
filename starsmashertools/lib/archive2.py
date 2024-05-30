@@ -104,6 +104,7 @@ class Archive:
             identifier : str,
             data : bytes,
             _buffer,
+            flush : bool = True,
     ):
         if identifier in self._footer:
             diff = len(data) - len(self.get(identifier, raw = True))
@@ -134,7 +135,7 @@ class Archive:
             _buffer.write(data)
             self._footer[identifier].stop = _buffer.tell()
 
-            _buffer.flush()
+            if flush: _buffer.flush()
             
             past = False
             for key, val in self._footer.items():
@@ -273,6 +274,7 @@ class Archive:
                                     identifier,
                                     starsmashertools.helpers.pickler.pickle_object(data),
                                     _buffer,
+                                    flush = False,
                                 )
                         else:
                             if raw: self._set(identifier, data, f)
@@ -282,7 +284,7 @@ class Archive:
                                     starsmashertools.helpers.pickler.pickle_object(data),
                                     f,
                                 )
-
+                    _buffer.flush()
                     _buffer.close()
                 self._write_footer(f = f)
         else: # Sidestep "cant mmap an empty file" error by just making the file
