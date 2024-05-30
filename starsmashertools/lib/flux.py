@@ -4,6 +4,7 @@ from starsmashertools.preferences import Pref
 import math
 import numpy as np
 import starsmashertools.lib.output
+import starsmashertools.lib.archive2
 from starsmashertools.helpers.apidecorator import api
 import starsmashertools.helpers.argumentenforcer
 from starsmashertools.lib.units import constants
@@ -1055,7 +1056,7 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
 
 
 @starsmashertools.preferences.use
-class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
+class FluxResults(starsmashertools.lib.archive2.Archive, object):
     """
     A container for multiple :class:`~.FluxResult` objects. Permits for multiple
     :class:`~.FluxResult` objects to be saved in a single file, which can be 
@@ -1093,157 +1094,9 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
         self._allowed = allowed
         super(FluxResults, self).__init__(*args, **kwargs)
 
-    @starsmashertools.helpers.argumentenforcer.enforcetypes
-    @api
-    def add(
-            self,
-            result : str | FluxResult,
-            order : str | list | tuple = Pref('add.order'),
-    ):
-        """
-        Add a :class:`~.FluxResult`\. The values in the :class:`~.FluxResult` 
-        will be inserted in a way which preserves the specified order.
-        
-        Parameters
-        ----------
-        result : str, FluxResult
-            If a `str`\, it must be a path to a saved :class:`~.FluxResult`\. 
-            The :class:`~.FluxResult` is loaded and its contents are added to 
-            this dictionary.
-
-
-        Other Parameters
-        ----------------
-        order : str, list, tuple, default = ``Pref('add.order')``
-            The order with which to insert the :class:`~.FluxResult`. If a 
-            `list` or `tuple` are given, it refers to the nested key. For
-            example, ``['image', 'teff_aver']`` refers to the value found at
-            ``FluxResult['image']['teff_aver']``\. See 
-            :class:`~.helpers.nesteddict.NestedDict` for details.
-
-        See Also
-        --------
-        :class:`~.helpers.nesteddict.NestedDict`
-        """
-        import bisect
-        
-        if isinstance(result, str):
-            result = FluxResult.load(result, allowed = self._allowed)
-        
-        index = None
-        if order in self.branches():
-            index = bisect.bisect(self.get(order), result.get(order))
-        
-        previous_branches = self.branches()
-        if len(previous_branches) == 0:
-            for branch, leaf in result.flowers():
-                try: branch = eval(branch)
-                except: pass
-                try:
-                    if not self._allowed[branch]: continue
-                except KeyError: continue
-                self[branch] = [leaf]
-        else:
-            for branch, leaf in result.flowers():
-                try: branch = eval(branch)
-                except: pass
-                try:
-                    if not self._allowed[branch]: continue
-                except KeyError: continue
-                if branch not in previous_branches:
-                    raise KeyError("Cannot add a FluxResult with missing branch '%s'" % str(branch))
-                if index is None: self[branch] += [leaf]
-                else: self[branch].insert(index, leaf)
-    
-    @starsmashertools.helpers.argumentenforcer.enforcetypes
-    @api
-    def save(
-            self,
-            filename : str = Pref('save.filename'),
-            **kwargs
-    ):
-        """
-        Save the :class:`~.FluxResult` objects to disk. Each result is stored in
-        the same format as :meth:`~.FluxResult.save`\, except stacked in a list.
-        For example, the ``'image'`` key in the archive will be a list, where 
-        each element is the ``'image'`` key from the corresponding 
-        :class:`~.FluxResult`.
-        
-        Other Parameters
-        ----------
-        filename : str, default = ``Pref('save.filename')``
-            The path to the file to create.
-        
-        **kwargs
-            Other keyword arguments are passed directly to 
-            :meth:`~.lib.archive.Archive.__init__`\.
-
-        Returns
-        -------
-        archive : :class:`~.lib.archive.Archive`
-            The newly created Archive.
-
-        See Also
-        --------
-        :meth:`~.load`
-        """
-        import starsmashertools.lib.archive
-        import time
-        
-        kwargs['auto_save'] = False
-        archive = starsmashertools.lib.archive.Archive(filename, **kwargs)
-        mtime = time.time()
-        for branch, leaf in self.flowers():
-            archive.add(str(branch), leaf, mtime = mtime)
-        archive.save()
-
-    @staticmethod
-    @starsmashertools.helpers.argumentenforcer.enforcetypes
-    @api
-    def load(
-            filename : str,
-            keys : list | tuple | type(None) = None,
-    ):
-        """
-        Load the :class:`~.FluxResult` objects from disk. Each result is stored
-        in the same format as :meth:`~.FluxResult.save`\, except stacked in a 
-        list. For example, the ``'image'`` key in the archive will be a list, 
-        where each element is the ``'image'`` key from the corresponding 
-        :class:`~.FluxResult`.
-        
-        Parameters
-        ----------
-        filename : str
-            The path to the file to load.
-
-        Other Parameters
-        ----------------
-        keys : list, tuple, None, default = None
-            To retrieve only specific keys, specify the keys here. Note that
-            each element must point to a "branch" in the archived 
-            :class:`~.helpers.nesteddict.NestedDict`\.
-        
-        Returns
-        -------
-        fluxresults : :class:`~.FluxResults`
-            The :class:`~.FluxResult` objects in the same order as stored in the
-            archive.
-        
-        See Also
-        --------
-        :meth:`~.save`
-        """
-        import starsmashertools.lib.archive
-        archive = starsmashertools.lib.archive.Archive(filename, readonly=True)
-        toload = starsmashertools.helpers.nesteddict.NestedDict()
-        if keys is not None:
-            for key, val in zip(keys, archive.get([str(k) for k in keys])):
-                toload[key] = val.value
-        else:
-            for key, val in archive.items():
-                try: key = eval(key)
-                except: pass
-                toload[key] = val.value
-        return FluxResults(toload)
-
-
+    def _set(self, identifier : str, *args, **kwargs):
+        try: _identifier = eval(identifier)
+        except: pass
+        if _identifier not in self._allowed.branches(): return
+        if not self._allowed[_identifier]: return
+        return super(FluxResults, self)._set(identifier, *args, **kwargs)

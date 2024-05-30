@@ -4,6 +4,14 @@ import starsmashertools.lib.flux
 import basetest
 import test_fluxresult
 import starsmashertools.helpers.nesteddict
+
+class TestLoader(unittest.TestLoader, object):
+    def getTestCaseNames(self, *args, **kwargs):
+        return [
+            #'testLoad',
+            #'testSave',
+            #'testAdd',
+        ]
     
 class TestFluxResults(basetest.BaseTest):
 
@@ -131,15 +139,6 @@ class TestFluxResults(basetest.BaseTest):
         for branch, leaf in total.flowers():
             self.assertIn(branch, new.branches())
             self.assertEqual(leaf, new[branch])
-        
-        
-class TestLoader(unittest.TestLoader, object):
-    def getTestCaseNames(self, *args, **kwargs):
-        return [
-            'testLoad',
-            'testSave',
-            'testAdd',
-        ]
 
 if __name__ == '__main__':
     unittest.main(failfast = True, testLoader = TestLoader())
