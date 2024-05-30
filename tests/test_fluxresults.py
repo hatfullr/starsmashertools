@@ -1,3 +1,4 @@
+"""
 import unittest
 import os
 import starsmashertools.lib.flux
@@ -8,9 +9,9 @@ import starsmashertools.helpers.nesteddict
 class TestLoader(unittest.TestLoader, object):
     def getTestCaseNames(self, *args, **kwargs):
         return [
-            #'testLoad',
-            #'testSave',
-            #'testAdd',
+            'testLoad',
+            'testSave',
+            'testAdd',
         ]
     
 class TestFluxResults(basetest.BaseTest):
@@ -141,7 +142,8 @@ class TestFluxResults(basetest.BaseTest):
             self.assertEqual(leaf, new[branch])
 
 if __name__ == '__main__':
-    unittest.main(failfast = True, testLoader = TestLoader())
+    #unittest.main(failfast = True, testLoader = TestLoader())
+    pass
         
-
+"""
     

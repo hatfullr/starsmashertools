@@ -71,9 +71,6 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#starsmashertools.lib.flux.FluxResults"><code class="docutils literal notranslate"><span class="pre">FluxResults</span></code></a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.flux.FluxResults.__init__"><code class="docutils literal notranslate"><span class="pre">FluxResults.__init__()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.flux.FluxResults.add"><code class="docutils literal notranslate"><span class="pre">FluxResults.add()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.flux.FluxResults.load"><code class="docutils literal notranslate"><span class="pre">FluxResults.load()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.flux.FluxResults.save"><code class="docutils literal notranslate"><span class="pre">FluxResults.save()</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -265,91 +262,6 @@ be changed after initialization.</p></li>
 </ul>
 </dd>
 </dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="starsmashertools.lib.flux.FluxResults.add">
-<span class="sig-name descname"><span class="pre">add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">result</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="#starsmashertools.lib.flux.FluxResult" title="starsmashertools.lib.flux.FluxResult"><span class="pre">FluxResult</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">order</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><span class="pre">list</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.12)"><span class="pre">tuple</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'time'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/flux.html#FluxResults.add"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.flux.FluxResults.add" title="Link to this definition"></a></dt>
-<dd><p>Add a <a class="reference internal" href="#starsmashertools.lib.flux.FluxResult" title="starsmashertools.lib.flux.FluxResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">FluxResult</span></code></a>. The values in the <a class="reference internal" href="#starsmashertools.lib.flux.FluxResult" title="starsmashertools.lib.flux.FluxResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">FluxResult</span></code></a>
-will be inserted in a way which preserves the specified order.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>result</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a><em>, </em><a class="reference internal" href="#starsmashertools.lib.flux.FluxResult" title="starsmashertools.lib.flux.FluxResult"><em>FluxResult</em></a>) – If a <cite>str</cite>, it must be a path to a saved <a class="reference internal" href="#starsmashertools.lib.flux.FluxResult" title="starsmashertools.lib.flux.FluxResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">FluxResult</span></code></a>.
-The <a class="reference internal" href="#starsmashertools.lib.flux.FluxResult" title="starsmashertools.lib.flux.FluxResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">FluxResult</span></code></a> is loaded and its contents are added to
-this dictionary.</p></li>
-<li><p><strong>order</strong> (str, list, tuple, default = <code class="docutils literal notranslate"><span class="pre">Pref('add.order')</span></code>) – The order with which to insert the <a class="reference internal" href="#starsmashertools.lib.flux.FluxResult" title="starsmashertools.lib.flux.FluxResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">FluxResult</span></code></a>. If a
-<cite>list</cite> or <cite>tuple</cite> are given, it refers to the nested key. For
-example, <code class="docutils literal notranslate"><span class="pre">['image',</span> <span class="pre">'teff_aver']</span></code> refers to the value found at
-<code class="docutils literal notranslate"><span class="pre">FluxResult['image']['teff_aver']</span></code>. See
-<code class="xref py py-class docutils literal notranslate"><span class="pre">NestedDict</span></code> for details.</p></li>
-</ul>
-</dd>
-</dl>
-<div class="admonition seealso">
-<p class="admonition-title">See also</p>
-<p><code class="xref py py-class docutils literal notranslate"><span class="pre">NestedDict</span></code></p>
-</div>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="starsmashertools.lib.flux.FluxResults.load">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">keys</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><span class="pre">list</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.12)"><span class="pre">tuple</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/flux.html#FluxResults.load"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.flux.FluxResults.load" title="Link to this definition"></a></dt>
-<dd><p>Load the <a class="reference internal" href="#starsmashertools.lib.flux.FluxResult" title="starsmashertools.lib.flux.FluxResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">FluxResult</span></code></a> objects from disk. Each result is stored
-in the same format as <a class="reference internal" href="#starsmashertools.lib.flux.FluxResult.save" title="starsmashertools.lib.flux.FluxResult.save"><code class="xref py py-meth docutils literal notranslate"><span class="pre">save()</span></code></a>, except stacked in a
-list. For example, the <code class="docutils literal notranslate"><span class="pre">'image'</span></code> key in the archive will be a list,
-where each element is the <code class="docutils literal notranslate"><span class="pre">'image'</span></code> key from the corresponding
-<a class="reference internal" href="#starsmashertools.lib.flux.FluxResult" title="starsmashertools.lib.flux.FluxResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">FluxResult</span></code></a>.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>filename</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a>) – The path to the file to load.</p></li>
-<li><p><strong>keys</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><em>list</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.12)"><em>tuple</em></a><em>, </em><em>None</em><em>, </em><em>default = None</em>) – To retrieve only specific keys, specify the keys here. Note that
-each element must point to a “branch” in the archived
-<code class="xref py py-class docutils literal notranslate"><span class="pre">NestedDict</span></code>.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>fluxresults</strong> – The <a class="reference internal" href="#starsmashertools.lib.flux.FluxResult" title="starsmashertools.lib.flux.FluxResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">FluxResult</span></code></a> objects in the same order as stored in the
-archive.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference internal" href="#starsmashertools.lib.flux.FluxResults" title="starsmashertools.lib.flux.FluxResults"><code class="xref py py-class docutils literal notranslate"><span class="pre">FluxResults</span></code></a></p>
-</dd>
-</dl>
-<div class="admonition seealso">
-<p class="admonition-title">See also</p>
-<p><a class="reference internal" href="#starsmashertools.lib.flux.FluxResults.save" title="starsmashertools.lib.flux.FluxResults.save"><code class="xref py py-meth docutils literal notranslate"><span class="pre">save()</span></code></a></p>
-</div>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="starsmashertools.lib.flux.FluxResults.save">
-<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'fluxresults.zip'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/flux.html#FluxResults.save"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.flux.FluxResults.save" title="Link to this definition"></a></dt>
-<dd><p>Save the <a class="reference internal" href="#starsmashertools.lib.flux.FluxResult" title="starsmashertools.lib.flux.FluxResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">FluxResult</span></code></a> objects to disk. Each result is stored in
-the same format as <a class="reference internal" href="#starsmashertools.lib.flux.FluxResult.save" title="starsmashertools.lib.flux.FluxResult.save"><code class="xref py py-meth docutils literal notranslate"><span class="pre">save()</span></code></a>, except stacked in a list.
-For example, the <code class="docutils literal notranslate"><span class="pre">'image'</span></code> key in the archive will be a list, where
-each element is the <code class="docutils literal notranslate"><span class="pre">'image'</span></code> key from the corresponding
-<a class="reference internal" href="#starsmashertools.lib.flux.FluxResult" title="starsmashertools.lib.flux.FluxResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">FluxResult</span></code></a>.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>filename</strong> (str, default = <code class="docutils literal notranslate"><span class="pre">Pref('save.filename')</span></code>) – The path to the file to create.</p></li>
-<li><p><strong>**kwargs</strong> – Other keyword arguments are passed directly to
-<a class="reference internal" href="starsmashertools.lib.archive.html#starsmashertools.lib.archive.Archive.__init__" title="starsmashertools.lib.archive.Archive.__init__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">__init__()</span></code></a>.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>archive</strong> – The newly created Archive.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference internal" href="starsmashertools.lib.archive.html#starsmashertools.lib.archive.Archive" title="starsmashertools.lib.archive.Archive"><code class="xref py py-class docutils literal notranslate"><span class="pre">Archive</span></code></a></p>
-</dd>
-</dl>
-<div class="admonition seealso">
-<p class="admonition-title">See also</p>
-<p><a class="reference internal" href="#starsmashertools.lib.flux.FluxResults.load" title="starsmashertools.lib.flux.FluxResults.load"><code class="xref py py-meth docutils literal notranslate"><span class="pre">load()</span></code></a></p>
-</div>
 </dd></dl>
 
 </dd></dl>

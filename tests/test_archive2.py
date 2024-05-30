@@ -2,7 +2,7 @@ import unittest
 import starsmashertools.lib.archive2
 import os
 import struct
-import pickle
+import starsmashertools.helpers.pickler
 
 class Test(unittest.TestCase):
     filename = 'test'
@@ -21,13 +21,13 @@ class Test(unittest.TestCase):
         self.assertEqual(len(a._footer), 1)
         self.assertEqual(list(a._footer.values())[-1].identifier, 'test')
         self.assertEqual(list(a._footer.values())[-1].start, 0)
-        self.assertEqual(list(a._footer.values())[-1].stop, 21)
+        self.assertEqual(list(a._footer.values())[-1].stop, 28)
 
         with open('test', 'rb') as f:
             f.seek(-4, 2)
             self.assertEqual(12, struct.unpack('<i', f.read(4))[0])
 
-        self.assertEqual(b'\x80\x04\x95\n\x00\x00\x00\x00\x00\x00\x00\x8c\x06simple\x94.', a.get_raw('test'))
+        self.assertEqual(b'gASVCgAAAAAAAACMBnNpbXBsZZQu', a.get('test', raw = True))
         
         self.assertEqual(a.get('test'), 'simple')
 
@@ -40,7 +40,7 @@ class Test(unittest.TestCase):
         previous_start_stop = (a._footer['test'].start, a._footer['test'].stop)
         a.set('test', 'c')
         self.assertEqual('c', a.get('test'))
-        self.assertEqual(pickle.dumps('c'), a.get_raw('test'))
+        self.assertEqual(starsmashertools.helpers.pickler.pickle_object('c'), a.get('test', raw = True))
         self.assertEqual(previous_start_stop, (a._footer['test'].start, a._footer['test'].stop))
         self.assertEqual('b', a.get('test2'))
 
@@ -52,7 +52,7 @@ class Test(unittest.TestCase):
         previous_start_stop = (a._footer['test'].start, a._footer['test'].stop)
         a.set('test', 'c')
         self.assertEqual('c', a.get('test'))
-        self.assertEqual(pickle.dumps('c'), a.get_raw('test'))
+        self.assertEqual(starsmashertools.helpers.pickler.pickle_object('c'), a.get('test', raw = True))
         self.assertNotEqual(previous_start_stop, (a._footer['test'].start, a._footer['test'].stop))
         self.assertEqual('b', a.get('test2'))
 

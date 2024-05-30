@@ -106,7 +106,7 @@ class Archive:
             _buffer,
     ):
         if identifier in self._footer:
-            diff = len(data) - len(self.get_raw(identifier))
+            diff = len(data) - len(self.get(identifier, raw = True))
             # We are SOL, here. There's no possible way to insert/delete file
             # contents in the middle. We have to use mmap as our crutch.
             orig_size = _buffer.size()
@@ -168,25 +168,25 @@ class Archive:
         f.truncate()
         if wasNone: f.close()
 
-    def _open(self, mode):
+    def _open(self, mode, **kwargs):
         if self.compressed:
             if mode not in ('r', 'rb'):
                 raise CompressedError("Must call decompress() before modifying an archive.")
             return gzip.open(self.path, mode = mode)
-        return starsmashertools.helpers.file.open(self.path, mode = mode)
+        return starsmashertools.helpers.file.open(self.path,mode = mode,**kwargs)
 
     @property
     def compressed(self):
         if not starsmashertools.helpers.path.exists(self.path): return False
         # thank you, https://stackoverflow.com/a/47080739/4954083
-        with open(self.path, 'rb') as f:
+        with starsmashertools.helpers.file.open(self.path, 'rb', lock = False) as f:
             compressed = f.read(2) == b'\x1f\x8b'
         return compressed
 
     def compress(self, replace : bool = True):
         if self.compressed:
             raise CompressedError("Archive is already compressed")
-        with open(self.path, 'rb') as f_in:
+        with starsmashertools.helpers.file.open(self.path, 'rb', lock = False) as f_in:
             with gzip.open(self.path + '.gz', 'wb') as f_out:
                 shutil.copyfileobj(f_in, f_out)
         if replace: os.replace(self.path + '.gz', self.path)
@@ -195,13 +195,13 @@ class Archive:
         if not self.compressed:
             raise CompressedError("Archive is not compressed")
         with gzip.open(self.path, 'rb') as f_in:
-            with open(self.path + '.tmp', 'wb') as f_out:
+            with starsmashertools.helpers.file.open(self.path + '.tmp', 'wb') as f_out:
                 shutil.copyfileobj(f_in, f_out)
         os.replace(self.path + '.tmp', self.path)
 
     @staticmethod
     def get_footer(path):
-        with self._open('rb') as f:
+        with self._open('rb', lock = False) as f:
             f.seek(-4, 2)
             length = f.read(4)
             if not length: # This was an empty file
@@ -216,16 +216,16 @@ class Archive:
     def get(self, identifier : str, raw : bool = False):
         """ Return the data (bytes) associated with the given :class:`~.Meta` 
         ``identifier``\. """
-        with self._open('rb') as f:
+        with self._open('rb', lock = False) as f:
             result = self._get(identifier, f)
         if raw: return result
-        return starsmashertools.helpers.pickler.unpickle(result)
+        return starsmashertools.helpers.pickler.unpickle_object(result)
 
     def get_many(self, identifiers, raw : bool = False):
-        with self._open('rb') as f:
+        with self._open('rb', lock = False) as f:
             for identifier in identifiers:
                 if raw: yield self._get(identifier, f)
-                else: yield starsmashertools.helpers.pickler.unpickle(self._get(identifier, f))
+                else: yield starsmashertools.helpers.pickler.unpickle_object(self._get(identifier, f))
 
     def set(self, identifier : str, data, raw : bool = False):
         """ Given some ``identifier``\, add ``data`` to the Archive. If 
@@ -234,7 +234,7 @@ class Archive:
         for setting single values in the file. If setting multiple values, use 
         :meth:`~.set_many` instead. """
         _data = data
-        if not raw: _data = starsmashertools.helpers.pickler.pickle(data)
+        if not raw: _data = starsmashertools.helpers.pickler.pickle_object(data)
 
         with self._open(self._mode) as f:
             if identifier in self._footer:
@@ -274,7 +274,7 @@ class Archive:
                         else:
                             self._set(
                                 identifier,
-                                starsmashertools.helpers.pickler.pickle(data),
+                                starsmashertools.helpers.pickler.pickle_object(data),
                                 _buffer,
                             )
                     else:
@@ -282,7 +282,7 @@ class Archive:
                         else:
                             self._set(
                                 identifier,
-                                starsmashertools.helpers.pickler.pickle(data),
+                                starsmashertools.helpers.pickler.pickle_object(data),
                                 f,
                             )
                 
