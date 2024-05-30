@@ -73,6 +73,11 @@ class Archive:
     
     """
 
+    madvise = [
+        (mmap.MAP_SHARED,),
+        (mmap.MAP_POPULATE,),
+    ]
+
     footer_delimiter = chr(31).encode(encoding) # ASCII character US
     
     def __init__(
@@ -246,7 +251,8 @@ class Archive:
                     # Indicate to the file system that the buffer is going to be
                     # edited, and that those edits should be reflected in any
                     # other process which has mapped this file.
-                    _buffer.madvise(mmap.MAP_SHARED)
+                    for flag in Archive.madvise:
+                        _buffer.madvise(*flag)
                     self._set(identifier, _data, _buffer)
                     _buffer.close()
             else:
@@ -266,7 +272,8 @@ class Archive:
                     # Indicate to the file system that the buffer is going to be
                     # edited, and that those edits should be reflected in any
                     # other process which has mapped this file.
-                    _buffer.madvise(mmap.MAP_SHARED)
+                    for flag in Archive.madvise:
+                        _buffer.madvise(*flag)
 
                     for identifier, data in identifiers_and_data:
                         if identifier in self._footer:
