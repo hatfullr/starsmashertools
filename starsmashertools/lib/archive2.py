@@ -256,36 +256,46 @@ class Archive:
     
     def set_many(self, identifiers_and_data, raw : bool = False):
         # Doing it in this way ensures that generators aren't consumed improperly
-        with self._open(self._mode) as f:
-            with mmap.mmap(
-                    f.fileno(),
-                    0, # map the entire file
-                    # This affects memory, but doesn't update the file (?)
-                    access = mmap.ACCESS_WRITE,
-            ) as _buffer:
-                # Indicate to the file system that the buffer is going to be
-                # edited, and that those edits should be reflected in any
-                # other process which has mapped this file.
-                _buffer.madvise(mmap.MAP_SHARED)
-                
+        if starsmashertools.helpers.path.exists(self.path):
+            with self._open(self._mode) as f:
+                with mmap.mmap(
+                        f.fileno(),
+                        0, # map the entire file
+                        # This affects memory, but doesn't update the file (?)
+                        access = mmap.ACCESS_WRITE,
+                ) as _buffer:
+                    # Indicate to the file system that the buffer is going to be
+                    # edited, and that those edits should be reflected in any
+                    # other process which has mapped this file.
+                    _buffer.madvise(mmap.MAP_SHARED)
+
+                    for identifier, data in identifiers_and_data:
+                        if identifier in self._footer:
+                            if raw: self._set(identifier, data, _buffer)
+                            else:
+                                self._set(
+                                    identifier,
+                                    starsmashertools.helpers.pickler.pickle_object(data),
+                                    _buffer,
+                                )
+                        else:
+                            if raw: self._set(identifier, data, f)
+                            else:
+                                self._set(
+                                    identifier,
+                                    starsmashertools.helpers.pickler.pickle_object(data),
+                                    f,
+                                )
+
+                    _buffer.close()
+                self._write_footer(f = f)
+        else: # Sidestep "cant mmap an empty file" error by just making the file
+            with self._open(self._mode) as f:
                 for identifier, data in identifiers_and_data:
-                    if identifier in self._footer:
-                        if raw: self._set(identifier, data, _buffer)
-                        else:
-                            self._set(
-                                identifier,
-                                starsmashertools.helpers.pickler.pickle_object(data),
-                                _buffer,
-                            )
+                    if raw: self._set(identifier, data, f)
                     else:
-                        if raw: self._set(identifier, data, f)
-                        else:
-                            self._set(
-                                identifier,
-                                starsmashertools.helpers.pickler.pickle_object(data),
-                                f,
-                            )
-                
-                _buffer.close()
-            self._write_footer(f = f)
-    
+                        self._set(
+                            identifier,
+                            starsmashertools.helpers.pickler.pickle_object(data),
+                            f,
+                        )
