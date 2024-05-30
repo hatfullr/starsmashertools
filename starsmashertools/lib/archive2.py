@@ -107,7 +107,7 @@ class Archive:
             flush : bool = True,
     ):
         if identifier in self._footer:
-            diff = len(data) - len(self.get(identifier, raw = True))
+            diff = len(data) - len(self.get(identifier, raw = True, _buffer = _buffer))
             # We are SOL, here. There's no possible way to insert/delete file
             # contents in the middle. We have to use mmap as our crutch.
             orig_size = _buffer.size()
@@ -210,19 +210,23 @@ class Archive:
             m.identifier : m for m in [Meta.from_bytes(b) for b in footer.split(Archive.footer_delimiter)]
         })
     
-    def get(self, identifier : str, raw : bool = False):
+    def get(self, identifier : str, raw : bool = False, _buffer = None):
         """ Return the data (bytes) associated with the given :class:`~.Meta` 
         ``identifier``\. """
-        with self._open('rb', lock = False) as f:
-            result = self._get(identifier, f)
+        wasNone = _buffer is None
+        if wasNone: _buffer = self._open('rb', lock = False)
+        result = self._get(identifier, _buffer)
+        if wasNone: _buffer.close()
         if raw: return result
         return starsmashertools.helpers.pickler.unpickle_object(result)
 
-    def get_many(self, identifiers, raw : bool = False):
-        with self._open('rb', lock = False) as f:
-            for identifier in identifiers:
-                if raw: yield self._get(identifier, f)
-                else: yield starsmashertools.helpers.pickler.unpickle_object(self._get(identifier, f))
+    def get_many(self, identifiers, raw : bool = False, _buffer = None):
+        wasNone = _buffer is None
+        if wasNone: _buffer = self._open('rb', lock = False)
+        for identifier in identifiers:
+            if raw: yield self._get(identifier, _buffer)
+            else: yield starsmashertools.helpers.pickler.unpickle_object(self._get(identifier, _buffer))
+        if wasNone: _buffer.close()
 
     def set(self, identifier : str, data, raw : bool = False):
         """ Given some ``identifier``\, add ``data`` to the Archive. If 
