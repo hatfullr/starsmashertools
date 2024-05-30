@@ -107,7 +107,7 @@ class Archive:
             flush : bool = True,
     ):
         if identifier in self._footer:
-            diff = len(data) - len(self.get(identifier, raw = True, _buffer = _buffer))
+            diff = len(data) - len(self._get(identifier, _buffer = _buffer))
             # We are SOL, here. There's no possible way to insert/delete file
             # contents in the middle. We have to use mmap as our crutch.
             orig_size = _buffer.size()
@@ -153,18 +153,18 @@ class Archive:
             _buffer.write(data)
             self._footer[identifier] = Meta(identifier, start, _buffer.tell())
 
-    def _write_footer(self, f = None):
+    def _write_footer(self, _buffer = None):
         """ This method doesn't care about the current contents of the file. It
         will append the footer to the end of the file regardless of the contents.
         If there is already a footer, it should be removed first. """
         footer = Archive.footer_delimiter.join([meta.to_bytes() for meta in self._footer.values()])
-        wasNone = f is None
-        if wasNone: f = self._open(self._mode)
-        f.seek(list(self._footer.values())[-1].stop)
-        f.write(footer)
-        f.write(struct.pack(endian + 'i', len(footer)))
-        f.truncate()
-        if wasNone: f.close()
+        wasNone = _buffer is None
+        if wasNone: _buffer = self._open(self._mode)
+        _buffer.seek(list(self._footer.values())[-1].stop)
+        _buffer.write(footer)
+        _buffer.write(struct.pack(endian + 'i', len(footer)))
+        _buffer.truncate()
+        if wasNone: _buffer.close()
 
     def _open(self, mode, **kwargs):
         if self.compressed:
@@ -210,13 +210,11 @@ class Archive:
             m.identifier : m for m in [Meta.from_bytes(b) for b in footer.split(Archive.footer_delimiter)]
         })
     
-    def get(self, identifier : str, raw : bool = False, _buffer = None):
+    def get(self, identifier : str, raw : bool = False):
         """ Return the data (bytes) associated with the given :class:`~.Meta` 
         ``identifier``\. """
-        wasNone = _buffer is None
-        if wasNone: _buffer = self._open('rb', lock = False)
-        result = self._get(identifier, _buffer)
-        if wasNone: _buffer.close()
+        with self._open('rb', lock = False) as _buffer:
+            result = self._get(identifier, _buffer)
         if raw: return result
         return starsmashertools.helpers.pickler.unpickle_object(result)
 
@@ -253,7 +251,7 @@ class Archive:
                     _buffer.close()
             else:
                 self._set(identifier, _data, f)
-            self._write_footer(f = f)
+            self._write_footer(_buffer = f)
     
     def set_many(self, identifiers_and_data, raw : bool = False):
         # Doing it in this way ensures that generators aren't consumed improperly
@@ -290,7 +288,7 @@ class Archive:
                                 )
                     _buffer.flush()
                     _buffer.close()
-                self._write_footer(f = f)
+                self._write_footer(_buffer = f)
         else: # Sidestep "cant mmap an empty file" error by just making the file
             with self._open(self._mode) as f:
                 for identifier, data in identifiers_and_data:
