@@ -1102,7 +1102,7 @@ class FluxResults(starsmashertools.lib.archive2.Archive, object):
 
     def is_allowed(self, branch):
         for b, l in self._allowed.flowers():
-            if not leaf: continue
+            if not l: continue
             if branch == b or starsmashertools.helpers.nesteddict.NestedDict.is_child_branch(branch, b):
                 return True
         return False
