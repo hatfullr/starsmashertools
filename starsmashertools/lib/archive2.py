@@ -268,7 +268,7 @@ class Archive:
 
                     for identifier, data in identifiers_and_data:
                         if identifier in self._footer:
-                            if raw: self._set(identifier, data, _buffer)
+                            if raw: self._set(identifier, data, _buffer, flush = False)
                             else:
                                 self._set(
                                     identifier,
