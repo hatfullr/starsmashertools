@@ -75,7 +75,6 @@ class Archive:
 
     madvise = [
         (mmap.MAP_SHARED,),
-        (mmap.MAP_POPULATE,),
     ]
 
     footer_delimiter = chr(31).encode(encoding) # ASCII character US
