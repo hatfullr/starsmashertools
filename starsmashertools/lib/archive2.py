@@ -7,6 +7,7 @@ import struct
 import mmap
 import time
 import base64
+import collections
 
 FOOTERSTRUCT = struct.Struct('<Q')
 
@@ -87,6 +88,10 @@ class Archive(object):
                 #self._buffer.write(value + self._buffer[pos + size:])
                 self._buffer[pos:] = value + self._buffer[pos+size:] + b' '*(size - len(value))
                 footer[key]['mtime'] = time.time()
+                
+                self._buffer.resize(self._buffer.size() - size + len(value))
+                self._buffer.madvise(mmap.MAP_SHARED)
+                
             else: # size < len(value)
                 length = self._buffer.size()
                 self._buffer.resize(length - size + len(value))
@@ -96,6 +101,18 @@ class Archive(object):
                 #self._buffer.write(value + self._buffer[pos + size : length])
                 self._buffer[pos:] = value + self._buffer[pos + size:length]
                 footer[key]['mtime'] = time.time()
+
+            # All the footers that are after this key now have their locations
+            # modified. So we update them all here.
+            diff = len(value) - size
+            if diff != 0:
+                isafter = False
+                for k, obj in footer.items():
+                    if k == key:
+                        isafter = True
+                        continue
+                    if not isafter: continue
+                    footer[key]['pos'] += diff
         
         else: # This is an entirely new key
             current_size = self.size()
@@ -180,7 +197,7 @@ class Archive(object):
             size = FOOTERSTRUCT.unpack(self._buffer.read())[0] + FOOTERSTRUCT.size
         self._buffer.seek(-size, 2)
         try: return pickle.load(self._buffer), size
-        except: return {}, size
+        except: return collections.OrderedDict({}), size
 
     def save(self):
         self._buffer.flush()
