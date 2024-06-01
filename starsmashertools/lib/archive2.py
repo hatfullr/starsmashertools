@@ -15,7 +15,8 @@ def is_pickled(value):
     return clean_base64(value)[-1] == pickle.STOP
 
 def clean_base64(value):
-    ret = base64.b64decode(value)
+    try: ret = base64.b64decode(value)
+    except: return value
     try: base64.b64encode(ret) # Fails if it wasn't encoded with base64
     except: return value
     else: return ret
