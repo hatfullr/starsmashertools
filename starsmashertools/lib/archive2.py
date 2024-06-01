@@ -12,10 +12,13 @@ FOOTERSTRUCT = struct.Struct('<Q')
 
 def is_pickled(value):
     if isinstance(value, bytes) and value[-1] == pickle.STOP: return True
-    try: # If it was pickled by starsmashertools pickler
-        return base64.b64decode(value)[-1] == pickle.STOP
-    except:
-        return False
+    return clean_base64(value)[-1] == pickle.STOP
+
+def clean_base64(value):
+    ret = base64.b64decode(value)
+    try: base64.b64encode(ret) # Fails if it wasn't encoded with base64
+    except: return value
+    else: return ret
 
 class InvalidArchiveError(Exception): pass
 

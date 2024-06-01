@@ -1115,6 +1115,7 @@ class FluxResults(starsmashertools.lib.archive2.Archive, object):
             if not self.is_allowed(branch): continue
 
             key = str(branch)
+            leaf = starsmashertools.lib.archive2.clean_base64(leaf)
             if key in self: self[key] += leaf
             else: self[key] = leaf
             
