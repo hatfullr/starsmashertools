@@ -11,8 +11,8 @@ import base64
 FOOTERSTRUCT = struct.Struct('<Q')
 
 def is_pickled(value):
-    if isinstance(value, bytes) and value[-1] == pickle.STOP: return True
-    return clean_base64(value)[-1] == pickle.STOP
+    v = clean_base64(value)
+    return isinstance(v, bytes) and v[-1] == pickle.STOP
 
 def clean_base64(value):
     try: ret = base64.b64decode(value)
