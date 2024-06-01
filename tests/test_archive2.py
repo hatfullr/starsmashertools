@@ -2,85 +2,158 @@ import unittest
 import starsmashertools.lib.archive2
 import os
 import struct
-import starsmashertools.helpers.pickler
+import pickle
+import time
 
 class Test(unittest.TestCase):
     filename = 'test'
     def setUp(self):
         if os.path.exists(Test.filename): os.remove(Test.filename)
+        self.archive = starsmashertools.lib.archive2.Archive(Test.filename)
 
     def tearDown(self):
         if os.path.exists(Test.filename): os.remove(Test.filename)
+        if os.path.exists('testarchiveadd'): os.remove('testarchiveadd')
         
     def test_simple(self):
-        a = starsmashertools.lib.archive2.Archive(Test.filename)
-        with self.assertRaises(FileNotFoundError):
-            a.get('test')
-
-        a.set('test', 'simple')
-        self.assertEqual(len(a._footer), 1)
-        self.assertEqual(list(a._footer.values())[-1].identifier, 'test')
-        self.assertEqual(list(a._footer.values())[-1].start, 0)
-        self.assertEqual(list(a._footer.values())[-1].stop, 28)
-
-        with open('test', 'rb') as f:
-            f.seek(-4, 2)
-            self.assertEqual(12, struct.unpack('<i', f.read(4))[0])
-
-        self.assertEqual(b'gASVCgAAAAAAAACMBnNpbXBsZZQu', a.get('test', raw = True))
+        with self.assertRaises(KeyError):
+            self.archive['test']
         
-        self.assertEqual(a.get('test'), 'simple')
+        self.archive['test'] = 'simple'
+        self.assertEqual(self.archive['test'], 'simple')
+        
+        self.archive['test'] = 'simple'
+        
+        self.archive['test2'] = 'hi'
+        
+        self.archive['test'] = 'simple2'
+        self.assertEqual(self.archive['test'], 'simple2')
+        
+        self.archive['test'] = 'simp'
+        self.assertEqual(self.archive['test'], 'simp')
 
+    def test_setitem(self):
+        previous_size = self.archive.size()
+        self.archive['test'] = 'simple'
+        expected = pickle.dumps('simple')
+        self.assertEqual(expected, self.archive._buffer[:len(expected)])
+        self.assertLess(previous_size, self.archive.size())
 
-    def test_overwrite_no_truncate(self):
-        a = starsmashertools.lib.archive2.Archive(Test.filename)
-        a.set('test', 'a')
-        a.set('test2', 'b')
+    def test_delitem(self):
+        self.archive['test'] = 'hello'
+        del self.archive['test']
+        self.assertNotIn('test', self.archive)
+        with self.assertRaises(KeyError):
+            self.archive['test']
 
-        previous_start_stop = (a._footer['test'].start, a._footer['test'].stop)
-        a.set('test', 'c')
-        self.assertEqual('c', a.get('test'))
-        self.assertEqual(starsmashertools.helpers.pickler.pickle_object('c'), a.get('test', raw = True))
-        self.assertEqual(previous_start_stop, (a._footer['test'].start, a._footer['test'].stop))
-        self.assertEqual('b', a.get('test2'))
+    def test_contains(self):
+        self.archive['test'] = 'hello'
+        self.assertIn('test', self.archive)
 
-    def test_overwrite_truncate(self):
-        a = starsmashertools.lib.archive2.Archive(Test.filename)
-        a.set('test', 'abcd')
-        a.set('test2', 'b')
+    def test_keys(self):
+        self.archive['0'] = 0
+        self.archive['1'] = 1
+        self.archive['2'] = 2
+        exp = ['0', '1', '2']
+        self.assertEqual(len(exp), len(self.archive.keys()))
+        for expected, found in zip(exp, self.archive.keys()):
+            self.assertEqual(expected, found)
 
-        previous_start_stop = (a._footer['test'].start, a._footer['test'].stop)
-        a.set('test', 'c')
-        self.assertEqual('c', a.get('test'))
-        self.assertEqual(starsmashertools.helpers.pickler.pickle_object('c'), a.get('test', raw = True))
-        self.assertNotEqual(previous_start_stop, (a._footer['test'].start, a._footer['test'].stop))
-        self.assertEqual('b', a.get('test2'))
+    def test_values(self):
+        self.archive['0'] = 0
+        self.archive['1'] = 1
+        self.archive['2'] = 2
+        for i, value in enumerate(self.archive.values()):
+            self.assertEqual(i, value)
 
-        # Try the truncation type which extends the data space
-        a.set('test', 'abcd')
-        self.assertEqual('abcd', a.get('test'))
-        self.assertEqual('b', a.get('test2'))
+    def test_items(self):
+        self.archive['0'] = 0
+        self.archive['1'] = 1
+        self.archive['2'] = 2
+        for i, (key, val) in enumerate(self.archive.items()):
+            self.assertEqual(str(i), key)
+            self.assertEqual(i, val)
 
-    def test_big_file(self):
-        import numpy as np
-        data = np.linspace(0, 1, int(1e7))
-        a = starsmashertools.lib.archive2.Archive(Test.filename)
-        a.set('test', data)
-        self.assertTrue(np.array_equal(a.get('test'), data))
+    def test_size(self):
+        self.assertEqual(0, self.archive.size())
+        self.archive['0'] = 0
+        self.assertEqual(self.archive._buffer.size(), self.archive.size())
 
-    def test_compression(self):
-        a = starsmashertools.lib.archive2.Archive(Test.filename)
-        a.set('test', [0, 1, 2, 3, 4, 5, 6, 7, 0, 0, 0, 0])
-        with self.assertRaises(starsmashertools.lib.archive2.CompressedError):
-            a.decompress()
-        previous_size = os.path.getsize(a.path)
-        a.compress()
-        self.assertLess(previous_size, os.path.getsize(a.path))
+    def test_readonly(self):
+        archive = starsmashertools.lib.archive2.Archive(
+            Test.filename,
+            readonly = True,
+        )
+        with self.assertRaises(TypeError):
+            archive['hello'] = 'hi'
 
-        with self.assertRaises(starsmashertools.lib.archive2.CompressedError):
-            a.compress()
+    def test_add(self):
+        self.archive['test'] = 'hi'
+        self.archive.add('test', 0)
+        self.assertEqual(0, self.archive['test'])
 
+        time.sleep(1.e-4)
+        open('testarchiveadd', 'x').close()
+        self.archive.add(
+            'test',
+            0,
+            origin = 'testarchiveadd',
+            replace = 'mtime',
+        )
+        self.assertEqual(0, self.archive['test'])
 
+        self.archive['test'] = 'hi'
+        self.archive.add(
+            'test',
+            0,
+            origin = 'testarchiveadd',
+            replace = 'mtime',
+        )
+        self.assertEqual('hi', self.archive['test'])
+        
+
+class TestLoader(unittest.TestLoader, object):
+    def getTestCaseNames(self, *args, **kwargs):
+        return [
+            'test_setitem',
+            'test_contains',
+            'test_delitem',
+            'test_keys',
+            'test_values',
+            'test_items',
+            'test_size',
+            'test_readonly',
+            'test_add',
+        ]
 
 if __name__ == '__main__':
-    unittest.main(failfast = True)
+    import inspect
+    import re
+    
+    comment_checks = [
+        # Remove # comments first
+        re.compile("(?<!['\"])#.*", flags = re.M),
+        # Then remove block comments (which can be commented out by #)
+        re.compile('(?<!\')(?<!\\\\)""".*?"""', flags = re.M | re.S),
+        re.compile("(?<!\")(?<!\\\\)'''.*?'''", flags = re.M | re.S),
+    ]
+    
+    src = inspect.getsource(starsmashertools.lib.archive2)
+
+    # Remove all comments
+    for check in comment_checks:
+        for match in check.findall(src):
+            src = src.replace(match, '')
+    
+    if '@profile' in src:
+        loader = TestLoader()
+        suite = unittest.TestSuite()
+        for name in loader.getTestCaseNames():
+            suite.addTest(Test(name))
+        runner = unittest.TextTestRunner()
+        runner.run(suite)
+    else:
+        # This is the normal method
+        unittest.main(failfast=True, testLoader=TestLoader())
+    
+    #unittest.main(failfast = True)

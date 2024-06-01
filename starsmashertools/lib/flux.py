@@ -1094,11 +1094,11 @@ class FluxResults(starsmashertools.lib.archive2.Archive, object):
         self._allowed = allowed
         super(FluxResults, self).__init__(*args, **kwargs)
 
-    def _set(self, identifier : str, *args, **kwargs):
-        try: branch = eval(identifier)
-        except: branch = identifier
+    def __setitem__(self, key : str, *args, **kwargs):
+        try: branch = eval(key)
+        except: branch = key
         if not self.is_allowed(branch): return
-        return super(FluxResults, self)._set(identifier, *args, **kwargs)
+        return super(FluxResults, self).__setitem__(key, *args, **kwargs)
 
     def is_allowed(self, branch):
         for b, l in self._allowed.flowers():
@@ -1107,19 +1107,37 @@ class FluxResults(starsmashertools.lib.archive2.Archive, object):
                 return True
         return False
 
-    def add(self, result : str | FluxResult):
+    def add_fluxresult(self, result : str | FluxResult):
         if isinstance(result, str):
             result = FluxResult.load(result, deserialize = False)
 
+        for branch, leaf in result.flowers():
+            if not self.is_allowed(branch): continue
+
+            key = str(branch)
+            if key in self: self[key] += leaf
+            else: self[key] = leaf
+            
+    """
+    def add(self, result : str | FluxResult):
+        import pickle
+        if isinstance(result, str):
+            result = FluxResult.load(result, deserialize = False)
+        
+        
         def get_identifiers_and_data():
             for branch, leaf in result.flowers():
                 if not self.is_allowed(branch): continue
-            
+                
+                if not isinstance(leaf, bytes): value = pickle.dumps(leaf)
+                else: value = leaf
+                
                 identifier = str(branch)
+                
                 if identifier in self:
-                    yield identifier, self.get(identifier, raw = True) + leaf
+                    yield identifier, self.get(identifier, raw = True) + value
                 else:
-                    yield identifier, leaf
+                    yield identifier, value
         
-        self.set_many(get_identifiers_and_data(), raw = True)
-
+        self.set_many(get_identifiers_and_data())
+    """

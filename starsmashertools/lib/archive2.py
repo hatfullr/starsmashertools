@@ -1,307 +1,261 @@
-import os
-import struct
-import collections
-import mmap
-import gzip
-import contextlib
-import shutil
 import starsmashertools.helpers.path
 import starsmashertools.helpers.file
-import starsmashertools.helpers.pickler
+import starsmashertools.helpers.argumentenforcer
+import pathlib
+import pickle
+import struct
+import mmap
+import time
+import base64
+
+FOOTERSTRUCT = struct.Struct('<Q')
+
+def is_pickled(value):
+    if isinstance(value, bytes) and value[-1] == pickle.STOP: return True
+    try: # If it was pickled by starsmashertools pickler
+        return base64.b64decode(value)[-1] == pickle.STOP
+    except:
+        return False
 
 class InvalidArchiveError(Exception): pass
-class InvalidIdentifierError(Exception): pass
-class CompressedError(Exception): pass
 
-encoding = 'ascii'
-endian = '<'
-
-class Meta:
-    """ Meta information about a :py:class:`bytes` data set. """
-    _format = endian + 'ii{len:d}s'
+class Archive(object):
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
     def __init__(
             self,
-            identifier : str | bytes,
-            start : int,
-            stop : int,
+            path : str | pathlib.Path,
+            auto_save : bool = True,
+            readonly : bool = False,
     ):
-        if start >= stop:
-            raise ValueError('start >= stop (%d >= %d)' % (start, stop))
-        if isinstance(identifier, bytes):
-            identifier = identifier.decode(encoding)
-        self.identifier = identifier
-        self.start = start
-        self.stop = stop
-    def __str__(self):
-        return "Meta('{identifier:s}',{start:d},{stop:d})".format(
-            identifier = self.identifier,
-            start = self.start,
-            stop = self.stop,
-        )
-    def __repr__(self): return str(self)
-    def to_bytes(self):
-        if isinstance(self.identifier, str):
-            identifier = self.identifier.encode(encoding)
-        else: identifier = self.identifier
-        fmt = Meta._format.format(len = len(identifier))
-        return struct.pack(
-            fmt, # must come first
-            self.start,
-            self.stop,
-            identifier,
-        )
-    @staticmethod
-    def from_bytes(b : bytes):
-        try:
-            identifier = struct.unpack(endian + '%ds' % (len(b) - 8), b[8:])[0]
-        except Exception as e:
-            raise InvalidIdentifierError from e
+        self.auto_save = auto_save
         
-        return Meta(
-            identifier,
-            *struct.unpack(endian + 'ii', b[:8]), # start and stop
-        )
+        # Obtain the file memory buffer
+        if not starsmashertools.helpers.path.exists(path):
+            # Kickstart the file to avoid mmap 'empty file' error
+            with open(path, 'wb') as f: f.write(b' ')
+        with open(path, 'rb' if readonly else 'rb+') as f:
+            self._buffer = mmap.mmap(
+                f.fileno(),
+                0,
+                access = mmap.ACCESS_READ if readonly else mmap.ACCESS_WRITE
+            )
+        
+        # Indicate to the file system that the buffer is going to be edited, and
+        # that those edits should be reflected in any other process which has
+        # mapped this file. Note that this should allow multiple Archive
+        # instances to access and modify a single, even if they are on different
+        # processes.
+        self._buffer.madvise(mmap.MAP_SHARED)
 
-
-class Archive:
-    """ The file is structured as::
+    def __del__(self, *args, **kwargs):
+        if hasattr(self, '_buffer'):
+            if not self._buffer.closed:
+                self._buffer.flush()
+                self._buffer.close()
     
-        ... bytes ... (byte data, no delimiters)
-        ... bytes ... (Meta objects, delimited by ASCII character US)
-        length of the footer (4-byte representation <i)
-        EOF (not an actual character, just the end of the file)
-    
-    """
+    def __setitem__(self, key, value):
+        # If the value isn't already pickled, pickle it now
+        if not is_pickled(value): value = pickle.dumps(value)
+        
+        # If this key is already in the Archive, get its location and size.
+        footer, footer_size = self.get_footer()
+        
+        if key in footer:
+            pos = footer[key]['pos']
+            size = footer[key]['size']
+            new_pos = pos
 
-    madvise = [
-        (mmap.MAP_SHARED,),
-    ]
+            if size == len(value): # Lucky!
+                self._buffer[pos:pos + size] = value
+                footer[key]['mtime'] = time.time()
+                if self.auto_save:
+                    # Only flush what we have changed
+                    offset = mmap.PAGESIZE * (pos // mmap.PAGESIZE)
+                    self._buffer.flush(offset, offset + size)
+                return
 
-    footer_delimiter = chr(31).encode(encoding) # ASCII character US
-    
-    def __init__(
-            self,
-            path : str,
-    ):
-        if starsmashertools.helpers.path.exists(path):
-            try:
-                self._footer = self.get_footer(path)
-            except Exception as e:
-                raise InvalidArchiveError(str(path)) from e
-        else:
-            self._footer = collections.OrderedDict({})
-        self.path = path
+            # Not clear to me yet if seeking and writing is appropriate or if
+            # modifying the buffer is appropriate.
 
-    def __contains__(self, identifier : str): return identifier in self._footer
-    
-    @property
-    def _mode(self): return 'rb+' if starsmashertools.helpers.path.exists(self.path) else 'wb+'
-
-    def _get(self, identifier : str, _buffer):
-        if identifier not in self._footer:
-            raise InvalidIdentifierError("No identifier in footer: '%s'" % str(identifier))
-        _buffer.seek(self._footer[identifier].start)
-        return _buffer.read(self._footer[identifier].stop - self._footer[identifier].start)
-    
-    def _set(
-            self,
-            identifier : str,
-            data : bytes,
-            _buffer,
-            flush : bool = True,
-    ):
-        if identifier in self._footer:
-            diff = len(data) - len(self._get(identifier, _buffer = _buffer))
-            # We are SOL, here. There's no possible way to insert/delete file
-            # contents in the middle. We have to use mmap as our crutch.
-            orig_size = _buffer.size()
-            new_size = orig_size + diff
-
-            # Resize the file to accommodate the new data
-            if diff > 0: # new data is larger than old data
-                _buffer.resize(new_size)
-                _buffer.move(
-                    self._footer[identifier].stop + diff, # dst (offset)
-                    self._footer[identifier].stop, # src (offset)
-                    orig_size - self._footer[identifier].stop, # count
-                )
-            else:
-                # Shift the contents "up", overwriting content
-                _buffer.move(
-                    self._footer[identifier].stop + diff,
-                    self._footer[identifier].stop,
-                    orig_size - self._footer[identifier].stop,
-                )
-                _buffer.resize(_buffer.size() + diff)
-
-            # Now replace the old content with the new content
-            _buffer.seek(self._footer[identifier].start)
-            _buffer.write(data)
-            self._footer[identifier].stop = _buffer.tell()
-
-            if flush: _buffer.flush()
+            #self._buffer.seek(pos)
             
-            past = False
-            for key, val in self._footer.items():
-                if key == identifier:
-                    past = True
-                    continue # Don't edit for the rewritten identifier
-                if not past: continue
-                self._footer[key].start += diff
-                self._footer[key].stop += diff
+            if size > len(value):
+                # Move everything "up"
+                #self._buffer.write(value + self._buffer[pos + size:])
+                self._buffer[pos:] = value + self._buffer[pos+size:] + b' '*(size - len(value))
+                footer[key]['mtime'] = time.time()
+            else: # size < len(value)
+                length = self._buffer.size()
+                self._buffer.resize(length - size + len(value))
+                self._buffer.madvise(mmap.MAP_SHARED)
+                
+                # Move everything "down"
+                #self._buffer.write(value + self._buffer[pos + size : length])
+                self._buffer[pos:] = value + self._buffer[pos + size:length]
+                footer[key]['mtime'] = time.time()
         
-        else: # Append the data to the file
-            if self._footer:
-                _buffer.seek(list(self._footer.values())[-1].stop)
-            start = _buffer.tell()
-            _buffer.write(data)
-            self._footer[identifier] = Meta(identifier, start, _buffer.tell())
+        else: # This is an entirely new key
+            current_size = self.size()
+            
+            self._buffer.resize(current_size + len(value))
+            self._buffer.madvise(mmap.MAP_SHARED)
+            
+            new_pos = self._buffer.size() - len(value) - footer_size
+            footer[key] = { 'pos' : new_pos }
+            self._buffer[new_pos:new_pos + len(value)] = value
+            #self._buffer.seek(new_pos)
+            #self._buffer.write(value)
+            footer[key]['time'] = time.time()
+            
+        footer[key]['size'] = len(value)
+        
+        # Write the footer
+        self._update_footer(footer, footer_size)
+        #self._buffer.seek(-new_footer_size, 2)
+        #self._buffer.write(new_footer + FOOTERSTRUCT.pack(len(new_footer)))
+        
+        if self.auto_save:
+            # Only flush what we have changed
+            offset = mmap.PAGESIZE * (footer[key]['pos'] // mmap.PAGESIZE)
+            self._buffer.flush(offset, self._buffer.size() - offset)
+    
+    def __getitem__(self, key):
+        footer, _ = self.get_footer()
+        self._buffer.seek(footer[key]['pos'])
+        return pickle.load(self._buffer)
 
-    def _write_footer(self, _buffer = None):
-        """ This method doesn't care about the current contents of the file. It
-        will append the footer to the end of the file regardless of the contents.
-        If there is already a footer, it should be removed first. """
-        footer = Archive.footer_delimiter.join([meta.to_bytes() for meta in self._footer.values()])
-        wasNone = _buffer is None
-        if wasNone: _buffer = self._open(self._mode)
-        _buffer.seek(list(self._footer.values())[-1].stop)
-        _buffer.write(footer)
-        _buffer.write(struct.pack(endian + 'i', len(footer)))
-        _buffer.truncate()
-        if wasNone: _buffer.close()
+    def __delitem__(self, key):
+        """ Remove the given key from the Archive. If auto save is enabled, the
+        Archive file will be modified. """
+        footer, footer_size = self.get_footer()
+        if key not in footer: raise KeyError(key)
+        pos = footer[key]['pos']
+        size = footer[key]['size']
+        self._buffer[pos:-size] = self._buffer[pos + size:]
+        self._buffer.resize(self._buffer.size() - size)
+        self._buffer.madvise(mmap.MAP_SHARED)
+        
+        del footer[key]
 
-    def _open(self, mode, **kwargs):
-        if self.compressed:
-            if mode not in ('r', 'rb'):
-                raise CompressedError("Must call decompress() before modifying an archive.")
-            return gzip.open(self.path, mode = mode)
-        return starsmashertools.helpers.file.open(self.path,mode = mode,**kwargs)
+        # Update the footer
+        self._update_footer(footer, footer_size)
+        
+        if self.auto_save:
+            offset = mmap.PAGESIZE * (pos // mmap.PAGESIZE)
+            self._buffer.flush(offset, self._buffer.size() - offset)
+        
+    
+    def __contains__(self, key): return key in self.get_footer()[0]
 
-    @property
-    def compressed(self):
-        if not starsmashertools.helpers.path.exists(self.path): return False
-        # thank you, https://stackoverflow.com/a/47080739/4954083
-        with starsmashertools.helpers.file.open(self.path, 'rb', lock = False) as f:
-            compressed = f.read(2) == b'\x1f\x8b'
-        return compressed
+    def _update_footer(self, footer, footer_size):
+        new_footer = pickle.dumps(footer)
+        new_footer_size = len(new_footer) + FOOTERSTRUCT.size
+        self._buffer.resize(self._buffer.size() + - footer_size + new_footer_size)
+        self._buffer.madvise(mmap.MAP_SHARED)
+        
+        self._buffer[-new_footer_size:] = new_footer + FOOTERSTRUCT.pack(len(new_footer))
 
-    def compress(self, replace : bool = True):
-        if self.compressed:
-            raise CompressedError("Archive is already compressed")
-        with starsmashertools.helpers.file.open(self.path, 'rb', lock = False) as f_in:
-            with gzip.open(self.path + '.gz', 'wb') as f_out:
-                shutil.copyfileobj(f_in, f_out)
-        if replace: os.replace(self.path + '.gz', self.path)
+    def size(self):
+        # This is an artifact from when we first made the file
+        if self._buffer.size() == 1: return 0
+        return self._buffer.size()
 
-    def decompress(self, replace : bool = True):
-        if not self.compressed:
-            raise CompressedError("Archive is not compressed")
-        with gzip.open(self.path, 'rb') as f_in:
-            with starsmashertools.helpers.file.open(self.path + '.tmp', 'wb') as f_out:
-                shutil.copyfileobj(f_in, f_out)
-        os.replace(self.path + '.tmp', self.path)
+    def keys(self): return self.get_footer()[0].keys()
+    def values(self):
+        """ Returns a generator which iteratively obtains all the archived 
+        values. """
+        footer, footer_size = self.get_footer()
+        self._buffer.seek(0)
+        while self._buffer.tell() < self._buffer.size() - footer_size:
+            yield pickle.load(self._buffer)
+    def items(self): return zip(self.keys(), self.values())
+    
+    def get_footer(self):
+        if self._buffer.size() < FOOTERSTRUCT.size: size = 0
+        else:
+            self._buffer.seek(-FOOTERSTRUCT.size, 2)
+            size = FOOTERSTRUCT.unpack(self._buffer.read())[0] + FOOTERSTRUCT.size
+        self._buffer.seek(-size, 2)
+        try: return pickle.load(self._buffer), size
+        except: return {}, size
 
-    def get_footer(self, path):
-        with self._open('rb', lock = False) as f:
-            f.seek(-4, 2)
-            length = f.read(4)
-            if not length: # This was an empty file
-                return collections.OrderedDict({})
-            length = struct.unpack(endian + 'i', length)[0]
-            f.seek(-(length + 4), 2)
-            footer = f.read(length)
-        return collections.OrderedDict({
-            m.identifier : m for m in [Meta.from_bytes(b) for b in footer.split(Archive.footer_delimiter)]
+    def save(self):
+        self._buffer.flush()
+
+    def add(self, *args, **kwargs): return self.set(*args, **kwargs)
+        
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    def set(
+            self,
+            key,
+            value,
+            origin : str | pathlib.Path | type(None) = None,
+            replace : str = 'mtime',
+    ):
+        """
+        If ``replace = 'mtime'``\, then the modification time of ``origin`` is
+        checked against the currently stored ``mtime`` in the archive. If the
+        mtime value is greater, then the key is replaced in this archive.
+        Otherwise, no replacement happens. If ``origin`` is `None`\, the value
+        of ``replace`` is ignored and the key is always replaced if it exists.
+        """
+        starsmashertools.helpers.argumentenforcer.enforcevalues({
+            'replace' : ['mtime',],
         })
-    
-    def get(self, identifier : str, raw : bool = False):
-        """ Return the data (bytes) associated with the given :class:`~.Meta` 
-        ``identifier``\. """
-        with self._open('rb', lock = False) as _buffer:
-            result = self._get(identifier, _buffer)
-        if raw: return result
-        return starsmashertools.helpers.pickler.unpickle_object(result)
-
-    def get_many(self, identifiers, raw : bool = False, _buffer = None):
-        wasNone = _buffer is None
-        if wasNone: _buffer = self._open('rb', lock = False)
-        for identifier in identifiers:
-            if raw: yield self._get(identifier, _buffer)
-            else: yield starsmashertools.helpers.pickler.unpickle_object(self._get(identifier, _buffer))
-        if wasNone: _buffer.close()
-
-    def set(self, identifier : str, data, raw : bool = False):
-        """ Given some ``identifier``\, add ``data`` to the Archive. If 
-        ``identifier`` is already in the Archive, its contents are replaced.
-        Otherwise, the data is appended to the Archive. This is appropriate only 
-        for setting single values in the file. If setting multiple values, use 
-        :meth:`~.set_many` instead. """
-        _data = data
-        if not raw: _data = starsmashertools.helpers.pickler.pickle_object(data)
-
-        with self._open(self._mode) as f:
-            if identifier in self._footer:
-                with mmap.mmap(
-                        f.fileno(),
-                        0, # map the entire file
-                        # This affects memory, but doesn't update the file (?)
-                        access = mmap.ACCESS_WRITE,
-                ) as _buffer:
-                    # Indicate to the file system that the buffer is going to be
-                    # edited, and that those edits should be reflected in any
-                    # other process which has mapped this file.
-                    for flag in Archive.madvise:
-                        _buffer.madvise(*flag)
-                    self._set(identifier, _data, _buffer)
-                    _buffer.close()
+        
+        footer, _ = self.get_footer()
+        if key in footer:
+            if origin is None:
+                self[key] = value
             else:
-                self._set(identifier, _data, f)
-            self._write_footer(_buffer = f)
-    
-    def set_many(self, identifiers_and_data, raw : bool = False):
-        # Doing it in this way ensures that generators aren't consumed improperly
-        if starsmashertools.helpers.path.exists(self.path):
-            with self._open(self._mode) as f:
-                with mmap.mmap(
-                        f.fileno(),
-                        0, # map the entire file
-                        # This affects memory, but doesn't update the file (?)
-                        access = mmap.ACCESS_WRITE,
-                ) as _buffer:
-                    # Indicate to the file system that the buffer is going to be
-                    # edited, and that those edits should be reflected in any
-                    # other process which has mapped this file.
-                    for flag in Archive.madvise:
-                        _buffer.madvise(*flag)
+                if replace == 'mtime':
+                    if footer[key]['mtime'] < starsmashertools.helpers.path.getmtime(origin):
+                        self[key] = value
 
-                    for identifier, data in identifiers_and_data:
-                        if identifier in self._footer:
-                            if raw: self._set(identifier, data, _buffer, flush = False)
-                            else:
-                                self._set(
-                                    identifier,
-                                    starsmashertools.helpers.pickler.pickle_object(data),
-                                    _buffer,
-                                    flush = False,
-                                )
-                        else:
-                            if raw: self._set(identifier, data, f)
-                            else:
-                                self._set(
-                                    identifier,
-                                    starsmashertools.helpers.pickler.pickle_object(data),
-                                    f,
-                                )
-                    _buffer.flush()
-                    _buffer.close()
-                self._write_footer(_buffer = f)
-        else: # Sidestep "cant mmap an empty file" error by just making the file
-            with self._open(self._mode) as f:
-                for identifier, data in identifiers_and_data:
-                    if raw: self._set(identifier, data, f)
-                    else:
-                        self._set(
-                            identifier,
-                            starsmashertools.helpers.pickler.pickle_object(data),
-                            f,
-                        )
+    def get(
+            self,
+            keys : str | list | tuple,
+            deserialize : bool = True,
+    ):
+        """
+        Obtain the key or keys given. This is useful for if you want to retrieve
+        many values from the archive without opening and closing the file each
+        time. Raises a :class:`KeyError` if any of the keys weren't found.
+
+        Parameters
+        ----------
+        keys : str, list, tuple
+            If a `str`\, the behavior is equivalent to 
+            :meth:`~.Archive.__getitem__`\. If a `list` or `tuple`\, each 
+            element must be type `str`\. Then the archive is opened and the 
+            values for the given keys are returned in the same order as 
+            ``keys``\.
+
+        Other Parameters
+        ----------------
+        deserialize : bool, default = True
+            If `True`\, the values in the :class:`~.Archive` are converted from
+            their raw format as stored in the file on the system into Python
+            objects. Otherwise, the raw values are returned.
+
+        Returns
+        -------
+        :py:class:`object` or generator
+            If a `str` was given for ``keys``\, a :py:class:`object` is
+            returned. Otherwise, a generator is returned which yields the values
+            in the archive at the given keys.
+        """
+        
+        footer, _ = self.get_footer()
+        
+        if isinstance(keys, str):
+            if not deserialize:
+                return self._buffer[footer[keys]['pos']:footer[keys]['pos']+footer[keys]['size']]
+            return self[keys]
+
+        def gen():
+            for key in keys:
+                self._buffer.seek(footer[key]['pos'])
+                yield pickle.load(self._buffer)
+        
+        return gen()

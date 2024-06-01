@@ -1213,11 +1213,11 @@
         <span class="nb">super</span><span class="p">(</span><span class="n">FluxResults</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
 
-    <span class="k">def</span> <span class="nf">_set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">identifier</span> <span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="k">try</span><span class="p">:</span> <span class="n">branch</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="n">identifier</span><span class="p">)</span>
-        <span class="k">except</span><span class="p">:</span> <span class="n">branch</span> <span class="o">=</span> <span class="n">identifier</span>
+    <span class="k">def</span> <span class="fm">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span> <span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span> <span class="n">branch</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span> <span class="n">branch</span> <span class="o">=</span> <span class="n">key</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_allowed</span><span class="p">(</span><span class="n">branch</span><span class="p">):</span> <span class="k">return</span>
-        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">FluxResults</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">_set</span><span class="p">(</span><span class="n">identifier</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">FluxResults</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__setitem__</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">is_allowed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">branch</span><span class="p">):</span>
         <span class="k">for</span> <span class="n">b</span><span class="p">,</span> <span class="n">l</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_allowed</span><span class="o">.</span><span class="n">flowers</span><span class="p">():</span>
@@ -1226,22 +1226,40 @@
                 <span class="k">return</span> <span class="kc">True</span>
         <span class="k">return</span> <span class="kc">False</span>
 
-    <span class="k">def</span> <span class="nf">add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result</span> <span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">FluxResult</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">add_fluxresult</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result</span> <span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">FluxResult</span><span class="p">):</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
             <span class="n">result</span> <span class="o">=</span> <span class="n">FluxResult</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">deserialize</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
 
-        <span class="k">def</span> <span class="nf">get_identifiers_and_data</span><span class="p">():</span>
-            <span class="k">for</span> <span class="n">branch</span><span class="p">,</span> <span class="n">leaf</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">flowers</span><span class="p">():</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_allowed</span><span class="p">(</span><span class="n">branch</span><span class="p">):</span> <span class="k">continue</span>
-            
-                <span class="n">identifier</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">branch</span><span class="p">)</span>
-                <span class="k">if</span> <span class="n">identifier</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
-                    <span class="k">yield</span> <span class="n">identifier</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">identifier</span><span class="p">,</span> <span class="n">raw</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">+</span> <span class="n">leaf</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="k">yield</span> <span class="n">identifier</span><span class="p">,</span> <span class="n">leaf</span>
-        
-        <span class="bp">self</span><span class="o">.</span><span class="n">set_many</span><span class="p">(</span><span class="n">get_identifiers_and_data</span><span class="p">(),</span> <span class="n">raw</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span></div>
+        <span class="k">for</span> <span class="n">branch</span><span class="p">,</span> <span class="n">leaf</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">flowers</span><span class="p">():</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_allowed</span><span class="p">(</span><span class="n">branch</span><span class="p">):</span> <span class="k">continue</span>
 
+            <span class="n">key</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">branch</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span> <span class="bp">self</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">+=</span> <span class="n">leaf</span>
+            <span class="k">else</span><span class="p">:</span> <span class="bp">self</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">leaf</span>
+<span class="w">            </span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    def add(self, result : str | FluxResult):</span>
+<span class="sd">        import pickle</span>
+<span class="sd">        if isinstance(result, str):</span>
+<span class="sd">            result = FluxResult.load(result, deserialize = False)</span>
+<span class="sd">        </span>
+<span class="sd">        </span>
+<span class="sd">        def get_identifiers_and_data():</span>
+<span class="sd">            for branch, leaf in result.flowers():</span>
+<span class="sd">                if not self.is_allowed(branch): continue</span>
+<span class="sd">                </span>
+<span class="sd">                if not isinstance(leaf, bytes): value = pickle.dumps(leaf)</span>
+<span class="sd">                else: value = leaf</span>
+<span class="sd">                </span>
+<span class="sd">                identifier = str(branch)</span>
+<span class="sd">                </span>
+<span class="sd">                if identifier in self:</span>
+<span class="sd">                    yield identifier, self.get(identifier, raw = True) + value</span>
+<span class="sd">                else:</span>
+<span class="sd">                    yield identifier, value</span>
+<span class="sd">        </span>
+<span class="sd">        self.set_many(get_identifiers_and_data())</span>
+<span class="sd">    &quot;&quot;&quot;</span></div>
 
 </pre></div>
 
