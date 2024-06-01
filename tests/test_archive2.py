@@ -118,6 +118,7 @@ class TestLoader(unittest.TestLoader, object):
             'test_setitem',
             'test_contains',
             'test_delitem',
+            'test_simple',
             'test_keys',
             'test_values',
             'test_items',
@@ -129,7 +130,7 @@ class TestLoader(unittest.TestLoader, object):
 if __name__ == '__main__':
     import inspect
     import re
-    
+
     comment_checks = [
         # Remove # comments first
         re.compile("(?<!['\"])#.*", flags = re.M),
@@ -137,14 +138,14 @@ if __name__ == '__main__':
         re.compile('(?<!\')(?<!\\\\)""".*?"""', flags = re.M | re.S),
         re.compile("(?<!\")(?<!\\\\)'''.*?'''", flags = re.M | re.S),
     ]
-    
+
     src = inspect.getsource(starsmashertools.lib.archive2)
 
     # Remove all comments
     for check in comment_checks:
         for match in check.findall(src):
             src = src.replace(match, '')
-    
+
     if '@profile' in src:
         loader = TestLoader()
         suite = unittest.TestSuite()
@@ -155,5 +156,4 @@ if __name__ == '__main__':
     else:
         # This is the normal method
         unittest.main(failfast=True, testLoader=TestLoader())
-    
-    #unittest.main(failfast = True)
+

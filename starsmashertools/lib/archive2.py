@@ -112,7 +112,7 @@ class Archive(object):
                         isafter = True
                         continue
                     if not isafter: continue
-                    footer[key]['pos'] += diff
+                    footer[k]['pos'] += diff
         
         else: # This is an entirely new key
             current_size = self.size()
