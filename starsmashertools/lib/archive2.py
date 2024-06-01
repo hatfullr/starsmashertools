@@ -30,8 +30,13 @@ class Archive(object):
             path : str | pathlib.Path,
             auto_save : bool = True,
             readonly : bool = False,
+            madvise : list | tuple = [
+                mmap.MAP_SHARED, # share between processes
+                mmap.MADV_HUGEPAGE,
+            ],
     ):
         self.auto_save = auto_save
+        self.madvise = madvise
         
         # Obtain the file memory buffer
         if not starsmashertools.helpers.path.exists(path):
@@ -49,7 +54,7 @@ class Archive(object):
         # mapped this file. Note that this should allow multiple Archive
         # instances to access and modify a single, even if they are on different
         # processes.
-        self._buffer.madvise(mmap.MAP_SHARED)
+        for madv in self.madvise: self._buffer.madvise(madv)
 
     def __del__(self, *args, **kwargs):
         if hasattr(self, '_buffer'):
@@ -90,12 +95,12 @@ class Archive(object):
                 footer[key]['mtime'] = time.time()
                 
                 self._buffer.resize(self._buffer.size() - size + len(value))
-                self._buffer.madvise(mmap.MAP_SHARED)
+                for madv in self.madvise: self._buffer.madvise(madv)
                 
             else: # size < len(value)
                 length = self._buffer.size()
                 self._buffer.resize(length - size + len(value))
-                self._buffer.madvise(mmap.MAP_SHARED)
+                for madv in self.madvise: self._buffer.madvise(madv)
                 
                 # Move everything "down"
                 #self._buffer.write(value + self._buffer[pos + size : length])
@@ -118,7 +123,7 @@ class Archive(object):
             current_size = self.size()
             
             self._buffer.resize(current_size + len(value))
-            self._buffer.madvise(mmap.MAP_SHARED)
+            for madv in self.madvise: self._buffer.madvise(madv)
             
             new_pos = self._buffer.size() - len(value) - footer_size
             footer[key] = { 'pos' : new_pos }
@@ -153,7 +158,7 @@ class Archive(object):
         size = footer[key]['size']
         self._buffer[pos:-size] = self._buffer[pos + size:]
         self._buffer.resize(self._buffer.size() - size)
-        self._buffer.madvise(mmap.MAP_SHARED)
+        for madv in self.madvise: self._buffer.madvise(madv)
         
         del footer[key]
 
@@ -171,7 +176,7 @@ class Archive(object):
         new_footer = pickle.dumps(footer)
         new_footer_size = len(new_footer) + FOOTERSTRUCT.size
         self._buffer.resize(self._buffer.size() + - footer_size + new_footer_size)
-        self._buffer.madvise(mmap.MAP_SHARED)
+        for madv in self.madvise: self._buffer.madvise(madv)
         
         self._buffer[-new_footer_size:] = new_footer + FOOTERSTRUCT.pack(len(new_footer))
 
