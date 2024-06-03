@@ -1110,10 +1110,7 @@ class FluxResults(starsmashertools.lib.archive2.Archive, object):
     def add_fluxresult(self, result : str | FluxResult):
         if isinstance(result, str):
             result = FluxResult.load(result, deserialize = False)
-
-        self[result.filename] = result
-            
-        """
+        
         for branch, leaf in result.flowers():
             if not self.is_allowed(branch): continue
 
@@ -1121,7 +1118,7 @@ class FluxResults(starsmashertools.lib.archive2.Archive, object):
             leaf = starsmashertools.lib.archive2.clean_base64(leaf)
             if key in self: self[key] += leaf
             else: self[key] = leaf
-        """
+
             
     """
     def add(self, result : str | FluxResult):

@@ -4,10 +4,11 @@ import starsmashertools.helpers.argumentenforcer
 import pathlib
 import pickle
 import struct
-import mmap
 import time
 import base64
 import collections
+import os
+import io
 
 FOOTERSTRUCT = struct.Struct('<Q')
 
@@ -23,43 +24,113 @@ def clean_base64(value):
 
 class InvalidArchiveError(Exception): pass
 
+class Buffer(io.BytesIO, object):
+    def __init__(
+            self,
+            path : str | pathlib.Path,
+            readonly : bool = False,
+    ):
+        self._closed = False
+        if not starsmashertools.helpers.path.exists(path): mode = 'wb+'
+        else: mode = 'rb' if readonly else 'rb+'
+        self.lock = starsmashertools.helpers.file.Lock(path, mode)
+        
+        self._f = open(path, mode)
+    
+    @property
+    def closed(self): return self._closed
+    
+    def __del__(self, *args, **kwargs):
+        try: self.close()
+        except Exception: pass
+        try: return super(Buffer, self).__del__(*args, **kwargs)
+        except AttributeError: pass
+
+    def __getitem__(self, index):
+        os.fsync(self._f.fileno())
+        if isinstance(index, slice):
+            start = 0 if index.start is None else index.start
+            self.seek(start, os.SEEK_SET)
+            if index.stop is None: content = self.read()
+            else: content = self.read(index.stop - start)
+            if index.step is not None: return content[::index.step]
+            return content
+        else:
+            self.seek(index, os.SEEK_SET)
+            return self.read(1)
+    
+    def __setitem__(self, index, value):
+        os.fsync(self._f.fileno())
+        with io.BytesIO(value) as other_buffer:
+            if isinstance(index, slice):
+                if index.step in [None, 1]:
+                    index = index.indices(self.size())
+                    self.seek(index[0], os.SEEK_SET)
+                    self.write(other_buffer.read())
+                else:
+                    for i in range(*index.indices(self.size())):
+                        self.seek(i, os.SEEK_SET)
+                        self.write(other_buffer.read(1))
+            else:
+                self.seek(index, os.SEEK_SET)
+                self.write(value.read())
+
+    def seek(self, *args, **kwargs): return self._f.seek(*args, **kwargs)
+    def tell(self, *args, **kwargs): return self._f.tell(*args, **kwargs)
+    def read(self, *args, **kwargs): return self._f.read(*args, **kwargs)
+    def write(self, *args, **kwargs): return self._f.write(*args, **kwargs)
+    
+    def flush(self):
+        with self.lock:
+            os.fsync(self._f.fileno())
+            self._f.flush()
+    
+    def close(self):
+        try: self.flush()
+        except ValueError as e:
+            if str(e) != 'I/O operation on closed file': raise
+        self._f.close()
+        self._closed = True
+    
+    def size(self):
+        with self.lock:
+            curpos = self.tell()
+            self.seek(0, os.SEEK_END)
+            ret = self.tell()
+            self.seek(curpos, os.SEEK_SET)
+            return ret
+    
+    def resize(self, newsize : int):
+        with self.lock:
+            self._f.truncate(newsize)
+            self.flush()
+
 class Archive(object):
+    """
+    Make sure that when you are using this class with multiple processes or
+    threads that you implement a lock whenever you get/set values.
+    """
+    
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     def __init__(
             self,
             path : str | pathlib.Path,
             auto_save : bool = True,
             readonly : bool = False,
-            madvise : list | tuple = [
-                mmap.MAP_SHARED, # share between processes
-                mmap.MADV_HUGEPAGE,
-            ],
     ):
         self.auto_save = auto_save
-        self.madvise = madvise
-        
-        # Obtain the file memory buffer
-        if not starsmashertools.helpers.path.exists(path):
-            # Kickstart the file to avoid mmap 'empty file' error
-            with open(path, 'wb') as f: f.write(b' ')
-        with open(path, 'rb' if readonly else 'rb+') as f:
-            self._buffer = mmap.mmap(
-                f.fileno(),
-                0,
-                access = mmap.ACCESS_READ if readonly else mmap.ACCESS_WRITE
-            )
-        
-        # Indicate to the file system that the buffer is going to be edited, and
-        # that those edits should be reflected in any other process which has
-        # mapped this file. Note that this should allow multiple Archive
-        # instances to access and modify a single, even if they are on different
-        # processes.
-        for madv in self.madvise: self._buffer.madvise(madv)
+        self.set_path(path, readonly = readonly)
 
+    @property
+    def path(self):
+        if hasattr(self, '_path'): return self._path
+        return None
+
+    def __repr__(self): return 'Archive(%s)' % str({key:val for key,val in self.items()})
+    
     def __del__(self, *args, **kwargs):
         if hasattr(self, '_buffer'):
             if not self._buffer.closed:
-                self._buffer.flush()
                 self._buffer.close()
     
     def __setitem__(self, key, value):
@@ -77,33 +148,21 @@ class Archive(object):
             if size == len(value): # Lucky!
                 self._buffer[pos:pos + size] = value
                 footer[key]['mtime'] = time.time()
-                if self.auto_save:
-                    # Only flush what we have changed
-                    offset = mmap.PAGESIZE * (pos // mmap.PAGESIZE)
-                    self._buffer.flush(offset, offset + size)
+                if self.auto_save: self._buffer.flush()
                 return
-
-            # Not clear to me yet if seeking and writing is appropriate or if
-            # modifying the buffer is appropriate.
-
-            #self._buffer.seek(pos)
             
             if size > len(value):
                 # Move everything "up"
-                #self._buffer.write(value + self._buffer[pos + size:])
                 self._buffer[pos:] = value + self._buffer[pos+size:] + b' '*(size - len(value))
                 footer[key]['mtime'] = time.time()
                 
                 self._buffer.resize(self._buffer.size() - size + len(value))
-                for madv in self.madvise: self._buffer.madvise(madv)
                 
             else: # size < len(value)
                 length = self._buffer.size()
                 self._buffer.resize(length - size + len(value))
-                for madv in self.madvise: self._buffer.madvise(madv)
                 
                 # Move everything "down"
-                #self._buffer.write(value + self._buffer[pos + size : length])
                 self._buffer[pos:] = value + self._buffer[pos + size:length]
                 footer[key]['mtime'] = time.time()
 
@@ -123,26 +182,18 @@ class Archive(object):
             current_size = self.size()
             
             self._buffer.resize(current_size + len(value))
-            for madv in self.madvise: self._buffer.madvise(madv)
             
             new_pos = self._buffer.size() - len(value) - footer_size
             footer[key] = { 'pos' : new_pos }
             self._buffer[new_pos:new_pos + len(value)] = value
-            #self._buffer.seek(new_pos)
-            #self._buffer.write(value)
             footer[key]['time'] = time.time()
             
         footer[key]['size'] = len(value)
         
         # Write the footer
         self._update_footer(footer, footer_size)
-        #self._buffer.seek(-new_footer_size, 2)
-        #self._buffer.write(new_footer + FOOTERSTRUCT.pack(len(new_footer)))
         
-        if self.auto_save:
-            # Only flush what we have changed
-            offset = mmap.PAGESIZE * (footer[key]['pos'] // mmap.PAGESIZE)
-            self._buffer.flush(offset, self._buffer.size() - offset)
+        if self.auto_save: self._buffer.flush()
     
     def __getitem__(self, key):
         footer, _ = self.get_footer()
@@ -158,28 +209,36 @@ class Archive(object):
         size = footer[key]['size']
         self._buffer[pos:-size] = self._buffer[pos + size:]
         self._buffer.resize(self._buffer.size() - size)
-        for madv in self.madvise: self._buffer.madvise(madv)
         
         del footer[key]
 
         # Update the footer
         self._update_footer(footer, footer_size)
         
-        if self.auto_save:
-            offset = mmap.PAGESIZE * (pos // mmap.PAGESIZE)
-            self._buffer.flush(offset, self._buffer.size() - offset)
+        if self.auto_save: self._buffer.flush()
         
     
     def __contains__(self, key): return key in self.get_footer()[0]
+    def __len__(self): return len(self.get_footer()[0])
 
     def _update_footer(self, footer, footer_size):
         new_footer = pickle.dumps(footer)
         new_footer_size = len(new_footer) + FOOTERSTRUCT.size
         self._buffer.resize(self._buffer.size() + - footer_size + new_footer_size)
-        for madv in self.madvise: self._buffer.madvise(madv)
         
         self._buffer[-new_footer_size:] = new_footer + FOOTERSTRUCT.pack(len(new_footer))
 
+    def set_path(
+            self,
+            path : str | pathlib.Path,
+            readonly : bool = False,
+    ):
+        if hasattr(self, '_buffer'):
+            self.save()
+            self._buffer.close()
+        self._buffer = Buffer(path, readonly = readonly)
+        self._path = path
+    
     def size(self):
         # This is an artifact from when we first made the file
         if self._buffer.size() == 1: return 0
@@ -196,13 +255,20 @@ class Archive(object):
     def items(self): return zip(self.keys(), self.values())
     
     def get_footer(self):
-        if self._buffer.size() < FOOTERSTRUCT.size: size = 0
-        else:
-            self._buffer.seek(-FOOTERSTRUCT.size, 2)
-            size = FOOTERSTRUCT.unpack(self._buffer.read())[0] + FOOTERSTRUCT.size
-        self._buffer.seek(-size, 2)
+        try: self._buffer.seek(-FOOTERSTRUCT.size, 2)
+        except OSError as e:
+            if 'Invalid argument' not in str(e): raise
+            else: return collections.OrderedDict({}), 0
+
+        size = FOOTERSTRUCT.unpack(self._buffer.read())[0] + FOOTERSTRUCT.size
+
+        try: self._buffer.seek(-size, 2)
+        except OSError as e:
+            if 'Invalid argument' not in str(e): raise
+            else: return collections.OrderedDict({}), 0
+        #print(self._buffer[self._buffer.tell():])
         try: return pickle.load(self._buffer), size
-        except: return collections.OrderedDict({}), size
+        except: return collections.OrderedDict({}), 0
 
     def save(self):
         self._buffer.flush()

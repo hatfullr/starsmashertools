@@ -4,6 +4,7 @@ import os
 import struct
 import pickle
 import time
+import io
 
 class Test(unittest.TestCase):
     filename = 'test'
@@ -84,7 +85,7 @@ class Test(unittest.TestCase):
             Test.filename,
             readonly = True,
         )
-        with self.assertRaises(TypeError):
+        with self.assertRaises(io.UnsupportedOperation):
             archive['hello'] = 'hi'
 
     def test_add(self):
@@ -110,6 +111,66 @@ class Test(unittest.TestCase):
             replace = 'mtime',
         )
         self.assertEqual('hi', self.archive['test'])
+
+    def test_complex(self):
+        import starsmashertools.helpers.nesteddict
+
+        d = starsmashertools.helpers.nesteddict.NestedDict({
+            'level 1' : {
+                'level 2' : {
+                    'test' : [i for i in range(4)],
+                },
+            },
+        })
+        
+        self.archive["('level 1', 'level 2', 'test')"] = [i for i in range(4, 8)]
+        for branch, leaf in d.flowers():
+            key = str(branch)
+            self.archive[key] += leaf
+        
+        self.assertEqual(1, len(self.archive))
+        self.assertEqual(
+            self.archive["('level 1', 'level 2', 'test')"],
+            [4, 5, 6, 7, 0, 1, 2, 3],
+        )
+
+        for branch, leaf in d.flowers():
+            key = str(branch)
+            self.archive[key] += leaf
+
+        self.assertEqual(1, len(self.archive))
+        self.assertEqual(
+            self.archive["('level 1', 'level 2', 'test')"],
+            [4, 5, 6, 7, 0, 1, 2, 3, 0, 1, 2, 3],
+        )
+
+    def test_parallel(self):
+        import multiprocessing
+        import time
+
+        def task(i, path, lock):
+            archive = starsmashertools.lib.archive2.Archive(path)
+            with lock:
+                archive['test '+str(i)] = i
+                archive.save()
+        
+        manager = multiprocessing.Manager()
+        lock = manager.Lock()
+        processes = [multiprocessing.Process(
+            target = task,
+            args = (i, Test.filename, lock),
+            daemon = True,
+        ) for i in range(2)]
+
+        for process in processes: process.start()
+        for process in processes: process.join()
+
+        archive = starsmashertools.lib.archive2.Archive(Test.filename)
+
+        self.assertEqual(2, len(self.archive))
+        self.assertIn('test 0', self.archive)
+        self.assertIn('test 1', self.archive)
+        
         
 
 class TestLoader(unittest.TestLoader, object):
@@ -125,6 +186,8 @@ class TestLoader(unittest.TestLoader, object):
             'test_size',
             'test_readonly',
             'test_add',
+            'test_complex',
+            'test_parallel',
         ]
 
 if __name__ == '__main__':

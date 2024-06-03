@@ -11,6 +11,10 @@ import numpy as np
 import typing
 import atexit
 import os
+import copy
+import time
+import filecmp
+import mmap
 
 fortran_comment_characters = ['c','C','!','*']
 
@@ -38,11 +42,6 @@ class Lock(object):
             mode : str,
             timeout : int | float = Pref('timeout'),
     ):
-        import os
-        import starsmashertools
-        import starsmashertools.helpers.path
-        import copy
-        
         self.path = starsmashertools.helpers.path.realpath(path)
         self.mode = mode
         self.timeout = timeout
@@ -52,45 +51,11 @@ class Lock(object):
             '_',
         )
 
-        basename = self.path.replace(os.sep, '_')
-        basename_with_mode = copy.deepcopy(basename)
-        for key, val in modes.items():
-            if self.mode not in val: continue
-            basename_with_mode += '.' + key
-            break
-        else:
-            raise NotImplementedError("Unknown file mode '%s'" % self.mode)
-        
-        directory = starsmashertools.LOCK_DIRECTORY
-        
-        full_name = starsmashertools.helpers.path.join(
-            directory, basename_with_mode,
-        )
-        
-        # Find other files that start with the same name and mode identifier. It
-        # doesn't need to match the mode we are in, it just needs to exist. This
-        # keeps our order of operations consistent with what user's code wants
-        # to do. It works like a "stack".
-        while True: # Keep trying until we make a correct file
-            existing = []
-            for filename in starsmashertools.helpers.path.listdir(directory):
-                if not filename.startswith(basename): continue
-                existing += [filename]
-
-            self.lockfile = full_name + '.%d' % len(existing)
-            
-            try:
-                # Touch to create the lock file, regardless if we are reading or
-                # writing
-                builtins.open(self.lockfile, 'x').close()
-            except FileExistsError:
-                continue
-            
-            break
-
-        
-        # Always unlock before program exit
-        atexit.register(self.unlock)
+    def __enter__(self):
+        if not self.locked: self.lock()
+    
+    def __exit__(self, *args, **kwargs):
+        if self.locked: self.unlock()
 
     @staticmethod
     def get_lockfile_mode(lockfile : str):
@@ -104,9 +69,14 @@ class Lock(object):
     def get_lockfile_basename(lockfile : str):
         return '.'.join(lockfile.split('.')[:-2])
 
+    @property
+    def locked(self):
+        if self.get_locks(): return True
+        return False
+
     def get_all_locks(self):
         # Obtain all the lock files including us.
-        import starsmashertools.helpers.path
+        if not hasattr(self, 'lockfile'): return []
         directory = starsmashertools.helpers.path.dirname(self.lockfile)
         basename = starsmashertools.helpers.path.basename(self.lockfile)
         base_lock_name = Lock.get_lockfile_basename(basename)
@@ -155,17 +125,56 @@ class Lock(object):
                 if Lock.get_lockfile_mode(lock) == 'write': return False
             return True
 
-        raise NotImplementedError("Unknown file mode '%s'" % mode)    
+        raise NotImplementedError("Unknown file mode '%s'" % mode)
+
+    def lock(self):
+        from starsmashertools import LOCK_DIRECTORY
+        
+        basename = self.path.replace(os.sep, '_')
+        basename_with_mode = copy.deepcopy(basename)
+        for key, val in modes.items():
+            if self.mode not in val: continue
+            basename_with_mode += '.' + key
+            break
+        else:
+            raise NotImplementedError("Unknown file mode '%s'" % self.mode)
+        
+        full_name = starsmashertools.helpers.path.join(
+            LOCK_DIRECTORY, basename_with_mode,
+        )
+        
+        # Find other files that start with the same name and mode identifier. It
+        # doesn't need to match the mode we are in, it just needs to exist. This
+        # keeps our order of operations consistent with what user's code wants
+        # to do. It works like a "stack".
+        while True: # Keep trying until we make a correct file
+            existing = []
+            for filename in starsmashertools.helpers.path.listdir(LOCK_DIRECTORY):
+                if not filename.startswith(basename): continue
+                existing += [filename]
+
+            self.lockfile = full_name + '.%d' % len(existing)
+            
+            try:
+                # Touch to create the lock file, regardless if we are reading or
+                # writing
+                builtins.open(self.lockfile, 'x').close()
+            except FileExistsError:
+                continue
+            
+            break
+
+        # Always unlock before program exit
+        atexit.register(self.unlock)
 
     def unlock(self):
-        import starsmashertools.helpers.path
-        try:
-            starsmashertools.helpers.path.remove(self.lockfile)
+        #if not hasattr(self, 'lockfile'): return
+        try: starsmashertools.helpers.path.remove(self.lockfile)
         except FileNotFoundError: pass
+        del self.lockfile
+        atexit.unregister(self.unlock)
     
     def wait(self):
-        import time
-        
         t0 = time.time()
         while not self.ready():
             #print("Still waiting", time.time() - t0)
@@ -305,10 +314,10 @@ def open(
     
     # Always lock no matter what, unless we have been told explicitly that we
     # don't need to
-    _lock = None
+    if timeout is None: _lock = Lock(path, mode)
+    else: _lock = Lock(path, mode, timeout = timeout)
     if lock:
-        if timeout is None: _lock = Lock(path, mode)
-        else: _lock = Lock(path, mode, timeout = timeout)
+        _lock.lock()
         if _lock.timeout > 0:
             if not verbose: _lock.wait()
             else:
@@ -354,9 +363,6 @@ def open(
 
 # Check if the file at the given path is a MESA file
 def isMESA(path):
-    import starsmashertools.helpers.path
-    import starsmashertools.helpers.string
-    
     if not starsmashertools.helpers.path.isfile(path): return False
     
     with open(path, 'r') as f:
@@ -419,8 +425,6 @@ def isMESA(path):
 # Check if 2 files are identical
 #@profile
 def compare(file1, file2):
-    import starsmashertools.helpers.path
-    import filecmp
     #file1 = starsmashertools.helpers.path.realpath(file1)
     #file2 = starsmashertools.helpers.path.realpath(file2)
     
@@ -461,8 +465,6 @@ def get_phrase(
     -------
     str
     """
-    import mmap
-    
     with open(path, 'rb') as f:
         buffer = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
 
@@ -510,9 +512,6 @@ def sort_by_mtimes(
     -------
     list
     """
-    import copy
-    import starsmashertools.helpers.path
-    
     ret = copy.deepcopy(files)
     ret.sort(key=lambda f: starsmashertools.helpers.path.getmtime(f))
     return ret[::-1]
@@ -523,13 +522,11 @@ def sort_by_mtimes(
 def reverse_readline(path, **kwargs):
     """A generator that returns the lines of a file in reverse order
     https://stackoverflow.com/a/23646049/4954083"""
-    import mmap
     with open(path, 'rb') as fh:
         buffer = mmap.mmap(fh.fileno(), 0, access=mmap.ACCESS_READ)
     return reverse_readline_buffer(buffer, **kwargs)
 
 def reverse_readline_buffer(_buffer, buf_size=8192):
-    import os
     _buffer.seek(0, os.SEEK_END)
     segment = None
     offset = 0
