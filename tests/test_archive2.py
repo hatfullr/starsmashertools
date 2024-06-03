@@ -36,8 +36,7 @@ class Test(unittest.TestCase):
     def test_setitem(self):
         previous_size = self.archive.size()
         self.archive['test'] = 'simple'
-        expected = pickle.dumps('simple')
-        self.assertEqual(expected, self.archive._buffer[:len(expected)])
+        self.assertEqual('simple', self.archive['test'])
         self.assertLess(previous_size, self.archive.size())
 
     def test_delitem(self):
@@ -144,6 +143,15 @@ class Test(unittest.TestCase):
             [4, 5, 6, 7, 0, 1, 2, 3, 0, 1, 2, 3],
         )
 
+    def test_append(self):
+        d = starsmashertools.helpers.nesteddict.NestedDict({
+            'level 1' : { 'level 2' : { 'test' : 'hi' } }
+        })
+        self.assertEqual(0, len(self.archive))
+        self.archive['test'] = d
+        self.archive.append('test', d)
+        self.assertEqual([d, d], self.archive['test'])
+
     def test_parallel(self):
         import multiprocessing
         import time
@@ -187,6 +195,7 @@ class TestLoader(unittest.TestLoader, object):
             'test_readonly',
             'test_add',
             'test_complex',
+            'test_append',
             'test_parallel',
         ]
 

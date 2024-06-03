@@ -1235,34 +1235,10 @@
 
             <span class="n">key</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">branch</span><span class="p">)</span>
             <span class="n">leaf</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">archive2</span><span class="o">.</span><span class="n">clean_base64</span><span class="p">(</span><span class="n">leaf</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span> <span class="bp">self</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">+=</span> <span class="n">leaf</span>
-            <span class="k">else</span><span class="p">:</span> <span class="bp">self</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">leaf</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span> <span class="bp">self</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">leaf</span>
+            <span class="k">else</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">leaf</span><span class="p">)</span></div>
 
-<span class="w">            </span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    def add(self, result : str | FluxResult):</span>
-<span class="sd">        import pickle</span>
-<span class="sd">        if isinstance(result, str):</span>
-<span class="sd">            result = FluxResult.load(result, deserialize = False)</span>
-<span class="sd">        </span>
-<span class="sd">        </span>
-<span class="sd">        def get_identifiers_and_data():</span>
-<span class="sd">            for branch, leaf in result.flowers():</span>
-<span class="sd">                if not self.is_allowed(branch): continue</span>
-<span class="sd">                </span>
-<span class="sd">                if not isinstance(leaf, bytes): value = pickle.dumps(leaf)</span>
-<span class="sd">                else: value = leaf</span>
-<span class="sd">                </span>
-<span class="sd">                identifier = str(branch)</span>
-<span class="sd">                </span>
-<span class="sd">                if identifier in self:</span>
-<span class="sd">                    yield identifier, self.get(identifier, raw = True) + value</span>
-<span class="sd">                else:</span>
-<span class="sd">                    yield identifier, value</span>
-<span class="sd">        </span>
-<span class="sd">        self.set_many(get_identifiers_and_data())</span>
-<span class="sd">    &quot;&quot;&quot;</span></div>
-
+    
 </pre></div>
 
            </div>

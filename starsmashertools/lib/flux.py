@@ -1116,30 +1116,6 @@ class FluxResults(starsmashertools.lib.archive2.Archive, object):
 
             key = str(branch)
             leaf = starsmashertools.lib.archive2.clean_base64(leaf)
-            if key in self: self[key] += leaf
-            else: self[key] = leaf
-
-            
-    """
-    def add(self, result : str | FluxResult):
-        import pickle
-        if isinstance(result, str):
-            result = FluxResult.load(result, deserialize = False)
-        
-        
-        def get_identifiers_and_data():
-            for branch, leaf in result.flowers():
-                if not self.is_allowed(branch): continue
-                
-                if not isinstance(leaf, bytes): value = pickle.dumps(leaf)
-                else: value = leaf
-                
-                identifier = str(branch)
-                
-                if identifier in self:
-                    yield identifier, self.get(identifier, raw = True) + value
-                else:
-                    yield identifier, value
-        
-        self.set_many(get_identifiers_and_data())
-    """
+            if key not in self: self[key] = leaf
+            else: self.append(key, leaf)
+    

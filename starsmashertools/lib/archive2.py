@@ -23,6 +23,7 @@ def clean_base64(value):
     else: return ret
 
 class InvalidArchiveError(Exception): pass
+class CorruptArchiveError(InvalidArchiveError): pass
 
 class Buffer(io.BytesIO, object):
     def __init__(
@@ -105,6 +106,7 @@ class Buffer(io.BytesIO, object):
             self._f.truncate(newsize)
             self.flush()
 
+
 class Archive(object):
     """
     Make sure that when you are using this class with multiple processes or
@@ -134,8 +136,8 @@ class Archive(object):
                 self._buffer.close()
     
     def __setitem__(self, key, value):
-        # If the value isn't already pickled, pickle it now
-        if not is_pickled(value): value = pickle.dumps(value)
+        if not isinstance(value, bytes) or not value.endswith(pickle.STOP):
+            value = pickle.dumps(value)
         
         # If this key is already in the Archive, get its location and size.
         footer, footer_size = self.get_footer()
@@ -143,17 +145,16 @@ class Archive(object):
         if key in footer:
             pos = footer[key]['pos']
             size = footer[key]['size']
-            new_pos = pos
-
+            
             if size == len(value): # Lucky!
-                self._buffer[pos:pos + size] = value
+                self._buffer[pos : pos + size] = value
                 footer[key]['mtime'] = time.time()
                 if self.auto_save: self._buffer.flush()
                 return
             
             if size > len(value):
                 # Move everything "up"
-                self._buffer[pos:] = value + self._buffer[pos+size:] + b' '*(size - len(value))
+                self._buffer[pos:] = value + self._buffer[pos+size:] + b'\x00'*(size - len(value))
                 footer[key]['mtime'] = time.time()
                 
                 self._buffer.resize(self._buffer.size() - size + len(value))
@@ -198,16 +199,19 @@ class Archive(object):
     def __getitem__(self, key):
         footer, _ = self.get_footer()
         self._buffer.seek(footer[key]['pos'])
+        #if footer[key].get('appended', False):
+            
         return pickle.load(self._buffer)
 
     def __delitem__(self, key):
         """ Remove the given key from the Archive. If auto save is enabled, the
-        Archive file will be modified. """
+        Archive file will be modified. If there are any values appended to this
+        item, they are also removed. """
         footer, footer_size = self.get_footer()
         if key not in footer: raise KeyError(key)
         pos = footer[key]['pos']
         size = footer[key]['size']
-        self._buffer[pos:-size] = self._buffer[pos + size:]
+        self._buffer[pos:] = self._buffer[pos + size:] + b'\x00'*size
         self._buffer.resize(self._buffer.size() - size)
         
         del footer[key]
@@ -250,9 +254,12 @@ class Archive(object):
         values. """
         footer, footer_size = self.get_footer()
         self._buffer.seek(0)
-        while self._buffer.tell() < self._buffer.size() - footer_size:
+        for _ in range(len(footer.keys())):
             yield pickle.load(self._buffer)
     def items(self): return zip(self.keys(), self.values())
+
+    def clear(self):
+        self._buffer.resize(0)
     
     def get_footer(self):
         try: self._buffer.seek(-FOOTERSTRUCT.size, 2)
@@ -266,22 +273,37 @@ class Archive(object):
         except OSError as e:
             if 'Invalid argument' not in str(e): raise
             else: return collections.OrderedDict({}), 0
-        #print(self._buffer[self._buffer.tell():])
+        
         try: return pickle.load(self._buffer), size
         except: return collections.OrderedDict({}), 0
 
     def save(self):
         self._buffer.flush()
 
+    def append(self, key : str, value):
+        """
+        Append a value to the end of an existing key. Calls to 
+        :meth:`~.__getitem__` will return a list of all appended items. The
+        ``key`` being appended to will have its mtime replaced with the current
+        timestamp.
+        """
+        footer, footer_size = self.get_footer()
+        if key not in footer.keys(): raise KeyError(key)
+        if footer[key].get('appended', False): self[key] += [value]
+        else: self[key] = [self[key], value]
+        footer[key]['mtime'] = time.time()
+        footer[key]['appended'] = True
+        self._update_footer(footer, footer_size)
+
     def add(self, *args, **kwargs): return self.set(*args, **kwargs)
         
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     def set(
             self,
-            key,
+            key : str,
             value,
             origin : str | pathlib.Path | type(None) = None,
-            replace : str = 'mtime',
+            replace : str | type(None) = 'mtime',
     ):
         """
         If ``replace = 'mtime'``\, then the modification time of ``origin`` is
@@ -289,6 +311,10 @@ class Archive(object):
         mtime value is greater, then the key is replaced in this archive.
         Otherwise, no replacement happens. If ``origin`` is `None`\, the value
         of ``replace`` is ignored and the key is always replaced if it exists.
+
+        If ``replace`` is `None`\, the value is always replaced.
+
+        Removes any appended values to ``key``\.
         """
         starsmashertools.helpers.argumentenforcer.enforcevalues({
             'replace' : ['mtime',],
@@ -296,12 +322,12 @@ class Archive(object):
         
         footer, _ = self.get_footer()
         if key in footer:
-            if origin is None:
+            if None in [origin, replace]:
                 self[key] = value
-            else:
-                if replace == 'mtime':
-                    if footer[key]['mtime'] < starsmashertools.helpers.path.getmtime(origin):
-                        self[key] = value
+            elif replace == 'mtime':
+                if footer[key]['mtime'] < starsmashertools.helpers.path.getmtime(origin):
+                    self[key] = value
+            else: raise NotImplementedError(replace)
 
     def get(
             self,
