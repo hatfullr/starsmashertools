@@ -70,13 +70,11 @@ class Lock(object):
         return '.'.join(lockfile.split('.')[:-2])
 
     @property
-    def locked(self):
-        if self.get_locks(): return True
-        return False
+    def locked(self): return hasattr(self, 'lockfile')
 
     def get_all_locks(self):
         # Obtain all the lock files including us.
-        if not hasattr(self, 'lockfile'): return []
+        if not self.locked: return []
         directory = starsmashertools.helpers.path.dirname(self.lockfile)
         basename = starsmashertools.helpers.path.basename(self.lockfile)
         base_lock_name = Lock.get_lockfile_basename(basename)
@@ -168,10 +166,10 @@ class Lock(object):
         atexit.register(self.unlock)
 
     def unlock(self):
-        #if not hasattr(self, 'lockfile'): return
-        try: starsmashertools.helpers.path.remove(self.lockfile)
-        except FileNotFoundError: pass
-        del self.lockfile
+        if self.locked:
+            try: starsmashertools.helpers.path.remove(self.lockfile)
+            except FileNotFoundError: pass
+            del self.lockfile
         atexit.unregister(self.unlock)
     
     def wait(self):
