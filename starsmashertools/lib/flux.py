@@ -1109,6 +1109,7 @@ class FluxResults(starsmashertools.lib.archive2.Archive, object):
 
     def add_fluxresult(self, result : str | FluxResult):
         if isinstance(result, str):
+            # Deserialized values result in ArchiveValue objects
             result = FluxResult.load(result, deserialize = False)
         
         for branch, leaf in result.flowers():
@@ -1116,6 +1117,14 @@ class FluxResults(starsmashertools.lib.archive2.Archive, object):
 
             key = str(branch)
             leaf = starsmashertools.lib.archive2.clean_base64(leaf)
-            if key not in self: self[key] = leaf
-            else: self.append(key, leaf)
+            if key not in self:
+                if isinstance(leaf, starsmashertools.lib.archive.ArchiveValue):
+                    self.set(
+                        key, leaf.value,origin = leaf.origin,mtime = leaf.mtime,
+                    )
+                else: self[key] = leaf
+            else:
+                if isinstance(leaf, starsmashertools.lib.archive.ArchiveValue):
+                    self.append(key, leaf.value)
+                else: self.append(key, leaf)
     
