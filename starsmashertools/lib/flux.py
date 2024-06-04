@@ -1111,14 +1111,12 @@ class FluxResults(starsmashertools.lib.archive2.Archive, object):
         import starsmashertools.lib.archive
         
         if isinstance(result, str):
-            # Deserialized values result in ArchiveValue objects
             result = FluxResult.load(result, deserialize = False)
         
         for branch, leaf in result.flowers():
             if not self.is_allowed(branch): continue
 
             key = str(branch)
-            leaf = starsmashertools.lib.archive2.clean_base64(leaf)
             leaf = starsmashertools.lib.archive.ArchiveValue.deserialize(key, leaf).value
             if key not in self: self[key] = [leaf]
             else: self.append(key, leaf)
