@@ -358,7 +358,7 @@ class Archive(object):
                 after_key = True
                 continue
             if not after_key: continue
-            footer[key]['pos'] += lenvalue
+            footer[k]['pos'] += lenvalue
         self._update_footer(footer, footer_size)
 
         if self.auto_save: self.save()
