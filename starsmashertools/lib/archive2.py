@@ -59,7 +59,7 @@ class Buffer(object):
 
         self.seek(start)
         left_content = self.read(curpos - start)
-        if stop - curpos == 0: right_content = b''
+        if stop - curpos <= 0: right_content = b''
         else: right_content = self.read(stop - curpos)
         first_string = str(left_content + b' ' + right_content)[2:-1]
         bottom_string = '^'*(len(str(left_content)[2:-1])) + '*' + ' '*len(str(right_content)[2:-1]) + '\n' + ' '*len(str(left_content)[2:-1]) + 'pos'
