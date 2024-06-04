@@ -52,7 +52,10 @@ class Test(unittest.TestCase):
     filename = 'test'
     def setUp(self):
         if os.path.exists(Test.filename): os.remove(Test.filename)
-        self.archive = starsmashertools.lib.archive2.Archive(Test.filename)
+        self.archive = starsmashertools.lib.archive2.Archive(
+            path = Test.filename,
+            readonly = False,
+        )
 
     def tearDown(self):
         if os.path.exists(Test.filename): os.remove(Test.filename)
@@ -280,7 +283,7 @@ class Test(unittest.TestCase):
         import time
 
         def task(i, path, lock):
-            archive = starsmashertools.lib.archive2.Archive(path)
+            archive = starsmashertools.lib.archive2.Archive(path, readonly = False)
             with lock:
                 archive['test '+str(i)] = i
                 archive.save()

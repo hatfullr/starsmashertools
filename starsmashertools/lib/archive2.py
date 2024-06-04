@@ -9,6 +9,7 @@ import base64
 import collections
 import os
 import io
+import tempfile
 
 FOOTERSTRUCT = struct.Struct('<Q')
 
@@ -28,13 +29,16 @@ class CorruptArchiveError(InvalidArchiveError): pass
 class Buffer(object):
     def __init__(
             self,
-            path : str | pathlib.Path,
+            path : str | pathlib.Path | type(None) = None,
             readonly : bool = False,
     ):
         self._closed = False
+        if path is None:
+            with tempfile.NamedTemporaryFile(dir = os.getcwd(), suffix = '.tmp') as f:
+                path = f.name
         if not starsmashertools.helpers.path.exists(path): mode = 'wb+'
         else: mode = 'rb' if readonly else 'rb+'
-        self.lock = starsmashertools.helpers.file.Lock(path, mode)        
+        self.lock = starsmashertools.helpers.file.Lock(path, mode)
         self._f = open(path, mode)
     
     @property
@@ -111,7 +115,10 @@ class Buffer(object):
             if str(e) != 'I/O operation on closed file': raise
         self._f.close()
         self._closed = True
-
+        
+        if self._f.name.endswith('.tmp'):
+            starsmashertools.helpers.path.remove(self._f.name)
+    
     def size(self):
         try: return starsmashertools.helpers.path.getsize(self._f.name)
         except OSError: return 0
@@ -131,12 +138,13 @@ class Archive(object):
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     def __init__(
             self,
-            path : str | pathlib.Path,
+            path : str | pathlib.Path | type(None) = None,
             auto_save : bool = True,
-            readonly : bool = False,
+            readonly : bool = True,
     ):
         self.auto_save = auto_save
-        self.set_path(path, readonly = readonly)
+        self.readonly = readonly
+        self.set_path(path)
 
     @property
     def path(self):
@@ -258,12 +266,11 @@ class Archive(object):
     def set_path(
             self,
             path : str | pathlib.Path,
-            readonly : bool = False,
     ):
         if hasattr(self, '_buffer'):
-            self.save()
+            if not self.readonly: self.save()
             self._buffer.close()
-        self._buffer = Buffer(path, readonly = readonly)
+        self._buffer = Buffer(path = path, readonly = self.readonly)
         self._path = path
     
     def size(self): return self._buffer.size()
@@ -297,8 +304,13 @@ class Archive(object):
         
         return pickle.load(self._buffer), size
 
-    def save(self):
-        self._buffer.flush()
+    def save(self, path : str | pathlib.Path | type(None) = None):
+        #if self.readonly: raise Exception("Archive is open in readonly mode")
+        if path is None: self._buffer.flush()
+        else: # This means copy the buffer
+            with starsmashertools.helpers.file.open(path, 'wb') as f:
+                f.write(self._buffer.read())
+            
 
     def append(self, key : str, value):
         """
