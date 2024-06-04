@@ -40,7 +40,32 @@ class Buffer(io.BytesIO, object):
     
     @property
     def closed(self): return self._closed
-    
+
+    def __str__(self):
+        # Show a helpful string which gives a window around the current position
+        size = 40
+        
+        curpos = _buffer.tell()
+        
+        _buffer.seek(0, 2)
+        buffer_size = _buffer.tell()
+        _buffer.seek(curpos)
+        
+        _buffer.seek(-min(int(0.5 * size), buffer_size - (buffer_size - curpos)), 1)
+        start = _buffer.tell()
+        window = _buffer.read(min(size, buffer_size - 1))
+        stop = _buffer.tell()
+
+        _buffer.seek(start)
+        left_content = _buffer.read(curpos - start)
+        right_content = _buffer.read(stop - curpos)
+        first_string = str(left_content + b' ' + right_content)[2:-1]
+        bottom_string = ' '*len(str(left_content)[2:-1]) + ' '*len(str(right_content)[2:-1]) + '\n' + '^'*len(str(left_content)[2:-3]) + 'pos'
+
+        _buffer.seek(curpos)
+        
+        return '\n' + first_string + '\n' + bottom_string
+
     def __del__(self, *args, **kwargs):
         try: self.close()
         except Exception: pass
@@ -287,7 +312,7 @@ class Archive(object):
     def append(self, key : str, value):
         """
         Append a value to the end of an existing key. Calls to 
-        :meth:`~.__getitem__` will return a list of all appended items. The
+        :meth:`~.__getitem__` will return a generator all appended items. The
         ``key`` being appended to will have its mtime replaced with the current
         timestamp.
         """

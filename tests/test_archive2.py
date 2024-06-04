@@ -243,6 +243,18 @@ class Test(unittest.TestCase):
         self.assertEqual([d,d,d], list(self.archive['test']))
         self.check_composition()
 
+        self.archive['test 2'] = d
+        self.archive.append('test 2', d)
+        self.assertEqual([d, d], list(self.archive['test 2']))
+        self.check_composition()
+
+        self.archive.clear()
+
+        for branch, leaf in d.flowers():
+            self.archive[str(branch)] = leaf
+        self.assertEqual('hi', self.archive[str(('level 1', 'level 2', 'test'))])
+        
+
     def test_parallel(self):
         import multiprocessing
         import time

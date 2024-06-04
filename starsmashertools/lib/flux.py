@@ -1118,7 +1118,7 @@ class FluxResults(starsmashertools.lib.archive2.Archive, object):
 
             key = str(branch)
             leaf = starsmashertools.lib.archive.ArchiveValue.deserialize(key, leaf).value
-            if key not in self: self[key] = [leaf]
+            if key not in self: self[key] = leaf
             else: self.append(key, leaf)
 
     
