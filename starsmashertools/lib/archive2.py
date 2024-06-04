@@ -34,8 +34,7 @@ class Buffer(io.BytesIO, object):
         self._closed = False
         if not starsmashertools.helpers.path.exists(path): mode = 'wb+'
         else: mode = 'rb' if readonly else 'rb+'
-        self.lock = starsmashertools.helpers.file.Lock(path, mode)
-        
+        self.lock = starsmashertools.helpers.file.Lock(path, mode)        
         self._f = open(path, mode)
     
     @property
@@ -81,17 +80,16 @@ class Buffer(io.BytesIO, object):
             return self.read(1)
     
     def __setitem__(self, index, value):
-        os.fsync(self._f.fileno())
         with io.BytesIO(value) as other_buffer:
             if isinstance(index, slice):
-                if index.step in [None, 1]:
-                    index = index.indices(self.size())
-                    self.seek(index[0], os.SEEK_SET)
-                    self.write(other_buffer.read())
-                else:
-                    for i in range(*index.indices(self.size())):
+                start, stop, step = index.indices(self.size())
+                if step > 1:
+                    for i in range(start, stop, step):
                         self.seek(i, os.SEEK_SET)
                         self.write(other_buffer.read(1))
+                else:
+                    self.seek(start, os.SEEK_SET)
+                    self.write(other_buffer.read())
             else:
                 self.seek(index, os.SEEK_SET)
                 self.write(value.read())
@@ -112,19 +110,15 @@ class Buffer(io.BytesIO, object):
             if str(e) != 'I/O operation on closed file': raise
         self._f.close()
         self._closed = True
-    
+
     def size(self):
-        with self.lock:
-            curpos = self.tell()
-            self.seek(0, os.SEEK_END)
-            ret = self.tell()
-            self.seek(curpos, os.SEEK_SET)
-            return ret
+        try: return starsmashertools.helpers.path.getsize(self._f.name)
+        except OSError: return 0
     
     def resize(self, newsize : int):
         with self.lock:
             self._f.truncate(newsize)
-            self.flush()
+            self.seek(min(self.tell(), newsize), os.SEEK_SET)
 
 
 class Archive(object):
@@ -247,7 +241,7 @@ class Archive(object):
     
     def __contains__(self, key): return key in self.get_footer()[0]
     def __len__(self): return len(self.get_footer()[0])
-
+    
     def _update_footer(self, footer, footer_size):
         if not footer:
             # If there's no contents in the footer, it's safe to empty the file
@@ -271,10 +265,7 @@ class Archive(object):
         self._buffer = Buffer(path, readonly = readonly)
         self._path = path
     
-    def size(self):
-        # This is an artifact from when we first made the file
-        if self._buffer.size() == 1: return 0
-        return self._buffer.size()
+    def size(self): return self._buffer.size()
 
     def keys(self): return self.get_footer()[0].keys()
     def values(self):
