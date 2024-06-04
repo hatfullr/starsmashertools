@@ -240,6 +240,14 @@ class Archive(object):
         size = footer[key]['size']
         self._buffer[pos:] = self._buffer[pos + size:] + b'\x00'*size
         self._buffer.resize(self._buffer.size() - size)
+
+        found_key = False
+        for k, val in footer.items():
+            if k == key:
+                found_key = True
+                continue
+            if not found_key: continue
+            footer[k]['pos'] -= size
         
         del footer[key]
 
@@ -306,12 +314,10 @@ class Archive(object):
         return pickle.load(self._buffer), size
 
     def save(self, path : str | pathlib.Path | type(None) = None):
-        #if self.readonly: raise Exception("Archive is open in readonly mode")
         if path is None: self._buffer.flush()
         else: # This means copy the buffer
             with starsmashertools.helpers.file.open(path, 'wb') as f:
                 f.write(self._buffer.read())
-            
 
     def append(self, key : str, value):
         """
