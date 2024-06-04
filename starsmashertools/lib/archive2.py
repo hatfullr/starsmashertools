@@ -10,6 +10,7 @@ import collections
 import os
 import io
 import tempfile
+import numpy as np
 
 FOOTERSTRUCT = struct.Struct('<Q')
 
@@ -130,6 +131,18 @@ class Buffer(object):
             self.seek(min(self.tell(), newsize), os.SEEK_SET)
 
 
+class NumPyArray(object):
+    def __init__(self, value):
+        self.value = value
+
+    def __getstate__(self):
+        compressed = io.BytesIO()
+        np.savez_compressed(compressed, self.value)
+        compressed.seek(0)
+        return compressed.read()
+    def __setstate__(self, state):
+        self.value = np.load(io.BytesIO(state))['arr_0']
+
 class Archive(object):
     """
     Make sure that when you are using this class with multiple processes or
@@ -160,7 +173,12 @@ class Archive(object):
                 self._buffer.close()
     
     def __setitem__(self, key, value):
-        if not is_pickled(value): value = pickle.dumps(value)
+        if not is_pickled(value):
+            if isinstance(value, np.ndarray):
+                # These take up an enormous amount of memory. We compress them
+                # instead.
+                value = NumPyArray(value)
+            value = pickle.dumps(value)
         
         # If this key is already in the Archive, get its location and size.
         footer, footer_size = self.get_footer()
@@ -177,7 +195,7 @@ class Archive(object):
             
             if size > len(value):
                 # Move everything "up"
-                self._buffer[pos:] = value + self._buffer[pos+size:] + b'\x00'*(size - len(value))
+                self._buffer[pos:] = value + self._buffer[pos+size:-size]
                 footer[key]['mtime'] = time.time()
                 
                 self._buffer.resize(self._buffer.size() - size + len(value))
@@ -226,11 +244,15 @@ class Archive(object):
         footer, _ = self.get_footer()
         self._buffer.seek(footer[key]['pos'])
         if footer[key]['n'] == 1:
-            return pickle.load(self._buffer)
+            ret = pickle.load(self._buffer)
+            if isinstance(ret, NumPyArray): return ret.value
+            return ret
         else:
             def get():
                 for _ in range(footer[key]['n']):
-                    yield pickle.load(self._buffer)
+                    ret = pickle.load(self._buffer)
+                    if isinstance(ret, NumPyArray): return ret.value
+                    yield ret
             return get()
 
     def __delitem__(self, key):

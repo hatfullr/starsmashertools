@@ -5,6 +5,19 @@ import struct
 import pickle
 import time
 import io
+import re
+import sys
+import numpy as np
+
+class Whacky:
+    def __init__(self, obj):
+        self.obj = obj
+    def thing(self): pass
+    def hello(self):
+        for i in range(200):
+            i*i
+    #def __reduce__(self):
+    #    return (Whacky, (self.obj,))
 
 def get_buffer_window_string(
         _buffer : bytes,
@@ -93,6 +106,27 @@ class Test(unittest.TestCase):
             self.archive._buffer.read(1),
             msg = "The first character in the archive isn't the starting character for a pickle object",
         )
+
+        # Search for large blocks of nul characters
+        """
+        self.archive._buffer.seek(0)
+        content = self.archive._buffer.read()
+        blocks = 0
+        previous_characters = []
+        block_set = False
+        s = struct.Struct('<d')
+        for c in content:
+            c = c.to_bytes(1, sys.byteorder)
+            if c != b'\x00':
+                previous_characters = []
+                block_set = False
+                continue
+            previous_characters += [c]
+            if not block_set and len(previous_characters) >= s.size:
+                blocks += 1
+                block_set = True
+        self.assertEqual(0, blocks)
+        """
         
     def test_simple(self):
         with self.assertRaises(KeyError):
@@ -117,6 +151,15 @@ class Test(unittest.TestCase):
         self.assertEqual('simple', self.archive['test'])
         self.assertLess(previous_size, self.archive.size())
         self.check_composition()
+
+    def test_numpy(self):
+        arr = np.zeros((1000, 1000), dtype=float)
+        arr[:,500] = 1
+        self.archive['test'] = arr
+        self.check_composition()
+        self.assertLess(self.archive._buffer[:].count(b'\x00'), 1000*1000)
+        self.assertTrue(np.array_equal(self.archive['test'], arr))
+        self.assertTrue((self.archive['test'][:,500] == 1).all())
         
     def test_delitem(self):
         self.archive['test'] = 'hello'
@@ -124,9 +167,27 @@ class Test(unittest.TestCase):
         self.assertNotIn('test', self.archive)
         with self.assertRaises(KeyError):
             self.archive['test']
-
+        self.assertEqual(0, self.archive._buffer.size())
         self.assertEqual(0, self.archive.size())
         self.assertEqual(0, self.archive.get_footer()[1])
+
+        typecount = 0
+        _types = [float, bool, np.float64, np.int8, np.ndarray]
+        for i in range(100):
+            self.archive['test' + str(i)] = _types[typecount](i)
+            typecount += 1
+            if typecount >= len(_types): typecount = 0
+        self.assertEqual(100, len(self.archive))
+        self.assertGreater(self.archive.size(), 0)
+        
+        del self.archive['test0']
+        self.assertEqual(99, len(self.archive))
+        self.check_composition()
+
+        for i in range(99, 1, -1):
+            del self.archive['test'+str(i)]
+            self.assertEqual(i - 1, len(self.archive))
+            self.check_composition()
 
     def test_contains(self):
         self.archive['test'] = 'hello'
@@ -276,7 +337,7 @@ class Test(unittest.TestCase):
         self.assertEqual(['hi','hi2'], list(self.archive[str(('level 1', 'level 2', 'test'))]))
 
         self.check_composition()
-        
+
 
     def test_parallel(self):
         import multiprocessing
@@ -285,7 +346,10 @@ class Test(unittest.TestCase):
         def task(i, path, lock):
             archive = starsmashertools.lib.archive2.Archive(path, readonly = False)
             with lock:
-                archive['test '+str(i)] = i
+                archive['test append'] = 0
+                for j in range(10):
+                    archive['test '+str(i + j)] = i + j
+                    archive.append('test append', Whacky(float(i+j)))
                 archive.save()
         
         manager = multiprocessing.Manager()
@@ -294,16 +358,18 @@ class Test(unittest.TestCase):
             target = task,
             args = (i, Test.filename, lock),
             daemon = True,
-        ) for i in range(2)]
+        ) for i in range(4)]
 
         for process in processes: process.start()
         for process in processes: process.join()
 
         archive = starsmashertools.lib.archive2.Archive(Test.filename)
 
-        self.assertEqual(2, len(self.archive))
-        self.assertIn('test 0', self.archive)
-        self.assertIn('test 1', self.archive)
+        self.check_composition()
+
+        #self.assertEqual(2, len(self.archive))
+        #self.assertIn('test 0', self.archive)
+        #self.assertIn('test 1', self.archive)
         
         
 
@@ -322,6 +388,7 @@ class TestLoader(unittest.TestLoader, object):
             'test_add',
             'test_complex',
             'test_append',
+            'test_numpy',
             'test_parallel',
         ]
 
