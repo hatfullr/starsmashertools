@@ -43,26 +43,24 @@ class Buffer(io.BytesIO, object):
 
     def __str__(self):
         # Show a helpful string which gives a window around the current position
-        size = 40
+        curpos = self.tell()
         
-        curpos = _buffer.tell()
+        self.seek(0, 2)
+        buffer_size = self.tell()
+        self.seek(curpos)
         
-        _buffer.seek(0, 2)
-        buffer_size = _buffer.tell()
-        _buffer.seek(curpos)
-        
-        _buffer.seek(-min(int(0.5 * size), buffer_size - (buffer_size - curpos)), 1)
-        start = _buffer.tell()
-        window = _buffer.read(min(size, buffer_size - 1))
-        stop = _buffer.tell()
+        self.seek(-min(20, buffer_size - (buffer_size - curpos)), 1)
+        start = self.tell()
+        window = self.read(min(40, buffer_size - 1))
+        stop = self.tell()
 
-        _buffer.seek(start)
-        left_content = _buffer.read(curpos - start)
-        right_content = _buffer.read(stop - curpos)
+        self.seek(start)
+        left_content = self.read(curpos - start)
+        right_content = self.read(stop - curpos)
         first_string = str(left_content + b' ' + right_content)[2:-1]
         bottom_string = ' '*len(str(left_content)[2:-1]) + ' '*len(str(right_content)[2:-1]) + '\n' + '^'*len(str(left_content)[2:-3]) + 'pos'
 
-        _buffer.seek(curpos)
+        self.seek(curpos)
         
         return '\n' + first_string + '\n' + bottom_string
 
