@@ -199,8 +199,6 @@ class Archive(object):
     def __getitem__(self, key):
         footer, _ = self.get_footer()
         self._buffer.seek(footer[key]['pos'])
-        #if footer[key].get('appended', False):
-            
         return pickle.load(self._buffer)
 
     def __delitem__(self, key):
