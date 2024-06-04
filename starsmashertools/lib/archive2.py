@@ -208,10 +208,13 @@ class Archive(object):
             self._buffer.resize(current_size + len(value))
             
             new_pos = self._buffer.size() - len(value) - footer_size
-            footer[key] = { 'pos' : new_pos, 'n' : 1 }
+            footer[key] = {
+                'pos' : new_pos,
+                'time' : time.time(),
+                'n' : 1,
+            }
             self._buffer[new_pos:new_pos + len(value)] = value
-            footer[key]['time'] = time.time()
-            
+        
         footer[key]['size'] = len(value)
         
         # Write the footer
@@ -334,15 +337,16 @@ class Archive(object):
         pos = footer[key]['pos']
         size = footer[key]['size']
         lenvalue = len(value)
-        previous_size = self._buffer.size()
+        
+        self._buffer.resize(self._buffer.size() + lenvalue)
 
-        if pos + size >= previous_size + lenvalue:
+        if pos + size >= self._buffer.size():
+            print(pos + size, self._buffer.size())
             self._buffer.seek(pos + size, os.SEEK_SET)
             print(self._buffer)
             raise ValueError("negative read width?")
 
         # Move everything "down"
-        self._buffer.resize(previous_size + lenvalue)
         self._buffer[pos + size:] = value + self._buffer[pos + size:-lenvalue]
         
         footer[key]['mtime'] = time.time()
