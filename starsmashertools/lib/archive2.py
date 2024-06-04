@@ -13,7 +13,7 @@ import io
 FOOTERSTRUCT = struct.Struct('<Q')
 
 def is_pickled(value):
-    return isinstance(value, bytes) and value[-1] == pickle.STOP
+    return isinstance(value, bytes) and value.endswith(pickle.STOP)
 
 def clean_base64(value):
     try: ret = base64.b64decode(value)
@@ -50,12 +50,9 @@ class Buffer(io.BytesIO, object):
     def __getitem__(self, index):
         os.fsync(self._f.fileno())
         if isinstance(index, slice):
-            start = 0 if index.start is None else index.start
+            start, stop, step = index.indices(self.size())
             self.seek(start, os.SEEK_SET)
-            if index.stop is None: content = self.read()
-            else: content = self.read(index.stop - start)
-            if index.step is not None: return content[::index.step]
-            return content
+            return self.read(stop - start)[::step]
         else:
             self.seek(index, os.SEEK_SET)
             return self.read(1)
@@ -136,8 +133,7 @@ class Archive(object):
                 self._buffer.close()
     
     def __setitem__(self, key, value):
-        if not isinstance(value, bytes) or not value.endswith(pickle.STOP):
-            value = pickle.dumps(value)
+        if not is_pickled(value): value = pickle.dumps(value)
         
         # If this key is already in the Archive, get its location and size.
         footer, footer_size = self.get_footer()
@@ -185,7 +181,7 @@ class Archive(object):
             self._buffer.resize(current_size + len(value))
             
             new_pos = self._buffer.size() - len(value) - footer_size
-            footer[key] = { 'pos' : new_pos }
+            footer[key] = { 'pos' : new_pos, 'n' : 1 }
             self._buffer[new_pos:new_pos + len(value)] = value
             footer[key]['time'] = time.time()
             
@@ -199,7 +195,13 @@ class Archive(object):
     def __getitem__(self, key):
         footer, _ = self.get_footer()
         self._buffer.seek(footer[key]['pos'])
-        return pickle.load(self._buffer)
+        if footer[key]['n'] == 1:
+            return pickle.load(self._buffer)
+        else:
+            def get():
+                for _ in range(footer[key]['n']):
+                    yield pickle.load(self._buffer)
+            return get()
 
     def __delitem__(self, key):
         """ Remove the given key from the Archive. If auto save is enabled, the
@@ -224,9 +226,14 @@ class Archive(object):
     def __len__(self): return len(self.get_footer()[0])
 
     def _update_footer(self, footer, footer_size):
+        if not footer:
+            # If there's no contents in the footer, it's safe to empty the file
+            self._buffer.resize(0)
+            return
+        
         new_footer = pickle.dumps(footer)
         new_footer_size = len(new_footer) + FOOTERSTRUCT.size
-        self._buffer.resize(self._buffer.size() + - footer_size + new_footer_size)
+        self._buffer.resize(self._buffer.size() - footer_size + new_footer_size)
         
         self._buffer[-new_footer_size:] = new_footer + FOOTERSTRUCT.pack(len(new_footer))
 
@@ -272,8 +279,7 @@ class Archive(object):
             if 'Invalid argument' not in str(e): raise
             else: return collections.OrderedDict({}), 0
         
-        try: return pickle.load(self._buffer), size
-        except: return collections.OrderedDict({}), 0
+        return pickle.load(self._buffer), size
 
     def save(self):
         self._buffer.flush()
@@ -287,10 +293,27 @@ class Archive(object):
         """
         footer, footer_size = self.get_footer()
         if key not in footer.keys(): raise KeyError(key)
-        if footer[key].get('appended', False): self[key] += [value]
-        else: self[key] = [self[key], value]
+
+        if not is_pickled(value): value = pickle.dumps(value)
+        
+        pos = footer[key]['pos']
+        size = footer[key]['size']
+        lenvalue = len(value)
+
+        # Move everything "down"
+        self._buffer.resize(self._buffer.size() + lenvalue)
+        self._buffer[pos + size:] = value + self._buffer[pos + size:-lenvalue]
+        
         footer[key]['mtime'] = time.time()
-        footer[key]['appended'] = True
+        footer[key]['size'] += lenvalue
+        footer[key]['n'] += 1
+        after_key = False
+        for k, val in footer.items():
+            if k == key:
+                after_key = True
+                continue
+            if not after_key: continue
+            footer[key]['pos'] += lenvalue
         self._update_footer(footer, footer_size)
 
     def add(self, *args, **kwargs): return self.set(*args, **kwargs)
