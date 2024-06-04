@@ -25,7 +25,7 @@ def clean_base64(value):
 class InvalidArchiveError(Exception): pass
 class CorruptArchiveError(InvalidArchiveError): pass
 
-class Buffer(io.BytesIO, object):
+class Buffer(object):
     def __init__(
             self,
             path : str | pathlib.Path,
@@ -97,6 +97,7 @@ class Buffer(io.BytesIO, object):
     def seek(self, *args, **kwargs): return self._f.seek(*args, **kwargs)
     def tell(self, *args, **kwargs): return self._f.tell(*args, **kwargs)
     def read(self, *args, **kwargs): return self._f.read(*args, **kwargs)
+    def readline(self, *args, **kwargs): return self._f.readline(*args, **kwargs)
     def write(self, *args, **kwargs): return self._f.write(*args, **kwargs)
     
     def flush(self):
@@ -279,6 +280,7 @@ class Archive(object):
 
     def clear(self):
         self._buffer.resize(0)
+        if self.auto_save: self.save()
     
     def get_footer(self):
         try: self._buffer.seek(-FOOTERSTRUCT.size, 2)
@@ -315,8 +317,9 @@ class Archive(object):
         lenvalue = len(value)
 
         # Move everything "down"
-        self._buffer.resize(self._buffer.size() + lenvalue)
-        self._buffer[pos + size:] = value + self._buffer[pos + size:-lenvalue]
+        previous_size = self._buffer.size()
+        self._buffer.resize(previous_size + lenvalue)
+        self._buffer[pos + size:] = value + self._buffer[pos + size:pos + size + previous_size - (pos + size)]
         
         footer[key]['mtime'] = time.time()
         footer[key]['size'] += lenvalue
@@ -329,6 +332,8 @@ class Archive(object):
             if not after_key: continue
             footer[key]['pos'] += lenvalue
         self._update_footer(footer, footer_size)
+
+        if self.auto_save: self.save()
 
     def add(self, *args, **kwargs): return self.set(*args, **kwargs)
         
