@@ -330,6 +330,8 @@ class Archive(object):
         previous_size = self._buffer.size()
 
         if pos + size >= previous_size + lenvalue:
+            self._buffer.seek(pos + size, os.SEEK_SET)
+            print(self._buffer)
             raise ValueError("negative read width?")
 
         # Move everything "down"
