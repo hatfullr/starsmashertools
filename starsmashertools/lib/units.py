@@ -927,9 +927,9 @@ class Unit(object):
                     ret = 1
                     for i in range(abs(value)): ret /= self
             return ret
-        def __reduce__(self):
-            return (self.__class__, (self.get_base_string(), self.base,))
 
+        def __reduce__(self):
+            return (self.__class__, (self.long, self.base))
 
 
 
