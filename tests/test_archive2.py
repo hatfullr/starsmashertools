@@ -249,10 +249,30 @@ class Test(unittest.TestCase):
         self.check_composition()
 
         self.archive.clear()
+        self.archive['test'] = 0
+        self.archive.append('test', 1)
+        self.assertEqual([0, 1], list(self.archive['test']))
+        self.archive['test2'] = 0
+        self.archive.append('test2', 55)
+        self.assertEqual([0, 55], list(self.archive['test2']))
 
         for branch, leaf in d.flowers():
             self.archive[str(branch)] = leaf
         self.assertEqual('hi', self.archive[str(('level 1', 'level 2', 'test'))])
+        self.check_composition()
+
+
+        d2 = starsmashertools.helpers.nesteddict.NestedDict({
+            'level 1' : { 'level 2' : { 'test' : 'hi2' } }
+        })
+        
+        for branch, leaf in d2.flowers():
+            key = str(branch)
+            if key in self.archive: self.archive.append(key, leaf)
+            else: self.archive[key] = leaf
+        self.assertEqual(['hi','hi2'], list(self.archive[str(('level 1', 'level 2', 'test'))]))
+
+        self.check_composition()
         
 
     def test_parallel(self):
