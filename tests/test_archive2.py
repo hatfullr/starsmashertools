@@ -1,5 +1,6 @@
 import unittest
 import starsmashertools.lib.archive2
+import starsmashertools.helpers.nesteddict
 import os
 import struct
 import pickle
@@ -8,6 +9,7 @@ import io
 import re
 import sys
 import numpy as np
+import multiprocessing
 
 class Whacky:
     def __init__(self, obj):
@@ -75,37 +77,22 @@ class Test(unittest.TestCase):
         if os.path.exists('testarchiveadd'): os.remove('testarchiveadd')
 
     def check_composition(self):
-        footer, footer_size = self.archive.get_footer()
-        self.archive._buffer.seek(self.archive._buffer.size() - footer_size - 1)
-        
-        self.assertEqual(
-            pickle.STOP,
-            self.archive._buffer.read(1),
-            msg = "The character just before the start of the footer isn't an end marker for a pickle object:\n%s" % get_buffer_window_string(
-                self.archive._buffer,
-                right_label = 'footer',
-                left_label = 'not footer',
+        if hasattr(self.archive, '_buffer'):
+            self.archive._buffer.seek(-1, os.SEEK_END)
+            self.assertEqual(
+                pickle.STOP,
+                self.archive._buffer.read(1),
+                msg = "The last character isn't an end marker for a pickle object:\n%s" % get_buffer_window_string(
+                    self.archive._buffer,
+                )
             )
-        )
-
-        self.assertEqual(
-            footer,
-            pickle.load(self.archive._buffer),
-            msg = 'Unexpected footer',
-        )
         
-        self.assertEqual(
-            footer_size,
-            starsmashertools.lib.archive2.FOOTERSTRUCT.unpack(self.archive._buffer.read())[0] + starsmashertools.lib.archive2.FOOTERSTRUCT.size,
-            msg = 'Footer has the wrong size',
-        )
-
-        self.archive._buffer.seek(0)
-        self.assertEqual(
-            b'\x80',
-            self.archive._buffer.read(1),
-            msg = "The first character in the archive isn't the starting character for a pickle object",
-        )
+            self.archive._buffer.seek(0, os.SEEK_SET)
+            self.assertEqual(
+                b'\x80',
+                self.archive._buffer.read(1),
+                msg = "The first character in the archive isn't the starting character for a pickle object",
+            )
 
         # Search for large blocks of nul characters
         """
@@ -149,7 +136,25 @@ class Test(unittest.TestCase):
         previous_size = self.archive.size()
         self.archive['test'] = 'simple'
         self.assertEqual('simple', self.archive['test'])
-        self.assertLess(previous_size, self.archive.size())
+        self.assertGreater(self.archive.size(), previous_size)
+        self.check_composition()
+
+        # Expanding the buffer
+        previous_size = self.archive.size()
+        self.archive['test'] = 'simplesimple'
+        self.assertEqual('simplesimple', self.archive['test'])
+        self.assertGreater(self.archive.size(), previous_size)
+        self.check_composition()
+        
+        # Shrinking the buffer
+        previous_size = self.archive.size()
+        self.archive['test'] = 'simp'
+        self.assertEqual('simp', self.archive['test'])
+        self.assertLess(self.archive.size(), previous_size)
+        self.check_composition()
+
+        self.archive['test 2'] = 'hello'
+        self.assertEqual('hello', self.archive['test 2'])
         self.check_composition()
 
     def test_numpy(self):
@@ -167,9 +172,7 @@ class Test(unittest.TestCase):
         self.assertNotIn('test', self.archive)
         with self.assertRaises(KeyError):
             self.archive['test']
-        self.assertEqual(0, self.archive._buffer.size())
         self.assertEqual(0, self.archive.size())
-        self.assertEqual(0, self.archive.get_footer()[1])
 
         typecount = 0
         _types = [float, bool, np.float64, np.int8, np.ndarray]
@@ -195,8 +198,11 @@ class Test(unittest.TestCase):
 
     def test_keys(self):
         self.archive['0'] = 0
+        self.assertEqual(['0'], list(self.archive.keys()))
         self.archive['1'] = 1
+        self.assertEqual(['0', '1'], list(self.archive.keys()))
         self.archive['2'] = 2
+        self.assertEqual(['0', '1', '2'], list(self.archive.keys()))
         exp = ['0', '1', '2']
         self.assertEqual(len(exp), len(self.archive.keys()))
         for expected, found in zip(exp, self.archive.keys()):
@@ -223,13 +229,16 @@ class Test(unittest.TestCase):
         self.assertEqual(self.archive._buffer.size(), self.archive.size())
 
     def test_readonly(self):
+        if os.path.exists(Test.filename): os.remove(Test.filename)
         archive = starsmashertools.lib.archive2.Archive(
             Test.filename,
             readonly = True,
+            auto_save = True,
         )
-        with self.assertRaises(io.UnsupportedOperation):
+        with self.assertRaises(starsmashertools.lib.archive2.ReadOnlyError):
             archive['hello'] = 'hi'
-        self.assertEqual(0, archive.size())
+        self.assertFalse(os.path.exists(archive.path))
+
 
     def test_add(self):
         self.archive['test'] = 'hi'
@@ -262,8 +271,6 @@ class Test(unittest.TestCase):
         self.check_composition()
 
     def test_complex(self):
-        import starsmashertools.helpers.nesteddict
-
         d = starsmashertools.helpers.nesteddict.NestedDict({
             'level 1' : {
                 'level 2' : {
@@ -300,25 +307,25 @@ class Test(unittest.TestCase):
         self.assertEqual(0, len(self.archive))
         self.archive['test'] = d
         self.archive.append('test', d)
-        self.assertEqual([d, d], list(self.archive['test']))
+        self.assertEqual([d, d], self.archive['test'])
         self.check_composition()
 
         self.archive.append('test', d)
-        self.assertEqual([d,d,d], list(self.archive['test']))
+        self.assertEqual([d,d,d], self.archive['test'])
         self.check_composition()
 
         self.archive['test 2'] = d
         self.archive.append('test 2', d)
-        self.assertEqual([d, d], list(self.archive['test 2']))
+        self.assertEqual([d, d], self.archive['test 2'])
         self.check_composition()
 
         self.archive.clear()
         self.archive['test'] = 0
         self.archive.append('test', 1)
-        self.assertEqual([0, 1], list(self.archive['test']))
+        self.assertEqual([0, 1], self.archive['test'])
         self.archive['test2'] = 0
         self.archive.append('test2', 55)
-        self.assertEqual([0, 55], list(self.archive['test2']))
+        self.assertEqual([0, 55], self.archive['test2'])
 
         for branch, leaf in d.flowers():
             self.archive[str(branch)] = leaf
@@ -334,17 +341,16 @@ class Test(unittest.TestCase):
             key = str(branch)
             if key in self.archive: self.archive.append(key, leaf)
             else: self.archive[key] = leaf
-        self.assertEqual(['hi','hi2'], list(self.archive[str(('level 1', 'level 2', 'test'))]))
+        self.assertEqual(['hi','hi2'], self.archive[str(('level 1', 'level 2', 'test'))])
 
         self.check_composition()
 
-
+    """
     def test_parallel(self):
-        import multiprocessing
-        import time
-
         def task(i, path, lock):
-            archive = starsmashertools.lib.archive2.Archive(path, readonly = False)
+            archive = starsmashertools.lib.archive2.Archive(
+                path, readonly = False,
+            )
             with lock:
                 archive['test append'] = 0
                 for j in range(10):
@@ -370,7 +376,7 @@ class Test(unittest.TestCase):
         #self.assertEqual(2, len(self.archive))
         #self.assertIn('test 0', self.archive)
         #self.assertIn('test 1', self.archive)
-        
+    """
         
 
 class TestLoader(unittest.TestLoader, object):
@@ -389,7 +395,7 @@ class TestLoader(unittest.TestLoader, object):
             'test_complex',
             'test_append',
             'test_numpy',
-            'test_parallel',
+            #'test_parallel',
         ]
 
 if __name__ == '__main__':

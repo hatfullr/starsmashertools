@@ -11,8 +11,22 @@ import os
 import io
 import tempfile
 import numpy as np
+import mmap
+import copy
 
-FOOTERSTRUCT = struct.Struct('<Q')
+def serialize(value):
+    if is_pickled(value): return value
+    if isinstance(value, np.ndarray):
+        # These take up an enormous amount of memory. We compress them
+        # instead.
+        return pickle.dumps(NumPyArray(value))
+    return pickle.dumps(value)
+
+def deserialize(value):
+    if isinstance(value, NumPyArray): return value.value
+    if isinstance(value, List): return list(value)
+    if not is_pickled(value): return value
+    return pickle.loads(value)
 
 def is_pickled(value):
     return isinstance(value, bytes) and value.endswith(pickle.STOP)
@@ -26,7 +40,109 @@ def clean_base64(value):
 
 class InvalidArchiveError(Exception): pass
 class CorruptArchiveError(InvalidArchiveError): pass
+class ReadOnlyError(Exception): pass
 
+class archive_infos(collections.abc.KeysView):
+    def __init__(self, mapping):
+        if not isinstance(mapping, Archive):
+            raise TypeError("{0.__class__.__name__} can only be used with mappables of type Archive, not '{:s}'".format(self, type(mapping).__name__))
+        self.mapping = mapping
+        self._length = None
+
+    @staticmethod
+    def _get_mapping_gen(_buffer):
+        _buffer.seek(0, os.SEEK_SET)
+        while True:
+            try: info = pickle.load(_buffer)
+            except EOFError: return
+            yield info
+            _buffer.seek(info.size, os.SEEK_CUR)
+
+    @property
+    def _mapping(self):
+        if not hasattr(self.mapping, '_buffer'): return []
+        return self._get_mapping_gen(self.mapping._buffer)
+    def __len__(self):
+        if self._length is None: self._length = sum([1 for _ in self._mapping])
+        return self._length
+    def __contains__(self, obj):
+        if not is_pickled(obj): obj = pickle.dumps(obj)
+        for info in self._mapping:
+            if info == obj: return True
+        return False
+collections.abc.KeysView.register(archive_infos)
+
+
+class archive_keys(archive_infos):
+    @staticmethod
+    def _get_mapping_gen(_buffer):
+        return [info.key for info in archive_infos._get_mapping_gen(_buffer)]
+    
+    def __contains__(self, key):
+        for info in archive_infos(self.mapping):
+            if info.key == key: return True
+        return False
+collections.abc.KeysView.register(archive_keys)
+
+class archive_values(collections.abc.ValuesView):
+    def __init__(self, mapping):
+        if not isinstance(mapping, Archive):
+            raise TypeError("{0.__class__.__name__} can only be used with mappables of type Archive, not '{:s}'".format(self, type(mapping).__name__))
+        self.mapping = mapping
+        self._length = None
+
+    @staticmethod
+    def _get_mapping_gen(_buffer):
+        _buffer.seek(0, os.SEEK_SET)
+        while True:
+            try: info = pickle.load(_buffer)
+            except EOFError: return
+            try: yield deserialize(pickle.load(_buffer))
+            except EOFError as e: raise CorruptArchiveError from e
+    
+    @property
+    def _mapping(self):
+        if not hasattr(self.mapping, '_buffer'): return []
+        return self._get_mapping_gen(self.mapping._buffer)
+    def __iter__(self): yield from self._mapping
+    def __len__(self):
+        if self._length is None: self._length = sum([1 for _ in self._mapping])
+        return self._length
+    def __contains__(self, value):
+        if not is_pickled(value):
+            return self.mapping._buffer.find(pickle.dumps(value)) != -1
+        else: return self.mapping._buffer.find(value) != -1
+collections.abc.ValuesView.register(archive_values)
+
+
+class archive_items(collections.abc.ItemsView):
+    def __init__(self, mapping):
+        if not isinstance(mapping, Archive):
+            raise TypeError("{0.__class__.__name__} can only be used with mappables of type Archive, not '{:s}'".format(self, type(mapping).__name__))
+        self.mapping = mapping
+        self._length = None
+    
+    @staticmethod
+    def _get_mapping_gen(_buffer):
+        _buffer.seek(0, os.SEEK_SET)
+        while True:
+            try: info = pickle.load(_buffer)
+            except EOFError: return
+            try: value = deserialize(pickle.load(_buffer))
+            except EOFError as e: raise CorruptArchiveError from e
+            yield info.key, value
+    
+    @property
+    def _mapping(self):
+        if not hasattr(self.mapping, '_buffer'): return []
+        return self._get_mapping_gen(self.mapping._buffer)
+    def __iter__(self): yield from self._mapping
+    def __len__(self):
+        if self._length is None: self._length = sum([1 for _ in self._mapping])
+        return self._length
+collections.abc.ItemsView.register(archive_items)
+
+"""
 class Buffer(object):
     def __init__(
             self,
@@ -129,7 +245,7 @@ class Buffer(object):
         with self.lock:
             self._f.truncate(newsize)
             self.seek(min(self.tell(), newsize), os.SEEK_SET)
-
+"""
 
 class NumPyArray(object):
     def __init__(self, value):
@@ -143,6 +259,26 @@ class NumPyArray(object):
     def __setstate__(self, state):
         self.value = np.load(io.BytesIO(state))['arr_0']
 
+class Info(object):
+    """ Contains information about an Archive entry for processing reading. """
+    def __init__(
+            self,
+            size : int,
+            key = None,
+            mtime : int | type(None) = None,
+    ):
+        if mtime is None: mtime = time.time()
+        self.size = size
+        self.key = key
+        self.mtime = mtime
+    
+    def __reduce__(self):
+        return (self.__class__, (self.size, self.key, self.mtime))
+
+class List(list): pass
+        
+            
+
 class Archive(object):
     """
     Make sure that when you are using this class with multiple processes or
@@ -155,9 +291,13 @@ class Archive(object):
             path : str | pathlib.Path | type(None) = None,
             auto_save : bool = True,
             readonly : bool = True,
+            madvise = [
+                mmap.MAP_SHARED,
+            ],
     ):
         self.auto_save = auto_save
         self.readonly = readonly
+        self.madvise = madvise
         self.set_path(path)
 
     @property
@@ -173,217 +313,190 @@ class Archive(object):
                 self._buffer.close()
     
     def __setitem__(self, key, value):
-        if not is_pickled(value):
-            if isinstance(value, np.ndarray):
-                # These take up an enormous amount of memory. We compress them
-                # instead.
-                value = NumPyArray(value)
-            value = pickle.dumps(value)
-        
-        # If this key is already in the Archive, get its location and size.
-        footer, footer_size = self.get_footer()
-        
-        if key in footer:
-            pos = footer[key]['pos']
-            size = footer[key]['size']
-            
-            if size == len(value): # Lucky!
-                self._buffer[pos : pos + size] = value
-                footer[key]['mtime'] = time.time()
-                if self.auto_save: self._buffer.flush()
-                return
-            
-            if size > len(value):
-                # Move everything "up"
-                self._buffer[pos:] = value + self._buffer[pos+size:-size]
-                footer[key]['mtime'] = time.time()
-                
-                self._buffer.resize(self._buffer.size() - size + len(value))
-                
-            else: # size < len(value)
-                length = self._buffer.size()
-                self._buffer.resize(length - size + len(value))
-                
-                # Move everything "down"
-                self._buffer[pos:] = value + self._buffer[pos + size:length]
-                footer[key]['mtime'] = time.time()
+        value = serialize(value)
 
-            # All the footers that are after this key now have their locations
-            # modified. So we update them all here.
-            diff = len(value) - size
-            if diff != 0:
-                isafter = False
-                for k, obj in footer.items():
-                    if k == key:
-                        isafter = True
-                        continue
-                    if not isafter: continue
-                    footer[k]['pos'] += diff
+        if isinstance(key, Info): info = key
+        else: info = Info(len(value), key = key)
         
-        else: # This is an entirely new key
-            current_size = self.size()
-            
-            self._buffer.resize(current_size + len(value))
-            
-            new_pos = self._buffer.size() - len(value) - footer_size
-            footer[key] = {
-                'pos' : new_pos,
-                'time' : time.time(),
-                'n' : 1,
-            }
-            self._buffer[new_pos:new_pos + len(value)] = value
+        if not hasattr(self, '_buffer'):
+            # Add a new key
+            self._create_buffer(serialize(info) + value)
+            if self.auto_save: self.save()
+            return
         
-        footer[key]['size'] = len(value)
-        
-        # Write the footer
-        self._update_footer(footer, footer_size)
-        
-        if self.auto_save: self._buffer.flush()
+        towrite = serialize(info) + value
+
+        # Handle resizing
+        with self._lock:
+            for i in self.infos():
+                if i.key != info.key: continue
+                start = self._buffer.tell() - len(pickle.dumps(i))
+                stop = start + len(towrite)
+                prev_len = i.size + len(pickle.dumps(i))
+                if len(towrite) > prev_len:
+                    prevsize = self._buffer.size()
+                    self._buffer.resize(self._buffer.size() - prev_len + len(towrite))
+                    for madv in self.madvise: self._buffer.madvise(madv)
+                    src = start + prev_len
+                    try:
+                        self._buffer.move(stop, src, prevsize - src)
+                    except ValueError:
+                        print(stop, src, prevsize)
+                        raise
+                elif len(towrite) < prev_len:
+                    src = start + prev_len
+                    try:
+                        self._buffer.move(stop, src, self._buffer.size() - src)
+                    except ValueError:
+                        print(stop, src, self._buffer.size())
+                        raise
+                    self._buffer.resize(self._buffer.size() - prev_len + len(towrite))
+                    for madv in self.madvise: self._buffer.madvise(madv)
+                break
+            else:
+                start = self._buffer.size()
+                self._buffer.resize(self._buffer.size() + len(towrite))
+                for madv in self.madvise: self._buffer.madvise(madv)
+                stop = self._buffer.size()
+
+            self._buffer[start:stop] = towrite
+
+            if self.auto_save: self.save()
     
     def __getitem__(self, key):
-        footer, _ = self.get_footer()
-        self._buffer.seek(footer[key]['pos'])
-        if footer[key]['n'] == 1:
-            ret = pickle.load(self._buffer)
-            if isinstance(ret, NumPyArray): return ret.value
-            return ret
+        if hasattr(self, '_lock'):
+            with self._lock:
+                for info in self.infos():
+                    if info.key != key: continue
+                    return deserialize(pickle.load(self._buffer))
         else:
-            def get():
-                for _ in range(footer[key]['n']):
-                    ret = pickle.load(self._buffer)
-                    if isinstance(ret, NumPyArray): return ret.value
-                    yield ret
-            return get()
+            for info in self.infos():
+                if info.key != key: continue
+                return deserialize(pickle.load(self._buffer))
+        raise KeyError(key)
 
     def __delitem__(self, key):
         """ Remove the given key from the Archive. If auto save is enabled, the
         Archive file will be modified. If there are any values appended to this
         item, they are also removed. """
-        footer, footer_size = self.get_footer()
-        if key not in footer: raise KeyError(key)
-        pos = footer[key]['pos']
-        size = footer[key]['size']
-        self._buffer[pos:] = self._buffer[pos + size:] + b'\x00'*size
-        self._buffer.resize(self._buffer.size() - size)
+        with self._lock:
+            for info in self.infos():
+                if info.key != key: continue
+                leninfo = len(pickle.dumps(info))
+                self._buffer.seek(-leninfo, os.SEEK_CUR)
+                start = self._buffer.tell()
+                src = start + leninfo + info.size
+                newsize = self._buffer.size() - (leninfo + info.size)
+                self._buffer.move(start, src, self._buffer.size() - src)
+                if newsize == 0: self.clear()
+                else:
+                    self._buffer.resize(newsize)
+                    for madv in self.madvise: self._buffer.madvise(madv)
+                break
+            else:
+                raise KeyError(key)
 
-        found_key = False
-        for k, val in footer.items():
-            if k == key:
-                found_key = True
-                continue
-            if not found_key: continue
-            footer[k]['pos'] -= size
-        
-        del footer[key]
-
-        # Update the footer
-        self._update_footer(footer, footer_size)
-        
-        if self.auto_save: self._buffer.flush()
+            if self.auto_save: self.save()
         
     
-    def __contains__(self, key): return key in self.get_footer()[0]
-    def __len__(self): return len(self.get_footer()[0])
-    
-    def _update_footer(self, footer, footer_size):
-        if not footer:
-            # If there's no contents in the footer, it's safe to empty the file
-            self._buffer.resize(0)
-            return
-        
-        new_footer = pickle.dumps(footer)
-        new_footer_size = len(new_footer) + FOOTERSTRUCT.size
-        self._buffer.resize(self._buffer.size() - footer_size + new_footer_size)
-        
-        self._buffer[-new_footer_size:] = new_footer + FOOTERSTRUCT.pack(len(new_footer))
+    def __contains__(self, key):
+        if hasattr(self, '_lock'):
+            with self._lock: return key in self.keys()
+        return key in self.keys()
+    def __len__(self):
+        if hasattr(self, '_lock'):
+            with self._lock: return len(self.keys())
+        return len(self.keys())
 
+    def _create_buffer(self, content : bytes):
+        if self.readonly: raise ReadOnlyError
+        with starsmashertools.helpers.file.open(
+                self.path, 'wb+',
+        ) as f:
+            f.write(content)
+            f.flush()
+            self._buffer = mmap.mmap(
+                f.fileno(),
+                0,
+                access = mmap.ACCESS_READ if self.readonly else mmap.ACCESS_WRITE,
+            )
+            for madv in self.madvise: self._buffer.madvise(madv)
+            if hasattr(self, '_lock'):
+                if self._lock.locked: self._lock.unlock()
+            self._lock = f.sstools_lock
+    
     def set_path(
             self,
-            path : str | pathlib.Path,
+            path : str | pathlib.Path | type(None),
     ):
         if hasattr(self, '_buffer'):
             if not self.readonly: self.save()
             self._buffer.close()
-        self._buffer = Buffer(path = path, readonly = self.readonly)
+            del self._buffer
+        if path is not None and starsmashertools.helpers.path.exists(path):
+            with starsmashertools.helpers.file.open(
+                    path, 'rb' if self.readonly else 'rb+'
+            ) as f:
+                self._buffer = mmap.mmap(
+                    f.fileno(),
+                    0,
+                    access = mmap.ACCESS_READ if self.readonly else mmap.ACCESS_WRITE,
+                )
+                for madv in self.madvise: self._buffer.madvise(madv)
+                if hasattr(self, '_lock'):
+                    if self._lock.locked: self._lock.unlock()
+                self._lock = f.sstools_lock
         self._path = path
     
-    def size(self): return self._buffer.size()
-
-    def keys(self): return self.get_footer()[0].keys()
-    def values(self):
-        """ Returns a generator which iteratively obtains all the archived 
-        values. """
-        footer, footer_size = self.get_footer()
-        self._buffer.seek(0)
-        for _ in range(len(footer.keys())):
-            yield pickle.load(self._buffer)
-    def items(self): return zip(self.keys(), self.values())
+    def size(self):
+        if hasattr(self, '_lock'):
+            with self._lock:
+                if hasattr(self, '_buffer'): return self._buffer.size()
+                return 0
+        else:
+            if hasattr(self, '_buffer'): return self._buffer.size()
+        return 0
+    
+    def keys(self): return archive_keys(self)
+    def values(self): return archive_values(self)
+    def items(self): return archive_items(self)
+    def infos(self): return archive_infos(self)
 
     def clear(self):
-        self._buffer.resize(0)
+        del self._buffer
         if self.auto_save: self.save()
-    
-    def get_footer(self):
-        try: self._buffer.seek(-FOOTERSTRUCT.size, 2)
-        except OSError as e:
-            if 'Invalid argument' not in str(e): raise
-            else: return collections.OrderedDict({}), 0
-
-        size = FOOTERSTRUCT.unpack(self._buffer.read())[0] + FOOTERSTRUCT.size
-
-        try: self._buffer.seek(-size, 2)
-        except OSError as e:
-            if 'Invalid argument' not in str(e): raise
-            else: return collections.OrderedDict({}), 0
-        
-        return pickle.load(self._buffer), size
 
     def save(self, path : str | pathlib.Path | type(None) = None):
-        if path is None: self._buffer.flush()
-        else: # This means copy the buffer
-            with starsmashertools.helpers.file.open(path, 'wb') as f:
-                f.write(self._buffer.read())
+        if not hasattr(self, '_buffer'):
+            if self.readonly: raise ReadOnlyError
+            if self.path is not None:
+                if starsmashertools.helpers.path.exists(self.path):
+                    starsmashertools.helpers.path.remove(self.path)
+        else:
+            if path is None:
+                if self.readonly: raise ReadOnlyError
+                with self._lock:
+                    self._buffer.flush()
+            else: # This means copy the buffer
+                with starsmashertools.helpers.file.open(path, 'wb') as f:
+                    f.write(self._buffer.read())
 
-    def append(self, key : str, value):
+    def append(self, key : str, *values):
         """
         Append a value to the end of an existing key. Calls to 
-        :meth:`~.__getitem__` will return a generator all appended items. The
+        :meth:`~.__getitem__` will return a list of all appended items. The
         ``key`` being appended to will have its mtime replaced with the current
         timestamp.
         """
-        footer, footer_size = self.get_footer()
-        if key not in footer.keys(): raise KeyError(key)
-
-        if not is_pickled(value): value = pickle.dumps(value)
-        
-        pos = footer[key]['pos']
-        size = footer[key]['size']
-        lenvalue = len(value)
-        
-        self._buffer.resize(self._buffer.size() + lenvalue)
-
-        if pos + size >= self._buffer.size():
-            print(pos + size, self._buffer.size())
-            self._buffer.seek(pos + size, os.SEEK_SET)
-            print(self._buffer)
-            raise ValueError("negative read width?")
-
-        # Move everything "down"
-        self._buffer[pos + size:] = value + self._buffer[pos + size:-lenvalue]
-        
-        footer[key]['mtime'] = time.time()
-        footer[key]['size'] += lenvalue
-        footer[key]['n'] += 1
-        after_key = False
-        for k, val in footer.items():
-            if k == key:
-                after_key = True
-                continue
-            if not after_key: continue
-            footer[k]['pos'] += lenvalue
-        self._update_footer(footer, footer_size)
-
-        if self.auto_save: self.save()
+        with self._lock:
+            for info in self.infos():
+                if info.key != key: continue
+                value = pickle.load(self._buffer)
+                if not isinstance(value, List): value = List([value] + list(values))
+                else: value += list(values)
+                self[key] = value
+                return
+            raise KeyError(key)
 
     def add(self, *args, **kwargs): return self.set(*args, **kwargs)
         
@@ -409,60 +522,15 @@ class Archive(object):
         starsmashertools.helpers.argumentenforcer.enforcevalues({
             'replace' : ['mtime',],
         })
-        
-        footer, _ = self.get_footer()
-        if key in footer:
-            if None in [origin, replace]:
-                self[key] = value
-            elif replace == 'mtime':
-                if footer[key]['mtime'] < starsmashertools.helpers.path.getmtime(origin):
-                    self[key] = value
-            else: raise NotImplementedError(replace)
 
-    def get(
-            self,
-            keys : str | list | tuple,
-            deserialize : bool = True,
-    ):
-        """
-        Obtain the key or keys given. This is useful for if you want to retrieve
-        many values from the archive without opening and closing the file each
-        time. Raises a :class:`KeyError` if any of the keys weren't found.
+        mtime = None
+        if replace == 'mtime' and origin is not None:
+            mtime = starsmashertools.helpers.path.getmtime(origin)
 
-        Parameters
-        ----------
-        keys : str, list, tuple
-            If a `str`\, the behavior is equivalent to 
-            :meth:`~.Archive.__getitem__`\. If a `list` or `tuple`\, each 
-            element must be type `str`\. Then the archive is opened and the 
-            values for the given keys are returned in the same order as 
-            ``keys``\.
+        towrite = serialize(value)
+        with self._lock:
+            for info in self.infos():
+                if info.key != key: continue
+                if replace == 'mtime' and mtime is not None and info.mtime > mtime: return
 
-        Other Parameters
-        ----------------
-        deserialize : bool, default = True
-            If `True`\, the values in the :class:`~.Archive` are converted from
-            their raw format as stored in the file on the system into Python
-            objects. Otherwise, the raw values are returned.
-
-        Returns
-        -------
-        :py:class:`object` or generator
-            If a `str` was given for ``keys``\, a :py:class:`object` is
-            returned. Otherwise, a generator is returned which yields the values
-            in the archive at the given keys.
-        """
-        
-        footer, _ = self.get_footer()
-        
-        if isinstance(keys, str):
-            if not deserialize:
-                return self._buffer[footer[keys]['pos']:footer[keys]['pos']+footer[keys]['size']]
-            return self[keys]
-
-        def gen():
-            for key in keys:
-                self._buffer.seek(footer[key]['pos'])
-                yield pickle.load(self._buffer)
-        
-        return gen()
+        self[Info(len(towrite), key=key, mtime=mtime)] = towrite

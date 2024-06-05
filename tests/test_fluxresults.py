@@ -43,6 +43,7 @@ class TestFluxResults(basetest.BaseTest):
         for details in self.fluxresult_details:
             result = starsmashertools.lib.flux.FluxResults(
                 os.path.join(test_fluxresult.fluxdir, details['filename']),
+                readonly = False,
             )
             
             # Save as a test file
@@ -53,7 +54,7 @@ class TestFluxResults(basetest.BaseTest):
     def testAdd(self):
         details = test_fluxresult.load_fluxresult_details().fluxresult_details
         
-        total = starsmashertools.lib.flux.FluxResults()
+        total = starsmashertools.lib.flux.FluxResults(readonly = False)
         for i, detail in enumerate(details):
             path = os.path.join(test_fluxresult.fluxdir, detail['filename'])
             result = starsmashertools.lib.flux.FluxResult(path=path, readonly = True)
