@@ -51,22 +51,7 @@ class TestFluxResults(basetest.BaseTest):
             # Save as a test file
             result.save(TestFluxResults.test_filename)
             self.assertTrue(os.path.exists(TestFluxResults.test_filename))
-
-            with gzip.open(TestFluxResults.test_filename, 'rb') as f:
-                print(pickle.load(f))
-                _buffer = mmap.mmap(f.fileno(), 0, access = mmap.ACCESS_READ)
-                pos = _buffer.rfind(pickle.STOP, 0)
-                while pos != -1:
-                    _buffer.seek(pos)
-                    
-                    try: print(pickle.load(_buffer))
-                    except: pass
-                    pos = _buffer.rfind(pickle.STOP, 0, pos - 1)
-                    print(pos)
-                #print(_buffer[_buffer.tell():])
-                #print(pickle.load(_buffer))
-                
-            quit()
+            
             os.remove(TestFluxResults.test_filename)
     
     def testAdd(self):
