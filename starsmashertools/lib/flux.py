@@ -8,13 +8,13 @@ from starsmashertools.helpers.apidecorator import api
 import starsmashertools.helpers.argumentenforcer
 from starsmashertools.lib.units import constants
 import starsmashertools.helpers.nesteddict
-import starsmashertools.helpers.file
 import copy
 import warnings
 import typing
 import collections
 import gc
 import pickle
+import gzip
 
 try:
     import matplotlib.axes
@@ -848,7 +848,7 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
             allowed : dict | starsmashertools.helpers.nesteddict.NestedDict = Pref('save.allowed'),
     ):
         """
-        Save the results to disk as a plain text file.
+        Save the results to disk as a compressed binary file.
         
         Other Parameters
         ----------
@@ -882,7 +882,7 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
             elif branch in branches:
                 towrite[branch] = self[branch]
 
-        with starsmashertools.helpers.file.open(filename, 'wb') as f:
+        with gzip.open(filename, 'wb') as f:
             pickle.dump(towrite, f)
         
     @staticmethod
@@ -917,8 +917,8 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
         """
         if isinstance(allowed, dict):
             allowed = starsmashertools.helpers.nesteddict.NestedDict(allowed)
-
-        with starsmashertools.helpers.file.open(filename, 'rb') as f:
+            
+        with gzip.open(filename, 'rb') as f:
             loaded = pickle.load(f)
         
         if allowed:
@@ -1078,10 +1078,10 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
             else: self[branch] += [leaf]
 
     def save(self, filename : str):
-        with starsmashertools.helpers.file.open(filename, 'wb') as f:
+        with gzip.open(filename, 'wb') as f:
             pickle.dump(self, f)
 
     @staticmethod
     def load(filename : str):
-        with starsmashertools.helpers.file.open(filename, 'rb') as f:
+        with gzip.open(filename, 'rb') as f:
             return pickle.load(f)
