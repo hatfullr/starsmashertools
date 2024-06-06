@@ -4,7 +4,6 @@ from starsmashertools.preferences import Pref
 import math
 import numpy as np
 import starsmashertools.lib.output
-import starsmashertools.lib.archive2
 from starsmashertools.helpers.apidecorator import api
 import starsmashertools.helpers.argumentenforcer
 from starsmashertools.lib.units import constants
@@ -845,15 +844,14 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
             self,
             filename : str = Pref('save.filename'),
             allowed : dict | starsmashertools.helpers.nesteddict.NestedDict = Pref('save.allowed'),
-            **kwargs
     ):
         """
-        Save the results to disk as an :class:`~.lib.archive.Archive`\.
+        Save the results to disk as a plain text file.
         
         Other Parameters
         ----------
         filename : str, default = ``Pref('save.filename')``
-            The name of the Archive.
+            The name of the file.
 
         allowed : dict, :class:`~.helpers.nesteddict.NestedDict`\, default = ``Pref('save.allowed')``
             The items to include in the file. Only the keys of the dictionary
@@ -863,55 +861,36 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
             deepest nesting levels (the "flowers") are considered. See the 
             preferences file for an example.
 
-        **kwargs
-            Keyword arguments are passed directly to 
-            :meth:`~.lib.archive.Archive.__init__`\.
-        
-        Returns
-        -------
-        archive : :class:`~.lib.archive.Archive`
-            The newly created Archive.
-
         See Also
         --------
         :meth:`~.load`
         """
-        import starsmashertools.lib.archive
-        
+        import pickle
+
         if isinstance(allowed, dict):
             allowed = starsmashertools.helpers.nesteddict.NestedDict(allowed)
-
-        current_branches = self.branches()
-        origin = self.get('output', None)
         
-        kwargs['auto_save'] = False
-        archive = starsmashertools.lib.archive.Archive(filename, **kwargs)
+        current_branches = self.branches()
+        
         branches = self.branches()
+        towrite = starsmashertools.helpers.nesteddict.NestedDict()
         for branch, leaf in allowed.flowers():
             if not leaf: continue
             if branch in self.stems():
                 for b, l in self.flowers(stems = (branch,)):
-                    archive.add(
-                        str(b),
-                        self[b],
-                        origin = origin,
-                    )
+                    towrite[b] = self[b]
             elif branch in branches:
-                archive.add(
-                    str(branch),
-                    self[branch],
-                    origin = origin,
-                )
-        archive.save()
-        return archive
-    
+                towrite[branch] = self[branch]
+
+        with starsmashertools.helpers.file.open(filename, 'wb') as f:
+            pickle.dump(towrite, f)
+        
     @staticmethod
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def load(
             filename : str,
             allowed : dict | starsmashertools.helpers.nesteddict.NestedDict | type(None) = None,
-            deserialize : bool = True,
     ):
         """
         Load results from disk which were saved by :meth:`~.save`\.
@@ -925,11 +904,8 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
         ----------------
         allowed : dict, :class:`~.helpers.nesteddict.NestedDict`\, None, default = None
             Similar to ``allowed`` in :meth:`~.save`\. If `None` is given, then
-            all the archived values will be loaded into the returned
+            all the values will be loaded into the returned 
             :class:`~.FluxResult` object.
-
-        deserialize : bool, default = True
-            Given to :meth:`~.lib.archive.Archive.get`\.
 
         Returns
         -------
@@ -939,26 +915,18 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
         --------
         :meth:`~.save`
         """
-        import starsmashertools.lib.archive
-        archive = starsmashertools.lib.archive.Archive(filename, readonly=True)
+        import pickle
 
         if isinstance(allowed, dict):
             allowed = starsmashertools.helpers.nesteddict.NestedDict(allowed)
 
-        loaded = starsmashertools.helpers.nesteddict.NestedDict()
-        keys = archive.keys()
-        values = archive.get(keys, deserialize = deserialize)
-        if not isinstance(values, list): values = [values]
-        for key, val in zip(keys, values):
-            try: key = eval(key)
-            except: pass
-            if deserialize: loaded[key] = val.value
-            else: loaded[key] = val
+        with starsmashertools.helpers.file.open(filename, 'rb') as f:
+            loaded = pickle.load(f)
+        
         if allowed:
             for branch, leaf in allowed.flowers():
-                try: branch = eval(branch)
-                except: pass
                 if leaf: continue
+                if branch not in loaded: continue
                 loaded.pop(branch)
         return FluxResult(loaded)
     
@@ -1056,7 +1024,7 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
 
 
 @starsmashertools.preferences.use
-class FluxResults(starsmashertools.lib.archive2.Archive, object):
+class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
     """
     A container for multiple :class:`~.FluxResult` objects. Permits for multiple
     :class:`~.FluxResult` objects to be saved in a single file, which can be 
@@ -1092,13 +1060,6 @@ class FluxResults(starsmashertools.lib.archive2.Archive, object):
         if isinstance(allowed, dict):
             allowed = starsmashertools.helpers.nesteddict.NestedDict(allowed)
         self._allowed = allowed
-        super(FluxResults, self).__init__(*args, **kwargs)
-
-    def __setitem__(self, key : str, *args, **kwargs):
-        try: branch = eval(key)
-        except: branch = key
-        if not self.is_allowed(branch): return
-        return super(FluxResults, self).__setitem__(key, *args, **kwargs)
 
     def is_allowed(self, branch):
         for b, l in self._allowed.flowers():
@@ -1107,20 +1068,23 @@ class FluxResults(starsmashertools.lib.archive2.Archive, object):
                 return True
         return False
 
-    def add_fluxresult(self, result : str | FluxResult):
-        import starsmashertools.lib.archive
-        
+    def add(self, result : str | FluxResult):
         if isinstance(result, str):
-            result = FluxResult.load(result, deserialize = False)
+            result = FluxResult.load(result)
         
         for branch, leaf in result.flowers():
             if not self.is_allowed(branch): continue
+            
+            if branch not in self: self[branch] = [leaf]
+            else: self[branch] += [leaf]
 
-            key = str(branch)
-            try:
-                leaf = starsmashertools.lib.archive.ArchiveValue.deserialize(key, leaf).value
-            except: pass
-            if key not in self: self[key] = leaf
-            else: self.append(key, leaf)
+    def save(self, filename : str):
+        import pickle
+        with starsmashertools.helpers.file.open(filename, 'wb') as f:
+            pickle.dump(self, f)
 
-    
+    @staticmethod
+    def load(filename : str):
+        import pickle
+        with starsmashertools.helpers.file.open(filename, 'rb') as f:
+            return pickle.load(f)

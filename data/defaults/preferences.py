@@ -134,7 +134,7 @@ prefs = {
             }, # 'FluxFinder'
             'FluxResult' : {
                 'save' : {
-                    'filename' : 'fluxresult.zip',
+                    'filename' : 'fluxresult.dat',
                     # Changing values here doesn't improve performance, it only
                     # affects what gets saved in the save() method in FluxResult
                     # 'True' means don't save it, 'False' means save it.

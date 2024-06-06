@@ -14,7 +14,7 @@ class TestLoader(unittest.TestLoader, object):
     
 class TestFluxResults(basetest.BaseTest):
 
-    test_filename = 'fluxresults_test.zip'
+    test_filename = 'fluxresults_test.dat'
     
     def setUp(self):
         # Load in the details about how the FluxResult objects were made
@@ -58,10 +58,10 @@ class TestFluxResults(basetest.BaseTest):
         for i, detail in enumerate(details):
             path = os.path.join(test_fluxresult.fluxdir, detail['filename'])
             result = starsmashertools.lib.flux.FluxResult(path=path, readonly = True)
-            total.add_fluxresult(result)
+            total.add(result)
             for i, value in enumerate(total.values()):
                 self.assertEqual(i + 1, len(value))
-        total.save(path = TestFluxResults.test_filename)
+        total.save(TestFluxResults.test_filename)
         
 
 if __name__ == '__main__':
