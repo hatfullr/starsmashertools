@@ -41,9 +41,8 @@ class TestFluxResults(basetest.BaseTest):
     
     def testSave(self):
         for details in self.fluxresult_details:
-            result = starsmashertools.lib.flux.FluxResults(
+            result = starsmashertools.lib.flux.FluxResults.load(
                 os.path.join(test_fluxresult.fluxdir, details['filename']),
-                readonly = False,
             )
             
             # Save as a test file
@@ -54,13 +53,13 @@ class TestFluxResults(basetest.BaseTest):
     def testAdd(self):
         details = test_fluxresult.load_fluxresult_details().fluxresult_details
         
-        total = starsmashertools.lib.flux.FluxResults(readonly = False)
+        total = starsmashertools.lib.flux.FluxResults()
         for i, detail in enumerate(details):
             path = os.path.join(test_fluxresult.fluxdir, detail['filename'])
-            result = starsmashertools.lib.flux.FluxResult(path=path, readonly = True)
+            result = starsmashertools.lib.flux.FluxResult.load(path)
             total.add(result)
-            for i, value in enumerate(total.values()):
-                self.assertEqual(i + 1, len(value))
+            for branch, leaf in total.flowers():
+                self.assertEqual(i + 1, len(leaf), msg=str(branch))
         total.save(TestFluxResults.test_filename)
         
 
