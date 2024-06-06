@@ -1083,7 +1083,7 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
             tname = None
             try:
                 with tempfile.NamedTemporaryFile(delete = False) as output:
-                    tname = output.tname
+                    tname = output.name
                     _input = gzip.GzipFile(mode = 'wb', fileobj = output)
                     pickle.dump(self, _input)
             except:
