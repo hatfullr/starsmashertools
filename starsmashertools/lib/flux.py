@@ -1082,7 +1082,7 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
         if starsmashertools.helpers.path.exists(filename):
             tname = None
             try:
-                with tempfile.NamedTemporaryFile(delete = False) as output:
+                with tempfile.NamedTemporaryFile(dir = os.getcwd(), delete = False) as output:
                     tname = output.name
                     _input = gzip.GzipFile(mode = 'wb', fileobj = output)
                     pickle.dump(self, _input)
