@@ -15,6 +15,8 @@ import collections
 import gc
 import pickle
 import gzip
+import tempfile
+import os
 
 try:
     import matplotlib.axes
@@ -870,8 +872,6 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
         if isinstance(allowed, dict):
             allowed = starsmashertools.helpers.nesteddict.NestedDict(allowed)
         
-        current_branches = self.branches()
-        
         branches = self.branches()
         towrite = starsmashertools.helpers.nesteddict.NestedDict()
         for branch, leaf in allowed.flowers():
@@ -1078,8 +1078,27 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
             else: self[branch] += [leaf]
 
     def save(self, filename : str):
-        with gzip.open(filename, 'wb') as f:
-            pickle.dump(self, f)
+        import starsmashertools.helpers.path
+        if starsmashertools.helpers.path.exists(filename):
+            try:
+                with tempfile.NamedTemporaryFile(delete = False) as output:
+                    tname = output.tname
+                    _input = gzip.GzipFile(mode = 'wb', fileobj = output)
+                    pickle.dump(self, _input)
+            except:
+                # temporary files are always local
+                if os.path.exists(tname): os.remove(tname)
+                raise
+            else:
+                starsmashertools.helpers.path.rename(tname, filename)
+        else:
+            try:
+                with gzip.open(filename, 'wb') as f:
+                    pickle.dump(self, f)
+            except:
+                # the gzip method is always local
+                if os.path.exists(filename): os.path.remove(filename)
+                raise
 
     @staticmethod
     def load(filename : str):
