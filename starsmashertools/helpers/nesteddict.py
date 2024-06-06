@@ -1,5 +1,11 @@
 import collections.abc
 import copy
+import gzip
+import pathlib
+import shutil
+import pickle
+import tempfile
+import os
 
 def is_path_from_stems(path, stems):
     """ Check all the given stems to see if the given path starts with one of 
@@ -457,3 +463,85 @@ class NestedDict(dict, object):
 
         return True
         
+    def save(
+            self,
+            filename : str | pathlib.Path,
+            branches : list | tuple | type(None) = None,
+    ):
+        """
+        Save the :class:`~.NestedDict` to a file. If the file already exists,
+        the object is saved to a temporary file which is then renamed to the
+        given ``filename``\. Otherwise, the file is created with ``filename``\.
+        
+        The information is saved using the ``pickle`` library. Each branch and
+        leaf is saved using ``pickle.dump``\, first on the branch, and then on
+        the leaf.
+
+        The file is automatically compressed using ``gzip``\.
+
+        Parameters
+        ----------
+        filename : str, :class:`pathlib.Path`
+            The path to the file to create or overwrite.
+        
+        branches : list, tuple, None, default = None
+            Branches to save to the file. If `None`\, all the branches are 
+            saved.
+
+        See Also
+        --------
+        :meth:`~.load`
+        """
+        if branches is None: branches = self.branches()
+
+        if os.path.exists(filename): # Safe overwriting
+            try:
+                with tempfile.NamedTemporaryFile(delete=False) as output:
+                    tname = output.name
+                    _input = gzip.GzipFile(mode = 'wb', fileobj = output)
+                    for branch in branches:
+                        pickle.dump(branch, _input)
+                        pickle.dump(self[branch], _input)
+            except:
+                if os.path.exists(tname): os.remove(tname)
+                raise
+            else: # No errors
+                os.rename(tname, filename)
+        else:
+            try:
+                with gzip.open(filename, 'wb') as f:
+                    for branch in branches:
+                        pickle.dump(branch, f)
+                        pickle.dump(self[branch], f)
+            except:
+                if os.path.exists(filename): os.remove(filename)
+                raise
+
+    @staticmethod
+    def load(
+            filename : str | pathlib.Path,
+            branches : list | tuple | type(None) = None,
+    ):
+        """
+        Load a file which was saved by :meth:`~.save`\.
+
+        Parameters
+        ----------
+        filename : str, :class:`pathlib.Path`
+            The path to the file to load.
+        
+        branches : list, tuple, None, default = None
+            Branches to load from the file. If `None`\, all the branches are 
+            loaded.
+        
+        See Also
+        --------
+        :meth:`~.save`
+        """
+        ret = NestedDict()
+        with gzip.open(filename, 'rb') as f:
+            branch = pickle.load(f)
+            if branches is None or branch in branches:
+                ret[branch] = pickle.load(f)
+            else: pickle.load(f) # Skip it
+        return ret
