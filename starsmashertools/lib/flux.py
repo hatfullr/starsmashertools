@@ -1080,6 +1080,7 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
     def save(self, filename : str):
         import starsmashertools.helpers.path
         if starsmashertools.helpers.path.exists(filename):
+            tname = None
             try:
                 with tempfile.NamedTemporaryFile(delete = False) as output:
                     tname = output.tname
@@ -1087,7 +1088,7 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
                     pickle.dump(self, _input)
             except:
                 # temporary files are always local
-                if os.path.exists(tname): os.remove(tname)
+                if tname is not None and os.path.exists(tname): os.remove(tname)
                 raise
             else:
                 starsmashertools.helpers.path.rename(tname, filename)

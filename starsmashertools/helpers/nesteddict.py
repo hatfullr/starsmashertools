@@ -496,6 +496,7 @@ class NestedDict(dict, object):
 
         if os.path.exists(filename): # Safe overwriting
             try:
+                tname = None
                 with tempfile.NamedTemporaryFile(delete=False) as output:
                     tname = output.name
                     _input = gzip.GzipFile(mode = 'wb', fileobj = output)
@@ -503,7 +504,7 @@ class NestedDict(dict, object):
                         pickle.dump(branch, _input)
                         pickle.dump(self[branch], _input)
             except:
-                if os.path.exists(tname): os.remove(tname)
+                if tname is not None and os.path.exists(tname): os.remove(tname)
                 raise
             else: # No errors
                 os.rename(tname, filename)
