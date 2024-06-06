@@ -8,11 +8,13 @@ from starsmashertools.helpers.apidecorator import api
 import starsmashertools.helpers.argumentenforcer
 from starsmashertools.lib.units import constants
 import starsmashertools.helpers.nesteddict
+import starsmashertools.helpers.file
 import copy
 import warnings
 import typing
 import collections
 import gc
+import pickle
 
 try:
     import matplotlib.axes
@@ -865,8 +867,6 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
         --------
         :meth:`~.load`
         """
-        import pickle
-
         if isinstance(allowed, dict):
             allowed = starsmashertools.helpers.nesteddict.NestedDict(allowed)
         
@@ -915,8 +915,6 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
         --------
         :meth:`~.save`
         """
-        import pickle
-
         if isinstance(allowed, dict):
             allowed = starsmashertools.helpers.nesteddict.NestedDict(allowed)
 
@@ -1080,12 +1078,10 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
             else: self[branch] += [leaf]
 
     def save(self, filename : str):
-        import pickle
         with starsmashertools.helpers.file.open(filename, 'wb') as f:
             pickle.dump(self, f)
 
     @staticmethod
     def load(filename : str):
-        import pickle
         with starsmashertools.helpers.file.open(filename, 'rb') as f:
             return pickle.load(f)
