@@ -1060,6 +1060,7 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
         if isinstance(allowed, dict):
             allowed = starsmashertools.helpers.nesteddict.NestedDict(allowed)
         self._allowed = allowed
+        super(FluxResults, self).__init__(*args, **kwargs)
 
     def is_allowed(self, branch):
         for b, l in self._allowed.flowers():
