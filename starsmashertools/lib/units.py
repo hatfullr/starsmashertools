@@ -9,6 +9,7 @@ import numpy as np
 import re
 import fractions
 import copy
+import operator
 
 def get_all_labels():
     conversions = Unit.conversions
@@ -65,30 +66,8 @@ class Unit(object):
         # '  1.235 day'
 
     """
-    exception_message = "Operation '%s' is disallowed on 'Unit' type objects. Please convert to 'float' first using, e.g., 'float(unit)'."
-
-    # This defines the allowed data types for the operations defined
-    # below. np.generic identifies NumPy scalars:
-    # https://numpy.org/doc/stable/reference/arrays.scalars.html
-    operation_types = {
-        '__mul__'      : [float, int, 'Unit', np.generic],
-        '__rmul__'     : [float, int, 'Unit', np.generic],
-        '__truediv__'  : [float, int, 'Unit', np.generic],
-        '__rtruediv__' : [float, int, 'Unit', np.generic],
-        '__add__'      : [float, int, 'Unit', np.generic],
-        '__radd__'     : [float, int, 'Unit', np.generic],
-        '__sub__'      : [float, int, 'Unit', np.generic],
-        '__rsub__'     : [float, int, 'Unit', np.generic],
-        '__pow__'      : [float, int,         np.generic],
-        '__eq__'       : [float, int, 'Unit', np.generic],
-        '__gt__'       : [float, int, 'Unit', np.generic],
-        '__ge__'       : [float, int, 'Unit', np.generic],
-        '__lt__'       : [float, int, 'Unit', np.generic],
-        '__le__'       : [float, int, 'Unit', np.generic],
-    }
-
     _format_re = re.compile(r'[^[a-zA-Z]*[a-zA-Z]{1}')
-
+    
     conversions = None
     
     class InvalidLabelError(Exception, object): pass
@@ -96,11 +75,6 @@ class Unit(object):
     
     @api
     def __init__(self, *args, base = ['cm', 'g', 's', 'K']):
-        # Fix the string values in operation_types above
-        for key, val in Unit.operation_types.items():
-            if 'Unit' not in val: continue
-            Unit.operation_types[key][val.index('Unit')] = Unit
-        
         if len(args) == 1 and isinstance(args[0], str):
             # Convert string to Unit
             string = args[0]
@@ -383,57 +357,39 @@ class Unit(object):
     
     @api
     def __eq__(self, other):
-        starsmashertools.helpers.argumentenforcer.enforcetypes({
-            'other' : Unit.operation_types['__eq__'],
-        })
         if isinstance(other, Unit):
             if self.label != other.label:
-                # Compare each Unit's base values
-                return self.get_base().value == other.get_base().value
+                return self.value == other.convert(self.label)
             return self.value == other.value and self.label == other.label
         return self.value == other
     @api
     def __gt__(self, other):
-        starsmashertools.helpers.argumentenforcer.enforcetypes({
-            'other' : Unit.operation_types['__gt__'],
-        })
         if isinstance(other, Unit):
             if self.label != other.label:
-                # Compare each Unit's base values
-                return self.get_base().value > other.get_base().value
+                return self.value > other.convert(self.label).value
             other = other.value
         return self.value > other
     @api
     def __ge__(self, other):
-        starsmashertools.helpers.argumentenforcer.enforcetypes({
-            'other' : Unit.operation_types['__ge__'],
-        })
         if isinstance(other, Unit):
             if self.label != other.label:
-                # Compare each Unit's base values
-                return self.get_base().value >= other.get_base().value
+                return self.value >= other.convert(self.label).value
             other = other.value
         return self.value >= other
     @api
     def __lt__(self, other):
-        starsmashertools.helpers.argumentenforcer.enforcetypes({
-            'other' : Unit.operation_types['__lt__'],
-        })
         if isinstance(other, Unit):
             if self.label != other.label:
                 # Compare each Unit's base values
-                return self.get_base().value < other.get_base().value
+                return self.value < other.convert(self.label).value
             other = other.value
         return self.value < other
     @api
     def __le__(self, other):
-        starsmashertools.helpers.argumentenforcer.enforcetypes({
-            'other' : Unit.operation_types['__le__'],
-        })
         if isinstance(other, Unit):
             if self.label != other.label:
                 # Compare each Unit's base values
-                return self.get_base().value <= other.get_base().value
+                return self.value <= other.convert(self.label).value
             other = other.value
         return self.value <= other
     
@@ -443,28 +399,22 @@ class Unit(object):
     def __reduce_ex__(self, *args, **kwargs):
         return self.__reduce__()
 
+    # Note that __float__ and __int__ do not convert the Unit to its base before
+    # returning. This is the most likely expected outcome.
     @api
-    def __float__(self, *args, **kwargs):
-        return self.value.__float__(*args, **kwargs)
+    def __float__(self): return float(self.value)
     @api
-    def __int__(self, *args, **kwargs):
-        return self.value.__int__(*args, **kwargs)
+    def __int__(self): return int(self.value)
     
     # self * other = self.__mul__(other)
     @api
     def __mul__(self, other):
-        starsmashertools.helpers.argumentenforcer.enforcetypes({
-            'other' : Unit.operation_types['__mul__'],
-        })
         if isinstance(other, Unit):
             return Unit(self.value * other.value, self.label * other.label)
         return Unit(self.value * other, self.label)
 
     @api
     def __rmul__(self, other):
-        starsmashertools.helpers.argumentenforcer.enforcetypes({
-            'other' : Unit.operation_types['__rmul__'],
-        })
         if isinstance(other, Unit):
             return Unit(other.value * self.value, other.label * self.label)
         return Unit(other * self.value, self.label)
@@ -472,121 +422,88 @@ class Unit(object):
     # self / other = self.__truediv__(other)
     @api
     def __truediv__(self, other):
-        starsmashertools.helpers.argumentenforcer.enforcetypes({
-            'other' : Unit.operation_types['__truediv__'],
-        })
         if isinstance(other, Unit):
+            base = self.get_base()
+            other_base = other.get_base()
+            if base.label == other_base.label:
+                # Convert down to the base units. Result is dimensionless
+                return base.value / other_base.value
             return Unit(self.value / other.value, self.label / other.label)
         return Unit(self.value / other, self.label)
 
     # other / self = self.__rtruediv__(other)
     @api
     def __rtruediv__(self, other):
-        starsmashertools.helpers.argumentenforcer.enforcetypes({
-            'other' : Unit.operation_types['__rtruediv__'],
-        })
         if isinstance(other, Unit):
+            base = self.get_base()
+            other_base = other.get_base()
+            if base.label == other_base.label:
+                # Convert down to the base units. Result is dimensionless
+                return other.value / base.value
             return Unit(other.value / self.value, other.label / self.label)
         return Unit(other / self.value, 1 / self.label)
     
     @api
     def __add__(self, other):
-        starsmashertools.helpers.argumentenforcer.enforcetypes({
-            'other' : Unit.operation_types['__add__'],
-        })
         if isinstance(other, Unit):
             if self.label != other.label:
-                raise Unit.InvalidLabelError("Adding Units can only be done when they have the same Labels.")
+                return Unit(self.value + other.convert(self.label).value, self.label)
             return Unit(self.value + other.value, self.label)
         return Unit(self.value + other, self.label)
     @api
     def __radd__(self, other):
-        starsmashertools.helpers.argumentenforcer.enforcetypes({
-            'other' : Unit.operation_types['__radd__'],
-        })
         if isinstance(other, Unit):
             if self.label != other.label:
-                raise Unit.InvalidLabelError("Adding Units can only be done when they have the same Labels.")
+                return Unit(other.value + self.convert(other.label).value, other.label)
             return Unit(other.value + self.value, self.label)
         return Unit(other + self.value, self.label)
     @api
     def __sub__(self, other):
-        starsmashertools.helpers.argumentenforcer.enforcetypes({
-            'other' : Unit.operation_types['__sub__'],
-        })
         if isinstance(other, Unit):
             if self.label != other.label:
-                raise Unit.InvalidLabelError("Subtracting Units can only be done when they have the same Labels.")
+                # Convert the right-side to the left-side's units
+                return Unit(self.value - other.convert(self.label).value, self.label)
             return Unit(self.value - other.value, self.label)
         return Unit(self.value - other, self.label)
     @api
     def __rsub__(self, other):
-        starsmashertools.helpers.argumentenforcer.enforcetypes({
-            'other' : Unit.operation_types['__rsub__'],
-        })
         if isinstance(other, Unit):
             if self.label != other.label:
-                raise Unit.InvalidLabelError("Subtracting Units can only be done when they have the same Labels.")
+                return Unit(other.value - self.convert(other.label).value, other.label)
             return Unit(other.value - self.value, self.label)
         return Unit(other - self.value, self.label)
     @api
     def __pow__(self, value):
-        starsmashertools.helpers.argumentenforcer.enforcetypes({
-            'value' : Unit.operation_types['__pow__'],
-        })
         return Unit(self.value**value, self.label**value)
 
     @api
-    def __abs__(self):
-        return Unit(abs(self.value), self.label)
+    def __abs__(self): return Unit(abs(self.value), self.label)
+    @api
+    def __neg__(self): return Unit(-self.value, self.label)
+    @api
+    def __ceil__(self): return Unit(self.value.__ceil__(), self.label)
+    @api
+    def __floor__(self): return Unit(self.value.__floor__(), self.label)
+    @api
+    def __floordiv__(self, other): return (self / other).__floor__()
+    @api
+    def __mod__(self, other): return self - (self / other).__floor__() * other
+    @api
+    def __pos__(self): return self
+    @api
+    def __rfloordiv__(self, other): return (other / self).__floor__()
+    @api
+    def __rmod__(self, other):
+        if isinstance(other, Unit):
+            return other - (other / self).__floor__() * self
+        return Unit((other - (other / self).__floor__() * self).value, self.label)
+    @api
+    def __round__(self, *args, **kwargs): return Unit(self.value.__round__(*args, **kwargs), self.label)
+    @api
+    def __trunc__(self): return Unit(self.value.__trunc__(), self.label)
 
     @api
-    def __neg__(self):
-        return Unit(-self.value, self.label)
-    
-    # Outright disallow the following magic methods
-    #def __abs__(self, *args, **kwargs):
-    #    raise Exception(Unit.exception_message % 'abs')
-    def __bool__(self, *args, **kwargs):
-        raise Exception(Unit.exception_message % 'bool')
-    def __ceil__(self, *args, **kwargs):
-        raise Exception(Unit.exception_message % 'ceil')
-    def __divmod__(self, *args, **kwargs):
-        raise Exception(Unit.exception_message % 'divmod')
-    def __floor__(self, *args, **kwargs):
-        raise Exception(Unit.exception_message % 'floor')
-    def __floordiv__(self, *args, **kwargs):
-        raise Exception(Unit.exception_message % 'floordiv')
-    def __int__(self, *args, **kwargs):
-        raise Exception(Unit.exception_message % 'int')
-    def __mod__(self, *args, **kwargs):
-        raise Exception(Unit.exception_message % 'mod')
-    #def __neg__(self, *args, **kwargs):
-    #    raise Exception(Unit.exception_message % 'neg')
-    def __pos__(self, *args, **kwargs):
-        raise Exception(Unit.exception_message % 'pos')
-    def __rdivmod__(self, *args, **kwargs):
-        raise Exception(Unit.exception_message % 'rdivmod')
-    def __rfloordiv__(self, *args, **kwargs):
-        raise Exception(Unit.exception_message % 'rfloordiv')
-    def __rmod__(self, *args, **kwargs):
-        raise Exception(Unit.exception_message % 'rmod')
-    def __round__(self, *args, **kwargs):
-        raise Exception(Unit.exception_message % 'round')
-    def __rpow__(self, *args, **kwargs):
-        raise Exception(Unit.exception_message % 'rpow')
-    def __trunc__(self, *args, **kwargs):
-        raise Exception(Unit.exception_message % 'trunc')
-    def conjugate(self, *args, **kwargs):
-        raise Exception(Unit.exception_message % 'conjugate')
-    def fromhex(self, *args, **kwargs):
-        raise Exception(Unit.exception_message % 'fromhex')
-    def hex(self, *args, **kwargs):
-        raise Exception(Unit.exception_message % 'hex')
-    def imag(self, *args, **kwargs):
-        raise Exception(Unit.exception_message % 'imag')
-    def real(self, *args, **kwargs):
-        raise Exception(Unit.exception_message % 'real')
+    def __index__(self): return self.value.__index__()
 
     @starsmashertools.preferences.use
     class Label(object):
@@ -864,7 +781,7 @@ class Unit(object):
 
         def __truediv__(self, other):
             starsmashertools.helpers.argumentenforcer.enforcetypes(
-                {'other' : [Unit.Label]}
+                {'other' : [Unit.Label, str]}
             )
             if self.base != other.base:
                 raise Exception("Cannot combine Unit.Labels of different bases: '%s' and '%s'" % (str(self.base), str(other.base)))
@@ -878,7 +795,6 @@ class Unit(object):
             return ret
 
         def __rtruediv__(self, other):
-            
             starsmashertools.helpers.argumentenforcer.enforcetypes(
                 {'other' : [Unit.Label, int]}
             )

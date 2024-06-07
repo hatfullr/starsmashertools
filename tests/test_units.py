@@ -4,6 +4,7 @@ import starsmashertools.helpers.argumentenforcer
 import unittest
 import numpy as np
 import basetest
+import math
 
 class TestUnits(basetest.BaseTest):
     def test_labels(self):
@@ -61,9 +62,9 @@ class TestUnits(basetest.BaseTest):
         L = l1 / l0
         self.assertEqual(L.long, 's/cm')
 
+        # Test label cancellation
         l1 = starsmashertools.lib.units.Unit.Label('cm')
-        L = l0 / l1
-        self.assertEqual(L.long, '')
+        self.assertEqual((l0 / l1).long, '')
 
         l0 = starsmashertools.lib.units.Unit.Label('cm*g*s/cm*cm*cm*cm')
         l1 = starsmashertools.lib.units.Unit.Label('g*s/cm')
@@ -177,6 +178,13 @@ class TestUnits(basetest.BaseTest):
         base = u.get_base()
         self.assertEqual(base.label.short, 'erg/s')
         self.assertEqual(base.value, starsmashertools.lib.units.constants['Lsun'])
+
+        # Dividing by the same base units should result in conversions, always
+        # converting to the base
+        u = starsmashertools.lib.units.Unit(1, 'cm')
+        u2 = starsmashertools.lib.units.Unit(1, 'm')
+        self.assertEqual(u/u2, starsmashertools.lib.units.Unit(0.01, 'cm'))
+        self.assertEqual(u2/u, starsmashertools.lib.units.Unit(100, 'cm'))
     
     def test_integers(self):
         u = starsmashertools.lib.units.Unit(1, 's')
@@ -324,6 +332,43 @@ class TestUnits(basetest.BaseTest):
         self.assertEqual(u.label, 's')
         self.assertAlmostEqual(float(u), np.sqrt(expected))
 
+        # Try out some weird operators
+        for i in range(0, 10):
+            u = starsmashertools.lib.units.Unit(i, 's')
+            for j in range(0, 10):
+                if j != 0:
+                    self.assertEqual(u % j, i % j, msg = '%d %d' % (i,j))
+                    self.assertEqual((u % j).label, 's', msg = '%d %d' % (i,j))
+                if i != 0:
+                    self.assertEqual(j % u, j % i, msg = '%d %d' % (i,j))
+                    self.assertEqual((j % u).label, 's', msg = '%d %d' % (i,j))
+        u = starsmashertools.lib.units.Unit(1, 's')
+        self.assertEqual(
+            -starsmashertools.lib.units.Unit(1, 's'),
+            starsmashertools.lib.units.Unit(-(1), 's'),
+            msg = '__neg__',
+        )
+        self.assertEqual(
+            +starsmashertools.lib.units.Unit(-1, 's'),
+            starsmashertools.lib.units.Unit(+(-1), 's'),
+            msg = '__pos__'
+        )
+        self.assertEqual(
+            abs(starsmashertools.lib.units.Unit(-1, 's')),
+            starsmashertools.lib.units.Unit(1, 's'),
+            msg = '__abs__',
+        )
+        self.assertEqual(
+            round(starsmashertools.lib.units.Unit(0.8, 's')),
+            starsmashertools.lib.units.Unit(1, 's'),
+            msg = '__round__'
+        )
+        self.assertEqual(
+            math.trunc(starsmashertools.lib.units.Unit(0.8, 's')),
+            starsmashertools.lib.units.Unit(0, 's'),
+            msg = '__trunc__'
+        )
+
 
     def test_units(self):
         import starsmashertools.helpers.readonlydict
@@ -347,11 +392,15 @@ class TestUnits(basetest.BaseTest):
         self.assertEqual(s, '1000.0 day')
 
 
-    def test_comparisons(self):
+    def test_different_label_comparisons(self):
         # Equalities
         self.assertEqual(
             starsmashertools.lib.units.Unit(1, 's'),
             starsmashertools.lib.units.Unit(1, 's'),
+        )
+        self.assertNotEqual(
+            starsmashertools.lib.units.Unit(1, 's'),
+            starsmashertools.lib.units.Unit(2, 's'),
         )
         self.assertLessEqual(
             starsmashertools.lib.units.Unit(1, 's'),
@@ -387,7 +436,41 @@ class TestUnits(basetest.BaseTest):
             starsmashertools.lib.units.Unit(2./60, 'min'),
             starsmashertools.lib.units.Unit(    1,   's'),
         )
+
+        # Error checking
+        u1 = starsmashertools.lib.units.Unit(1, 's')
+        u2 = starsmashertools.lib.units.Unit(1, 'g')
+        with self.assertRaises(starsmashertools.lib.units.Unit.InvalidLabelError):
+            u1 == u2
+        with self.assertRaises(starsmashertools.lib.units.Unit.InvalidLabelError):
+            u1 != u2
+        with self.assertRaises(starsmashertools.lib.units.Unit.InvalidLabelError):
+            u1 > u2
+        with self.assertRaises(starsmashertools.lib.units.Unit.InvalidLabelError):
+            u1 >= u2
+        with self.assertRaises(starsmashertools.lib.units.Unit.InvalidLabelError):
+            u1 < u2
+        with self.assertRaises(starsmashertools.lib.units.Unit.InvalidLabelError):
+            u1 <= u2
+            
         
+    def test_different_label_operations(self):
+        s = starsmashertools.lib.units.Unit(1,'s')
+        m = starsmashertools.lib.units.Unit(2./60,'min')
+        g = starsmashertools.lib.units.Unit(1,'g')
+        self.assertEqual(m - s, s)
+        with self.assertRaises(starsmashertools.lib.units.Unit.InvalidLabelError):
+            g - s
+        
+        self.assertEqual(s + m, 3 * s)
+        with self.assertRaises(starsmashertools.lib.units.Unit.InvalidLabelError):
+            g + s
+        self.assertEqual(m // s, 2)
+        self.assertEqual(s // m, 0)
+        self.assertEqual(s % m, starsmashertools.lib.units.Unit(1, 's'))
+        self.assertEqual(m % s, starsmashertools.lib.units.Unit(0, 'min'))
+
+
         
         
 
