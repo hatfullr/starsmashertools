@@ -387,6 +387,9 @@ class Unit(object):
             'other' : Unit.operation_types['__eq__'],
         })
         if isinstance(other, Unit):
+            if self.label != other.label:
+                # Compare each Unit's base values
+                return self.get_base().value == other.get_base().value
             return self.value == other.value and self.label == other.label
         return self.value == other
     @api
@@ -396,7 +399,8 @@ class Unit(object):
         })
         if isinstance(other, Unit):
             if self.label != other.label:
-                raise Unit.InvalidLabelError("Cannot compare '%s' to '%s' because they have different labels" % (str(self.label), str(other.label)))
+                # Compare each Unit's base values
+                return self.get_base().value > other.get_base().value
             other = other.value
         return self.value > other
     @api
@@ -406,7 +410,8 @@ class Unit(object):
         })
         if isinstance(other, Unit):
             if self.label != other.label:
-                raise Unit.InvalidLabelError("Cannot compare '%s' to '%s' because they have different labels" % (str(self.label), str(other.label)))
+                # Compare each Unit's base values
+                return self.get_base().value >= other.get_base().value
             other = other.value
         return self.value >= other
     @api
@@ -416,7 +421,8 @@ class Unit(object):
         })
         if isinstance(other, Unit):
             if self.label != other.label:
-                raise Unit.InvalidLabelError("Cannot compare '%s' to '%s' because they have different labels" % (str(self.label), str(other.label)))
+                # Compare each Unit's base values
+                return self.get_base().value < other.get_base().value
             other = other.value
         return self.value < other
     @api
@@ -426,7 +432,8 @@ class Unit(object):
         })
         if isinstance(other, Unit):
             if self.label != other.label:
-                raise Unit.InvalidLabelError("Cannot compare '%s' to '%s' because they have different labels" % (str(self.label), str(other.label)))
+                # Compare each Unit's base values
+                return self.get_base().value <= other.get_base().value
             other = other.value
         return self.value <= other
     

@@ -347,6 +347,49 @@ class TestUnits(basetest.BaseTest):
         self.assertEqual(s, '1000.0 day')
 
 
+    def test_comparisons(self):
+        # Equalities
+        self.assertEqual(
+            starsmashertools.lib.units.Unit(1, 's'),
+            starsmashertools.lib.units.Unit(1, 's'),
+        )
+        self.assertLessEqual(
+            starsmashertools.lib.units.Unit(1, 's'),
+            starsmashertools.lib.units.Unit(1, 's'),
+        )
+        self.assertGreaterEqual(
+            starsmashertools.lib.units.Unit(1, 's'),
+            starsmashertools.lib.units.Unit(1, 's'),
+        )
+        self.assertAlmostEqual(
+            starsmashertools.lib.units.Unit(    1,   's'),
+            starsmashertools.lib.units.Unit(1./60, 'min'),
+        )
+        self.assertAlmostEqual(
+            starsmashertools.lib.units.Unit(      1,     's*s'),
+            starsmashertools.lib.units.Unit(1./3600, 'min*min'),
+        )
+
+        # Inequalities
+        self.assertLess(
+            starsmashertools.lib.units.Unit(1, 's'),
+            starsmashertools.lib.units.Unit(2, 's'),
+        )
+        self.assertGreater(
+            starsmashertools.lib.units.Unit(2, 's'),
+            starsmashertools.lib.units.Unit(1, 's'),
+        )
+        self.assertLess(
+            starsmashertools.lib.units.Unit(    1,   's'),
+            starsmashertools.lib.units.Unit(2./60, 'min'),
+        )
+        self.assertGreater(
+            starsmashertools.lib.units.Unit(2./60, 'min'),
+            starsmashertools.lib.units.Unit(    1,   's'),
+        )
+        
+        
+        
 
 if __name__ == "__main__":
     unittest.main(failfast=True)
