@@ -87,11 +87,16 @@ class Unit(object):
                 raise Unit.InvalidTypeConversionError("Invalid str to Unit conversion: '%s'" % string) from e
         elif len(args) == 2:
             value, label = args
+
+        if not isinstance(value, (float, int)):
+            raise TypeError(value)
+        if not isinstance(label, (str, Unit.Label)):
+            raise TypeError(label)
         
-        starsmashertools.helpers.argumentenforcer.enforcetypes({
-            'value' : [float, int],
-            'label' : [str, Unit.Label],
-        })
+        #starsmashertools.helpers.argumentenforcer.enforcetypes({
+        #    'value' : [float, int],
+        #    'label' : [str, Unit.Label],
+        #})
 
         self.base = base
         if isinstance(label, str):
@@ -303,11 +308,9 @@ class Unit(object):
                     
                 
 
-    # Returns a copy of this object in its base units
+    # Returns new Unit in the base units
     @api
     def get_base(self, conversions = None):
-        import starsmashertools
-        
         if conversions is None:
             conversions = Unit.get_conversions()
         
@@ -339,10 +342,17 @@ class Unit(object):
         if not matches: return self.value.__format__(format_spec) + str(self.label)
         if len(matches) == 1: return self.value.__format__(format_spec)
         return self.value.__format__(matches[0]) + str(self.label).__format__(matches[1].lstrip())
+
+    def __copy__(self, *args, **kwargs):
+        return self.__deepcopy__(*args, **kwargs)
+    def __deepcopy__(self, *args, **kwargs):
+        return Unit(self.value, self.label.long, base = self.base)
     
     @api
     def __eq__(self, other):
         if isinstance(other, Unit):
+            if not self.label.is_compatible(other.label): return False
+            #return self.value == other.convert(self.label).value
             base = self.get_base()
             other_base = other.get_base()
             if base.label == other_base.label:
@@ -509,6 +519,8 @@ class Unit(object):
         #       symbols and insert 'erg' on the left-most side, 'erg * cm'.
 
         conversions = None
+
+        regex_splitter = re.compile(r'[1\*]')
         
         def __init__(
                 self,
@@ -532,12 +544,16 @@ class Unit(object):
 
         @staticmethod
         def split(string):
-            lhs, rhs = string, []
-            if '/' in string: lhs, rhs = string.split('/')
-            if lhs == '1': lhs = []
-            if lhs: lhs = lhs.split('*')
-            if rhs: rhs = rhs.split('*')
-            return lhs, rhs
+            # the string could contain '/' or not
+            # if it does, either sides on the '/' could have '*'
+            # if they do, split on '*' on each side
+            # otherwise, check the left side for '1'
+            # if it has '1', return the left side as []
+            if '/' in string:
+                lhs, rhs = string.split('/')
+                return [] if lhs == '1' else lhs.split('*'), rhs.split('*')
+            else:
+                return [] if string == '1' else string.split('*'), []
 
         @staticmethod
         def get_conversions():
@@ -601,7 +617,7 @@ class Unit(object):
             else: newleft = self.left.copy()
             if isinstance(self.right, str): newright = [self.right]
             else: newright = self.right.copy()
-
+            
             for conversion in Unit.get_conversions():
                 base = conversion['base']
                 for name, _ in conversion['conversions']:
@@ -621,38 +637,9 @@ class Unit(object):
             if len(self.left) != len(other.left): return False
             if len(self.right) != len(other.right): return False
 
-            #conversions = Unit.get_conversions()
-            #cpy = self
-            #othercpy = other
-
             # Comparing the labels as they are in their base forms tells us if
             # they are compatible, regardless of how they have been converted.
             return self.get_base_string() == other.get_base_string()
-            """
-            if conversions is not None:
-                # Convert both this Label and the other Label into their base
-                # forms
-                new_label = 
-                for conversion in conversions:
-                    base = conversion['base']
-                    for name, value in conversion['conversions']:
-                        if name in cpy.left or name in cpy.right:
-                            items1 += [(base, name)]
-                        if name in othercpy.left or name in othercpy.right:
-                            items2 += [(base, name)]
-
-                items1 = list(set(items1))
-                items2 = list(set(items2))
-                for base, name in items1:
-                    cpy = cpy.convert(name, base)
-                for base, name in items2:
-                    othercpy = othercpy.convert(name, base)
-                        #if name in cpy.left or name in cpy.right:
-                        #    cpy = cpy.convert(name, base)
-                        #if name in othercpy.left or name in othercpy.right:
-                        #    othercpy = othercpy.convert(name, base)
-            return cpy == othercpy
-            """
 
         # Return a copy of this label with changes
         @starsmashertools.helpers.argumentenforcer.enforcetypes

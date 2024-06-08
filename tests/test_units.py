@@ -503,8 +503,37 @@ class TestUnits(basetest.BaseTest):
         self.assertEqual(m % s, starsmashertools.lib.units.Unit(0, 'min'))
 
 
-        
+class TestLoader(unittest.TestLoader, object):
+    def getTestCaseNames(self, *args, **kwargs):
+        return [name for name in dir(TestUnits()) if name.startswith('test')]
         
 
 if __name__ == "__main__":
-    unittest.main(failfast=True)
+    import inspect
+    import re
+    
+    comment_checks = [
+        # Remove # comments first
+        re.compile("(?<!['\"])#.*", flags = re.M),
+        # Then remove block comments (which can be commented out by #)
+        re.compile('(?<!\')(?<!\\\\)""".*?"""', flags = re.M | re.S),
+        re.compile("(?<!\")(?<!\\\\)'''.*?'''", flags = re.M | re.S),
+    ]
+    
+    src = inspect.getsource(starsmashertools.lib.units)
+
+    # Remove all comments
+    for check in comment_checks:
+        for match in check.findall(src):
+            src = src.replace(match, '')
+    
+    if '@profile' in src:
+        loader = TestLoader()
+        suite = unittest.TestSuite()
+        for name in loader.getTestCaseNames():
+            suite.addTest(TestUnits(name))
+        runner = unittest.TextTestRunner()
+        runner.run(suite)
+    else:
+        # This is the normal method
+        unittest.main(failfast=True, testLoader=TestLoader())
