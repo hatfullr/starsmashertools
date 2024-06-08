@@ -87,6 +87,7 @@ class Unit(object):
                 raise Unit.InvalidTypeConversionError("Invalid str to Unit conversion: '%s'" % string) from e
         elif len(args) == 2:
             value, label = args
+        else: raise ValueError("Unit takes at most 2 positional arguments, not %d" % len(args))
 
         if not isinstance(value, (float, int)):
             raise TypeError(value)
