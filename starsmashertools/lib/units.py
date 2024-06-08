@@ -167,6 +167,11 @@ class Unit(object):
             'new_label' : [str, Unit.Label],
         })
         if isinstance(new_label, str): new_label = Unit.Label(new_label)
+
+        # Quickly make sure that the labels make sense. Otherwise, zip won't
+        # work as we expect.
+        assert len(self.label.left) == len(new_label.left)
+        assert len(self.label.right) == len(new_label.right)
         
         if conversions is None:
             conversions = Unit.get_conversions()
@@ -183,38 +188,18 @@ class Unit(object):
         # First we work with the left-side labels and then we work with the
         # right-side labels
         factor = 1. #base.value
-        
-        all_bases = [c['base'] for c in conversions]
-        all_names = [[c[0] for c in conversion['conversions']] for conversion in conversions]
-        all_values = [[c[1] for c in conversion['conversions']] for conversion in conversions]
 
-        for _base, names, values in zip(all_bases, all_names, all_values):
-            for item, new_item in zip(self.label.left, new_label.left):
-                # Check for conversions "up" from base
-                if item == _base and new_item != _base:
-                    for name, value in zip(names, values):
-                        if name == new_item:
-                            factor /= value
-                            break
-                # Check for conversions "down" to base
-                if item != _base and new_item == _base:
-                    for name, value in zip(names, values):
-                        if name == item:
-                            factor *= value
-                            break
-            for item, new_item in zip(self.label.right, new_label.right):
-                # Check for conversions "up" from base
-                if item == _base and new_item != _base:
-                    for name, value in zip(names, values):
-                        if name == new_item:
-                            factor *= value
-                            break
-                # Check for conversions "down" to base
-                if item != _base and new_item == _base:
-                    for name, value in zip(names, values):
-                        if name == item:
-                            factor /= value
-                            break
+        for conversion in conversions:
+            _base = conversion['base']
+            for i, (name, value) in enumerate(conversion['conversions']):
+                for item, new_item in zip(self.label.left, new_label.left):
+                    if (item, new_item) == (name, name): continue
+                    if item == name: factor *= value
+                    if new_item == name: factor /= value
+                for item, new_item in zip(self.label.right, new_label.right):
+                    if (item, new_item) == (name, name): continue
+                    if item == name: factor /= value
+                    if new_item == name: factor *= value
         return factor
     
     @api
@@ -358,39 +343,43 @@ class Unit(object):
     @api
     def __eq__(self, other):
         if isinstance(other, Unit):
-            if self.label != other.label:
-                return self.value == other.convert(self.label)
+            base = self.get_base()
+            other_base = other.get_base()
+            if base.label == other_base.label:
+                return base.value == other_base.value
             return self.value == other.value and self.label == other.label
         return self.value == other
     @api
     def __gt__(self, other):
         if isinstance(other, Unit):
-            if self.label != other.label:
-                return self.value > other.convert(self.label).value
-            other = other.value
+            base = self.get_base()
+            other_base = other.get_base()
+            if base.label != other_base.label: raise Unit.InvalidLabelError
+            return base.value > other_base.value
         return self.value > other
     @api
     def __ge__(self, other):
         if isinstance(other, Unit):
-            if self.label != other.label:
-                return self.value >= other.convert(self.label).value
-            other = other.value
+            base = self.get_base()
+            other_base = other.get_base()
+            if base.label != other_base.label: raise Unit.InvalidLabelError
+            return base.value >= other_base.value
         return self.value >= other
     @api
     def __lt__(self, other):
         if isinstance(other, Unit):
-            if self.label != other.label:
-                # Compare each Unit's base values
-                return self.value < other.convert(self.label).value
-            other = other.value
+            base = self.get_base()
+            other_base = other.get_base()
+            if base.label != other_base.label: raise Unit.InvalidLabelError
+            return base.value < other_base.value
         return self.value < other
     @api
     def __le__(self, other):
         if isinstance(other, Unit):
-            if self.label != other.label:
-                # Compare each Unit's base values
-                return self.value <= other.convert(self.label).value
-            other = other.value
+            base = self.get_base()
+            other_base = other.get_base()
+            if base.label != other_base.label: raise Unit.InvalidLabelError
+            return base.value <= other_base.value
         return self.value <= other
     
     def __reduce__(self):
@@ -410,14 +399,15 @@ class Unit(object):
     @api
     def __mul__(self, other):
         if isinstance(other, Unit):
+            base = self.get_base()
+            other_base = other.get_base()
+            if base.label == other_base.label:
+                return Unit(base.value * other_base.value, base.label**2).convert(self.label**2)
             return Unit(self.value * other.value, self.label * other.label)
         return Unit(self.value * other, self.label)
 
     @api
-    def __rmul__(self, other):
-        if isinstance(other, Unit):
-            return Unit(other.value * self.value, other.label * self.label)
-        return Unit(other * self.value, self.label)
+    def __rmul__(self, other): return Unit(other * self.value, self.label)
 
     # self / other = self.__truediv__(other)
     @api
@@ -434,47 +424,30 @@ class Unit(object):
     # other / self = self.__rtruediv__(other)
     @api
     def __rtruediv__(self, other):
-        if isinstance(other, Unit):
-            base = self.get_base()
-            other_base = other.get_base()
-            if base.label == other_base.label:
-                # Convert down to the base units. Result is dimensionless
-                return other.value / base.value
-            return Unit(other.value / self.value, other.label / self.label)
         return Unit(other / self.value, 1 / self.label)
     
     @api
     def __add__(self, other):
         if isinstance(other, Unit):
-            if self.label != other.label:
-                return Unit(self.value + other.convert(self.label).value, self.label)
-            return Unit(self.value + other.value, self.label)
+            base = self.get_base()
+            other_base = other.get_base()
+            if base.label != other_base.label: raise Unit.InvalidLabelError
+            return Unit(base.value + other_base.value, base.label).convert(self.label)
         return Unit(self.value + other, self.label)
     @api
-    def __radd__(self, other):
-        if isinstance(other, Unit):
-            if self.label != other.label:
-                return Unit(other.value + self.convert(other.label).value, other.label)
-            return Unit(other.value + self.value, self.label)
-        return Unit(other + self.value, self.label)
+    def __radd__(self, other): return Unit(other + self.value, self.label)
     @api
     def __sub__(self, other):
         if isinstance(other, Unit):
-            if self.label != other.label:
-                # Convert the right-side to the left-side's units
-                return Unit(self.value - other.convert(self.label).value, self.label)
-            return Unit(self.value - other.value, self.label)
+            base = self.get_base()
+            other_base = other.get_base()
+            if base.label != other_base.label: raise Unit.InvalidLabelError
+            return Unit(base.value - other_base.value, base.label).convert(self.label)
         return Unit(self.value - other, self.label)
     @api
-    def __rsub__(self, other):
-        if isinstance(other, Unit):
-            if self.label != other.label:
-                return Unit(other.value - self.convert(other.label).value, other.label)
-            return Unit(other.value - self.value, self.label)
-        return Unit(other - self.value, self.label)
+    def __rsub__(self, other): return Unit(other - self.value, self.label)
     @api
-    def __pow__(self, value):
-        return Unit(self.value**value, self.label**value)
+    def __pow__(self, value): return Unit(self.value**value, self.label**value)
 
     @api
     def __abs__(self): return Unit(abs(self.value), self.label)

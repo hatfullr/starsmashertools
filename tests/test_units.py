@@ -160,6 +160,19 @@ class TestUnits(basetest.BaseTest):
         
         with self.assertRaises(TypeError):
             u.convert(new_label = None, to = None)
+
+        u = starsmashertools.lib.units.Unit(1, 'min')
+        self.assertEqual(
+            u.convert('s'),
+            starsmashertools.lib.units.Unit(60, 's'),
+            msg = 'conversion down',
+        )
+        u = starsmashertools.lib.units.Unit(1, 'km')
+        self.assertEqual(
+            u.convert('m'),
+            starsmashertools.lib.units.Unit(1000, 'm'),
+        )
+            
         
         # A more complex conversion
         u = starsmashertools.lib.units.Unit(1, 'cm/s')
@@ -332,7 +345,30 @@ class TestUnits(basetest.BaseTest):
         self.assertEqual(u.label, 's')
         self.assertAlmostEqual(float(u), np.sqrt(expected))
 
-        # Try out some weird operators
+
+        # Test operations with same bases but different labels
+        u1 = starsmashertools.lib.units.Unit(1, 'cm')
+        u2 = starsmashertools.lib.units.Unit(1, 'm')
+        self.assertEqual(
+            u1 + u2,
+            starsmashertools.lib.units.Unit(101, 'cm'),
+            msg = '__add__',
+        )
+        self.assertEqual(
+            u1 * u2,
+            starsmashertools.lib.units.Unit(100, 'cm*cm'),
+            msg = '__mul__',
+        )
+        u1 = starsmashertools.lib.units.Unit(1, 'm')
+        u2 = starsmashertools.lib.units.Unit(1, 'km')
+        self.assertEqual(
+            u1 * u2,
+            starsmashertools.lib.units.Unit(1000, 'm*m'),
+            msg = '__mul__',
+        )
+        
+
+        # Test some weird operators
         for i in range(0, 10):
             u = starsmashertools.lib.units.Unit(i, 's')
             for j in range(0, 10):
@@ -440,10 +476,6 @@ class TestUnits(basetest.BaseTest):
         # Error checking
         u1 = starsmashertools.lib.units.Unit(1, 's')
         u2 = starsmashertools.lib.units.Unit(1, 'g')
-        with self.assertRaises(starsmashertools.lib.units.Unit.InvalidLabelError):
-            u1 == u2
-        with self.assertRaises(starsmashertools.lib.units.Unit.InvalidLabelError):
-            u1 != u2
         with self.assertRaises(starsmashertools.lib.units.Unit.InvalidLabelError):
             u1 > u2
         with self.assertRaises(starsmashertools.lib.units.Unit.InvalidLabelError):
