@@ -342,11 +342,6 @@ class Unit(object):
         if not matches: return self.value.__format__(format_spec) + str(self.label)
         if len(matches) == 1: return self.value.__format__(format_spec)
         return self.value.__format__(matches[0]) + str(self.label).__format__(matches[1].lstrip())
-
-    def __copy__(self, *args, **kwargs):
-        return self.__deepcopy__(*args, **kwargs)
-    def __deepcopy__(self, *args, **kwargs):
-        return Unit(self.value, self.label.long, base = self.base)
     
     @api
     def __eq__(self, other):
@@ -520,8 +515,6 @@ class Unit(object):
 
         conversions = None
 
-        regex_splitter = re.compile(r'[1\*]')
-        
         def __init__(
                 self,
                 value : str | list | tuple,
@@ -534,7 +527,10 @@ class Unit(object):
                 self.set(value)
             elif isinstance(value, (list, tuple)):
                 self.left, self.right = value
-        
+
+        def __deepcopy__(self, *args, **kwargs):
+            return Unit.Label(self.long, base = self.base)
+                
         @property
         def isCompound(self):
             # "Compound" means this Label contains more than a single value,
