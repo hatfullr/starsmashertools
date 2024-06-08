@@ -187,11 +187,16 @@
                 <span class="k">raise</span> <span class="n">Unit</span><span class="o">.</span><span class="n">InvalidTypeConversionError</span><span class="p">(</span><span class="s2">&quot;Invalid str to Unit conversion: &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="n">string</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
         <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
             <span class="n">value</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="n">args</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Unit</span><span class="o">.</span><span class="n">Label</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="n">label</span><span class="p">)</span>
         
-        <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span><span class="p">({</span>
-            <span class="s1">&#39;value&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span>
-            <span class="s1">&#39;label&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Unit</span><span class="o">.</span><span class="n">Label</span><span class="p">],</span>
-        <span class="p">})</span>
+        <span class="c1">#starsmashertools.helpers.argumentenforcer.enforcetypes({</span>
+        <span class="c1">#    &#39;value&#39; : [float, int],</span>
+        <span class="c1">#    &#39;label&#39; : [str, Unit.Label],</span>
+        <span class="c1">#})</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">base</span> <span class="o">=</span> <span class="n">base</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
@@ -413,13 +418,11 @@
                     
                 
 
-    <span class="c1"># Returns a copy of this object in its base units</span>
+    <span class="c1"># Returns new Unit in the base units</span>
 <div class="viewcode-block" id="Unit.get_base">
 <a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.units.html#starsmashertools.lib.units.Unit.get_base">[docs]</a>
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="nf">get_base</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">conversions</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
-        <span class="kn">import</span> <span class="nn">starsmashertools</span>
-        
         <span class="k">if</span> <span class="n">conversions</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">conversions</span> <span class="o">=</span> <span class="n">Unit</span><span class="o">.</span><span class="n">get_conversions</span><span class="p">()</span>
         
@@ -458,6 +461,8 @@
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">Unit</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">is_compatible</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">label</span><span class="p">):</span> <span class="k">return</span> <span class="kc">False</span>
+            <span class="c1">#return self.value == other.convert(self.label).value</span>
             <span class="n">base</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_base</span><span class="p">()</span>
             <span class="n">other_base</span> <span class="o">=</span> <span class="n">other</span><span class="o">.</span><span class="n">get_base</span><span class="p">()</span>
             <span class="k">if</span> <span class="n">base</span><span class="o">.</span><span class="n">label</span> <span class="o">==</span> <span class="n">other_base</span><span class="o">.</span><span class="n">label</span><span class="p">:</span>
@@ -706,7 +711,7 @@
         <span class="c1">#       symbols and insert &#39;erg&#39; on the left-most side, &#39;erg * cm&#39;.</span>
 
         <span class="n">conversions</span> <span class="o">=</span> <span class="kc">None</span>
-        
+
         <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
                 <span class="bp">self</span><span class="p">,</span>
                 <span class="n">value</span> <span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">,</span>
@@ -719,7 +724,10 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
             <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">right</span> <span class="o">=</span> <span class="n">value</span>
-        
+
+        <span class="k">def</span> <span class="nf">__deepcopy__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">Unit</span><span class="o">.</span><span class="n">Label</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">long</span><span class="p">,</span> <span class="n">base</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">base</span><span class="p">)</span>
+                
         <span class="nd">@property</span>
         <span class="k">def</span> <span class="nf">isCompound</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
             <span class="c1"># &quot;Compound&quot; means this Label contains more than a single value,</span>
@@ -729,12 +737,16 @@
 
         <span class="nd">@staticmethod</span>
         <span class="k">def</span> <span class="nf">split</span><span class="p">(</span><span class="n">string</span><span class="p">):</span>
-            <span class="n">lhs</span><span class="p">,</span> <span class="n">rhs</span> <span class="o">=</span> <span class="n">string</span><span class="p">,</span> <span class="p">[]</span>
-            <span class="k">if</span> <span class="s1">&#39;/&#39;</span> <span class="ow">in</span> <span class="n">string</span><span class="p">:</span> <span class="n">lhs</span><span class="p">,</span> <span class="n">rhs</span> <span class="o">=</span> <span class="n">string</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">lhs</span> <span class="o">==</span> <span class="s1">&#39;1&#39;</span><span class="p">:</span> <span class="n">lhs</span> <span class="o">=</span> <span class="p">[]</span>
-            <span class="k">if</span> <span class="n">lhs</span><span class="p">:</span> <span class="n">lhs</span> <span class="o">=</span> <span class="n">lhs</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;*&#39;</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">rhs</span><span class="p">:</span> <span class="n">rhs</span> <span class="o">=</span> <span class="n">rhs</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;*&#39;</span><span class="p">)</span>
-            <span class="k">return</span> <span class="n">lhs</span><span class="p">,</span> <span class="n">rhs</span>
+            <span class="c1"># the string could contain &#39;/&#39; or not</span>
+            <span class="c1"># if it does, either sides on the &#39;/&#39; could have &#39;*&#39;</span>
+            <span class="c1"># if they do, split on &#39;*&#39; on each side</span>
+            <span class="c1"># otherwise, check the left side for &#39;1&#39;</span>
+            <span class="c1"># if it has &#39;1&#39;, return the left side as []</span>
+            <span class="k">if</span> <span class="s1">&#39;/&#39;</span> <span class="ow">in</span> <span class="n">string</span><span class="p">:</span>
+                <span class="n">lhs</span><span class="p">,</span> <span class="n">rhs</span> <span class="o">=</span> <span class="n">string</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="p">[]</span> <span class="k">if</span> <span class="n">lhs</span> <span class="o">==</span> <span class="s1">&#39;1&#39;</span> <span class="k">else</span> <span class="n">lhs</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;*&#39;</span><span class="p">),</span> <span class="n">rhs</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;*&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">[]</span> <span class="k">if</span> <span class="n">string</span> <span class="o">==</span> <span class="s1">&#39;1&#39;</span> <span class="k">else</span> <span class="n">string</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;*&#39;</span><span class="p">),</span> <span class="p">[]</span>
 
         <span class="nd">@staticmethod</span>
         <span class="k">def</span> <span class="nf">get_conversions</span><span class="p">():</span>
@@ -798,7 +810,7 @@
             <span class="k">else</span><span class="p">:</span> <span class="n">newleft</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">right</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span> <span class="n">newright</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">right</span><span class="p">]</span>
             <span class="k">else</span><span class="p">:</span> <span class="n">newright</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">right</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-
+            
             <span class="k">for</span> <span class="n">conversion</span> <span class="ow">in</span> <span class="n">Unit</span><span class="o">.</span><span class="n">get_conversions</span><span class="p">():</span>
                 <span class="n">base</span> <span class="o">=</span> <span class="n">conversion</span><span class="p">[</span><span class="s1">&#39;base&#39;</span><span class="p">]</span>
                 <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">conversion</span><span class="p">[</span><span class="s1">&#39;conversions&#39;</span><span class="p">]:</span>
@@ -818,38 +830,9 @@
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">left</span><span class="p">):</span> <span class="k">return</span> <span class="kc">False</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">right</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">right</span><span class="p">):</span> <span class="k">return</span> <span class="kc">False</span>
 
-            <span class="c1">#conversions = Unit.get_conversions()</span>
-            <span class="c1">#cpy = self</span>
-            <span class="c1">#othercpy = other</span>
-
             <span class="c1"># Comparing the labels as they are in their base forms tells us if</span>
             <span class="c1"># they are compatible, regardless of how they have been converted.</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_base_string</span><span class="p">()</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">get_base_string</span><span class="p">()</span>
-<span class="w">            </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            if conversions is not None:</span>
-<span class="sd">                # Convert both this Label and the other Label into their base</span>
-<span class="sd">                # forms</span>
-<span class="sd">                new_label = </span>
-<span class="sd">                for conversion in conversions:</span>
-<span class="sd">                    base = conversion[&#39;base&#39;]</span>
-<span class="sd">                    for name, value in conversion[&#39;conversions&#39;]:</span>
-<span class="sd">                        if name in cpy.left or name in cpy.right:</span>
-<span class="sd">                            items1 += [(base, name)]</span>
-<span class="sd">                        if name in othercpy.left or name in othercpy.right:</span>
-<span class="sd">                            items2 += [(base, name)]</span>
-
-<span class="sd">                items1 = list(set(items1))</span>
-<span class="sd">                items2 = list(set(items2))</span>
-<span class="sd">                for base, name in items1:</span>
-<span class="sd">                    cpy = cpy.convert(name, base)</span>
-<span class="sd">                for base, name in items2:</span>
-<span class="sd">                    othercpy = othercpy.convert(name, base)</span>
-<span class="sd">                        #if name in cpy.left or name in cpy.right:</span>
-<span class="sd">                        #    cpy = cpy.convert(name, base)</span>
-<span class="sd">                        #if name in othercpy.left or name in othercpy.right:</span>
-<span class="sd">                        #    othercpy = othercpy.convert(name, base)</span>
-<span class="sd">            return cpy == othercpy</span>
-<span class="sd">            &quot;&quot;&quot;</span>
 
         <span class="c1"># Return a copy of this label with changes</span>
         <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
