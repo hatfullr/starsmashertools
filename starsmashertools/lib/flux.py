@@ -1086,6 +1086,8 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
                     tname = output.name
                     _input = gzip.GzipFile(mode = 'wb', fileobj = output)
                     pickle.dump(self, _input)
+                    _input.flush()
+                    _input.close()
             except:
                 # temporary files are always local
                 if tname is not None and os.path.exists(tname): os.remove(tname)
