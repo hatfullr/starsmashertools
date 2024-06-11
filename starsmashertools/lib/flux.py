@@ -1100,7 +1100,7 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
                     pickle.dump(self, f)
             except:
                 # the gzip method is always local
-                if os.path.exists(filename): os.path.remove(filename)
+                if os.path.exists(filename): os.remove(filename)
                 raise
 
     @staticmethod
