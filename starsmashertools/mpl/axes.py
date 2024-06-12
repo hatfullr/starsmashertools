@@ -104,7 +104,7 @@ def set_tickscale_power_law(
     )
     
     def update_ticks(ax):
-        if ax.stale: ax.get_figure().canvas.draw()
+        if ax.stale: ax.get_figure().canvas.draw_idle()
         if which in ['both', 'x']:
             # Make sure there are ticks to affect in the plot
             xticks = ax.xaxis.get_majorticklabels()
