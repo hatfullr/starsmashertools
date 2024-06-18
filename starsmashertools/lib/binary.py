@@ -108,11 +108,8 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
         import starsmashertools.lib.relaxation
         import starsmashertools.lib.simulation
         import starsmashertools.helpers.path
-        search_directory = starsmashertools.lib.simulation.Simulation.preferences.get(
-            'search directory',
-        )
-        search_directory = starsmashertools.helpers.path.realpath(search_directory)
-
+        search_directory = self.get_search_directory()
+        
         if self.isPrimaryPointMass():
             children = ['point mass']
         else:
