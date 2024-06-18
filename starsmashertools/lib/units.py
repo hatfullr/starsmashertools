@@ -101,7 +101,7 @@ class Unit(object):
 
         self.base = base
         if isinstance(label, str):
-            self.label = Unit.Label(label, self.base)
+            self.label = Unit.Label(label, base = self.base)
         else: self.label = label
         self.value = value
     
@@ -172,12 +172,14 @@ class Unit(object):
         starsmashertools.helpers.argumentenforcer.enforcetypes({
             'new_label' : [str, Unit.Label],
         })
-        if isinstance(new_label, str): new_label = Unit.Label(new_label)
+        if isinstance(new_label, str): new_label = Unit.Label(
+                new_label, base = self.label.base
+        )
 
         # Quickly make sure that the labels make sense. Otherwise, zip won't
         # work as we expect.
-        assert len(self.label.left) == len(new_label.left)
-        assert len(self.label.right) == len(new_label.right)
+        #assert len(self.label.left) == len(new_label.left)
+        #assert len(self.label.right) == len(new_label.right)
         
         if conversions is None:
             conversions = Unit.get_conversions()
@@ -193,19 +195,18 @@ class Unit(object):
         # Search the conversions to get from '277.7778 cm/s' to '166.6667 m/min'
         # First we work with the left-side labels and then we work with the
         # right-side labels
-        factor = 1. #base.value
-
+        factor = 1.
+        
         for conversion in conversions:
-            _base = conversion['base']
-            for i, (name, value) in enumerate(conversion['conversions']):
+            for i, (short, value) in enumerate(conversion['conversions']):
                 for item, new_item in zip(self.label.left, new_label.left):
-                    if (item, new_item) == (name, name): continue
-                    if item == name: factor *= value
-                    if new_item == name: factor /= value
+                    if (item, new_item) == (short, short): continue
+                    if item == short: factor *= value
+                    if new_item == short: factor /= value
                 for item, new_item in zip(self.label.right, new_label.right):
-                    if (item, new_item) == (name, name): continue
-                    if item == name: factor /= value
-                    if new_item == name: factor *= value
+                    if (item, new_item) == (short, short): continue
+                    if item == short: factor /= value
+                    if new_item == short: factor *= value
         return factor
     
     @api
@@ -273,21 +274,24 @@ class Unit(object):
         if to is None and new is None:
             raise TypeError("One of keywords 'new' or 'to' must not be None")
         
+        
+        
         if new is None:
+            base = self.get_base()
+            new = copy.deepcopy(base.label)
             conversions = Unit.get_conversions()
             all_bases = [c['base'] for c in conversions]
             all_names = [[c[0] for c in conversion['conversions']] for conversion in conversions]
-            base = self.get_base()
-            new = copy.deepcopy(base.label)
+            
             for conversion in conversions:
                 # If the base label doesn't contain this base name ('cm', 'g',
                 # 's', etc.), then we can skip it.
                 bname = conversion['base']
                 if bname not in base.label.left + base.label.right: continue
-                
+
                 for name, value in conversion['conversions']:
                     if name not in to: continue
-                    
+
                     # We get here if the conversion name is included in the "to"
                     # list. Now we need to replace the corresponding base name
                     # in the new label with the value in the "to" list.
@@ -298,13 +302,38 @@ class Unit(object):
                         if item != bname: continue
                         new.right[i] = name
         
-        if isinstance(new, str): new = Unit.Label(new)
+        if isinstance(new, str): new = Unit.Label(new, base = self.label.base)
         if isinstance(new, Unit): label = new.label
-        else: label = new
+        else:
+            label = new
         if not self.label.is_compatible(label):
             raise Unit.InvalidLabelError("Cannot convert unit because labels '%s' and '%s' are incompatible" % (self.label, label))
         factor = self.get_conversion_factor(label, **kwargs)
         if isinstance(new, Unit): factor /= new.value
+        
+        for conversion in Unit.get_conversions():
+            if not ('/' in conversion['base'] or '*' in conversion['base']):
+                continue
+            b = Unit.Label(conversion['base'], base = label.base)
+            change_made = False
+            for short, _ in conversion['conversions']:
+                for item in label.left:
+                    if item != short: continue
+                    label.left.remove(item)
+                    label.left += b.left
+                    label.right += b.right
+                    change_made = True
+                for item in label.right:
+                    if item != short: continue
+                    label.right.remove(item)
+                    label.left += b.left
+                    label.right += b.right
+                    change_made = True
+            #if change_made:
+            #    print("HELLO")
+                #label = Unit.Label(label.long, base = label.base)
+            #    print(label.long)
+        
         return Unit(self.value * factor, label)
                     
                 
@@ -317,6 +346,7 @@ class Unit(object):
         
         ret = copy.deepcopy(self)
         for conversion in conversions:
+            base_label = Unit.Label(conversion['base'], base = self.label.base)
             conversion_names, conversion_values = [], []
             for name, value in conversion['conversions']:
                 conversion_names += [name]
@@ -331,6 +361,14 @@ class Unit(object):
                 if name in conversion_names:
                     ret.value /= conversion_values[conversion_names.index(name)]
                     ret.label.right[i] = conversion['base']
+
+        if ret.label.left and not ret.label.right:
+            ret.label = Unit.Label('*'.join(ret.label.left), base = self.label.base)
+        elif not ret.label.left and ret.label.right:
+            ret.label = Unit.Label('1/' + '*'.join(ret.label.right), base = self.label.base)
+        elif ret.label.left and ret.label.right:
+            ret.label = Unit.Label('*'.join(ret.label.left) + '/' + '*'.join(ret.label.right), base = self.label.base)
+
         return ret
 
     def sqrt(self, *args, **kwargs):
@@ -566,9 +604,9 @@ class Unit(object):
             new_right = self.right.copy()
             
             # Search for unit conversions and then apply those conversions
-            for short, values in Unit.Label.get_conversions():
-                short_lhs, short_rhs = Unit.Label.split(short)
-                lhs, rhs = Unit.Label.split(values)
+            for long, value in Unit.Label.get_conversions():
+                long_lhs, long_rhs = Unit.Label.split(long)
+                lhs, rhs = Unit.Label.split(value)
 
                 had_left = False
                 left = new_left.copy()
@@ -588,15 +626,15 @@ class Unit(object):
                     had_right = True
                 if not had_right: continue
 
-                new_left = short_lhs + left
-                new_right = short_rhs + right
+                new_left = long_lhs + left
+                new_right = long_rhs + right
             
             return Unit.Label._get_string(new_left, new_right)
 
         @property
         def long(self):
             return Unit.Label._get_string(self.left, self.right)
-
+        
         @staticmethod
         def _get_string(left, right):
             if left:
@@ -610,30 +648,39 @@ class Unit(object):
             base units. """
             if Unit.get_conversions() is None: return self.long
 
-            if isinstance(self.left, str): newleft = [self.left]
-            else: newleft = self.left.copy()
-            if isinstance(self.right, str): newright = [self.right]
-            else: newright = self.right.copy()
+            #if isinstance(self.left, str): newleft = [self.left]
+            #else: newleft = self.left.copy()
+            #if isinstance(self.right, str): newright = [self.right]
+            #else: newright = self.right.copy()
+
+            newleft = self.left.copy()
+            newright = self.right.copy()
             
             for conversion in Unit.get_conversions():
                 base = conversion['base']
+                
                 for name, _ in conversion['conversions']:
                     # This is as fast as we can go
                     newleft[:] = [base if item == name else item for item in newleft]
                     newright[:] = [base if item == name else item for item in newright]
-            
-            return Unit.Label._get_string(newleft, newright)
 
+            ret = Unit.Label._get_string(newleft, newright)
+            for value, long in Unit.Label.get_conversions():
+                if ret != value: continue
+                ret = long
+                break
+            return ret
+        
         def is_compatible(self, other):
             """
             Returns `True` if this Label can be safely converted to the other
             Label.
             """
             if not isinstance(other, (str, Unit.Label)): return False
-            if isinstance(other, str): other = Unit.Label(other)
-            if len(self.left) != len(other.left): return False
-            if len(self.right) != len(other.right): return False
+            if isinstance(other, str): other = Unit.Label(other, base = self.base)
 
+            #print(self.get_base_string(), other.get_base_string())
+            
             # Comparing the labels as they are in their base forms tells us if
             # they are compatible, regardless of how they have been converted.
             return self.get_base_string() == other.get_base_string()
@@ -665,31 +712,30 @@ class Unit(object):
             self.left, self.right = Unit.Label.split(string)
 
             # Break down conversions as needed
-            for short, value in Unit.Label.get_conversions():
-                lhs, rhs = Unit.Label.split(value)
+            for short, long in Unit.Label.get_conversions():
+                lhs, rhs = Unit.Label.split(long)
                 # str are immutable, so this will create a copy
                 left = self.left
                 right = self.right
-
                 if not isinstance(left, str): left = left.copy()
                 if not isinstance(right, str): right = right.copy()
                 
                 for val in self.left:
-                    if val == short:
-                        idx = left.index(val)
-                        left = left[:idx] + lhs + left[idx+1:]
-                        right += rhs
+                    if val != short: continue
+                    idx = left.index(val)
+                    left = left[:idx] + lhs + left[idx+1:]
+                    right += rhs
                 for val in self.right:
-                    if val == short:
-                        idx = right.index(val)
-                        right = right[:idx] + rhs + right[idx+1:]
-                        left += lhs
+                    if val != short: continue
+                    idx = right.index(val)
+                    right = right[:idx] + rhs + right[idx+1:]
+                    left += lhs
                 self.left = left
                 self.right = right
             
             self.organize()
             self.simplify()
-        
+
         def organize(self):
             # Sort the left and right arrays starting with the base values first
             # and then any other values after.

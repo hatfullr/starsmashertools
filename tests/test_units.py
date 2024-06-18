@@ -177,20 +177,60 @@ class TestUnits(basetest.BaseTest):
         # A more complex conversion
         u = starsmashertools.lib.units.Unit(1, 'cm/s')
         u = u.convert('km/hr')
+        self.assertEqual(u.label.left, ['km'])
+        self.assertEqual(u.label.right, ['hr'])
         self.assertEqual(u.label, 'km/hr')
         self.assertAlmostEqual(u.value, 1. / 1e5 * 3600)
         
         # Conversion of only specific units
         u = starsmashertools.lib.units.Unit(1, 'cm*cm/g*s')
         u = u.convert(to = ['km', 'hr'])
+        self.assertEqual(u.label.left, ['km', 'km'])
+        self.assertEqual(u.label.right, ['g', 'hr'])
         self.assertEqual(u.label, 'km*km/g*hr')
         self.assertAlmostEqual(u.value, (1/1e5) * (1/1e5) / (1/3600))
+
+        u = starsmashertools.lib.units.Unit(1, 'cm*cm*g/s*s')
+        self.assertEqual(u.label.left, ['cm', 'cm', 'g'])
+        self.assertEqual(u.label.right, ['s', 's'])
+        self.assertEqual(u.label.short, 'erg')
+
+        u = starsmashertools.lib.units.Unit(1, 'erg')
+        self.assertEqual(u.label.left, ['cm', 'cm', 'g'])
+        self.assertEqual(u.label.right, ['s', 's'])
+        self.assertEqual(u.label.long, 'cm*cm*g/s*s')
+
+        u = starsmashertools.lib.units.Unit(1, 'erg/s')
+        self.assertEqual(u.label.left, ['cm', 'cm', 'g'])
+        self.assertEqual(u.label.right, ['s', 's', 's'])
+        self.assertEqual(u.label.long, 'cm*cm*g/s*s*s')
 
         # Lsun conversion
         u = starsmashertools.lib.units.Unit(1, 'Lsun')
         base = u.get_base()
+        self.assertEqual(base.label.left, ['cm', 'cm', 'g'])
+        self.assertEqual(base.label.right, ['s', 's', 's'])
         self.assertEqual(base.label.short, 'erg/s')
+        self.assertEqual(base.label.long, 'cm*cm*g/s*s*s')
         self.assertEqual(base.value, starsmashertools.lib.units.constants['Lsun'])
+        u = starsmashertools.lib.units.constants['Lsun']
+        u = u.convert('Lsun')
+        self.assertEqual(1, u.value)
+
+        u = starsmashertools.lib.units.Unit(2, 'Lsun')
+        self.assertEqual(u, 2 * starsmashertools.lib.units.constants['Lsun'])
+        
+        #u = starsmashertools.lib.units.Unit(1, 'Lsun/s')
+        #self.assertEqual(u.label.short, 'erg/s*s')
+        #self.assertEqual(u.label.long, 'cm*cm*g/s*s*s*s')
+
+        #self.assertEqual(
+        #    u.convert('erg/s*s'),
+        #    starsmashertools.lib.units.Unit(
+        #        float(starsmashertools.lib.units.constants['Lsun']),
+        #        'cm*cm*g/s*s*s*s',
+        #    ),
+        #)
 
         # Dividing by the same base units should result in conversions, always
         # converting to the base

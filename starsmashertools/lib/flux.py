@@ -934,7 +934,7 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
         def plot(
                 self,
                 ax : matplotlib.axes.Axes | type(None) = None,
-                key : str | typing.Callable = 'flux',
+                key : str | list | tuple | typing.Callable = 'flux',
                 weighted_average : int | type(None) = None,
                 log10 : bool = False,
                 **kwargs
@@ -951,7 +951,7 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
                 `None`\, the plot is created on the axes returned by
                 ``plt.gca()``\.
 
-            key : str, default = 'flux'
+            key : str, list, tuple, :class:`typing.Callable`\, default = 'flux'
                 The dictionary key in the ``['image']`` :py:class:`dict` to 
                 obtain the data for plotting, or a function which accepts a 
                 FluxResult as input and returns a 2D NumPy array and a dict, 
