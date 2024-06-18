@@ -8,8 +8,8 @@ curdir = os.getcwd()
 
 # We have to update this whenever a change is made to the default formatting
 expected = """name                           start         current            stop
-...rtools/tests/data     1.82612 min     8.86894  hr     18.4442 day
-...rtools/tests/data     1.82612 min     8.86894  hr     18.4442 day"""
+/home/hat...sts/data     1.82612 min     8.86894  hr     18.4442 day
+/home/hat...sts/data     1.82612 min     8.86894  hr     18.4442 day"""
 
 
 class TestReport(basetest.BaseTest):
