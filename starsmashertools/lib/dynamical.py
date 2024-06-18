@@ -12,12 +12,21 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
         import starsmashertools.helpers.path
         import starsmashertools.lib.binary
         
-        search_directory = self.get_search_directory()
-        restartradfile = self.get_start_file()
-        duplicate = starsmashertools.helpers.path.find_duplicate_file(
-            restartradfile, search_directory, throw_error=True)
-        dirname = starsmashertools.helpers.path.dirname(duplicate)
-        return [starsmashertools.lib.binary.Binary(dirname)]
+        for duplicate in starsmashertools.helpers.path.find_duplicate_files(
+                self.get_start_file(),
+                self.get_search_directory(),
+                throw_error=True,
+        ):
+            simulation = starsmashertools.get_simulation(
+                starsmashertools.helpers.path.dirname(duplicate)
+            )
+            
+            # Return the first Binary simulation found
+            if not isinstance(simulation, starsmashertools.lib.binary.Binary):
+                continue
+            
+            return [simulation]
+        return None
     
     @api
     @cli('starsmashertools')

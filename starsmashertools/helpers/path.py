@@ -227,7 +227,13 @@ pattern_matches = collections.OrderedDict()
 
 # Given the path to a file, search search_directory for the first duplicate file.
 #@profile
-def find_duplicate_file(filepath, search_directory, pattern="out*.sph", throw_error=False):
+def find_duplicate_file(
+        filepath : str,
+        search_directory : str,
+        pattern : str = "out*.sph",
+        throw_error : bool = False,
+        exclude : list | tuple = [],
+):
     import starsmashertools.helpers.file
     
     filepath = realpath(filepath)
@@ -252,8 +258,9 @@ def find_duplicate_file(filepath, search_directory, pattern="out*.sph", throw_er
     else:
         matches = glob.glob(search_string, recursive=True)
         pattern_matches[search_string] = matches
-    
+
     for match in matches:
+        if match in exclude: continue
         if (isfile(match, isRemote=isRemote) and
             match != filepath and
             starsmashertools.helpers.file.compare(filepath, match)):
@@ -261,6 +268,48 @@ def find_duplicate_file(filepath, search_directory, pattern="out*.sph", throw_er
     if throw_error:
         raise Exception("Found no duplicate '%s' file for '%s' in search directory '%s'" % (pattern, filepath, search_directory))
     return None
+
+
+def find_duplicate_files(
+        filepath : str,
+        search_directory : str,
+        pattern : str = "out*.sph",
+        throw_error : bool = False,
+        exclude : list | tuple = [],
+):
+    import starsmashertools.helpers.file
+    
+    filepath = realpath(filepath)
+
+    isRemote = starsmashertools.helpers.ssh.isRemote(filepath)
+    
+    search_directory = realpath(search_directory)
+    filedirectory = dirname(filepath)
+
+    search_string = join(search_directory,"**",pattern)
+
+    if search_directory in subdirectories.keys():
+        matches = []
+        for directory in subdirectories[search_directory]:
+            matches += glob.glob(join(directory, pattern), recursive=True)
+        pattern_matches[search_string] = matches
+    
+    # Try to limit exhaustive searches
+    matches = None
+    if search_string in pattern_matches.keys():
+        matches = pattern_matches[search_string]
+    else:
+        matches = glob.glob(search_string, recursive=True)
+        pattern_matches[search_string] = matches
+
+    for match in matches:
+        if match in exclude: continue
+        if (isfile(match, isRemote=isRemote) and
+            match != filepath and
+            starsmashertools.helpers.file.compare(filepath, match)):
+            yield match
+    if throw_error:
+        raise Exception("Found no duplicate '%s' file for '%s' in search directory '%s'" % (pattern, filepath, search_directory))
 
 
 
