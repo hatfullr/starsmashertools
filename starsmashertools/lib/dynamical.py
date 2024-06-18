@@ -40,6 +40,7 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
     def get_binary(self, cli : bool = False, **kwargs):
         import starsmashertools.lib.binary
         children = self.get_children(**kwargs)
+        if children is None: return None
         if len(children) != 1: return None
         if not isinstance(children[0], starsmashertools.lib.binary.Binary):
             return None
