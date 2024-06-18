@@ -334,8 +334,9 @@ class Report(object):
 
         if filename.endswith('.txt'):
             with starsmashertools.helpers.file.open(filename, 'w') as f:
-                f.write(str(self))
-                f.flush()
+                for row in self:
+                    f.write(str(row) + '\n')
+                    f.flush()
         else:
             if not filename.endswith('.report'): filename += '.report'
             obj = starsmashertools.helpers.pickler.pickle_object(self)
