@@ -296,7 +296,7 @@ prefs = {
                             'shorten' : {
                                 'args' : (20,),
                                 'kwargs' : {
-                                    'where' : 'left',
+                                    'where' : 'center',
                                 },
                             },
                         },
