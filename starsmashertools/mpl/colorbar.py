@@ -213,7 +213,7 @@ def discretize(
             arr = objproperties['array']
             
             if isinstance(obj, matplotlib.image.AxesImage):
-                starsmashertools.helpers.warnings.warn("imshow data will be edited", stacklevel=2)
+                starsmashertools.helpers.warnings.warn("imshow data will be edited")
                 data = arr.data
             elif isinstance(obj, matplotlib.collections.PathCollection):
                 data = arr.data.ravel()
