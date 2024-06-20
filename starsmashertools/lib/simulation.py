@@ -656,6 +656,7 @@ class Simulation(object):
             self,
             pattern : str = Pref('get_outputfiles.output files', 'out*.sph'),
             include_joined : bool = True,
+            exclude_joined : list | tuple = [],
     ):
         """
         Returns a list of output file locations. If this simulation has any
@@ -682,7 +683,8 @@ class Simulation(object):
         output files ``'B/out0001.sph'``\, ``'B/out0002.sph'``\, and 
         ``'B/out0003.sph'`` and that simulations ``A`` and ``B`` are joined. The
         expected output of this function would be 
-        ``['A/out0000.sph', 'B/out0001.sph', 'B/out0002.sph', 'B/out0003.sph']``\. 
+        ``['A/out0000.sph', 'B/out0001.sph', 'B/out0002.sph', 
+        'B/out0003.sph']``\. 
         Note that the actual files simulation ``B`` would create depends on its
         input parameters, such as ``'dtout'`` in ``'B/sph.input'``\.
         
@@ -694,6 +696,10 @@ class Simulation(object):
         include_joined : bool, default = True
             If `True`\, the joined simulations will be included in the search.
             Otherwise, only this simulation will be searched.
+
+        exclude_joined : list, tuple, default = []
+            A list of :class:`~.Simulation` objects to exclude when working with
+            the joined simulations.
         
         Returns
         -------
@@ -704,17 +710,152 @@ class Simulation(object):
         import starsmashertools.helpers.path
         import starsmashertools.helpers.midpoint
         import copy
+        import re
+        import numpy as np
+        import itertools
+        
+        # We need a faster way of obtaining the files. The current method is
+        # very I/O intensive, causing huge slowdowns on clusters like Cedar.
         
         # We always need to get our own files first
         matches = self.get_file(pattern)
 
-        # Always order our own files by their modification times, which should
-        # correspond exactly with ordering by simulation times, except we don't
-        # need to read the actual files this way.
-        times = [starsmashertools.helpers.path.getmtime(m) for m in matches]
-        matches = [x for _,x in sorted(zip(times, matches), key=lambda pair:pair[0])]
+        if len(matches) > 1:
+            # We expect for StarSmasher to always write output files
+            # sequentially. The sequence may or may not start at out0000.sph.
+            # The names of the output files may vary in the number of padded
+            # zeros. The user may also specify that the output files are a
+            # different pattern than "out*.sph".
+            #
+            # Thus, we search the names of all the files for numbers which
+            # change sequentially.
+
+            reg = re.compile(r'\d+')
+            numbers = {}
+            files = {}
+            for match in matches:
+                for m in reg.finditer(
+                        starsmashertools.helpers.path.basename(match)
+                ):
+                    span = m.span()
+                    if span not in numbers:
+                        numbers[span] = []
+                        files[span] = []
+                    numbers[span] += [m.group(0)]
+                    files[span] += [match]
+
+            if not numbers:
+                # No numeric patterns found. Fallback to sorting by mtime
+                times = [starsmashertools.helpers.path.getmtime(m) for m in matches]
+                matches = [x for _,x in sorted(zip(times, matches), key=lambda pair:pair[0])]
+            else:
+                # There should be at least 1 set of numbers whose span is the
+                # same among all the output files. Weed out the ones where this
+                # isn't the case
+                numbers = {key:np.asarray(val, dtype=object).astype(int) for key,val in numbers.items() if len(val) == len(matches)}
+                
+                if not numbers:
+                    raise Exception("Failed to find sequential numeric tags in the StarSmasher output files of pattern '%s': none of the numeric tags have the same length as the number of output files." % pattern)
+
+                # Search for sequential listings. There should be at least 1.
+                # Also sort the numbers dict
+                for key, val in numbers.items():
+                    v = sorted(val)
+                    diff = v[1] - v[0]
+                    for v2, v1 in zip(v[2:], v[1:-1]):
+                        if v2-v1 != diff: break
+                    else: # Loop completed normally (uniform step sizes)
+                        matches = [x for _,x in sorted(zip(val, files[key]), key = lambda pair:pair[0])]
+                        break
+                else: # No break
+                    raise Exception("Failed to find sequential numeric tags in the StarSmasher output files of pattern '%s': none of the numeric tags have uniform step sizes." % pattern)
         
-        if not include_joined: return matches
+        if not include_joined or not self.joined_simulations: return matches
+
+        # If we have other simulations joined to us, we need to include their
+        # output files in the results.
+        #
+        # The block of output files a simulation produces is bounded by a
+        # starting and ending time. Thus, we can typically order the outputs
+        # according to the starting and ending times of the simulations.
+        #
+        # However, in some cases, simulation B may have started before
+        # simulation A's ending time. This is a type of "overwrite" behavior. We
+        # use B's outputs instead of A's over the timespan of B. If A has more
+        # output after B's ending time, we include those files too.
+
+        # Recursively find all the blocks of output files in all joined
+        # simulations.
+        blocks = [[
+            self,
+            self.get_start_time(include_joined = False),
+            self.get_stop_time(include_joined = False),
+            matches,
+        ]]
+        for joined in self.joined_simulations:
+            if joined in exclude_joined: continue
+            if joined == self: continue # Just in case
+            blocks += [[
+                joined,
+                joined.get_start_time(include_joined = False),
+                joined.get_stop_time(include_joined = False),
+                joined.get_outputfiles(
+                    include_joined = True,
+                    exclude_joined = exclude_joined + [b[0] for b in blocks],
+                ),
+            ]]
+        
+        # Order the blocks by the simulations' starting times
+        blocks = [x for x in sorted(blocks, key = lambda block: block[1])]
+        #matches = blocks[0][3]
+        # Resolve conflicts (do overwriting)
+        for i, block in enumerate(blocks):
+            if i == 0: continue
+            if block[1] < blocks[i - 1][2]: # current start < previous end
+                # Locate the last output that has a time less than the current
+                # start time.
+                m = starsmashertools.helpers.midpoint.Midpoint(blocks[i - 1][3])
+                m.set_criteria(
+                    lambda p: blocks[i - 1][0].reader.read_from_header('t', p) * blocks[i - 1][0].units['t'] < block[1],
+                    lambda p: blocks[i - 1][0].reader.read_from_header('t', p) * blocks[i - 1][0].units['t'] == block[1],
+                    lambda p: blocks[i - 1][0].reader.read_from_header('t', p) * blocks[i - 1][0].units['t'] > block[1],
+                )
+                _, idx1 = m.get(favor = 'high', return_index = True)
+                
+                
+                if block[2] < blocks[i - 1][2]: # current stop < previous stop
+                    # Only overwrite the time period current stop - current
+                    # start. Split the previous block into two.
+
+                    m = starsmashertools.helpers.midpoint.Midpoint(blocks[i - 1][3])
+                    m.set_criteria(
+                        lambda p: blocks[i - 1][0].reader.read_from_header('t', p) * blocks[i - 1][0].units['t'] < block[2],
+                        lambda p: blocks[i - 1][0].reader.read_from_header('t', p) * blocks[i - 1][0].units['t'] == block[2],
+                        lambda p: blocks[i - 1][0].reader.read_from_header('t', p) * blocks[i - 1][0].units['t'] > block[2],
+                    )
+                    _, idx2 = m.get(favor = 'low', return_index = True)
+                    
+                    totrim = blocks[i-1][3][idx1:]
+                    blocks[i - 1][3] = blocks[i - 1][3][:idx1]
+                    blocks += [[
+                        blocks[i-1][0],
+                        block[1],
+                        blocks[i-1][2],
+                        totrim,
+                    ]]
+                else: # Simple trimming of previous block
+                    blocks[i - 1][3] = blocks[i - 1][3][:idx1]
+
+        # Final sorting of the blocks
+        blocks = [x for x in sorted(blocks, key = lambda block:block[1])]
+        
+        # Stitch the blocks together to get the result
+        return list(itertools.chain(*[block[3] for block in blocks]))
+    
+            
+
+
+    """
         
         # To simplify the thought process: consider we are simulation A, with
         # output files A/out0000.sph, A/out0001.sph, and A/out0002.sph, and we
@@ -783,7 +924,8 @@ class Simulation(object):
                     my_p, idx = m.get(favor = 'low', return_index = True)
                     all_paths += ps[:idx+1]
         return all_paths
-
+    """
+    
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def compress(
