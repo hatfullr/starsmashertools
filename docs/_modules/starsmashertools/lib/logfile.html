@@ -135,6 +135,8 @@
 <div class="viewcode-block" id="LogFile">
 <a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.logfile.html#starsmashertools.lib.logfile.LogFile">[docs]</a>
 <span class="k">class</span> <span class="nc">LogFile</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">class</span> <span class="nc">PhraseNotFoundError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span> <span class="k">pass</span>
+    
 <div class="viewcode-block" id="LogFile.__init__">
 <a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.logfile.html#starsmashertools.lib.logfile.LogFile.__init__">[docs]</a>
     <span class="nd">@api</span>
@@ -454,7 +456,6 @@
 
         <span class="n">toget</span> <span class="o">+=</span> <span class="n">first_iteration</span><span class="p">[</span><span class="s1">&#39;iteration&#39;</span><span class="p">]</span>
 
-        <span class="n">iterations</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">number</span> <span class="ow">in</span> <span class="n">toget</span><span class="p">:</span>
             <span class="n">tomatch</span> <span class="o">=</span> <span class="p">(</span><span class="n">startline</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="si">%8d</span><span class="s1">&#39;</span><span class="p">)</span> <span class="o">%</span> <span class="n">number</span>
             <span class="n">index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_buffer</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
@@ -470,28 +471,23 @@
             <span class="n">content</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_buffer</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">length</span><span class="p">)</span>
             
             <span class="k">try</span><span class="p">:</span>
-                <span class="n">iteration</span> <span class="o">=</span> <span class="n">LogFile</span><span class="o">.</span><span class="n">Iteration</span><span class="p">(</span><span class="n">content</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+                <span class="k">yield</span> <span class="n">LogFile</span><span class="o">.</span><span class="n">Iteration</span><span class="p">(</span><span class="n">content</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
             <span class="k">except</span> <span class="n">LogFile</span><span class="o">.</span><span class="n">PhraseNotFoundError</span><span class="p">:</span>
                 <span class="k">break</span>
             
-            <span class="n">start</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_buffer</span><span class="o">.</span><span class="n">tell</span><span class="p">()</span>
+            <span class="n">start</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_buffer</span><span class="o">.</span><span class="n">tell</span><span class="p">()</span></div>
+
 
             <span class="c1"># This code scales worse than above because it has to read the log</span>
             <span class="c1"># file at the front and back before seeking ahead. We do the front-</span>
             <span class="c1"># back seeking above before the loop to save time.</span>
             <span class="c1">#try:</span>
-            <span class="c1">#    iteration = self.get_iteration(number)</span>
+            <span class="c1">#    yield self.get_iteration(number)</span>
             <span class="c1">#except LogFile.PhraseNotFoundError:</span>
             <span class="c1">#    break</span>
             <span class="c1">#if iteration is None: raise Exception(&quot;Failed to find iteration %d&quot; % (first_iteration[&#39;iteration&#39;] + number))</span>
-            <span class="c1">#print(&quot;Got iteration %d&quot; % iteration[&#39;iteration&#39;])</span>
-            
-            <span class="n">iterations</span> <span class="o">+=</span> <span class="p">[</span><span class="n">iteration</span><span class="p">]</span>
 
-        <span class="k">return</span> <span class="n">iterations</span></div>
-
-
-    <span class="k">class</span> <span class="nc">PhraseNotFoundError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span> <span class="k">pass</span>
+    
 
 
 
