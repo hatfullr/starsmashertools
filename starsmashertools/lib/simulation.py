@@ -1216,11 +1216,13 @@ class Simulation(object):
                         time,
                         include_joined = include_joined,
                     )
+                return
             else:
-                yield from self.get_output_at_time(
+                yield self.get_output_at_time(
                     times,
                     include_joined = include_joined,
                 )
+                return
         elif modes['indices']:
             indices = np.asarray(indices, dtype=int)
             filenames = filenames[indices]
