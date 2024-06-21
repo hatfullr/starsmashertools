@@ -49,13 +49,12 @@ class Output(dict, object):
             simulation,
             mode='raw',
     ):
-        import starsmashertools.helpers.path
         import starsmashertools.helpers.string
         
         if mode not in Output.modes:
             s = starsmashertools.helpers.string.list_to_string(Output.modes, join='or')
             raise ValueError("Keyword argument 'mode' must be one of %s, not '%s'" % (s, str(mode)))
-        self.path = starsmashertools.helpers.path.realpath(path)
+        self._path = path
         self.simulation = simulation
         self.mode = mode
         self._isRead = {
@@ -72,6 +71,11 @@ class Output(dict, object):
         self.data = None
 
         self._original_data = None
+
+    @property
+    def path(self):
+        import starsmashertools.helpers.path
+        return starsmashertools.helpers.path.realpath(self._path)
 
     @staticmethod
     def _get_path_and_simulation(obj):
