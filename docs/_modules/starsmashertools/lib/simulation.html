@@ -106,6 +106,13 @@
 <span class="kn">from</span> <span class="nn">starsmashertools.helpers.archiveddecorator</span> <span class="kn">import</span> <span class="n">archived</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">typing</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">itertools</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">import</span> <span class="nn">filecmp</span>
+<span class="kn">import</span> <span class="nn">datetime</span>
+<span class="kn">import</span> <span class="nn">glob</span>
 
 <span class="k">try</span><span class="p">:</span>
     <span class="kn">import</span> <span class="nn">matplotlib</span>
@@ -608,7 +615,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="kn">import</span> <span class="nn">starsmashertools.helpers.path</span>
         <span class="n">start_file_identifier</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">preferences</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;start file&#39;</span><span class="p">)</span>
-        <span class="n">filename</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_file</span><span class="p">(</span><span class="n">start_file_identifier</span><span class="p">)</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_file</span><span class="p">(</span><span class="n">start_file_identifier</span><span class="p">))</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
             <span class="n">outputfiles</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_outputfiles</span><span class="p">(</span><span class="n">include_joined</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">outputfiles</span><span class="p">:</span> <span class="k">return</span> <span class="n">outputfiles</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -745,13 +752,12 @@
 <span class="sd">        :meth:`~.get_file`</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="kn">import</span> <span class="nn">starsmashertools.helpers.path</span>
-        <span class="kn">import</span> <span class="nn">filecmp</span>
         
         <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span><span class="p">({</span>
             <span class="s1">&#39;simulation&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="n">Simulation</span><span class="p">],</span>
         <span class="p">})</span>
 
-        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_file</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">preferences</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;start file&#39;</span><span class="p">))</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_file</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">preferences</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;start file&#39;</span><span class="p">)))</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span> <span class="k">return</span> <span class="kc">False</span>
         <span class="n">path</span> <span class="o">=</span> <span class="n">path</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
@@ -795,14 +801,13 @@
 <span class="sd">            A list of paths which match the given pattern or filenames.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="kn">import</span> <span class="nn">starsmashertools.helpers.path</span>
-        <span class="kn">import</span> <span class="nn">glob</span>
         <span class="k">if</span> <span class="n">recursive</span><span class="p">:</span> <span class="n">_path</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">directory</span><span class="p">,</span> <span class="s1">&#39;**&#39;</span><span class="p">,</span> <span class="n">filename_or_pattern</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span> <span class="n">_path</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">directory</span><span class="p">,</span> <span class="n">filename_or_pattern</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="k">return</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">_path</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="n">recursive</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">glob</span><span class="o">.</span><span class="n">iglob</span><span class="p">(</span><span class="n">_path</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="n">recursive</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="Simulation.get_outputfiles">
@@ -866,68 +871,57 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="kn">import</span> <span class="nn">starsmashertools.helpers.path</span>
         <span class="kn">import</span> <span class="nn">starsmashertools.helpers.midpoint</span>
-        <span class="kn">import</span> <span class="nn">copy</span>
-        <span class="kn">import</span> <span class="nn">re</span>
-        <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-        <span class="kn">import</span> <span class="nn">itertools</span>
         
-        <span class="c1"># We need a faster way of obtaining the files. The current method is</span>
-        <span class="c1"># very I/O intensive, causing huge slowdowns on clusters like Cedar.</span>
-        
-        <span class="c1"># We always need to get our own files first</span>
-        <span class="n">matches</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_file</span><span class="p">(</span><span class="n">pattern</span><span class="p">)</span>
+        <span class="c1"># We expect for StarSmasher to always write output files sequentially.</span>
+        <span class="c1"># The sequence may or may not start at out0000.sph. The names of the</span>
+        <span class="c1"># output files may vary in the number of padded zeros. The user may also</span>
+        <span class="c1"># specify that the output files are a different pattern than &quot;out*.sph&quot;.</span>
+        <span class="c1">#</span>
+        <span class="c1"># Thus, we search the names of all the files for numbers which change</span>
+        <span class="c1"># sequentially.</span>
 
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">matches</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="c1"># We expect for StarSmasher to always write output files</span>
-            <span class="c1"># sequentially. The sequence may or may not start at out0000.sph.</span>
-            <span class="c1"># The names of the output files may vary in the number of padded</span>
-            <span class="c1"># zeros. The user may also specify that the output files are a</span>
-            <span class="c1"># different pattern than &quot;out*.sph&quot;.</span>
-            <span class="c1">#</span>
-            <span class="c1"># Thus, we search the names of all the files for numbers which</span>
-            <span class="c1"># change sequentially.</span>
+        <span class="n">reg</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;\d+&#39;</span><span class="p">)</span>
+        <span class="n">numbers</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">files</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">match</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_file</span><span class="p">(</span><span class="n">pattern</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">reg</span><span class="o">.</span><span class="n">finditer</span><span class="p">(</span>
+                    <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">match</span><span class="p">)</span>
+            <span class="p">):</span>
+                <span class="n">span</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">span</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">span</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">numbers</span><span class="p">:</span>
+                    <span class="n">numbers</span><span class="p">[</span><span class="n">span</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+                    <span class="n">files</span><span class="p">[</span><span class="n">span</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">numbers</span><span class="p">[</span><span class="n">span</span><span class="p">]</span> <span class="o">+=</span> <span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">0</span><span class="p">)]</span>
+                <span class="n">files</span><span class="p">[</span><span class="n">span</span><span class="p">]</span> <span class="o">+=</span> <span class="p">[</span><span class="n">match</span><span class="p">]</span>
 
-            <span class="n">reg</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;\d+&#39;</span><span class="p">)</span>
-            <span class="n">numbers</span> <span class="o">=</span> <span class="p">{}</span>
-            <span class="n">files</span> <span class="o">=</span> <span class="p">{}</span>
-            <span class="k">for</span> <span class="n">match</span> <span class="ow">in</span> <span class="n">matches</span><span class="p">:</span>
-                <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">reg</span><span class="o">.</span><span class="n">finditer</span><span class="p">(</span>
-                        <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">match</span><span class="p">)</span>
-                <span class="p">):</span>
-                    <span class="n">span</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">span</span><span class="p">()</span>
-                    <span class="k">if</span> <span class="n">span</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">numbers</span><span class="p">:</span>
-                        <span class="n">numbers</span><span class="p">[</span><span class="n">span</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
-                        <span class="n">files</span><span class="p">[</span><span class="n">span</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
-                    <span class="n">numbers</span><span class="p">[</span><span class="n">span</span><span class="p">]</span> <span class="o">+=</span> <span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">0</span><span class="p">)]</span>
-                    <span class="n">files</span><span class="p">[</span><span class="n">span</span><span class="p">]</span> <span class="o">+=</span> <span class="p">[</span><span class="n">match</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">numbers</span><span class="p">:</span>
+            <span class="c1"># No numeric patterns found. Fallback to sorting by mtime</span>
+            <span class="n">times</span> <span class="o">=</span> <span class="p">[</span><span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getmtime</span><span class="p">(</span><span class="n">m</span><span class="p">)</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">matches</span><span class="p">]</span>
+            <span class="n">matches</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span><span class="n">x</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_file</span><span class="p">(</span><span class="n">pattern</span><span class="p">)),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">pair</span><span class="p">:</span><span class="n">pair</span><span class="p">[</span><span class="mi">0</span><span class="p">])]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># There should be at least 1 set of numbers whose span is the</span>
+            <span class="c1"># same among all the output files. Weed out the ones where this</span>
+            <span class="c1"># isn&#39;t the case</span>
+            <span class="n">maxlen</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">numbers</span><span class="o">.</span><span class="n">values</span><span class="p">()])</span>
+            <span class="n">numbers</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">object</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span><span class="n">val</span> <span class="ow">in</span> <span class="n">numbers</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="o">==</span> <span class="n">maxlen</span><span class="p">}</span>
 
             <span class="k">if</span> <span class="ow">not</span> <span class="n">numbers</span><span class="p">:</span>
-                <span class="c1"># No numeric patterns found. Fallback to sorting by mtime</span>
-                <span class="n">times</span> <span class="o">=</span> <span class="p">[</span><span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getmtime</span><span class="p">(</span><span class="n">m</span><span class="p">)</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">matches</span><span class="p">]</span>
-                <span class="n">matches</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span><span class="n">x</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">matches</span><span class="p">),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">pair</span><span class="p">:</span><span class="n">pair</span><span class="p">[</span><span class="mi">0</span><span class="p">])]</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="c1"># There should be at least 1 set of numbers whose span is the</span>
-                <span class="c1"># same among all the output files. Weed out the ones where this</span>
-                <span class="c1"># isn&#39;t the case</span>
-                <span class="n">numbers</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">object</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span><span class="n">val</span> <span class="ow">in</span> <span class="n">numbers</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">matches</span><span class="p">)}</span>
-                
-                <span class="k">if</span> <span class="ow">not</span> <span class="n">numbers</span><span class="p">:</span>
-                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Failed to find sequential numeric tags in the StarSmasher output files of pattern &#39;</span><span class="si">%s</span><span class="s2">&#39;: none of the numeric tags have the same length as the number of output files.&quot;</span> <span class="o">%</span> <span class="n">pattern</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Failed to find sequential numeric tags in the StarSmasher output files of pattern &#39;</span><span class="si">%s</span><span class="s2">&#39;: none of the numeric tags have the same length as the number of output files.&quot;</span> <span class="o">%</span> <span class="n">pattern</span><span class="p">)</span>
 
-                <span class="c1"># Search for sequential listings. There should be at least 1.</span>
-                <span class="c1"># Also sort the numbers dict</span>
-                <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">numbers</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-                    <span class="n">v</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
-                    <span class="n">diff</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">v</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-                    <span class="k">for</span> <span class="n">v2</span><span class="p">,</span> <span class="n">v1</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="mi">2</span><span class="p">:],</span> <span class="n">v</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]):</span>
-                        <span class="k">if</span> <span class="n">v2</span><span class="o">-</span><span class="n">v1</span> <span class="o">!=</span> <span class="n">diff</span><span class="p">:</span> <span class="k">break</span>
-                    <span class="k">else</span><span class="p">:</span> <span class="c1"># Loop completed normally (uniform step sizes)</span>
-                        <span class="n">matches</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span><span class="n">x</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">files</span><span class="p">[</span><span class="n">key</span><span class="p">]),</span> <span class="n">key</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">pair</span><span class="p">:</span><span class="n">pair</span><span class="p">[</span><span class="mi">0</span><span class="p">])]</span>
-                        <span class="k">break</span>
-                <span class="k">else</span><span class="p">:</span> <span class="c1"># No break</span>
-                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Failed to find sequential numeric tags in the StarSmasher output files of pattern &#39;</span><span class="si">%s</span><span class="s2">&#39;: none of the numeric tags have uniform step sizes.&quot;</span> <span class="o">%</span> <span class="n">pattern</span><span class="p">)</span>
+            <span class="c1"># Search for sequential listings. There should be at least 1.</span>
+            <span class="c1"># Also sort the numbers dict</span>
+            <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">numbers</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">v</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+                <span class="n">diff</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">v</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">v2</span><span class="p">,</span> <span class="n">v1</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="mi">2</span><span class="p">:],</span> <span class="n">v</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]):</span>
+                    <span class="k">if</span> <span class="n">v2</span><span class="o">-</span><span class="n">v1</span> <span class="o">!=</span> <span class="n">diff</span><span class="p">:</span> <span class="k">break</span>
+                <span class="k">else</span><span class="p">:</span> <span class="c1"># Loop completed normally (uniform step sizes)</span>
+                    <span class="n">matches</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span><span class="n">x</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">files</span><span class="p">[</span><span class="n">key</span><span class="p">]),</span> <span class="n">key</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">pair</span><span class="p">:</span><span class="n">pair</span><span class="p">[</span><span class="mi">0</span><span class="p">])]</span>
+                    <span class="k">break</span>
+            <span class="k">else</span><span class="p">:</span> <span class="c1"># No break</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Failed to find sequential numeric tags in the StarSmasher output files of pattern &#39;</span><span class="si">%s</span><span class="s2">&#39;: none of the numeric tags have uniform step sizes.&quot;</span> <span class="o">%</span> <span class="n">pattern</span><span class="p">)</span>
         
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">include_joined</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">joined_simulations</span><span class="p">:</span> <span class="k">return</span> <span class="n">matches</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">include_joined</span><span class="p">:</span> <span class="k">return</span> <span class="n">matches</span>
 
         <span class="c1"># If we have other simulations joined to us, we need to include their</span>
         <span class="c1"># output files in the results.</span>
@@ -1002,7 +996,7 @@
                     <span class="p">]]</span>
                 <span class="k">else</span><span class="p">:</span> <span class="c1"># Simple trimming of previous block</span>
                     <span class="n">blocks</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">][</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="n">blocks</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">][</span><span class="mi">3</span><span class="p">][:</span><span class="n">idx1</span><span class="p">]</span>
-
+        
         <span class="c1"># Final sorting of the blocks</span>
         <span class="n">blocks</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">blocks</span><span class="p">,</span> <span class="n">key</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">block</span><span class="p">:</span><span class="n">block</span><span class="p">[</span><span class="mi">1</span><span class="p">])]</span>
         
@@ -1067,10 +1061,8 @@
         <span class="kn">import</span> <span class="nn">starsmashertools.helpers.path</span>
         <span class="kn">import</span> <span class="nn">starsmashertools.helpers.compressiontask</span>
         
-        <span class="n">files</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">pattern</span> <span class="ow">in</span> <span class="n">patterns</span><span class="p">:</span>
-            <span class="n">files</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_file</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="n">recursive</span><span class="p">)</span>
-            
+        <span class="n">files</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">itertools</span><span class="o">.</span><span class="n">chain</span><span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">get_file</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="n">recursive</span><span class="p">)</span> <span class="k">for</span> <span class="n">pattern</span> <span class="ow">in</span> <span class="n">patterns</span><span class="p">]))</span>
+        
         <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span> <span class="k">continue</span>
             <span class="n">_path</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">directory</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
@@ -1208,13 +1200,15 @@
         <span class="kn">import</span> <span class="nn">starsmashertools.lib.output</span>
         <span class="c1"># Now that we have all the file names, we can create an output iterator</span>
         <span class="c1"># from them</span>
-        <span class="n">outputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_output</span><span class="p">(</span>
+        <span class="n">outputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_output_generator</span><span class="p">(</span>
             <span class="n">start</span> <span class="o">=</span> <span class="n">start</span><span class="p">,</span> <span class="n">stop</span> <span class="o">=</span> <span class="n">stop</span><span class="p">,</span> <span class="n">step</span> <span class="o">=</span> <span class="n">step</span><span class="p">,</span>
             <span class="n">include_joined</span> <span class="o">=</span> <span class="n">include_joined</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">outputs</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span> <span class="n">outputs</span> <span class="o">=</span> <span class="p">[</span><span class="n">outputs</span><span class="p">]</span>
-        <span class="n">filenames</span> <span class="o">=</span> <span class="p">[</span><span class="n">output</span><span class="o">.</span><span class="n">path</span> <span class="k">for</span> <span class="n">output</span> <span class="ow">in</span> <span class="n">outputs</span><span class="p">]</span>
-        <span class="k">return</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">OutputIterator</span><span class="p">(</span><span class="n">filenames</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">OutputIterator</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">output</span><span class="o">.</span><span class="n">path</span> <span class="k">for</span> <span class="n">output</span> <span class="ow">in</span> <span class="n">outputs</span><span class="p">],</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span>
+        <span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="Simulation.get_output_at_time">
@@ -1682,7 +1676,6 @@
         <span class="p">):</span>
             <span class="kn">import</span> <span class="nn">starsmashertools.mpl</span>
             <span class="kn">import</span> <span class="nn">starsmashertools.mpl.animation</span>
-            <span class="kn">import</span> <span class="nn">copy</span>
 
             <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
 
@@ -1877,9 +1870,6 @@
 <span class="sd">        --------</span>
 <span class="sd">        :meth:`~.join`</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">import</span> <span class="nn">warnings</span>
-        <span class="kn">import</span> <span class="nn">copy</span>
-
         <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span><span class="p">({</span>
             <span class="s1">&#39;which&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Simulation</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)],</span>
         <span class="p">})</span>
@@ -2005,7 +1995,6 @@
         <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">State</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__getattribute__</span><span class="p">(</span><span class="n">attr</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">__json_view__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="kn">import</span> <span class="nn">datetime</span>
         <span class="n">max_mtime</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="n">mtime</span> <span class="k">for</span> <span class="n">mtime</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">mtimes</span><span class="o">.</span><span class="n">values</span><span class="p">()])</span>
         <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="n">max_mtime</span><span class="p">))</span>
 

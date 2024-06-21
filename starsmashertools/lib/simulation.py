@@ -901,7 +901,7 @@ class Simulation(object):
         import starsmashertools.helpers.path
         import starsmashertools.helpers.compressiontask
         
-        files = itertools.chain(*[self.get_file(pattern, recursive=recursive) for pattern in patterns])
+        files = list(itertools.chain(*[self.get_file(pattern, recursive=recursive) for pattern in patterns]))
         
         for key, val in self.items():
             if not isinstance(val, str): continue
