@@ -69,7 +69,6 @@ class TestSimulation(basetest.BaseTest):
                 self.assertEqual(1, sim2.archive._nosave_holders)
                 
                 sim1.join(sim2)
-
                 self.assertEqual(1, len(sim1.joined_simulations))
                 self.assertEqual(1, len(sim2.joined_simulations))
                 self.assertIn(sim2, sim1.joined_simulations)

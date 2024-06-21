@@ -628,7 +628,10 @@
             <span class="s1">&#39;remove&#39;</span> <span class="p">:</span> <span class="p">[],</span>
         <span class="p">}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_buffer_size</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_nosave_holders</span> <span class="o">=</span> <span class="mi">0</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_nosave_holders</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">on_nosave_disabled</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">on_nosave_enabled</span> <span class="o">=</span> <span class="p">[]</span></div>
 
 
     <span class="nd">@property</span>
@@ -669,6 +672,9 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">):</span> <span class="k">return</span> <span class="kc">False</span>
         <span class="n">current_mtime</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getmtime</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">current_mtime</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_previous_mtime</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">is_nosave</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nosave_holders</span> <span class="o">&gt;</span> <span class="mi">0</span>
     
     <span class="k">def</span> <span class="nf">__copy__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span>
@@ -705,12 +711,15 @@
         
         <span class="k">try</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_nosave_holders</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">for</span> <span class="n">function</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">on_nosave_enabled</span><span class="p">:</span> <span class="n">function</span><span class="p">()</span>
             <span class="k">yield</span>
         <span class="k">finally</span><span class="p">:</span>
             <span class="c1"># Clear the buffers</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_clear_buffers</span><span class="p">()</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">thread_safe</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_keys</span> <span class="o">=</span> <span class="n">previous_keys</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_nosave_holders</span> <span class="o">-=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_nosave</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">function</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">on_nosave_disabled</span><span class="p">:</span> <span class="n">function</span><span class="p">()</span>
     
     <span class="k">def</span> <span class="nf">open</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span>
@@ -981,7 +990,7 @@
             <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Archive.save() is being called by a process that is not the main process. Archive.save() is not thread safe, so make sure you are calling Archive.save() from a single process only. You can suppress this warning with warnings.filterwarnings(action = &#39;ignore&#39;).&quot;</span><span class="p">)</span>
         
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">readonly</span><span class="p">:</span> <span class="k">raise</span> <span class="n">Archive</span><span class="o">.</span><span class="n">ReadOnlyError</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nosave_holders</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span> <span class="k">return</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_nosave</span><span class="p">:</span> <span class="k">return</span>
         
         <span class="n">exists</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
         

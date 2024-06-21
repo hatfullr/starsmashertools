@@ -524,6 +524,9 @@ class Archive(object):
         self._buffer_size = 0
         self._nosave_holders = 0
 
+        self.on_nosave_disabled = []
+        self.on_nosave_enabled = []
+
     @property
     def _keys(self):
         if not hasattr(self, '_keys_internal'):
@@ -562,6 +565,9 @@ class Archive(object):
         if not starsmashertools.helpers.path.exists(self.filename): return False
         current_mtime = starsmashertools.helpers.path.getmtime(self.filename)
         return current_mtime > self._previous_mtime
+
+    @property
+    def is_nosave(self): return self._nosave_holders > 0
     
     def __copy__(self, *args, **kwargs):
         raise NotImplementedError
@@ -598,12 +604,15 @@ class Archive(object):
         
         try:
             self._nosave_holders += 1
+            for function in self.on_nosave_enabled: function()
             yield
         finally:
             # Clear the buffers
             self._clear_buffers()
             if not self.thread_safe: self._keys = previous_keys
             self._nosave_holders -= 1
+            if not self.is_nosave:
+                for function in self.on_nosave_disabled: function()
     
     def open(
             self,
@@ -851,7 +860,7 @@ class Archive(object):
             starsmashertools.helpers.warnings.warn("Archive.save() is being called by a process that is not the main process. Archive.save() is not thread safe, so make sure you are calling Archive.save() from a single process only. You can suppress this warning with warnings.filterwarnings(action = 'ignore').")
         
         if self.readonly: raise Archive.ReadOnlyError(self.filename)
-        if self._nosave_holders > 0: return
+        if self.is_nosave: return
         
         exists = starsmashertools.helpers.path.isfile(self.filename)
         

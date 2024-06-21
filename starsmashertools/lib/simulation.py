@@ -17,6 +17,7 @@ import warnings
 import filecmp
 import datetime
 import glob
+import time
 
 try:
     import matplotlib
@@ -59,6 +60,7 @@ class Simulation(object):
         self.reader = starsmashertools.lib.output.Reader(self)
 
         self.archive = starsmashertools.lib.archive.SimulationArchive(self)
+        self.archive.on_nosave_disabled += [self._update_joined_simulations]
             
     def __hash__(self):
         return hash(self.directory)
@@ -80,11 +82,20 @@ class Simulation(object):
         mtime = starsmashertools.helpers.path.getmtime(self.archive.filename)
         if (self._joined_simulations is None or
             (self._last_retrieved_joined_simulations is not None and
-             mtime > self._last_retrieved_joined_simulations)
+             mtime > self._last_retrieved_joined_simulations) or
+            # If the archive is in "nosave" mode, check if its buffers have
+            # any content. If so, updated the joined simulations
+            ((not self.archive.auto_save or self.archive.is_nosave) and
+             any(self.archive._buffers.values()))
             ):
-            self._joined_simulations = list(self.get_joined_simulations_generator())
-            self._last_retrieved_joined_simulations = mtime
+            self._update_joined_simulations()
+        
         return self._joined_simulations
+
+    def _update_joined_simulations(self):
+        import starsmashertools.helpers.path
+        self._joined_simulations = list(self.get_joined_simulations_generator())
+        self._last_retrieved_joined_simulations = starsmashertools.helpers.path.getmtime(self.archive.filename)
     
     @api
     def __eq__(self, other):
@@ -106,17 +117,21 @@ class Simulation(object):
         starsmashertools.helpers.argumentenforcer.enforcetypes({
             'item' : [str, starsmashertools.lib.output.Output, starsmashertools.lib.output.OutputIterator],
         })
-
-        iterator = self.get_output_iterator()
+        if isinstance(item, starsmashertools.lib.output.Output):
+            for output in self.get_output_generator():
+                if output == item: return True
+            return False
         if isinstance(item, str):
             if not starsmashertools.helpers.path.isfile(item): return False
-        
-        if isinstance(item, starsmashertools.lib.output.OutputIterator):
-            for filename in item.filenames:
-                if filename not in iterator: return False
-            return True
-        
-        return item in iterator
+            realpath = starsmashertools.helpers.path.realpath(item)
+            for output in self.get_output_generator():
+                if output.path == realpath: return True
+            return False
+            
+        iterator = self.get_output_iterator()
+        for filename in item.filenames:
+            if filename not in iterator: return False
+        return True
 
     # Override this in children. Must return a list of Simulation objects
     def _get_children(self):
@@ -1624,7 +1639,10 @@ class Simulation(object):
             v = self.archive['joined simulations']
             if other_path not in v.value:
                 v.value += [other_path]
-            self.archive['joined simulations'] = v
+                self.archive.add(
+                    'joined simulations',
+                    v.value,
+                )
         
         if 'joined simulations' not in other.archive:
             other.archive.add(
@@ -1635,8 +1653,11 @@ class Simulation(object):
             v = other.archive['joined simulations']
             if our_path not in v.value:
                 v.value += [our_path]
-            other.archive['joined simulations'] = v
-        
+                other.archive.add(
+                    'joined simulations',
+                    v.value,
+                )
+
         if cli: return "Success"
 
 
