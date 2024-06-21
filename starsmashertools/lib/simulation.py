@@ -53,6 +53,8 @@ class Simulation(object):
         self._teos = None
         self._logfiles = None
         self._compression_task = None
+        self._joined_simulations = None
+        self._last_retrieved_joined_simulations = None
         
         self.reader = starsmashertools.lib.output.Reader(self)
 
@@ -74,7 +76,15 @@ class Simulation(object):
         --------
         :meth:`~.get_joined_simulations_generator`
         """
-        return list(self.get_joined_simulations_generator())
+        import starsmashertools.helpers.path
+        mtime = starsmashertools.helpers.path.getmtime(self.archive.filename)
+        if (self._joined_simulations is None or
+            (self._last_retrieved_joined_simulations is not None and
+             mtime > self._last_retrieved_joined_simulations)
+            ):
+            self._joined_simulations = list(self.get_joined_simulations_generator())
+            self._last_retrieved_joined_simulations = mtime
+        return self._joined_simulations
     
     @api
     def __eq__(self, other):
