@@ -1211,14 +1211,13 @@ class Simulation(object):
             filenames = filenames.tolist()[s]
         elif modes['times']:
             if hasattr(times, '__iter__'):
-                ret = [self.get_output_at_time(
-                    time,
-                    include_joined = include_joined,
-                ) for time in times]
-                if len(ret) == 1: return ret[0]
-                return ret
+                for time in times:
+                    yield self.get_output_at_time(
+                        time,
+                        include_joined = include_joined,
+                    )
             else:
-                return self.get_output_at_time(
+                yield from self.get_output_at_time(
                     times,
                     include_joined = include_joined,
                 )
