@@ -4,6 +4,11 @@ import starsmashertools.helpers.argumentenforcer
 from starsmashertools.helpers.apidecorator import api
 import numpy as np
 import typing
+import copy
+import collections
+import itertools
+import time
+import mmap
 
 try:
     import matplotlib.axes
@@ -118,8 +123,6 @@ class Output(dict, object):
 
     @api
     def __getitem__(self, item):
-        import copy
-        
         if item in self.keys(ensure_read=False):
             if item in self._cache.keys():
                 return self.from_cache(item)
@@ -155,8 +158,7 @@ class Output(dict, object):
             self.read(return_headers=not self._isRead['header'], return_data=not self._isRead['data'])
 
     def _clear_cache(self):
-        import copy
-        self._cache = copy.copy(self.preferences.get('cache'))
+        self._cache = copy.deepcopy(self.preferences.get('cache'))
         # If no cache is defined in preferences
         if self._cache is None: self._cache = {}
 
@@ -171,7 +173,6 @@ class Output(dict, object):
         
     @api
     def keys(self, *args, ensure_read : bool = True, **kwargs):
-        import itertools
         if ensure_read: self._ensure_read()
         return itertools.chain(
             super(Output, self).keys(*args, **kwargs),
@@ -198,7 +199,6 @@ class Output(dict, object):
     
     @api
     def copy_from(self, obj):
-        import copy
         self._mask = copy.deepcopy(obj._mask)
         
         for key in self._isRead.keys():
@@ -253,8 +253,6 @@ class Output(dict, object):
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def mask(self, mask : np.ndarray | list | tuple):
-        import copy
-        
         if self.is_masked:
             raise Exception("Cannot apply more than 1 mask to an Output object")
         
@@ -411,8 +409,6 @@ class Output(dict, object):
         The value returned depends on the contents of positional argument 
         ``func``\, and/or the contents of the simulation archive.
         """
-        import time
-            
         archive_key = 'Output.condense'
         archive_value = {}
         if archive_key in self.simulation.archive.keys():
@@ -820,7 +816,6 @@ class OutputIterator(object):
     
     def __next__(self):
         import starsmashertools.helpers.asynchronous
-        import copy
         if len(self.filenames) == 0: self.stop()
         
         self._buffer_index += 1
@@ -895,7 +890,6 @@ class ParticleIterator(OutputIterator, object):
     def get(self, filename):
         import starsmashertools.helpers.file
         import starsmashertools.helpers.readonlydict
-        import mmap
         
         if len(self.particle_IDs) == 0: return {}
         # Calculate the file position for the quantity we want to read
@@ -1096,7 +1090,6 @@ class Reader(object):
     ):
         import starsmashertools.helpers.file
         import starsmashertools.helpers.path
-        import mmap
         
         if verbose: print(filename)
         
@@ -1161,7 +1154,6 @@ class Reader(object):
         import starsmashertools.helpers.path
         import starsmashertools.helpers.file
         import starsmashertools.helpers.string
-        import collections
         
         # Expected data types
         data_types = ('integer', 'real', 'logical', 'character')

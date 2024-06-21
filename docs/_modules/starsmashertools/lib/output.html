@@ -100,6 +100,11 @@
 <span class="kn">from</span> <span class="nn">starsmashertools.helpers.apidecorator</span> <span class="kn">import</span> <span class="n">api</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">typing</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">collections</span>
+<span class="kn">import</span> <span class="nn">itertools</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">mmap</span>
 
 <span class="k">try</span><span class="p">:</span>
     <span class="kn">import</span> <span class="nn">matplotlib.axes</span>
@@ -221,8 +226,6 @@
 <a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.output.html#starsmashertools.lib.output.Output.__getitem__">[docs]</a>
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
-        <span class="kn">import</span> <span class="nn">copy</span>
-        
         <span class="k">if</span> <span class="n">item</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">keys</span><span class="p">(</span><span class="n">ensure_read</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
             <span class="k">if</span> <span class="n">item</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
                 <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">from_cache</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
@@ -259,8 +262,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">return_headers</span><span class="o">=</span><span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_isRead</span><span class="p">[</span><span class="s1">&#39;header&#39;</span><span class="p">],</span> <span class="n">return_data</span><span class="o">=</span><span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_isRead</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">])</span>
 
     <span class="k">def</span> <span class="nf">_clear_cache</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="kn">import</span> <span class="nn">copy</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">preferences</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;cache&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">preferences</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;cache&#39;</span><span class="p">))</span>
         <span class="c1"># If no cache is defined in preferences</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span> <span class="o">=</span> <span class="p">{}</span>
 
@@ -277,7 +279,6 @@
 <a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.output.html#starsmashertools.lib.output.Output.keys">[docs]</a>
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="nf">keys</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">ensure_read</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="kn">import</span> <span class="nn">itertools</span>
         <span class="k">if</span> <span class="n">ensure_read</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ensure_read</span><span class="p">()</span>
         <span class="k">return</span> <span class="n">itertools</span><span class="o">.</span><span class="n">chain</span><span class="p">(</span>
             <span class="nb">super</span><span class="p">(</span><span class="n">Output</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">keys</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">),</span>
@@ -313,7 +314,6 @@
 <a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.output.html#starsmashertools.lib.output.Output.copy_from">[docs]</a>
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="nf">copy_from</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
-        <span class="kn">import</span> <span class="nn">copy</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_mask</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">_mask</span><span class="p">)</span>
         
         <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_isRead</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
@@ -374,8 +374,6 @@
     <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="nf">mask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mask</span> <span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">):</span>
-        <span class="kn">import</span> <span class="nn">copy</span>
-        
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_masked</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Cannot apply more than 1 mask to an Output object&quot;</span><span class="p">)</span>
         
@@ -544,8 +542,6 @@
 <span class="sd">        The value returned depends on the contents of positional argument </span>
 <span class="sd">        ``func``\, and/or the contents of the simulation archive.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">import</span> <span class="nn">time</span>
-            
         <span class="n">archive_key</span> <span class="o">=</span> <span class="s1">&#39;Output.condense&#39;</span>
         <span class="n">archive_value</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">if</span> <span class="n">archive_key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">archive</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
@@ -969,7 +965,6 @@
     
     <span class="k">def</span> <span class="fm">__next__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="kn">import</span> <span class="nn">starsmashertools.helpers.asynchronous</span>
-        <span class="kn">import</span> <span class="nn">copy</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filenames</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
         
         <span class="bp">self</span><span class="o">.</span><span class="n">_buffer_index</span> <span class="o">+=</span> <span class="mi">1</span>
@@ -1050,7 +1045,6 @@
     <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
         <span class="kn">import</span> <span class="nn">starsmashertools.helpers.file</span>
         <span class="kn">import</span> <span class="nn">starsmashertools.helpers.readonlydict</span>
-        <span class="kn">import</span> <span class="nn">mmap</span>
         
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">particle_IDs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> <span class="k">return</span> <span class="p">{}</span>
         <span class="c1"># Calculate the file position for the quantity we want to read</span>
@@ -1252,7 +1246,6 @@
     <span class="p">):</span>
         <span class="kn">import</span> <span class="nn">starsmashertools.helpers.file</span>
         <span class="kn">import</span> <span class="nn">starsmashertools.helpers.path</span>
-        <span class="kn">import</span> <span class="nn">mmap</span>
         
         <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
         
@@ -1317,7 +1310,6 @@
         <span class="kn">import</span> <span class="nn">starsmashertools.helpers.path</span>
         <span class="kn">import</span> <span class="nn">starsmashertools.helpers.file</span>
         <span class="kn">import</span> <span class="nn">starsmashertools.helpers.string</span>
-        <span class="kn">import</span> <span class="nn">collections</span>
         
         <span class="c1"># Expected data types</span>
         <span class="n">data_types</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;integer&#39;</span><span class="p">,</span> <span class="s1">&#39;real&#39;</span><span class="p">,</span> <span class="s1">&#39;logical&#39;</span><span class="p">,</span> <span class="s1">&#39;character&#39;</span><span class="p">)</span>
