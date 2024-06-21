@@ -69,22 +69,12 @@ class Simulation(object):
     
     @property
     def joined_simulations(self):
-        import starsmashertools.helpers.path
-        import starsmashertools
-        import starsmashertools.helpers.warnings
-        
-        if 'joined simulations' not in self.archive: return []
-        simulations = []
-        for directory in self.archive['joined simulations'].value:
-            directory = starsmashertools.helpers.path.join(
-                self.directory,
-                directory,
-            )
-            try:
-                simulations += [starsmashertools.get_simulation(directory)]
-            except Simulation.InvalidDirectoryError as e:
-                starsmashertools.helpers.warnings.warn("A joined simulation is no longer a valid directory, likely because it was moved on the file system. Please split the simulation and re-join it to quell this warning. '%s'" % directory)
-        return simulations
+        """
+        See Also
+        --------
+        :meth:`~.get_joined_simulations_generator`
+        """
+        return list(self.get_joined_simulations_generator())
     
     @api
     def __eq__(self, other):
@@ -326,7 +316,7 @@ class Simulation(object):
 
         all_files = [logfile for logfile in self._logfiles]
         if include_joined:
-            for simulation in self.joined_simulations:
+            for simulation in self.get_joined_simulations_generator():
                 all_files += simulation.get_logfiles(
                     include_joined = False,
                     **kwargs
@@ -577,7 +567,7 @@ class Simulation(object):
         import starsmashertools.lib.units
         tf = self['tf'] * self.units.time
         if include_joined:
-            for simulation in self.joined_simulations:
+            for simulation in self.get_joined_simulations_generator():
                 tf = max(tf, simulation['tf'] * simulation.units.time)
         return tf
 
@@ -786,7 +776,7 @@ class Simulation(object):
             self.get_stop_time(include_joined = False),
             matches,
         ]]
-        for joined in self.joined_simulations:
+        for joined in self.get_joined_simulations_generator():
             if joined in exclude_joined: continue
             if joined == self: continue # Just in case
             blocks += [[
@@ -1672,8 +1662,9 @@ class Simulation(object):
             'which' : [str, Simulation, type(None)],
         })
 
-        joined_simulations = self.joined_simulations
-        if not joined_simulations:
+        for _ in self.get_joined_simulations_generator():
+            break
+        else: # This is the case of no joined simulations
             if cli: return "This simulation has no joined simulations"
             return
 
@@ -1730,6 +1721,35 @@ class Simulation(object):
             simulation.split(which = self)
         
         if cli: return "Success"
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def get_joined_simulations_generator(self):
+        """
+        Returns a generator on the currently joined simulations.
+
+        Returns
+        -------
+        generator
+            A generator over the currently joined simulations.
+        """
+        import starsmashertools.helpers.path
+        import starsmashertools
+        import starsmashertools.helpers.warnings
+        
+        try:
+            for directory in self.archive['joined simulations'].value:
+                try:
+                    yield starsmashertools.get_simulation(
+                        starsmashertools.helpers.path.join(
+                            self.directory,
+                            directory,
+                        )
+                    )
+                except Simulation.InvalidDirectoryError as e:
+                    starsmashertools.helpers.warnings.warn("A joined simulation is no longer a valid directory, likely because it was moved on the file system. Please split the simulation and re-join it to quell this warning. '%s'" % starsmashertools.helpers.path.join(self.directory, directory))
+        except KeyError: pass
+        
         
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @cli('starsmashertools')
