@@ -10,6 +10,13 @@ from starsmashertools.helpers.clidecorator import cli, clioptions
 from starsmashertools.helpers.archiveddecorator import archived
 import numpy as np
 import typing
+import re
+import itertools
+import copy
+import warnings
+import filecmp
+import datetime
+import glob
 
 try:
     import matplotlib
@@ -469,7 +476,7 @@ class Simulation(object):
         """
         import starsmashertools.helpers.path
         start_file_identifier = self.preferences.get('start file')
-        filename = self.get_file(start_file_identifier)
+        filename = list(self.get_file(start_file_identifier))
         if len(filename) != 1:
             outputfiles = self.get_outputfiles(include_joined = False)
             if outputfiles: return outputfiles[0]
@@ -594,13 +601,12 @@ class Simulation(object):
         :meth:`~.get_file`
         """
         import starsmashertools.helpers.path
-        import filecmp
         
         starsmashertools.helpers.argumentenforcer.enforcetypes({
             'simulation' : [Simulation],
         })
 
-        path = self.get_file(self.preferences.get('start file'))
+        path = list(self.get_file(self.preferences.get('start file')))
         if len(path) != 1: return False
         path = path[0]
 
@@ -641,14 +647,13 @@ class Simulation(object):
             A list of paths which match the given pattern or filenames.
         """
         import starsmashertools.helpers.path
-        import glob
         if recursive: _path = starsmashertools.helpers.path.join(
                 self.directory, '**', filename_or_pattern,
         )
         else: _path = starsmashertools.helpers.path.join(
                 self.directory, filename_or_pattern,
         )
-        return glob.glob(_path, recursive=recursive)
+        return glob.iglob(_path, recursive=recursive)
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
@@ -709,68 +714,57 @@ class Simulation(object):
         """
         import starsmashertools.helpers.path
         import starsmashertools.helpers.midpoint
-        import copy
-        import re
-        import numpy as np
-        import itertools
         
-        # We need a faster way of obtaining the files. The current method is
-        # very I/O intensive, causing huge slowdowns on clusters like Cedar.
-        
-        # We always need to get our own files first
-        matches = self.get_file(pattern)
+        # We expect for StarSmasher to always write output files sequentially.
+        # The sequence may or may not start at out0000.sph. The names of the
+        # output files may vary in the number of padded zeros. The user may also
+        # specify that the output files are a different pattern than "out*.sph".
+        #
+        # Thus, we search the names of all the files for numbers which change
+        # sequentially.
 
-        if len(matches) > 1:
-            # We expect for StarSmasher to always write output files
-            # sequentially. The sequence may or may not start at out0000.sph.
-            # The names of the output files may vary in the number of padded
-            # zeros. The user may also specify that the output files are a
-            # different pattern than "out*.sph".
-            #
-            # Thus, we search the names of all the files for numbers which
-            # change sequentially.
+        reg = re.compile(r'\d+')
+        numbers = {}
+        files = {}
+        for match in self.get_file(pattern):
+            for m in reg.finditer(
+                    starsmashertools.helpers.path.basename(match)
+            ):
+                span = m.span()
+                if span not in numbers:
+                    numbers[span] = []
+                    files[span] = []
+                numbers[span] += [m.group(0)]
+                files[span] += [match]
 
-            reg = re.compile(r'\d+')
-            numbers = {}
-            files = {}
-            for match in matches:
-                for m in reg.finditer(
-                        starsmashertools.helpers.path.basename(match)
-                ):
-                    span = m.span()
-                    if span not in numbers:
-                        numbers[span] = []
-                        files[span] = []
-                    numbers[span] += [m.group(0)]
-                    files[span] += [match]
+        if not numbers:
+            # No numeric patterns found. Fallback to sorting by mtime
+            times = [starsmashertools.helpers.path.getmtime(m) for m in matches]
+            matches = [x for _,x in sorted(zip(times, self.get_file(pattern)), key=lambda pair:pair[0])]
+        else:
+            # There should be at least 1 set of numbers whose span is the
+            # same among all the output files. Weed out the ones where this
+            # isn't the case
+            maxlen = max([len(val) for val in numbers.values()])
+            numbers = {key:np.asarray(val, dtype=object).astype(int) for key,val in numbers.items() if len(val) == maxlen}
 
             if not numbers:
-                # No numeric patterns found. Fallback to sorting by mtime
-                times = [starsmashertools.helpers.path.getmtime(m) for m in matches]
-                matches = [x for _,x in sorted(zip(times, matches), key=lambda pair:pair[0])]
-            else:
-                # There should be at least 1 set of numbers whose span is the
-                # same among all the output files. Weed out the ones where this
-                # isn't the case
-                numbers = {key:np.asarray(val, dtype=object).astype(int) for key,val in numbers.items() if len(val) == len(matches)}
-                
-                if not numbers:
-                    raise Exception("Failed to find sequential numeric tags in the StarSmasher output files of pattern '%s': none of the numeric tags have the same length as the number of output files." % pattern)
+                raise Exception("Failed to find sequential numeric tags in the StarSmasher output files of pattern '%s': none of the numeric tags have the same length as the number of output files." % pattern)
 
-                # Search for sequential listings. There should be at least 1.
-                # Also sort the numbers dict
-                for key, val in numbers.items():
-                    v = sorted(val)
-                    diff = v[1] - v[0]
-                    for v2, v1 in zip(v[2:], v[1:-1]):
-                        if v2-v1 != diff: break
-                    else: # Loop completed normally (uniform step sizes)
-                        matches = [x for _,x in sorted(zip(val, files[key]), key = lambda pair:pair[0])]
-                        break
-                else: # No break
-                    raise Exception("Failed to find sequential numeric tags in the StarSmasher output files of pattern '%s': none of the numeric tags have uniform step sizes." % pattern)
+            # Search for sequential listings. There should be at least 1.
+            # Also sort the numbers dict
+            for key, val in numbers.items():
+                v = sorted(val)
+                diff = v[1] - v[0]
+                for v2, v1 in zip(v[2:], v[1:-1]):
+                    if v2-v1 != diff: break
+                else: # Loop completed normally (uniform step sizes)
+                    matches = [x for _,x in sorted(zip(val, files[key]), key = lambda pair:pair[0])]
+                    break
+            else: # No break
+                raise Exception("Failed to find sequential numeric tags in the StarSmasher output files of pattern '%s': none of the numeric tags have uniform step sizes." % pattern)
         
-        if not include_joined or not self.joined_simulations: return matches
+        if not include_joined: return matches
 
         # If we have other simulations joined to us, we need to include their
         # output files in the results.
@@ -845,7 +839,7 @@ class Simulation(object):
                     ]]
                 else: # Simple trimming of previous block
                     blocks[i - 1][3] = blocks[i - 1][3][:idx1]
-
+        
         # Final sorting of the blocks
         blocks = [x for x in sorted(blocks, key = lambda block:block[1])]
         
@@ -907,10 +901,8 @@ class Simulation(object):
         import starsmashertools.helpers.path
         import starsmashertools.helpers.compressiontask
         
-        files = []
-        for pattern in patterns:
-            files += self.get_file(pattern, recursive=recursive)
-            
+        files = itertools.chain(*[self.get_file(pattern, recursive=recursive) for pattern in patterns])
+        
         for key, val in self.items():
             if not isinstance(val, str): continue
             _path = starsmashertools.helpers.path.join(self.directory, val)
@@ -1039,13 +1031,15 @@ class Simulation(object):
         import starsmashertools.lib.output
         # Now that we have all the file names, we can create an output iterator
         # from them
-        outputs = self.get_output(
+        outputs = self.get_output_generator(
             start = start, stop = stop, step = step,
             include_joined = include_joined,
         )
-        if not isinstance(outputs, list): outputs = [outputs]
-        filenames = [output.path for output in outputs]
-        return starsmashertools.lib.output.OutputIterator(filenames, self, **kwargs)
+        return starsmashertools.lib.output.OutputIterator(
+            [output.path for output in outputs],
+            self,
+            **kwargs
+        )
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
@@ -1486,7 +1480,6 @@ class Simulation(object):
         ):
             import starsmashertools.mpl
             import starsmashertools.mpl.animation
-            import copy
 
             fig, ax = starsmashertools.mpl.subplots()
 
@@ -1675,9 +1668,6 @@ class Simulation(object):
         --------
         :meth:`~.join`
         """
-        import warnings
-        import copy
-
         starsmashertools.helpers.argumentenforcer.enforcetypes({
             'which' : [str, Simulation, type(None)],
         })
@@ -1801,7 +1791,6 @@ class State(object):
         return super(State, self).__getattribute__(attr)
 
     def __json_view__(self):
-        import datetime
         max_mtime = max([mtime for mtime in self.mtimes.values()])
         return str(datetime.datetime.fromtimestamp(max_mtime))
 
