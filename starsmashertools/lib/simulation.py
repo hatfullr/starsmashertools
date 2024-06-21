@@ -79,16 +79,20 @@ class Simulation(object):
         :meth:`~.get_joined_simulations_generator`
         """
         import starsmashertools.helpers.path
-        mtime = starsmashertools.helpers.path.getmtime(self.archive.filename)
-        if (self._joined_simulations is None or
-            (self._last_retrieved_joined_simulations is not None and
-             mtime > self._last_retrieved_joined_simulations) or
-            # If the archive is in "nosave" mode, check if its buffers have
-            # any content. If so, updated the joined simulations
-            ((not self.archive.auto_save or self.archive.is_nosave) and
-             any(self.archive._buffers.values()))
-            ):
+        try:
+            mtime = starsmashertools.helpers.path.getmtime(self.archive.filename)
+        except FileNotFoundError:
             self._update_joined_simulations()
+        else:
+            if (self._joined_simulations is None or
+                (self._last_retrieved_joined_simulations is not None and
+                 mtime > self._last_retrieved_joined_simulations) or
+                # If the archive is in "nosave" mode, check if its buffers have
+                # any content. If so, updated the joined simulations
+                ((not self.archive.auto_save or self.archive.is_nosave) and
+                 any(self.archive._buffers.values()))
+                ):
+                self._update_joined_simulations()
         
         return self._joined_simulations
 

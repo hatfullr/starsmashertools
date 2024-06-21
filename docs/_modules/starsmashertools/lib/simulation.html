@@ -180,16 +180,20 @@
 <span class="sd">        :meth:`~.get_joined_simulations_generator`</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="kn">import</span> <span class="nn">starsmashertools.helpers.path</span>
-        <span class="n">mtime</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getmtime</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">archive</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
-        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_joined_simulations</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span>
-            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_last_retrieved_joined_simulations</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span>
-             <span class="n">mtime</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_retrieved_joined_simulations</span><span class="p">)</span> <span class="ow">or</span>
-            <span class="c1"># If the archive is in &quot;nosave&quot; mode, check if its buffers have</span>
-            <span class="c1"># any content. If so, updated the joined simulations</span>
-            <span class="p">((</span><span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">archive</span><span class="o">.</span><span class="n">auto_save</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">archive</span><span class="o">.</span><span class="n">is_nosave</span><span class="p">)</span> <span class="ow">and</span>
-             <span class="nb">any</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">archive</span><span class="o">.</span><span class="n">_buffers</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
-            <span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">mtime</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getmtime</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">archive</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_update_joined_simulations</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_joined_simulations</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span>
+                <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_last_retrieved_joined_simulations</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span>
+                 <span class="n">mtime</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_retrieved_joined_simulations</span><span class="p">)</span> <span class="ow">or</span>
+                <span class="c1"># If the archive is in &quot;nosave&quot; mode, check if its buffers have</span>
+                <span class="c1"># any content. If so, updated the joined simulations</span>
+                <span class="p">((</span><span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">archive</span><span class="o">.</span><span class="n">auto_save</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">archive</span><span class="o">.</span><span class="n">is_nosave</span><span class="p">)</span> <span class="ow">and</span>
+                 <span class="nb">any</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">archive</span><span class="o">.</span><span class="n">_buffers</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
+                <span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_update_joined_simulations</span><span class="p">()</span>
         
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_joined_simulations</span>
 
