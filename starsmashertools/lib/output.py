@@ -91,7 +91,7 @@ class Output(dict, object):
     def _get_relpath(self):
         import starsmashertools.helpers.path
         return starsmashertools.helpers.path.relpath(
-            starsmashertools.helpers.path.realpath(self.path),
+            self.path,
             start = self.simulation.directory,
         )
 
@@ -100,7 +100,7 @@ class Output(dict, object):
     def __getstate__(self):
         import starsmashertools.helpers.path
         return {
-            'path' : self.path,
+            'path' : self._path,
             'simulation' : self.simulation.directory,
             'mode' : self.mode,
             'mask' : self._mask,
@@ -121,7 +121,7 @@ class Output(dict, object):
     def __str__(self):
         import starsmashertools.helpers.path
         string = self.__class__.__name__ + "(%s)"
-        return string % ("'%s'" % starsmashertools.helpers.path.basename(self.path))
+        return string % ("'%s'" % starsmashertools.helpers.path.basename(self._path))
 
     def __repr__(self): return str(self)
 
@@ -150,7 +150,7 @@ class Output(dict, object):
         return self.path.__hash__(*args, **kwargs)
 
     def __copy__(self,*args,**kwargs):
-        ret = Output(self.path, self.simulation, mode=self.mode)
+        ret = Output(self._path, self.simulation, mode=self.mode)
         ret.copy_from(self)
         return ret
     def __deepcopy__(self,*args,**kwargs):
