@@ -852,80 +852,6 @@ class Simulation(object):
         # Stitch the blocks together to get the result
         return list(itertools.chain(*[block[3] for block in blocks]))
     
-            
-
-
-    """
-        
-        # To simplify the thought process: consider we are simulation A, with
-        # output files A/out0000.sph, A/out0001.sph, and A/out0002.sph, and we
-        # are joined with simulation B, which has
-        # restartrad.sph.orig == A/out0001.sph and output files B/out0001.sph,
-        # B/out0002.sph, and B/out0003.sph. We want to return
-        # [A/out0000.sph, B/out0001.sph, B/out0002.sph, B/out0003.sph].
-        #
-        # If simulation B doesn't originate from A, then we need to simply
-        # return files in the order of the joined simulations. This will be done
-        # only after the originating joined simulations have been handled first.
-
-        # Because the output files are always written sequentially, the very
-        # first match will have the smallest modification time. We use this fact
-        # to determine the ordering of the joined simulations that did not
-        # originate from us
-
-        # Handle the joined simulations which originate from us
-        we_started_from = [
-            s for s in self.joined_simulations if self.started_from(s)
-        ]
-        started_from_us = [
-            s for s in self.joined_simulations if s.started_from(self)
-        ]
-
-        # If there are any joined simulations which do not start from this
-        # simulation, or which this simulation does not start from, then there
-        # is a problem with the list of joined simulations.
-        for simulation in self.joined_simulations:
-            if simulation in we_started_from: continue
-            if simulation in started_from_us: continue
-            raise Simulation.JoinError(simulation)
-
-        all_paths = []
-        simulations = we_started_from + [self] + started_from_us
-        if simulations:
-            paths = []
-            times = []
-            for simulation in simulations:
-                ms = simulation.get_file(pattern)
-                ts = [starsmashertools.helpers.path.getmtime(m) for m in ms]
-                ms = [x for _,x in sorted(zip(ts, ms), key=lambda pair:pair[0])]
-
-                paths += [ms]
-                times += [simulation.get_start_time(
-                    include_joined = False,
-                )]
-
-            # Sorted by start times
-            simulations = [x for _,x in sorted(zip(times, simulations), key = lambda pair: pair[0])]
-            paths = [x for _,x in sorted(zip(times, paths), key=lambda pair:pair[0])]
-            times = sorted(times)
-
-            for i, (ps, s, t) in enumerate(zip(paths, simulations, times)):
-                if i == len(simulations) - 1:
-                    all_paths += ps
-                else:
-                    tahead = times[i + 1]
-                    
-                    m = starsmashertools.helpers.midpoint.Midpoint(ps)
-                    m.set_criteria(
-                        lambda p: s.reader.read_from_header('t', p) * s.units['t'] < tahead,
-                        lambda p: s.reader.read_from_header('t', p) * s.units['t'] == tahead,
-                        lambda p: s.reader.read_from_header('t', p) * s.units['t'] > tahead,
-                    )
-                    my_p, idx = m.get(favor = 'low', return_index = True)
-                    all_paths += ps[:idx+1]
-        return all_paths
-    """
-    
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def compress(
@@ -1175,12 +1101,10 @@ class Simulation(object):
         )
         
         return m.get()
-
+    
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
-    @cli('starsmashertools')
-    @clioptions(display_name = 'Show output files')
-    def get_output(
+    def get_output_generator(
             self,
             start : int | type(None) = None,
             stop : int | type(None) = None,
@@ -1189,11 +1113,10 @@ class Simulation(object):
             time_range : list | tuple | type(None) = None,
             indices : list | tuple | np.ndarray | type(None) = None,
             include_joined : bool = True,
-            cli : bool = False,
     ):
         """
-        Obtain a list of :class:`~.output.Output` objects associated with this
-        simulation. Returns all outputs if no arguments are specified.
+        Obtain a generator of :class:`~.output.Output` objects associated with 
+        this simulation. Returns all outputs if no arguments are specified.
         
         Parameters
         ----------
@@ -1226,10 +1149,10 @@ class Simulation(object):
         
         Returns
         -------
-        list, :class:`~.output.Output`
-            A list of :class:`~.output.Output` objects. If the list contains
-            only a single item, that item is returned instead.
+        generator
+            A generator of :class:`~.output.Output` objects.
         """
+
         import starsmashertools.lib.output
         import starsmashertools.helpers.string
         filenames = self.get_outputfiles(include_joined = include_joined)
@@ -1287,9 +1210,40 @@ class Simulation(object):
             filenames = filenames[idx0:idx1]
         else:
             raise ValueError("No mode specified. Check your keyword arguments.")
-        
-        ret = [starsmashertools.lib.output.Output(filename, self) for filename in filenames]
 
+        for filename in filenames:
+            yield starsmashertools.lib.output.Output(filename, self)
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    @cli('starsmashertools')
+    @clioptions(display_name = 'Show output files')
+    def get_output(self, *args, cli : bool = False, **kwargs):
+        """
+        The same as :meth:`~.get_output_generator`\, except the resulting
+        generator is consumed into a list.
+        
+        Parameters
+        ----------
+        *args
+            Positional arguments are passed directly to 
+            :meth:`~.get_output_generator`\.
+
+        Other Parameters
+        ----------------
+        **kwargs
+            Keyword arguments are passed directly to 
+            :meth:`~.get_output_generator`\.
+
+        Returns
+        -------
+        list, :class:`~.output.Output`
+            A :py:class:`list` of :class:`~.output.Output` objects. If there is
+            only a single item, only that item is returned (instead of a list).
+        """
+
+        ret = list(self.get_output_generator(*args, **kwargs))
+        
         if cli:
             import starsmashertools.bintools.page
             if len(ret) == 1: return ret[0].get_formatted_string('cli')
@@ -1297,7 +1251,7 @@ class Simulation(object):
 
         if len(ret) == 1: return ret[0]
         return ret
-
+    
     @api
     def get_output_headers(self, **kwargs):
         """
