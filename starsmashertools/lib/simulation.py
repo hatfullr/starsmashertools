@@ -1253,7 +1253,7 @@ class Simulation(object):
     @api
     @cli('starsmashertools')
     @clioptions(display_name = 'Show output files')
-    def get_output(self, *args, cli : bool = False, **kwargs):
+    def get_output(self, *args, **kwargs):
         """
         The same as :meth:`~.get_output_generator`\, except the resulting
         generator is consumed into a list.
@@ -1279,6 +1279,7 @@ class Simulation(object):
 
         ret = list(self.get_output_generator(*args, **kwargs))
         
+        cli = kwargs.get('cli', False)
         if cli:
             import starsmashertools.bintools.page
             if len(ret) == 1: return ret[0].get_formatted_string('cli')
