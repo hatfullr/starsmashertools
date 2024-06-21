@@ -82,8 +82,7 @@ def get_directory_size(path : str):
     if not isdir(path): raise FileNotFoundError(path)
     total = 0
     for entry in scandir(path):
-        try:
-            total += entry.stat().st_size
+        try: total += entry.stat().st_size
         except: pass
     return total
     
@@ -98,22 +97,19 @@ def realpath(path):
 import os
 import glob
 path='%s'
-g = path
 if '*' in path:
     g = glob.glob(path)
-    if g: g = g[0]
-expanded = os.path.expandvars(os.path.expanduser(g))
-print(os.path.realpath(expanded))
+    if g: 
+        print(os.path.realpath(os.path.expandvars(os.path.expanduser(g[0]))))  
+else: print(os.path.realpath(os.path.expandvars(os.path.expanduser(path))))
             """ % remote_path,
         )
         return address + ":" + result
     
-    g = path
     if '*' in path:
         g = glob.glob(path)
-        if g: g = g[0]
-    expanded = os.path.expandvars(os.path.expanduser(g))
-    return os.path.realpath(expanded)
+        if g: return os.path.realpath(os.path.expandvars(os.path.expanduser(g[0])))
+    return os.path.realpath(os.path.expandvars(os.path.expanduser(path)))
 
 def relpath(path, start=os.curdir):
     if starsmashertools.helpers.ssh.isRemote(path):
@@ -132,9 +128,7 @@ def exists(path, isRemote=None):
     return os.path.exists(path)
 
 def isfile(path, isRemote=None):
-    if isRemote is None:
-        isRemote = starsmashertools.helpers.ssh.isRemote(path)
-    if isRemote:
+    if isRemote is None and starsmashertools.helpers.ssh.isRemote(path):
         address, remote_path = starsmashertools.helpers.ssh.split_address(path)
         return starsmashertools.helpers.string.parse(
             starsmashertools.helpers.ssh.run_python(
@@ -168,11 +162,11 @@ def rename(path, newpath):
 def walk(directory):
     if starsmashertools.helpers.ssh.isRemote(directory):
         address, remote_directory = starsmashertools.helpers.ssh.split_address(directory)
-        result = starsmashertools.helpers.ssh.run_python(
+        # eval converts the resulting string to a list
+        return eval(starsmashertools.helpers.ssh.run_python(
             address,
             "import os; print([stuff for stuff in os.walk('%s')])" % remote_directory,
-        )
-        return eval(result) # eval converts the resultign string to a list
+        ))
     return [stuff for stuff in os.walk(directory)]
 
 def listdir(directory):
@@ -188,9 +182,7 @@ def remove(path):
 def join(*args):
     if len(args) == 1:
         raise Exception("You must pass more than 1 argument to join")
-    isRemote = []
-    for a in args:
-        isRemote += [ starsmashertools.helpers.ssh.isRemote(a) ]
+    isRemote = [starsmashertools.helpers.ssh.isRemote(a) for a in args]
 
     if not any(isRemote):
         return os.path.join(*args)
@@ -202,6 +194,8 @@ def join(*args):
         return address + ":" + os.path.join(remote_path, *args[1:])
 
 def dirname(path):
+    if starsmashertools.helpers.ssh.isRemote(path):
+        raise NotImplementedError
     return os.path.dirname(path)
 
 def isdir(path):
@@ -214,15 +208,6 @@ def scandir(path):
         raise NotImplementedError
     return os.scandir(path)
 
-subdirectories = {}
-
-def get_all_subdirectories(path):
-    if starsmashertools.helpers.ssh.isRemote(path):
-        raise NotImplementedError
-    if path in subdirectories.keys(): return subdirectories[path]
-    subdirectories[path] = glob.glob(os.path.join(path, "**", ""), recursive=True)
-    return subdirectories[path]
-
 pattern_matches = collections.OrderedDict()
 
 # Given the path to a file, search search_directory for the first duplicate file.
@@ -230,51 +215,22 @@ pattern_matches = collections.OrderedDict()
 def find_duplicate_file(
         filepath : str,
         search_directory : str,
-        pattern : str = "out*.sph",
+        pattern : str = 'out*.sph',
         throw_error : bool = False,
-        exclude : list | tuple = [],
+        **kwargs,
 ):
-    import starsmashertools.helpers.file
-    
-    filepath = realpath(filepath)
-
-    isRemote = starsmashertools.helpers.ssh.isRemote(filepath)
-    
-    search_directory = realpath(search_directory)
-    filedirectory = dirname(filepath)
-
-    search_string = join(search_directory,"**",pattern)
-
-    if search_directory in subdirectories.keys():
-        matches = []
-        for directory in subdirectories[search_directory]:
-            matches += glob.glob(join(directory, pattern), recursive=True)
-        pattern_matches[search_string] = matches
-    
-    # Try to limit exhaustive searches
-    matches = None
-    if search_string in pattern_matches.keys():
-        matches = pattern_matches[search_string]
-    else:
-        matches = glob.glob(search_string, recursive=True)
-        pattern_matches[search_string] = matches
-
-    for match in matches:
-        if match in exclude: continue
-        if (isfile(match, isRemote=isRemote) and
-            match != filepath and
-            starsmashertools.helpers.file.compare(filepath, match)):
-            return match
-    if throw_error:
+    for f in find_duplicate_files(
+            filepath, search_directory, pattern = pattern, **kwargs
+    ):
+        return f
+    if throw_error: 
         raise Exception("Found no duplicate '%s' file for '%s' in search directory '%s'" % (pattern, filepath, search_directory))
-    return None
 
 
 def find_duplicate_files(
         filepath : str,
         search_directory : str,
         pattern : str = "out*.sph",
-        throw_error : bool = False,
         exclude : list | tuple = [],
 ):
     import starsmashertools.helpers.file
@@ -288,28 +244,19 @@ def find_duplicate_files(
 
     search_string = join(search_directory,"**",pattern)
 
-    if search_directory in subdirectories.keys():
-        matches = []
-        for directory in subdirectories[search_directory]:
-            matches += glob.glob(join(directory, pattern), recursive=True)
-        pattern_matches[search_string] = matches
-    
     # Try to limit exhaustive searches
-    matches = None
-    if search_string in pattern_matches.keys():
-        matches = pattern_matches[search_string]
-    else:
-        matches = glob.glob(search_string, recursive=True)
-        pattern_matches[search_string] = matches
-
-    for match in matches:
+    if search_directory in subdirectories.keys():
+        pattern_matches[search_string] = [glob.glob(join(directory, pattern), recursive=True) for directory in subdirectories[search_directory]]
+    
+    for match in pattern_matches.get(
+            search_string,
+            glob.glob(search_string, recursive=True),
+    ):
         if match in exclude: continue
-        if (isfile(match, isRemote=isRemote) and
-            match != filepath and
+        if (match != filepath and
+            isfile(match, isRemote=isRemote) and
             starsmashertools.helpers.file.compare(filepath, match)):
             yield match
-    if throw_error:
-        raise Exception("Found no duplicate '%s' file for '%s' in search directory '%s'" % (pattern, filepath, search_directory))
 
 
 
@@ -362,12 +309,11 @@ print('')
             warnings.filterwarnings("ignore", category=ResourceWarning)
             for obj in scandir(directory):
                 if obj.is_dir():
-                    path = obj.path
-                    contents = [o.name for o in scandir(path) if o.is_file()]
+                    contents =[o.name for o in scandir(obj.path) if o.is_file()]
                     for filename in src_identifiers:
                         if filename not in contents: break
                     else:
-                        return path
+                        return obj.path
 
     if throw_error:
         raise FileNotFoundError("Failed to find the source directory in '%s'. Please make sure there is a directoy which contains all the following file names: %s" % (directory, starsmashertools.helpers.string.list_to_string(src_identifiers)))

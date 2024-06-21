@@ -15,7 +15,6 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
         for duplicate in starsmashertools.helpers.path.find_duplicate_files(
                 self.get_start_file(),
                 self.get_search_directory(),
-                throw_error=True,
         ):
             simulation = starsmashertools.get_simulation(
                 starsmashertools.helpers.path.dirname(duplicate)
