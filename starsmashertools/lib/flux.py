@@ -51,7 +51,7 @@ class FluxFinder(object):
             flux_limit_min : int | float | type(None) = None,
 
             # Spectrum
-            spectrum_size : int | float = Pref('spectrum_size', 1000),
+            spectrum_size : int = Pref('spectrum_size', 1000),
             lmax : int | float = Pref('lmax', 3000),
             dl_il : int | float = Pref('dl_il', 3.),
             dl : int | float = Pref('dl', 10),
