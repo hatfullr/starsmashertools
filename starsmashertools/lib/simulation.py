@@ -779,8 +779,9 @@ class Simulation(object):
 
         if not numbers:
             # No numeric patterns found. Fallback to sorting by mtime
+            matches = list(self.get_file(pattern))
             times = [starsmashertools.helpers.path.getmtime(m) for m in matches]
-            matches = [x for _,x in sorted(zip(times, self.get_file(pattern)), key=lambda pair:pair[0])]
+            matches = [x for _,x in sorted(zip(times, matches), key=lambda pair:pair[0])]
         else:
             # There should be at least 1 set of numbers whose span is the
             # same among all the output files. Weed out the ones where this
@@ -793,16 +794,25 @@ class Simulation(object):
 
             # Search for sequential listings. There should be at least 1.
             # Also sort the numbers dict
+            longest_len = -1
+            longest = None
             for key, val in numbers.items():
                 v = sorted(val)
                 diff = v[1] - v[0]
-                for v2, v1 in zip(v[2:], v[1:-1]):
+                for i, (v2, v1) in enumerate(zip(v[2:], v[1:-1])):
                     if v2-v1 != diff: break
-                else: # Loop completed normally (uniform step sizes)
-                    matches = [x for _,x in sorted(zip(val, files[key]), key = lambda pair:pair[0])]
-                    break
-            else: # No break
-                raise Exception("Failed to find sequential numeric tags in the StarSmasher output files of pattern '%s': none of the numeric tags have uniform step sizes." % pattern)
+                    if i > longest_len:
+                        longest = key
+                        longest_len = i
+                else: break
+            
+            if longest is not None:
+                matches = [x for _,x in sorted(zip(val, files[longest]), key = lambda pair:pair[0])]
+            else:
+                # Resort to basic matching
+                matches = list(self.get_file(pattern))
+                times = [starsmashertools.helpers.path.getmtime(m) for m in matches]
+                matches = [x for _,x in sorted(zip(times, matches), key=lambda pair:pair[0])]
         
         if not include_joined: return matches
 
