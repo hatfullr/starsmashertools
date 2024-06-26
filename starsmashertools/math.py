@@ -66,6 +66,9 @@ def linear_interpolate(x, y, x0):
             right = idx_closest
             if idx_closest - 1 < 0: left = 0
             else: left = idx_closest - 1
+        else:
+            ret[i] = y[idx_closest]
+            continue
         _x0 = x[left]
         _x1 = x[right]
         _y0 = y[left]
@@ -201,3 +204,5 @@ def rotate_spherical(
         yangle = 0.,
         zangle = -phi,
     )
+
+

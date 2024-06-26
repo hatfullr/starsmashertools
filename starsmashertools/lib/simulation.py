@@ -73,7 +73,7 @@ class Simulation(object):
     
     @property
     def joined_simulations(self):
-        """
+        r"""
         See Also
         --------
         :meth:`~.get_joined_simulations_generator`
@@ -283,7 +283,7 @@ class Simulation(object):
         
     @api
     def get_search_directory(self):
-        """
+        r"""
         Get the default search directory from the preferences.
 
         Returns
@@ -297,7 +297,7 @@ class Simulation(object):
     
     @api
     def get_compressed_properties(self):
-        """
+        r"""
         Get a dictionary of properties on the files contained in the compressed
         archive.
 
@@ -336,7 +336,7 @@ class Simulation(object):
             include_joined : bool = True,
             **kwargs
     ):
-        """
+        r"""
         Get a list of :class:`~.logfile.LogFile`\, sorted by oldest-to-newest,
         including those in subdirectories in the simulation directory.
 
@@ -387,7 +387,7 @@ class Simulation(object):
             children : str | list | tuple,
             cli : bool = False,
     ):
-        """
+        r"""
         Set the list of :class:`~.Simulation` objects that were used to create
         this simulation. This can save time on searching the file system for 
         child simulations.
@@ -442,7 +442,7 @@ class Simulation(object):
             verbose : bool = False,
             cli : bool = False,
     ):
-        """
+        r"""
         Return a list of :class:`~.Simulation` objects that were used to create
         this simulation. For example, if this simulation is a dynamical
         simulation (``nrelax = 0``), then it has one child, which is the binary
@@ -501,7 +501,7 @@ class Simulation(object):
 
     @api
     def get_start_file(self):
-        """
+        r"""
         Return the path to the output file that this simulation started from,
         as identified by ``'Simulation/start file'`` in 
         :mod:`~starsmashertools.preferences`\. If this simulation doesn't
@@ -529,7 +529,7 @@ class Simulation(object):
             self,
             include_joined : bool = True,
     ):
-        """
+        r"""
         Other Parameters
         ----------------
         include_joined : bool, default = True
@@ -558,7 +558,7 @@ class Simulation(object):
             use_logfiles : bool = False,
             include_joined : bool = True,
     ):
-        """
+        r"""
         Obtain the time which the :class:`~.Simulation` is currently at.
         
         Other Parameters
@@ -599,7 +599,7 @@ class Simulation(object):
             self,
             include_joined : bool = True,
     ):
-        """
+        r"""
         Obtain the time at which the :class:`~.Simulation` is expected to stop 
         running. This is set by the ``'tf'`` parameter in the StarSmasher input 
         file ``sph.input``\.
@@ -623,7 +623,7 @@ class Simulation(object):
 
     @api
     def started_from(self, simulation : 'starsmashertools.lib.simulation.Simulation'):
-        """
+        r"""
         Parameters
         ----------
         simulation : :class:`~.Simulation`
@@ -665,7 +665,7 @@ class Simulation(object):
             filename_or_pattern : str,
             recursive : bool = True,
     ):
-        """
+        r"""
         Search the simulation directory for a file or files that match a
         pattern.
 
@@ -703,7 +703,7 @@ class Simulation(object):
             include_joined : bool = True,
             exclude_joined : list | tuple = [],
     ):
-        """
+        r"""
         Returns a list of output file locations. If this simulation has any
         joined simulations, then each of those simulations' output file paths
         are returned as well. The result is sorted by simulation times.
@@ -797,6 +797,11 @@ class Simulation(object):
             longest_len = -1
             longest = None
             for key, val in numbers.items():
+                if len(val) == 1:
+                    if longest_len < 1:
+                        longest = key
+                        longest_len = 1
+                    continue
                 v = sorted(val)
                 diff = v[1] - v[0]
                 for i, (v2, v1) in enumerate(zip(v[2:], v[1:-1])):
@@ -806,7 +811,7 @@ class Simulation(object):
                         longest_len = i
                 else: break
             
-            if longest is not None:
+            if longest is not None and longest_len != 1:
                 matches = [x for _,x in sorted(zip(val, files[longest]), key = lambda pair:pair[0])]
             else:
                 # Resort to basic matching
@@ -907,7 +912,7 @@ class Simulation(object):
             delete_after : bool = True,
             **kwargs,
     ):
-        """
+        r"""
         Create a compressed version of the Simulation. File creation times are
         preserved.
 
@@ -972,7 +977,7 @@ class Simulation(object):
             delete : bool = True,
             **kwargs
     ):
-        """
+        r"""
         Decompress the simulation from the given filename.
 
         Does not decompress any joined simulations.
@@ -1016,7 +1021,7 @@ class Simulation(object):
 
     @api
     def get_size(self):
-        """
+        r"""
         Returns
         -------
         int
@@ -1045,7 +1050,7 @@ class Simulation(object):
             include_joined : bool = True,
             **kwargs
     ):
-        """
+        r"""
         Return a :class:`~.output.OutputIterator` containing all the 
         :class:`~.output.Output` objects present in this simulation.
 
@@ -1098,7 +1103,7 @@ class Simulation(object):
             time : int | float | starsmashertools.lib.units.Unit,
             include_joined : bool = True,
     ):
-        """
+        r"""
         Return the :class:`~.output.Output` object of this simulation whose time
         best matches the given time. Raises a :py:class:`ValueError` if the 
         given time is out of bounds.
@@ -1158,7 +1163,7 @@ class Simulation(object):
             indices : list | tuple | np.ndarray | type(None) = None,
             include_joined : bool = True,
     ):
-        """
+        r"""
         Obtain a generator of :class:`~.output.Output` objects associated with 
         this simulation. Returns all outputs if no arguments are specified.
         
@@ -1264,7 +1269,7 @@ class Simulation(object):
     @cli('starsmashertools')
     @clioptions(display_name = 'Show output files')
     def get_output(self, *args, **kwargs):
-        """
+        r"""
         The same as :meth:`~.get_output_generator`\, except the resulting
         generator is consumed into a list.
         
@@ -1300,7 +1305,7 @@ class Simulation(object):
     
     @api
     def get_output_headers(self, **kwargs):
-        """
+        r"""
         Read all the headers of the output files in this simulation and return
         them as a dictionary.
         
@@ -1340,7 +1345,7 @@ class Simulation(object):
             skip_rows : int | type(None) = None,
             include_joined : bool = True,
     ):
-        """
+        r"""
         Get the :class:`~.energyfile.EnergyFile` objects associated with this 
         simulation.
 
@@ -1377,7 +1382,7 @@ class Simulation(object):
             skip_rows : int | type(None) = None,
             include_joined : bool = True,
     ):
-        """
+        r"""
         Obtain all the simulation energies as a function of simulation time.
         
         Other Parameters
@@ -1614,7 +1619,7 @@ class Simulation(object):
             other,
             cli : bool = False,
     ):
-        """
+        r"""
         Merge two simulations of the same type together, by having
         starsmashertools retrieve the output files of all joined simulations
         whenever the ``include_joined`` flag is set to `True` (default) in
@@ -1707,7 +1712,7 @@ class Simulation(object):
             which = None,
             cli : bool = False,
     ):
-        """
+        r"""
         The opposite of :meth:`~.join`\. Split this simulation apart from each
         simulation it is joined to. Any simulation joined to this one will also
         be split apart from it.
@@ -1803,7 +1808,7 @@ class Simulation(object):
 
 
     def get_state(self):
-        """ 
+        r""" 
         Return a new :class:`~.State` object and call :meth:`~.State.get`\.
         """
         state = State(self)
@@ -1812,7 +1817,7 @@ class Simulation(object):
 
 
 class State(object):
-    """
+    r"""
     Contains information about a :class:`~.Simulation` which can be used to
     check for changes in a :class:`~.Simulation` over time. A :class:`~.State`
     cares only about changes which StarSmasher has made to the physical 
