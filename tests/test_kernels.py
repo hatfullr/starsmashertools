@@ -48,7 +48,7 @@ class TestKernelFunction(basetest.BaseTest):
                 self.assertAlmostEqual(f1(_x, h), f2(_x, h), places = 5)
 
     def test_integrated(self):
-        import matplotlib.pyplot as plt
+        #import matplotlib.pyplot as plt
         compact_support = 2
         for function in get_all_functions():
             f = function(integrated = True, compact_support = compact_support)
@@ -62,7 +62,7 @@ class TestKernelFunction(basetest.BaseTest):
                 f2.scaled(0, 1),
                 msg = function.__name__,
             )
-            
+            """
             x = np.linspace(0, f.compact_support, 100)
             l = plt.plot(
                 x / f.compact_support,
@@ -76,11 +76,11 @@ class TestKernelFunction(basetest.BaseTest):
                 color = l.get_color(),
                 linestyle = '--',
             )
-            
-        plt.legend()
+            """
+        #plt.legend()
         #plt.show() # Uncomment to see results
 
-        plt.close('all')
+        #plt.close('all')
             
     def test_get_by_name(self):
         for function in get_all_functions():

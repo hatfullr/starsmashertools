@@ -174,7 +174,7 @@
     
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">joined_simulations</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        See Also</span>
 <span class="sd">        --------</span>
 <span class="sd">        :meth:`~.get_joined_simulations_generator`</span>
@@ -404,7 +404,7 @@
 <a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.simulation.html#starsmashertools.lib.simulation.Simulation.get_search_directory">[docs]</a>
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="nf">get_search_directory</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get the default search directory from the preferences.</span>
 
 <span class="sd">        Returns</span>
@@ -421,7 +421,7 @@
 <a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.simulation.html#starsmashertools.lib.simulation.Simulation.get_compressed_properties">[docs]</a>
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="nf">get_compressed_properties</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get a dictionary of properties on the files contained in the compressed</span>
 <span class="sd">        archive.</span>
 
@@ -466,7 +466,7 @@
             <span class="n">include_joined</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
             <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get a list of :class:`~.logfile.LogFile`\, sorted by oldest-to-newest,</span>
 <span class="sd">        including those in subdirectories in the simulation directory.</span>
 
@@ -520,7 +520,7 @@
             <span class="n">children</span> <span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">,</span>
             <span class="n">cli</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Set the list of :class:`~.Simulation` objects that were used to create</span>
 <span class="sd">        this simulation. This can save time on searching the file system for </span>
 <span class="sd">        child simulations.</span>
@@ -578,7 +578,7 @@
             <span class="n">verbose</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
             <span class="n">cli</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a list of :class:`~.Simulation` objects that were used to create</span>
 <span class="sd">        this simulation. For example, if this simulation is a dynamical</span>
 <span class="sd">        simulation (``nrelax = 0``), then it has one child, which is the binary</span>
@@ -640,7 +640,7 @@
 <a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.simulation.html#starsmashertools.lib.simulation.Simulation.get_start_file">[docs]</a>
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="nf">get_start_file</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return the path to the output file that this simulation started from,</span>
 <span class="sd">        as identified by ``&#39;Simulation/start file&#39;`` in </span>
 <span class="sd">        :mod:`~starsmashertools.preferences`\. If this simulation doesn&#39;t</span>
@@ -671,7 +671,7 @@
             <span class="bp">self</span><span class="p">,</span>
             <span class="n">include_joined</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Other Parameters</span>
 <span class="sd">        ----------------</span>
 <span class="sd">        include_joined : bool, default = True</span>
@@ -703,7 +703,7 @@
             <span class="n">use_logfiles</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
             <span class="n">include_joined</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Obtain the time which the :class:`~.Simulation` is currently at.</span>
 <span class="sd">        </span>
 <span class="sd">        Other Parameters</span>
@@ -747,7 +747,7 @@
             <span class="bp">self</span><span class="p">,</span>
             <span class="n">include_joined</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Obtain the time at which the :class:`~.Simulation` is expected to stop </span>
 <span class="sd">        running. This is set by the ``&#39;tf&#39;`` parameter in the StarSmasher input </span>
 <span class="sd">        file ``sph.input``\.</span>
@@ -774,7 +774,7 @@
 <a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.simulation.html#starsmashertools.lib.simulation.Simulation.started_from">[docs]</a>
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="nf">started_from</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">simulation</span> <span class="p">:</span> <span class="s1">&#39;starsmashertools.lib.simulation.Simulation&#39;</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        simulation : :class:`~.Simulation`</span>
@@ -819,7 +819,7 @@
             <span class="n">filename_or_pattern</span> <span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
             <span class="n">recursive</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Search the simulation directory for a file or files that match a</span>
 <span class="sd">        pattern.</span>
 
@@ -860,7 +860,7 @@
             <span class="n">include_joined</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
             <span class="n">exclude_joined</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">=</span> <span class="p">[],</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Returns a list of output file locations. If this simulation has any</span>
 <span class="sd">        joined simulations, then each of those simulations&#39; output file paths</span>
 <span class="sd">        are returned as well. The result is sorted by simulation times.</span>
@@ -954,6 +954,11 @@
             <span class="n">longest_len</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
             <span class="n">longest</span> <span class="o">=</span> <span class="kc">None</span>
             <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">numbers</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">longest_len</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+                        <span class="n">longest</span> <span class="o">=</span> <span class="n">key</span>
+                        <span class="n">longest_len</span> <span class="o">=</span> <span class="mi">1</span>
+                    <span class="k">continue</span>
                 <span class="n">v</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
                 <span class="n">diff</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">v</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
                 <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">v2</span><span class="p">,</span> <span class="n">v1</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="mi">2</span><span class="p">:],</span> <span class="n">v</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">])):</span>
@@ -963,7 +968,7 @@
                         <span class="n">longest_len</span> <span class="o">=</span> <span class="n">i</span>
                 <span class="k">else</span><span class="p">:</span> <span class="k">break</span>
             
-            <span class="k">if</span> <span class="n">longest</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">longest</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">longest_len</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
                 <span class="n">matches</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span><span class="n">x</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">files</span><span class="p">[</span><span class="n">longest</span><span class="p">]),</span> <span class="n">key</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">pair</span><span class="p">:</span><span class="n">pair</span><span class="p">[</span><span class="mi">0</span><span class="p">])]</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="c1"># Resort to basic matching</span>
@@ -1067,7 +1072,7 @@
             <span class="n">delete_after</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
             <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Create a compressed version of the Simulation. File creation times are</span>
 <span class="sd">        preserved.</span>
 
@@ -1135,7 +1140,7 @@
             <span class="n">delete</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
             <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Decompress the simulation from the given filename.</span>
 
 <span class="sd">        Does not decompress any joined simulations.</span>
@@ -1182,7 +1187,7 @@
 <a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.simulation.html#starsmashertools.lib.simulation.Simulation.get_size">[docs]</a>
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="nf">get_size</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        int</span>
@@ -1214,7 +1219,7 @@
             <span class="n">include_joined</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
             <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a :class:`~.output.OutputIterator` containing all the </span>
 <span class="sd">        :class:`~.output.Output` objects present in this simulation.</span>
 
@@ -1270,7 +1275,7 @@
             <span class="n">time</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">Unit</span><span class="p">,</span>
             <span class="n">include_joined</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return the :class:`~.output.Output` object of this simulation whose time</span>
 <span class="sd">        best matches the given time. Raises a :py:class:`ValueError` if the </span>
 <span class="sd">        given time is out of bounds.</span>
@@ -1333,7 +1338,7 @@
             <span class="n">indices</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
             <span class="n">include_joined</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Obtain a generator of :class:`~.output.Output` objects associated with </span>
 <span class="sd">        this simulation. Returns all outputs if no arguments are specified.</span>
 <span class="sd">        </span>
@@ -1442,7 +1447,7 @@
     <span class="nd">@cli</span><span class="p">(</span><span class="s1">&#39;starsmashertools&#39;</span><span class="p">)</span>
     <span class="nd">@clioptions</span><span class="p">(</span><span class="n">display_name</span> <span class="o">=</span> <span class="s1">&#39;Show output files&#39;</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">get_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        The same as :meth:`~.get_output_generator`\, except the resulting</span>
 <span class="sd">        generator is consumed into a list.</span>
 <span class="sd">        </span>
@@ -1481,7 +1486,7 @@
 <a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.simulation.html#starsmashertools.lib.simulation.Simulation.get_output_headers">[docs]</a>
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="nf">get_output_headers</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Read all the headers of the output files in this simulation and return</span>
 <span class="sd">        them as a dictionary.</span>
 <span class="sd">        </span>
@@ -1524,7 +1529,7 @@
             <span class="n">skip_rows</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
             <span class="n">include_joined</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get the :class:`~.energyfile.EnergyFile` objects associated with this </span>
 <span class="sd">        simulation.</span>
 
@@ -1564,7 +1569,7 @@
             <span class="n">skip_rows</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
             <span class="n">include_joined</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Obtain all the simulation energies as a function of simulation time.</span>
 <span class="sd">        </span>
 <span class="sd">        Other Parameters</span>
@@ -1813,7 +1818,7 @@
             <span class="n">other</span><span class="p">,</span>
             <span class="n">cli</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Merge two simulations of the same type together, by having</span>
 <span class="sd">        starsmashertools retrieve the output files of all joined simulations</span>
 <span class="sd">        whenever the ``include_joined`` flag is set to `True` (default) in</span>
@@ -1909,7 +1914,7 @@
             <span class="n">which</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
             <span class="n">cli</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        The opposite of :meth:`~.join`\. Split this simulation apart from each</span>
 <span class="sd">        simulation it is joined to. Any simulation joined to this one will also</span>
 <span class="sd">        be split apart from it.</span>
@@ -2006,7 +2011,7 @@
 
 
     <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot; </span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot; </span>
 <span class="sd">        Return a new :class:`~.State` object and call :meth:`~.State.get`\.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">state</span> <span class="o">=</span> <span class="n">State</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
@@ -2016,7 +2021,7 @@
 
 
 <span class="k">class</span> <span class="nc">State</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Contains information about a :class:`~.Simulation` which can be used to</span>
 <span class="sd">    check for changes in a :class:`~.Simulation` over time. A :class:`~.State`</span>
 <span class="sd">    cares only about changes which StarSmasher has made to the physical </span>
