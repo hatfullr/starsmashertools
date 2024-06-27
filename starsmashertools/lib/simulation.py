@@ -217,12 +217,12 @@ class Simulation(object):
             super(Simulation.OutputNotInSimulationError, self).__init__(message)
 
     class JoinError(Exception):
-        def __init__(self, simulation, message=None):
+        def __init__(self, simulation1, simulation2, message=None):
             if message is None:
                 start_file = Simulation.preferences.get('start file')
                 message = "Cannot join simulation '{sim1:s}' and '{sim2:s}' because neither simulations were started from one another. That is, '{start_file:s}' in one or both of these simulations does not originate from an output file in one of these simulations.".format(
-                    sim1 = self.directory,
-                    sim2 = simulation.directory,
+                    sim1 = simulation1.directory,
+                    sim2 = simulation2.directory,
                     start_file = start_file,
                 )
             super(Simulation.JoinError, self).__init__(message)
@@ -1658,10 +1658,10 @@ class Simulation(object):
         if self == other:
             message = "Cannot join simulations '%s' and '%s' because they are the same simulation" % (self.directory, other.directory)
             if cli: return message
-            raise Simulation.JoinError(other, message = message)
+            raise Simulation.JoinError(self, other, message = message)
 
         if not self.started_from(other) and not other.started_from(self):
-            raise Simulation.JoinError(other)
+            raise Simulation.JoinError(self, other)
         
         other_path = starsmashertools.helpers.path.relpath(
             other.directory,
