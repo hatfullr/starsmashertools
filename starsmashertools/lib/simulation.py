@@ -58,7 +58,7 @@ class Simulation(object):
         self._last_retrieved_joined_simulations = None
         
         self.reader = starsmashertools.lib.output.Reader(self)
-
+        
         self.archive = starsmashertools.lib.archive.SimulationArchive(self)
         self.archive.on_nosave_disabled += [self._update_joined_simulations]
             
@@ -1694,10 +1694,9 @@ class Simulation(object):
         else:
             v = self.archive['joined simulations']
             if other_path not in v.value:
-                v.value += [other_path]
                 self.archive.add(
                     'joined simulations',
-                    v.value,
+                    v.value + [other_path],
                 )
         
         if 'joined simulations' not in other.archive:
@@ -1708,12 +1707,11 @@ class Simulation(object):
         else:
             v = other.archive['joined simulations']
             if our_path not in v.value:
-                v.value += [our_path]
                 other.archive.add(
                     'joined simulations',
-                    v.value,
+                    v.value + [our_path],
                 )
-
+        
         if cli: return "Success"
 
 

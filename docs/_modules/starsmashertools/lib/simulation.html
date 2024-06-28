@@ -158,7 +158,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_last_retrieved_joined_simulations</span> <span class="o">=</span> <span class="kc">None</span>
         
         <span class="bp">self</span><span class="o">.</span><span class="n">reader</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">Reader</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
-
+        
         <span class="bp">self</span><span class="o">.</span><span class="n">archive</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">archive</span><span class="o">.</span><span class="n">SimulationArchive</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">archive</span><span class="o">.</span><span class="n">on_nosave_disabled</span> <span class="o">+=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_update_joined_simulations</span><span class="p">]</span></div>
 
@@ -1893,10 +1893,9 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="n">v</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">archive</span><span class="p">[</span><span class="s1">&#39;joined simulations&#39;</span><span class="p">]</span>
             <span class="k">if</span> <span class="n">other_path</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">v</span><span class="o">.</span><span class="n">value</span><span class="p">:</span>
-                <span class="n">v</span><span class="o">.</span><span class="n">value</span> <span class="o">+=</span> <span class="p">[</span><span class="n">other_path</span><span class="p">]</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">archive</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>
                     <span class="s1">&#39;joined simulations&#39;</span><span class="p">,</span>
-                    <span class="n">v</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+                    <span class="n">v</span><span class="o">.</span><span class="n">value</span> <span class="o">+</span> <span class="p">[</span><span class="n">other_path</span><span class="p">],</span>
                 <span class="p">)</span>
         
         <span class="k">if</span> <span class="s1">&#39;joined simulations&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">other</span><span class="o">.</span><span class="n">archive</span><span class="p">:</span>
@@ -1907,12 +1906,11 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="n">v</span> <span class="o">=</span> <span class="n">other</span><span class="o">.</span><span class="n">archive</span><span class="p">[</span><span class="s1">&#39;joined simulations&#39;</span><span class="p">]</span>
             <span class="k">if</span> <span class="n">our_path</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">v</span><span class="o">.</span><span class="n">value</span><span class="p">:</span>
-                <span class="n">v</span><span class="o">.</span><span class="n">value</span> <span class="o">+=</span> <span class="p">[</span><span class="n">our_path</span><span class="p">]</span>
                 <span class="n">other</span><span class="o">.</span><span class="n">archive</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>
                     <span class="s1">&#39;joined simulations&#39;</span><span class="p">,</span>
-                    <span class="n">v</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+                    <span class="n">v</span><span class="o">.</span><span class="n">value</span> <span class="o">+</span> <span class="p">[</span><span class="n">our_path</span><span class="p">],</span>
                 <span class="p">)</span>
-
+        
         <span class="k">if</span> <span class="n">cli</span><span class="p">:</span> <span class="k">return</span> <span class="s2">&quot;Success&quot;</span></div>
 
 

@@ -833,7 +833,7 @@ class Archive(object):
             update_archive_version(self.filename, verbose = self.verbose)
 
     def _auto_save(self, *args, **kwargs):
-        if self.auto_save and self._buffer_size >= self._max_buffer_size:
+        if self.auto_save or self._buffer_size >= self._max_buffer_size:
             self.save(*args, **kwargs)
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
