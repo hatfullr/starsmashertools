@@ -1268,31 +1268,40 @@ class Simulation(object):
     @api
     @cli('starsmashertools')
     @clioptions(display_name = 'Show output files')
-    def get_output(self, *args, **kwargs):
+    def get_output(
+            self,
+            start : int | type(None) = None,
+            stop : int | type(None) = None,
+            step : int | type(None) = None,
+            times : int | float | starsmashertools.lib.units.Unit | list | tuple | np.ndarray | type(None) = None,
+            time_range : list | tuple | type(None) = None,
+            indices : list | tuple | np.ndarray | type(None) = None,
+            include_joined : bool = True,
+    ):
         r"""
         The same as :meth:`~.get_output_generator`\, except the resulting
         generator is consumed into a list.
         
-        Parameters
-        ----------
-        *args
-            Positional arguments are passed directly to 
-            :meth:`~.get_output_generator`\.
-
-        Other Parameters
-        ----------------
-        **kwargs
-            Keyword arguments are passed directly to 
-            :meth:`~.get_output_generator`\.
-
         Returns
         -------
         list, :class:`~.output.Output`
             A :py:class:`list` of :class:`~.output.Output` objects. If there is
             only a single item, only that item is returned (instead of a list).
+
+        See Also
+        --------
+        :meth:`~.get_output_generator`
         """
 
-        ret = list(self.get_output_generator(*args, **kwargs))
+        ret = list(self.get_output_generator(
+            start = start,
+            stop = stop,
+            step = step,
+            times = times,
+            time_range = time_range,
+            indices = indices,
+            include_joined = include_joined,
+        ))
         
         cli = kwargs.get('cli', False)
         if cli:
