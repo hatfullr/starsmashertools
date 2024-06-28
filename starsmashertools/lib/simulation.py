@@ -1277,6 +1277,7 @@ class Simulation(object):
             time_range : list | tuple | type(None) = None,
             indices : list | tuple | np.ndarray | type(None) = None,
             include_joined : bool = True,
+            cli : bool = False,
     ):
         r"""
         The same as :meth:`~.get_output_generator`\, except the resulting
@@ -1303,7 +1304,6 @@ class Simulation(object):
             include_joined = include_joined,
         ))
         
-        cli = kwargs.get('cli', False)
         if cli:
             import starsmashertools.bintools.page
             if len(ret) == 1: return ret[0].get_formatted_string('cli')

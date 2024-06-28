@@ -1446,33 +1446,42 @@
     <span class="nd">@api</span>
     <span class="nd">@cli</span><span class="p">(</span><span class="s1">&#39;starsmashertools&#39;</span><span class="p">)</span>
     <span class="nd">@clioptions</span><span class="p">(</span><span class="n">display_name</span> <span class="o">=</span> <span class="s1">&#39;Show output files&#39;</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">get_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">get_output</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">start</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">stop</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">step</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">times</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">Unit</span> <span class="o">|</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">time_range</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">indices</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">include_joined</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="n">cli</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">):</span>
 <span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        The same as :meth:`~.get_output_generator`\, except the resulting</span>
 <span class="sd">        generator is consumed into a list.</span>
 <span class="sd">        </span>
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        *args</span>
-<span class="sd">            Positional arguments are passed directly to </span>
-<span class="sd">            :meth:`~.get_output_generator`\.</span>
-
-<span class="sd">        Other Parameters</span>
-<span class="sd">        ----------------</span>
-<span class="sd">        **kwargs</span>
-<span class="sd">            Keyword arguments are passed directly to </span>
-<span class="sd">            :meth:`~.get_output_generator`\.</span>
-
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        list, :class:`~.output.Output`</span>
 <span class="sd">            A :py:class:`list` of :class:`~.output.Output` objects. If there is</span>
 <span class="sd">            only a single item, only that item is returned (instead of a list).</span>
+
+<span class="sd">        See Also</span>
+<span class="sd">        --------</span>
+<span class="sd">        :meth:`~.get_output_generator`</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="n">ret</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_output_generator</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">))</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_output_generator</span><span class="p">(</span>
+            <span class="n">start</span> <span class="o">=</span> <span class="n">start</span><span class="p">,</span>
+            <span class="n">stop</span> <span class="o">=</span> <span class="n">stop</span><span class="p">,</span>
+            <span class="n">step</span> <span class="o">=</span> <span class="n">step</span><span class="p">,</span>
+            <span class="n">times</span> <span class="o">=</span> <span class="n">times</span><span class="p">,</span>
+            <span class="n">time_range</span> <span class="o">=</span> <span class="n">time_range</span><span class="p">,</span>
+            <span class="n">indices</span> <span class="o">=</span> <span class="n">indices</span><span class="p">,</span>
+            <span class="n">include_joined</span> <span class="o">=</span> <span class="n">include_joined</span><span class="p">,</span>
+        <span class="p">))</span>
         
-        <span class="n">cli</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;cli&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">cli</span><span class="p">:</span>
             <span class="kn">import</span> <span class="nn">starsmashertools.bintools.page</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span> <span class="k">return</span> <span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">get_formatted_string</span><span class="p">(</span><span class="s1">&#39;cli&#39;</span><span class="p">)</span>
