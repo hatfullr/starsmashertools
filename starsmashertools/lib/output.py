@@ -246,7 +246,7 @@ class Output(dict, object):
 
         if read_header: self._isRead['header'] = True
         if read_data: self._isRead['data'] = True
-
+    
     @api
     def from_cache(self, key):
         if key in self._cache.keys():
@@ -304,7 +304,7 @@ class Output(dict, object):
             any. Note that the IDs are zero'th indexed, unlike the particle IDs
             in ``StarSmasher``, which start at index 1 instead of 0.
         """
-        return np.where(self['u'] == 0)[0]
+        return self['ID'][self['u'] == 0]
 
     @api
     def get_non_core_particles(self):
@@ -317,7 +317,7 @@ class Output(dict, object):
         :class:`numpy.ndarray`
             Non-core-particle IDs.
         """
-        return np.where(self['u'] != 0)[0]
+        return self['ID'][self['u'] != 0]
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
@@ -875,9 +875,9 @@ class OutputIterator(object):
 
 class ParticleIterator(OutputIterator, object):
     """
-    Similar to an OutputIterator, but instead of iterating through all the
-    particles in each Output file, we iterate through a list of particles
-    instead. This involves a different kind of Reader.
+    Similar to an :class:`~.OutputIterator`, but instead of iterating through 
+    all the particles in each Output file, we iterate through a list of
+    particles instead.
     """
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
@@ -1083,6 +1083,8 @@ class Reader(object):
         new_data = {}
         for name in data[0].dtype.names:
             new_data[name] = np.array(data[name])
+        # Always include an 'ID' key
+        new_data['ID'] = np.arange(ntot, dtype = int)
         return starsmashertools.helpers.readonlydict.ReadOnlyDict(new_data)
 
     def read(

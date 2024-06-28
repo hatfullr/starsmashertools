@@ -248,7 +248,6 @@ prefs = {
                 # To specify your own units edit the 'units' object in
                 # 'Simulation'.
                 'cache' : {
-                    'ID' : lambda obj: np.arange(obj['ntot']),
                     'xyz': lambda obj: np.column_stack((obj['x'], obj['y'], obj['z'])),
                     'r2' : lambda obj: np.sum(obj['xyz']**2, axis=-1),
                     'r' : lambda obj: np.sqrt(obj['r2']),

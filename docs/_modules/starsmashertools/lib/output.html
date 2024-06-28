@@ -362,7 +362,7 @@
 
         <span class="k">if</span> <span class="n">read_header</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_isRead</span><span class="p">[</span><span class="s1">&#39;header&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="k">if</span> <span class="n">read_data</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_isRead</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
-
+    
 <div class="viewcode-block" id="Output.from_cache">
 <a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.output.html#starsmashertools.lib.output.Output.from_cache">[docs]</a>
     <span class="nd">@api</span>
@@ -431,7 +431,7 @@
 <span class="sd">            any. Note that the IDs are zero&#39;th indexed, unlike the particle IDs</span>
 <span class="sd">            in ``StarSmasher``, which start at index 1 instead of 0.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;u&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;ID&#39;</span><span class="p">][</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;u&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]</span></div>
 
 
 <div class="viewcode-block" id="Output.get_non_core_particles">
@@ -447,7 +447,7 @@
 <span class="sd">        :class:`numpy.ndarray`</span>
 <span class="sd">            Non-core-particle IDs.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;u&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;ID&#39;</span><span class="p">][</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;u&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">]</span></div>
 
 
 <div class="viewcode-block" id="Output.condense">
@@ -1027,9 +1027,9 @@
 <a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.output.html#starsmashertools.lib.output.ParticleIterator">[docs]</a>
 <span class="k">class</span> <span class="nc">ParticleIterator</span><span class="p">(</span><span class="n">OutputIterator</span><span class="p">,</span> <span class="nb">object</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Similar to an OutputIterator, but instead of iterating through all the</span>
-<span class="sd">    particles in each Output file, we iterate through a list of particles</span>
-<span class="sd">    instead. This involves a different kind of Reader.</span>
+<span class="sd">    Similar to an :class:`~.OutputIterator`, but instead of iterating through </span>
+<span class="sd">    all the particles in each Output file, we iterate through a list of</span>
+<span class="sd">    particles instead.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 <div class="viewcode-block" id="ParticleIterator.__init__">
 <a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.output.html#starsmashertools.lib.output.ParticleIterator.__init__">[docs]</a>
@@ -1239,6 +1239,8 @@
         <span class="n">new_data</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">names</span><span class="p">:</span>
             <span class="n">new_data</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
+        <span class="c1"># Always include an &#39;ID&#39; key</span>
+        <span class="n">new_data</span><span class="p">[</span><span class="s1">&#39;ID&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">ntot</span><span class="p">,</span> <span class="n">dtype</span> <span class="o">=</span> <span class="nb">int</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">readonlydict</span><span class="o">.</span><span class="n">ReadOnlyDict</span><span class="p">(</span><span class="n">new_data</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">read</span><span class="p">(</span>
