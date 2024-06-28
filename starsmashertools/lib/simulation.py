@@ -108,8 +108,18 @@ class Simulation(object):
                             )
                         )
                     ]
-                except Simulation.InvalidDirectoryError as e:
-                    starsmashertools.helpers.warnings.warn("A joined simulation is no longer a valid directory, likely because it was moved on the file system. Please split the simulation and re-join it to quell this warning. '%s'" % starsmashertools.helpers.path.join(self.directory, directory))
+                except Simulation.InvalidDirectoryError:
+                    try:
+                        self._joined_simulations += [
+                            starsmashertools.get_simulation(
+                                starsmashertools.helpers.path.join(
+                                    self.directory,
+                                    directory,
+                                )
+                            )
+                        ]
+                    except Simulation.InvalidDirectoryError:
+                        starsmashertools.helpers.warnings.warn("A joined simulation is no longer a valid directory, likely because it was moved on the file system. Please split the simulation and re-join it to quell this warning. '%s'" % starsmashertools.helpers.path.relpath(directory, start = self.directory))
         except KeyError: pass
 
         try:

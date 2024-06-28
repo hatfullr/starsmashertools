@@ -174,11 +174,6 @@
     
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">joined_simulations</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        See Also</span>
-<span class="sd">        --------</span>
-<span class="sd">        :meth:`~.get_joined_simulations_generator`</span>
-<span class="sd">        &quot;&quot;&quot;</span>
         <span class="kn">import</span> <span class="nn">starsmashertools.helpers.path</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">mtime</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getmtime</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">archive</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
@@ -208,14 +203,24 @@
                 <span class="k">try</span><span class="p">:</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">_joined_simulations</span> <span class="o">+=</span> <span class="p">[</span>
                         <span class="n">starsmashertools</span><span class="o">.</span><span class="n">get_simulation</span><span class="p">(</span>
-                            <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
-                                <span class="bp">self</span><span class="o">.</span><span class="n">directory</span><span class="p">,</span>
+                            <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">relpath</span><span class="p">(</span>
                                 <span class="n">directory</span><span class="p">,</span>
+                                <span class="n">start</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">directory</span><span class="p">,</span>
                             <span class="p">)</span>
                         <span class="p">)</span>
                     <span class="p">]</span>
-                <span class="k">except</span> <span class="n">Simulation</span><span class="o">.</span><span class="n">InvalidDirectoryError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                    <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;A joined simulation is no longer a valid directory, likely because it was moved on the file system. Please split the simulation and re-join it to quell this warning. &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">directory</span><span class="p">,</span> <span class="n">directory</span><span class="p">))</span>
+                <span class="k">except</span> <span class="n">Simulation</span><span class="o">.</span><span class="n">InvalidDirectoryError</span><span class="p">:</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_joined_simulations</span> <span class="o">+=</span> <span class="p">[</span>
+                            <span class="n">starsmashertools</span><span class="o">.</span><span class="n">get_simulation</span><span class="p">(</span>
+                                <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                                    <span class="bp">self</span><span class="o">.</span><span class="n">directory</span><span class="p">,</span>
+                                    <span class="n">directory</span><span class="p">,</span>
+                                <span class="p">)</span>
+                            <span class="p">)</span>
+                        <span class="p">]</span>
+                    <span class="k">except</span> <span class="n">Simulation</span><span class="o">.</span><span class="n">InvalidDirectoryError</span><span class="p">:</span>
+                        <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;A joined simulation is no longer a valid directory, likely because it was moved on the file system. Please split the simulation and re-join it to quell this warning. &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">relpath</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="n">start</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">directory</span><span class="p">))</span>
         <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span> <span class="k">pass</span>
 
         <span class="k">try</span><span class="p">:</span>
