@@ -73,11 +73,6 @@ class Simulation(object):
     
     @property
     def joined_simulations(self):
-        r"""
-        See Also
-        --------
-        :meth:`~.get_joined_simulations_generator`
-        """
         import starsmashertools.helpers.path
         try:
             mtime = starsmashertools.helpers.path.getmtime(self.archive.filename)
@@ -107,9 +102,9 @@ class Simulation(object):
                 try:
                     self._joined_simulations += [
                         starsmashertools.get_simulation(
-                            starsmashertools.helpers.path.join(
-                                self.directory,
+                            starsmashertools.helpers.path.relpath(
                                 directory,
+                                start = self.directory,
                             )
                         )
                     ]
