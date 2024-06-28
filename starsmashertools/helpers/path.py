@@ -243,10 +243,6 @@ def find_duplicate_files(
     filedirectory = dirname(filepath)
 
     search_string = join(search_directory,"**",pattern)
-
-    # Try to limit exhaustive searches
-    if search_directory in subdirectories.keys():
-        pattern_matches[search_string] = [glob.glob(join(directory, pattern), recursive=True) for directory in subdirectories[search_directory]]
     
     for match in pattern_matches.get(
             search_string,
