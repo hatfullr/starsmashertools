@@ -696,17 +696,12 @@ class Unit(object):
             )
 
         def simplify(self):
-            for item in self.base:
-                lc, rc = self.left.count(item), self.right.count(item)
-                while item in self.left and item in self.right:
-                    self.left.remove(item)
-                    self.right.remove(item)
-                    
-                    plc = copy.deepcopy(lc)
-                    prc = copy.deepcopy(rc)
-                    lc = self.left.count(item)
-                    rc = self.right.count(item)
-                    if lc == plc and rc == prc: break
+            # I wrote more details here:
+            # https://stackoverflow.com/a/78684806/4954083
+            for item in self.left.copy():
+                if item not in self.right: continue
+                self.left.remove(item)
+                self.right.remove(item)
         
         def set(self, string):
             self.left, self.right = Unit.Label.split(string)
