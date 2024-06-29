@@ -1164,7 +1164,7 @@ class Simulation(object):
             stop : int | type(None) = None,
             step : int | type(None) = None,
             times : int | float | starsmashertools.lib.units.Unit | list | tuple | np.ndarray | type(None) = None,
-            time_range : list | tuple | type(None) = None,
+            time_range : list | tuple | np.ndarray | type(None) = None,
             indices : list | tuple | np.ndarray | type(None) = None,
             include_joined : bool = True,
     ):
@@ -1188,7 +1188,7 @@ class Simulation(object):
             simulation time or collection of times. This can possibly include
             duplicate items.
 
-        time_range : list, tuple, None, default = None
+        time_range : list, tuple, None, :class:`numpy.ndarray`\, default = None
             If not `None`\, this must be an iterable of 2 elements, the first 
             being the lower time bound and the second being the upper time 
             bound. If either bounds are `None` then only one bound will be used.
@@ -1279,7 +1279,7 @@ class Simulation(object):
             stop : int | type(None) = None,
             step : int | type(None) = None,
             times : int | float | starsmashertools.lib.units.Unit | list | tuple | np.ndarray | type(None) = None,
-            time_range : list | tuple | type(None) = None,
+            time_range : list | tuple | np.ndarray | type(None) = None,
             indices : list | tuple | np.ndarray | type(None) = None,
             include_joined : bool = True,
             cli : bool = False,
