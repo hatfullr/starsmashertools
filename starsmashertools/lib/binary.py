@@ -153,7 +153,7 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
         primary_IDs = self.get_primary_IDs()
         secondary_IDs = self.get_secondary_IDs()
         
-        with starsmashertools.mask(output, primary_IDs) as masked:
+        with starsmashertools.mask(output, primary_IDs, copy = False) as masked:
             xcom1, ycom1, zcom1 = starsmashertools.math.center_of_mass(
                 masked['am'],
                 masked['x'],
@@ -161,7 +161,7 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
                 masked['z'],
             )
 
-        with starsmashertools.mask(output, secondary_IDs) as masked:
+        with starsmashertools.mask(output, secondary_IDs, copy = False) as masked:
             xcom2, ycom2, zcom2 = starsmashertools.math.center_of_mass(
                 masked['am'],
                 masked['x'],
@@ -210,9 +210,9 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
         
         primary_IDs = self.get_primary_IDs()
         secondary_IDs = self.get_secondary_IDs()
-        with starsmashertools.mask(output, primary_IDs) as masked:
+        with starsmashertools.mask(output, primary_IDs, copy = False) as masked:
             m1 = np.sum(masked['am'])
-        with starsmashertools.mask(output, secondary_IDs) as masked:
+        with starsmashertools.mask(output, secondary_IDs, copy = False) as masked:
             m2 = np.sum(masked['am'])
         m1 *= self.units.mass
         m2 *= self.units.mass
@@ -246,13 +246,13 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
         primary = self.get_primary_IDs()
         secondary = self.get_secondary_IDs()
 
-        with starsmashertools.mask(output, primary) as masked:
+        with starsmashertools.mask(output, primary, copy = False) as masked:
             m1 = np.sum(masked['am'])
             with warnings.catch_warnings():
                 warnings.simplefilter('ignore')
                 V1 = np.sum(masked['am'] / masked['rho'])
 
-        with starsmashertools.mask(output, secondary) as masked:
+        with starsmashertools.mask(output, secondary, copy = False) as masked:
             m2 = np.sum(masked['am'])
             with warnings.catch_warnings():
                 warnings.simplefilter('ignore')
@@ -477,7 +477,7 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
                 raise FileNotFoundError("Cannot get the primary's mass because the simulation has no log files, no output files, and the sph.start1u file is missing, in '%s'" % self.directory)
             output = starsmashertools.lib.output.Output(start1u, self)
 
-        with starsmashertools.mask(output, self.get_primary_IDs()) as masked:
+        with starsmashertools.mask(output, self.get_primary_IDs(), copy = False) as masked:
             return np.sum(masked['am'])
 
     @api
@@ -517,7 +517,7 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
                 raise FileNotFoundError("Cannot get the secondary's mass because the simulation has no log files, no output files, and the sph.start2u file is missing, in '%s'" % self.directory)
             output = starsmashertools.lib.output.Output(start2u, self)
         
-        with starsmashertools.mask(output, self.get_secondary_IDs()) as masked:
+        with starsmashertools.mask(output, self.get_secondary_IDs(), copy = False) as masked:
             return np.sum(masked['am'])
 
     @api

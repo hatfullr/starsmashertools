@@ -127,7 +127,7 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
                     output['z'][primary_IDs],
                 ])
             else:
-                with starsmashertools.mask(output, primary_IDs):
+                with starsmashertools.mask(output, primary_IDs, copy = False):
                     bound = ~output['unbound']
                     if bound.any():
                         xcom1, ycom1, zcom1 = starsmashertools.math.center_of_mass(
@@ -142,7 +142,7 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
                 dist2 = np.sum((com - output['xyz'][secondary_IDs])**2)
                 if dist2 <= RSPH2: return output['am'][secondary_IDs]
             else:
-                with starsmashertools.mask(output, secondary_IDs):
+                with starsmashertools.mask(output, secondary_IDs, copy = False):
                     dist2 = np.sum((com - output['xyz'])**2, axis=-1)
                     within = dist2 <= RSPH2
                     if within.any(): return np.sum(output['am'][within])
