@@ -376,6 +376,7 @@ def trace_particles(
 def mask(
         output,
         mask : np.ndarray | list | tuple,
+        copy : bool = True,
 ):
     """
     Apply a mask to the given :class:`~.lib.output.Output` object that hides
@@ -391,6 +392,11 @@ def mask(
         zeroth-indexed integers representing the particle IDs, or a collection
         of ``bool`` values the same length as the number of particles in
         `output`\.
+
+    copy : bool, default = True
+        If `False` then the given output will be modified in-place, which could
+        be beneficial for performance considerations, but might produce 
+        unintended results.
 
     Returns
     -------
@@ -411,6 +417,7 @@ def mask(
     
     """
     import starsmashertools.lib.output
+    
     starsmashertools.helpers.argumentenforcer.enforcetypes({
         'output' : [starsmashertools.lib.output.Output],
     })
@@ -418,13 +425,18 @@ def mask(
     if output._mask is not None:
         raise Exception("Cannot mask output that is already masked: '%s'" % str(output.path))
 
-    # Mask the data
-    output.mask(mask)
-    try:
-        yield output
-    finally:
-        # Unmask the data
-        output.unmask()
+    if copy:
+        obj = output.__copy__()
+        obj.mask(mask)
+        try: yield obj
+        finally: pass
+    else: 
+        # Mask the data
+        output.mask(mask)
+        try: yield output
+        finally:
+            # Unmask the data
+            output.unmask()
 
 @starsmashertools.helpers.argumentenforcer.enforcetypes
 @api
