@@ -444,7 +444,6 @@ class Simulation(object):
     @clioptions(display_name = 'Show children')
     def get_children(
             self,
-            verbose : bool = False,
             cli : bool = False,
     ):
         r"""
@@ -462,11 +461,6 @@ class Simulation(object):
         children in the archive using the ``starsmashertools`` CLI by selecting
         :meth:`~.set_children` in the main menu. This can save time on searching
         the file system for child simulations.
-        
-        Parameters
-        ----------
-        verbose : bool, default = False
-            If `True`\, debug messages will be printed to the console.
         
         Returns
         -------
@@ -1107,6 +1101,7 @@ class Simulation(object):
             self,
             time : int | float | starsmashertools.lib.units.Unit,
             include_joined : bool = True,
+            **kwargs
     ):
         r"""
         Return the :class:`~.output.Output` object of this simulation whose time
@@ -1124,6 +1119,12 @@ class Simulation(object):
         include_joined : bool, default = True
             If `True`\, the joined simulations will be included in the search.
             Otherwise, only this simulation will be searched.
+
+        Other Parameters
+        ----------------
+        **kwargs
+            Other keyword parameters are passed directly to 
+            :meth:`~.helpers.midpoint.Midpoint.get`\.
 
         Returns
         -------
@@ -1154,12 +1155,13 @@ class Simulation(object):
             lambda output: output.simulation.reader.read_from_header('t', output.path) * conversion > time,
         )
         
-        return m.get()
+        return m.get(**kwargs)
     
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def get_output_generator(
             self,
+            *args,
             start : int | type(None) = None,
             stop : int | type(None) = None,
             step : int | type(None) = None,
@@ -1174,6 +1176,11 @@ class Simulation(object):
         
         Parameters
         ----------
+        *args
+            If specified, there can only be one positional argument, which is
+            the index of the output file you wish to retrieve. This is 
+            equivalent to using ``start=i`` and ``stop=i+1``\.
+
         start : int, None, default = None
             The starting index of a slice of the list of all output files.
         
@@ -1212,6 +1219,10 @@ class Simulation(object):
         filenames = self.get_outputfiles(include_joined = include_joined)
         filenames = np.asarray(filenames, dtype = object)
 
+        if len(args) == 1:
+            yield starsmashertools.lib.output.Output(filenames[args[0]], self)
+            return
+
         # We accept the input if only either
         #    - (start, stop, step) are valid and not None, or
         #    - Exactly one of times, time_range, or indices are not None
@@ -1223,46 +1234,61 @@ class Simulation(object):
 
         num_used = sum([1 if item else 0 for item in modes.values()])
         if num_used == 0: # Use slicing
-            if start is not None and stop is None and step is None:
+            #if start is not None and stop is None and step is None:
                 # User is intending to just get a single index
-                if start != -1:
-                    stop = start + 1
+                #if start != -1:
+                #    stop = start + 1
             s = slice(start, stop, step)
             filenames = filenames.tolist()[s]
         elif modes['times']:
+            first_output = self.get_output(0)
+            last_output = self.get_output(-1)
+            start_time = first_output['t'] * self.units['t']
+            end_time = last_output['t'] * self.units['t']
             if hasattr(times, '__iter__'):
                 for time in times:
-                    yield self.get_output_at_time(
-                        time,
-                        include_joined = include_joined,
-                    )
+                    if time == start_time: yield first_output
+                    elif time == end_time: yield last_output
+                    else:
+                        yield self.get_output_at_time(
+                            time,
+                            include_joined = include_joined,
+                            favor = 'mid',
+                        )
                 return
             else:
-                yield self.get_output_at_time(
-                    times,
-                    include_joined = include_joined,
-                )
+                if time == start_time: yield first_output
+                elif time == end_time: yield last_output
+                else:
+                    yield self.get_output_at_time(
+                        times,
+                        include_joined = include_joined,
+                    )
                 return
         elif modes['indices']:
             indices = np.asarray(indices, dtype=int)
             filenames = filenames[indices]
         elif modes['time_range']:
             tlo, thi = time_range
-            idx0, idx1 = 0, -1
+            idx0, idx1 = None, None
             if tlo is not None:
-                o = self.get_output_at_time(
+                o, idx0 = self.get_output_at_time(
                     tlo,
-                    include_joined = include_joined
+                    include_joined = include_joined,
+                    favor = 'low',
+                    return_index = True,
                 )
-                idx0 = filenames.tolist().index(o.path)
             if thi is not None:
-                o = self.get_output_at_time(
+                o, idx1 = self.get_output_at_time(
                     thi,
-                    include_joined = include_joined
+                    include_joined = include_joined,
+                    favor = 'high',
+                    return_index = True,
                 )
-                idx1 = filenames.tolist().index(o.path)
-            if idx0 == idx1: filenames = [filenames[0]]
-            filenames = filenames[idx0:idx1]
+                idx1 += 1
+            if not (idx0 is None and idx1 is None) and idx0 == idx1:
+                filenames = [filenames[0]]
+            else: filenames = filenames[idx0:idx1:step]
         else:
             raise ValueError("No mode specified. Check your keyword arguments.")
 
@@ -1275,6 +1301,7 @@ class Simulation(object):
     @clioptions(display_name = 'Show output files')
     def get_output(
             self,
+            *args,
             start : int | type(None) = None,
             stop : int | type(None) = None,
             step : int | type(None) = None,
@@ -1300,6 +1327,7 @@ class Simulation(object):
         """
 
         ret = list(self.get_output_generator(
+            *args,
             start = start,
             stop = stop,
             step = step,
@@ -1318,7 +1346,7 @@ class Simulation(object):
         return ret
     
     @api
-    def get_output_headers(self, **kwargs):
+    def get_output_headers(self, *args, **kwargs):
         r"""
         Read all the headers of the output files in this simulation and return
         them as a dictionary.
@@ -1346,7 +1374,9 @@ class Simulation(object):
         kwargs['return_headers'] = True
         kwargs['return_data'] = False
         kwargs['asynchronous'] = kwargs.get('asynchronous', False)
-        iterator = self.get_output_iterator(**kwargs)
+        outputs = self.get_output(*args, **kwargs)
+        if not isinstance(outputs, list): outputs = [outputs]
+        iterator = self.get_output_iterator(outputs)
         ret = {}
         for output in iterator:
             ret[output] = output.header

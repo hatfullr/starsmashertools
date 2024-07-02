@@ -580,7 +580,6 @@
     <span class="nd">@clioptions</span><span class="p">(</span><span class="n">display_name</span> <span class="o">=</span> <span class="s1">&#39;Show children&#39;</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">get_children</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span>
-            <span class="n">verbose</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
             <span class="n">cli</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
@@ -598,11 +597,6 @@
 <span class="sd">        children in the archive using the ``starsmashertools`` CLI by selecting</span>
 <span class="sd">        :meth:`~.set_children` in the main menu. This can save time on searching</span>
 <span class="sd">        the file system for child simulations.</span>
-<span class="sd">        </span>
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        verbose : bool, default = False</span>
-<span class="sd">            If `True`\, debug messages will be printed to the console.</span>
 <span class="sd">        </span>
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -1279,6 +1273,7 @@
             <span class="bp">self</span><span class="p">,</span>
             <span class="n">time</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">Unit</span><span class="p">,</span>
             <span class="n">include_joined</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return the :class:`~.output.Output` object of this simulation whose time</span>
@@ -1296,6 +1291,12 @@
 <span class="sd">        include_joined : bool, default = True</span>
 <span class="sd">            If `True`\, the joined simulations will be included in the search.</span>
 <span class="sd">            Otherwise, only this simulation will be searched.</span>
+
+<span class="sd">        Other Parameters</span>
+<span class="sd">        ----------------</span>
+<span class="sd">        **kwargs</span>
+<span class="sd">            Other keyword parameters are passed directly to </span>
+<span class="sd">            :meth:`~.helpers.midpoint.Midpoint.get`\.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -1326,7 +1327,7 @@
             <span class="k">lambda</span> <span class="n">output</span><span class="p">:</span> <span class="n">output</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">read_from_header</span><span class="p">(</span><span class="s1">&#39;t&#39;</span><span class="p">,</span> <span class="n">output</span><span class="o">.</span><span class="n">path</span><span class="p">)</span> <span class="o">*</span> <span class="n">conversion</span> <span class="o">&gt;</span> <span class="n">time</span><span class="p">,</span>
         <span class="p">)</span>
         
-        <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">get</span><span class="p">()</span></div>
+        <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
     
 <div class="viewcode-block" id="Simulation.get_output_generator">
@@ -1335,6 +1336,7 @@
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="nf">get_output_generator</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span>
+            <span class="o">*</span><span class="n">args</span><span class="p">,</span>
             <span class="n">start</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
             <span class="n">stop</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
             <span class="n">step</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -1349,6 +1351,11 @@
 <span class="sd">        </span>
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
+<span class="sd">        *args</span>
+<span class="sd">            If specified, there can only be one positional argument, which is</span>
+<span class="sd">            the index of the output file you wish to retrieve. This is </span>
+<span class="sd">            equivalent to using ``start=i`` and ``stop=i+1``\.</span>
+
 <span class="sd">        start : int, None, default = None</span>
 <span class="sd">            The starting index of a slice of the list of all output files.</span>
 <span class="sd">        </span>
@@ -1387,6 +1394,10 @@
         <span class="n">filenames</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_outputfiles</span><span class="p">(</span><span class="n">include_joined</span> <span class="o">=</span> <span class="n">include_joined</span><span class="p">)</span>
         <span class="n">filenames</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">filenames</span><span class="p">,</span> <span class="n">dtype</span> <span class="o">=</span> <span class="nb">object</span><span class="p">)</span>
 
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">Output</span><span class="p">(</span><span class="n">filenames</span><span class="p">[</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span> <span class="bp">self</span><span class="p">)</span>
+            <span class="k">return</span>
+
         <span class="c1"># We accept the input if only either</span>
         <span class="c1">#    - (start, stop, step) are valid and not None, or</span>
         <span class="c1">#    - Exactly one of times, time_range, or indices are not None</span>
@@ -1398,46 +1409,61 @@
 
         <span class="n">num_used</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">([</span><span class="mi">1</span> <span class="k">if</span> <span class="n">item</span> <span class="k">else</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">modes</span><span class="o">.</span><span class="n">values</span><span class="p">()])</span>
         <span class="k">if</span> <span class="n">num_used</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> <span class="c1"># Use slicing</span>
-            <span class="k">if</span> <span class="n">start</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">stop</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">step</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1">#if start is not None and stop is None and step is None:</span>
                 <span class="c1"># User is intending to just get a single index</span>
-                <span class="k">if</span> <span class="n">start</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
-                    <span class="n">stop</span> <span class="o">=</span> <span class="n">start</span> <span class="o">+</span> <span class="mi">1</span>
+                <span class="c1">#if start != -1:</span>
+                <span class="c1">#    stop = start + 1</span>
             <span class="n">s</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">stop</span><span class="p">,</span> <span class="n">step</span><span class="p">)</span>
             <span class="n">filenames</span> <span class="o">=</span> <span class="n">filenames</span><span class="o">.</span><span class="n">tolist</span><span class="p">()[</span><span class="n">s</span><span class="p">]</span>
         <span class="k">elif</span> <span class="n">modes</span><span class="p">[</span><span class="s1">&#39;times&#39;</span><span class="p">]:</span>
+            <span class="n">first_output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_output</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">last_output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_output</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">start_time</span> <span class="o">=</span> <span class="n">first_output</span><span class="p">[</span><span class="s1">&#39;t&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="p">[</span><span class="s1">&#39;t&#39;</span><span class="p">]</span>
+            <span class="n">end_time</span> <span class="o">=</span> <span class="n">last_output</span><span class="p">[</span><span class="s1">&#39;t&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="p">[</span><span class="s1">&#39;t&#39;</span><span class="p">]</span>
             <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="s1">&#39;__iter__&#39;</span><span class="p">):</span>
                 <span class="k">for</span> <span class="n">time</span> <span class="ow">in</span> <span class="n">times</span><span class="p">:</span>
-                    <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_output_at_time</span><span class="p">(</span>
-                        <span class="n">time</span><span class="p">,</span>
-                        <span class="n">include_joined</span> <span class="o">=</span> <span class="n">include_joined</span><span class="p">,</span>
-                    <span class="p">)</span>
+                    <span class="k">if</span> <span class="n">time</span> <span class="o">==</span> <span class="n">start_time</span><span class="p">:</span> <span class="k">yield</span> <span class="n">first_output</span>
+                    <span class="k">elif</span> <span class="n">time</span> <span class="o">==</span> <span class="n">end_time</span><span class="p">:</span> <span class="k">yield</span> <span class="n">last_output</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_output_at_time</span><span class="p">(</span>
+                            <span class="n">time</span><span class="p">,</span>
+                            <span class="n">include_joined</span> <span class="o">=</span> <span class="n">include_joined</span><span class="p">,</span>
+                            <span class="n">favor</span> <span class="o">=</span> <span class="s1">&#39;mid&#39;</span><span class="p">,</span>
+                        <span class="p">)</span>
                 <span class="k">return</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_output_at_time</span><span class="p">(</span>
-                    <span class="n">times</span><span class="p">,</span>
-                    <span class="n">include_joined</span> <span class="o">=</span> <span class="n">include_joined</span><span class="p">,</span>
-                <span class="p">)</span>
+                <span class="k">if</span> <span class="n">time</span> <span class="o">==</span> <span class="n">start_time</span><span class="p">:</span> <span class="k">yield</span> <span class="n">first_output</span>
+                <span class="k">elif</span> <span class="n">time</span> <span class="o">==</span> <span class="n">end_time</span><span class="p">:</span> <span class="k">yield</span> <span class="n">last_output</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_output_at_time</span><span class="p">(</span>
+                        <span class="n">times</span><span class="p">,</span>
+                        <span class="n">include_joined</span> <span class="o">=</span> <span class="n">include_joined</span><span class="p">,</span>
+                    <span class="p">)</span>
                 <span class="k">return</span>
         <span class="k">elif</span> <span class="n">modes</span><span class="p">[</span><span class="s1">&#39;indices&#39;</span><span class="p">]:</span>
             <span class="n">indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">indices</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
             <span class="n">filenames</span> <span class="o">=</span> <span class="n">filenames</span><span class="p">[</span><span class="n">indices</span><span class="p">]</span>
         <span class="k">elif</span> <span class="n">modes</span><span class="p">[</span><span class="s1">&#39;time_range&#39;</span><span class="p">]:</span>
             <span class="n">tlo</span><span class="p">,</span> <span class="n">thi</span> <span class="o">=</span> <span class="n">time_range</span>
-            <span class="n">idx0</span><span class="p">,</span> <span class="n">idx1</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span>
+            <span class="n">idx0</span><span class="p">,</span> <span class="n">idx1</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
             <span class="k">if</span> <span class="n">tlo</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">o</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_output_at_time</span><span class="p">(</span>
+                <span class="n">o</span><span class="p">,</span> <span class="n">idx0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_output_at_time</span><span class="p">(</span>
                     <span class="n">tlo</span><span class="p">,</span>
-                    <span class="n">include_joined</span> <span class="o">=</span> <span class="n">include_joined</span>
+                    <span class="n">include_joined</span> <span class="o">=</span> <span class="n">include_joined</span><span class="p">,</span>
+                    <span class="n">favor</span> <span class="o">=</span> <span class="s1">&#39;low&#39;</span><span class="p">,</span>
+                    <span class="n">return_index</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
                 <span class="p">)</span>
-                <span class="n">idx0</span> <span class="o">=</span> <span class="n">filenames</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">o</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">thi</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">o</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_output_at_time</span><span class="p">(</span>
+                <span class="n">o</span><span class="p">,</span> <span class="n">idx1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_output_at_time</span><span class="p">(</span>
                     <span class="n">thi</span><span class="p">,</span>
-                    <span class="n">include_joined</span> <span class="o">=</span> <span class="n">include_joined</span>
+                    <span class="n">include_joined</span> <span class="o">=</span> <span class="n">include_joined</span><span class="p">,</span>
+                    <span class="n">favor</span> <span class="o">=</span> <span class="s1">&#39;high&#39;</span><span class="p">,</span>
+                    <span class="n">return_index</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
                 <span class="p">)</span>
-                <span class="n">idx1</span> <span class="o">=</span> <span class="n">filenames</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">o</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">idx0</span> <span class="o">==</span> <span class="n">idx1</span><span class="p">:</span> <span class="n">filenames</span> <span class="o">=</span> <span class="p">[</span><span class="n">filenames</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
-            <span class="n">filenames</span> <span class="o">=</span> <span class="n">filenames</span><span class="p">[</span><span class="n">idx0</span><span class="p">:</span><span class="n">idx1</span><span class="p">]</span>
+                <span class="n">idx1</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">idx0</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">idx1</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="n">idx0</span> <span class="o">==</span> <span class="n">idx1</span><span class="p">:</span>
+                <span class="n">filenames</span> <span class="o">=</span> <span class="p">[</span><span class="n">filenames</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+            <span class="k">else</span><span class="p">:</span> <span class="n">filenames</span> <span class="o">=</span> <span class="n">filenames</span><span class="p">[</span><span class="n">idx0</span><span class="p">:</span><span class="n">idx1</span><span class="p">:</span><span class="n">step</span><span class="p">]</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No mode specified. Check your keyword arguments.&quot;</span><span class="p">)</span>
 
@@ -1453,6 +1479,7 @@
     <span class="nd">@clioptions</span><span class="p">(</span><span class="n">display_name</span> <span class="o">=</span> <span class="s1">&#39;Show output files&#39;</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">get_output</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span>
+            <span class="o">*</span><span class="n">args</span><span class="p">,</span>
             <span class="n">start</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
             <span class="n">stop</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
             <span class="n">step</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -1478,6 +1505,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">ret</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_output_generator</span><span class="p">(</span>
+            <span class="o">*</span><span class="n">args</span><span class="p">,</span>
             <span class="n">start</span> <span class="o">=</span> <span class="n">start</span><span class="p">,</span>
             <span class="n">stop</span> <span class="o">=</span> <span class="n">stop</span><span class="p">,</span>
             <span class="n">step</span> <span class="o">=</span> <span class="n">step</span><span class="p">,</span>
@@ -1499,7 +1527,7 @@
 <div class="viewcode-block" id="Simulation.get_output_headers">
 <a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.simulation.html#starsmashertools.lib.simulation.Simulation.get_output_headers">[docs]</a>
     <span class="nd">@api</span>
-    <span class="k">def</span> <span class="nf">get_output_headers</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">get_output_headers</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Read all the headers of the output files in this simulation and return</span>
 <span class="sd">        them as a dictionary.</span>
@@ -1527,7 +1555,9 @@
         <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;return_headers&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;return_data&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;asynchronous&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;asynchronous&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
-        <span class="n">iterator</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_output_iterator</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">outputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_output</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">outputs</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span> <span class="n">outputs</span> <span class="o">=</span> <span class="p">[</span><span class="n">outputs</span><span class="p">]</span>
+        <span class="n">iterator</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_output_iterator</span><span class="p">(</span><span class="n">outputs</span><span class="p">)</span>
         <span class="n">ret</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">for</span> <span class="n">output</span> <span class="ow">in</span> <span class="n">iterator</span><span class="p">:</span>
             <span class="n">ret</span><span class="p">[</span><span class="n">output</span><span class="p">]</span> <span class="o">=</span> <span class="n">output</span><span class="o">.</span><span class="n">header</span>
