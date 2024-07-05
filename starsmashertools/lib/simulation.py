@@ -1351,37 +1351,29 @@ class Simulation(object):
         Read all the headers of the output files in this simulation and return
         them as a dictionary.
         
-        Parameters
-        ----------
-        keys : list
-            The keys to query the output file headers for.
-
         Other Parameters
         ----------------
-        kwargs : dict
-            Extra keyword arguments passed to :meth:`~.get_output_iterator`\. 
-            Note that keyword ``return_headers`` is always `True` and 
-            ``return_data`` is always `False`\. Keyword ``asynchronous`` is set 
-            to `False` by default because reading headers is often faster that 
-            way.
+        *args
+            Positional arguments are passed directly to
+            :math:`~.get_output_generator`\.
+
+        **kwargs
+            Keyword arguments are passed directly to 
+            :meth:`~.get_output_generator`\.
 
         Returns
         -------
-        dict
-            Each key is a :class:`~.output.Output` object and each value is the
-            entire header.
-        """
-        kwargs['return_headers'] = True
-        kwargs['return_data'] = False
-        kwargs['asynchronous'] = kwargs.get('asynchronous', False)
-        outputs = self.get_output(*args, **kwargs)
-        if not isinstance(outputs, list): outputs = [outputs]
-        iterator = self.get_output_iterator(outputs)
-        ret = {}
-        for output in iterator:
-            ret[output] = output.header
-        return ret
+        generator
+            A generator which yields output file headers, which are of type
+            :py:class:`dict`\.
 
+        See Also
+        --------
+        :meth:`~.get_output_generator`
+        """
+        for output in self.get_output_generator(*args, **kwargs):
+            yield output.header
+    
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def get_energyfiles(

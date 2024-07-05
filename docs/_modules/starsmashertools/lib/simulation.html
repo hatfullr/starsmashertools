@@ -1532,38 +1532,30 @@
 <span class="sd">        Read all the headers of the output files in this simulation and return</span>
 <span class="sd">        them as a dictionary.</span>
 <span class="sd">        </span>
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        keys : list</span>
-<span class="sd">            The keys to query the output file headers for.</span>
-
 <span class="sd">        Other Parameters</span>
 <span class="sd">        ----------------</span>
-<span class="sd">        kwargs : dict</span>
-<span class="sd">            Extra keyword arguments passed to :meth:`~.get_output_iterator`\. </span>
-<span class="sd">            Note that keyword ``return_headers`` is always `True` and </span>
-<span class="sd">            ``return_data`` is always `False`\. Keyword ``asynchronous`` is set </span>
-<span class="sd">            to `False` by default because reading headers is often faster that </span>
-<span class="sd">            way.</span>
+<span class="sd">        *args</span>
+<span class="sd">            Positional arguments are passed directly to</span>
+<span class="sd">            :math:`~.get_output_generator`\.</span>
+
+<span class="sd">        **kwargs</span>
+<span class="sd">            Keyword arguments are passed directly to </span>
+<span class="sd">            :meth:`~.get_output_generator`\.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
-<span class="sd">        dict</span>
-<span class="sd">            Each key is a :class:`~.output.Output` object and each value is the</span>
-<span class="sd">            entire header.</span>
+<span class="sd">        generator</span>
+<span class="sd">            A generator which yields output file headers, which are of type</span>
+<span class="sd">            :py:class:`dict`\.</span>
+
+<span class="sd">        See Also</span>
+<span class="sd">        --------</span>
+<span class="sd">        :meth:`~.get_output_generator`</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;return_headers&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
-        <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;return_data&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
-        <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;asynchronous&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;asynchronous&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
-        <span class="n">outputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_output</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">outputs</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span> <span class="n">outputs</span> <span class="o">=</span> <span class="p">[</span><span class="n">outputs</span><span class="p">]</span>
-        <span class="n">iterator</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_output_iterator</span><span class="p">(</span><span class="n">outputs</span><span class="p">)</span>
-        <span class="n">ret</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="k">for</span> <span class="n">output</span> <span class="ow">in</span> <span class="n">iterator</span><span class="p">:</span>
-            <span class="n">ret</span><span class="p">[</span><span class="n">output</span><span class="p">]</span> <span class="o">=</span> <span class="n">output</span><span class="o">.</span><span class="n">header</span>
-        <span class="k">return</span> <span class="n">ret</span></div>
+        <span class="k">for</span> <span class="n">output</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_output_generator</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="k">yield</span> <span class="n">output</span><span class="o">.</span><span class="n">header</span></div>
 
-
+    
 <div class="viewcode-block" id="Simulation.get_energyfiles">
 <a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.simulation.html#starsmashertools.lib.simulation.Simulation.get_energyfiles">[docs]</a>
     <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>

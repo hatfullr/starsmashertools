@@ -486,22 +486,24 @@ them as a dictionary.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>keys</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><em>list</em></a>) – The keys to query the output file headers for.</p></li>
-<li><p><strong>kwargs</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.12)"><em>dict</em></a>) – Extra keyword arguments passed to <a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_output_iterator" title="starsmashertools.lib.simulation.Simulation.get_output_iterator"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_output_iterator()</span></code></a>.
-Note that keyword <code class="docutils literal notranslate"><span class="pre">return_headers</span></code> is always <cite>True</cite> and
-<code class="docutils literal notranslate"><span class="pre">return_data</span></code> is always <cite>False</cite>. Keyword <code class="docutils literal notranslate"><span class="pre">asynchronous</span></code> is set
-to <cite>False</cite> by default because reading headers is often faster that
-way.</p></li>
+<li><p><strong>*args</strong> – Positional arguments are passed directly to
+<span class="math notranslate nohighlight">\(~.get_output_generator\)</span>.</p></li>
+<li><p><strong>**kwargs</strong> – Keyword arguments are passed directly to
+<a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_output_generator" title="starsmashertools.lib.simulation.Simulation.get_output_generator"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_output_generator()</span></code></a>.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Each key is a <a class="reference internal" href="starsmashertools.lib.output.html#starsmashertools.lib.output.Output" title="starsmashertools.lib.output.Output"><code class="xref py py-class docutils literal notranslate"><span class="pre">Output</span></code></a> object and each value is the
-entire header.</p>
+<dd class="field-even"><p>A generator which yields output file headers, which are of type
+<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.12)">dict</a></p>
+<dd class="field-odd"><p>generator</p>
 </dd>
 </dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_output_generator" title="starsmashertools.lib.simulation.Simulation.get_output_generator"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_output_generator()</span></code></a></p>
+</div>
 </dd></dl>
 
 <dl class="py method">
