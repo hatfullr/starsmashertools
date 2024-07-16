@@ -143,6 +143,12 @@ class Output(dict, object):
 
     def __eq__(self, other):
         import starsmashertools.helpers.file
+        import starsmashertools.helpers.path
+        if isinstance(other, str):
+            if starsmashertools.helpers.path.exists(other):
+                return starsmashertools.helpers.file.compare(self.path, other)
+            return False
+        if not isinstance(other, Output): return False
         return starsmashertools.helpers.file.compare(self.path, other.path)
 
     def __hash__(self, *args, **kwargs):

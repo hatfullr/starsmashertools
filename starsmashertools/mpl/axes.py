@@ -11,6 +11,11 @@ import numpy as np
 import starsmashertools.helpers.argumentenforcer
 import copy
 
+@starsmashertools.helpers.argumentenforcer.enforcetypes
+def get_resolution(axes : matplotlib.axes._axes.Axes):
+    # Return the pixel resolution of the axes
+    pos = axes.get_position().transformed(axes.transAxes)
+    return int(pos.width), int(pos.height)
 
 @starsmashertools.helpers.argumentenforcer.enforcetypes
 def make_legend(axes : matplotlib.axes._axes.Axes):

@@ -291,3 +291,127 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
         
         if len(outputs) == 1: return Eorbtheta[0], Eorbphi[0]
         return Eorbtheta, Eorbphi
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def get_period(
+            self,
+            output : starsmashertools.lib.output.Output | starsmashertools.lib.output.OutputIterator,
+            threshold : float = Pref('threshold', 0.01),
+    ):
+        """
+        Obtain the orbital period, if there exists an orbit in the given output
+        file(s). The orbit period is calculated relative to both the primary and
+        secondary stars, using :meth:`~.lib.binary.Binary.get_primary_IDs` and 
+        :meth:`~.lib.binary.Binary.get_secondary_IDs` while ignoring ejecta. The
+        mean tangential velocities are obtained relative to the overall center 
+        of mass (also ignoring ejecta). The orbital period is found as 
+        :math:`P = 2\pi r/v` for both stars, and then compared according to
+        ``threshold``\.
+        
+        Parameters
+        ----------
+        output : :class:`~.lib.output.Output`\, :class:`~.lib.output.OutputIterator`
+            The output or outputs to obtain the orbital period for.
+
+        Other Parameters
+        ----------------
+        threshold : float, default = ``Pref('threshold', 0.01)``
+            The relative tolerance used when comparing the two period values
+            obtained from the stars. The comparison proceeds as
+            :math:`2|P_1 - P_2|/(P_1 + P_2) < \mathrm{threshold}`\.
+        
+        Returns
+        -------
+        :class:`~.lib.units.Unit` or list
+            If a single output was given as ``output``\, returns a single value
+            as the orbital period. Otherwise, returns a :py:class:`list` of
+            :class:`~.lib.units.Unit` objects for each given 
+            :class:`~.lib.outout.Output` in the output iterator.
+
+        See Also
+        --------
+        :meth:`~.lib.binary.Binary.get_period`
+        :meth:`~.lib.binary.Binary.get_primary_IDs`
+        :meth:`~.lib.binary.Binary.get_secondary_IDs`
+        """
+        import starsmashertools
+        
+        if output not in self:
+            raise starsmashertools.lib.simulation.Simulation.OutputNotInSimulationError(self, output)
+
+        if isinstance(output, starsmashertools.lib.output.OutputIterator):
+            period = []
+            for i,o in enumerate(output):
+                period += [self.get_period(
+                    o,
+                    distance_threshold = distance_threshold,
+                    magnitude_threshold = magnitude_threshold,
+                )]
+            return period
+
+        
+        # Get the center of mass
+        with starsmashertools.mask(output, ~output['unbound']) as masked:
+            com = starsmashertools.math.center_of_mass(
+                masked['am'], masked['x'], masked['y'], masked['z'],
+            )
+
+        binary = self.get_binary()
+        
+        with starsmashertools.mask(
+                output,
+                ~output['unbound'] & np.isin(
+                    output['ID'], binary.get_primary_IDs(),
+                    assume_unique = True,
+                ),
+                copy = False,
+        ) as masked:
+            v = np.mean(
+                np.column_stack((
+                    masked['vx'], masked['vy'], masked['vz']
+                )),
+                axis = 0,
+            )
+            v1 = np.sqrt(np.dot(v,v))
+            com1 = starsmashertools.math.center_of_mass(
+                masked['am'], masked['x'], masked['y'], masked['z'],
+            )
+            r1 = np.sqrt(np.dot(com1 - com, com1 - com))
+        
+        with starsmashertools.mask(
+                output,
+                ~output['unbound'] & np.isin(
+                    output['ID'], binary.get_secondary_IDs(),
+                    assume_unique = True,
+                ),
+                copy = False,
+        ) as masked:
+            v = np.mean(
+                np.column_stack((
+                    masked['vx'], masked['vy'], masked['vz']
+                )),
+                axis = 0,
+            )
+            v2 = np.sqrt(np.dot(v,v))
+            com2 = starsmashertools.math.center_of_mass(
+                masked['am'], masked['x'], masked['y'], masked['z'],
+            )
+            r2 = np.sqrt(np.dot(com2 - com, com2 - com))
+
+        unit = self.units.length / self.units.velocity
+        P1 = 2*np.pi*r1 / v1 * unit
+        P2 = 2*np.pi*r2 / v2 * unit
+
+        rel_frac_diff = 2*abs(P1 - P2)/(P1 + P2)
+        if rel_frac_diff > threshold:
+            raise Exception("No orbit detected in {:s} while calculating the oribtal period; the relative fractional difference between the results for each individual star exceeds the threshold value: star1 = {:10.4g>4s}   star2 = {:10.4g>4s}   rel_frac_diff = {:g}   threshold = {:g}".format(
+                str(output),
+                P1,
+                P2,
+                rel_frac_diff,
+                threshold,
+            ))
+        # The average might be more accurate
+        return 0.5*(P1 + P2)
+        

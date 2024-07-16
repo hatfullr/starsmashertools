@@ -84,6 +84,9 @@ prefs = {
                     'threshold_frac' : None,
                     'threshold' : 0.05,
                 },
+                'get_period' : {
+                    'threshold' : 0.01, # 1%
+                },
             },
         }, # 'dynamical'
 
@@ -437,11 +440,21 @@ prefs = {
             }, # 'Units'
         }, # 'units'
     }, # 'lib'
+
+    ############################################################################
+    'math' : {
+        'EffGravPot' : {
+            'as_point_masses' : True,
+        }, # 'EffGravPot'
+    }, # 'math'
     
     ############################################################################
 
     'mpl' : {
         'artists' : {
+            'LagrangePoints' : {
+                'n' : 3,
+            }, # 'LagrangePoints'
             'PlottingPreferences' : {
                 # The given kwargs below override the settings here
                 'defaults' : {

@@ -400,8 +400,135 @@
         
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">outputs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span> <span class="k">return</span> <span class="n">Eorbtheta</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">Eorbphi</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">Eorbtheta</span><span class="p">,</span> <span class="n">Eorbphi</span></div>
+
+
+<div class="viewcode-block" id="Dynamical.get_period">
+<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.dynamical.html#starsmashertools.lib.dynamical.Dynamical.get_period">[docs]</a>
+    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="nf">get_period</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">output</span> <span class="p">:</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">Output</span> <span class="o">|</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">OutputIterator</span><span class="p">,</span>
+            <span class="n">threshold</span> <span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">Pref</span><span class="p">(</span><span class="s1">&#39;threshold&#39;</span><span class="p">,</span> <span class="mf">0.01</span><span class="p">),</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Obtain the orbital period, if there exists an orbit in the given output</span>
+<span class="sd">        file(s). The orbit period is calculated relative to both the primary and</span>
+<span class="sd">        secondary stars, using :meth:`~.lib.binary.Binary.get_primary_IDs` and </span>
+<span class="sd">        :meth:`~.lib.binary.Binary.get_secondary_IDs` while ignoring ejecta. The</span>
+<span class="sd">        mean tangential velocities are obtained relative to the overall center </span>
+<span class="sd">        of mass (also ignoring ejecta). The orbital period is found as </span>
+<span class="sd">        :math:`P = 2\pi r/v` for both stars, and then compared according to</span>
+<span class="sd">        ``threshold``\.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        output : :class:`~.lib.output.Output`\, :class:`~.lib.output.OutputIterator`</span>
+<span class="sd">            The output or outputs to obtain the orbital period for.</span>
+
+<span class="sd">        Other Parameters</span>
+<span class="sd">        ----------------</span>
+<span class="sd">        threshold : float, default = ``Pref(&#39;threshold&#39;, 0.01)``</span>
+<span class="sd">            The relative tolerance used when comparing the two period values</span>
+<span class="sd">            obtained from the stars. The comparison proceeds as</span>
+<span class="sd">            :math:`2|P_1 - P_2|/(P_1 + P_2) &lt; \mathrm{threshold}`\.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        :class:`~.lib.units.Unit` or list</span>
+<span class="sd">            If a single output was given as ``output``\, returns a single value</span>
+<span class="sd">            as the orbital period. Otherwise, returns a :py:class:`list` of</span>
+<span class="sd">            :class:`~.lib.units.Unit` objects for each given </span>
+<span class="sd">            :class:`~.lib.outout.Output` in the output iterator.</span>
+
+<span class="sd">        See Also</span>
+<span class="sd">        --------</span>
+<span class="sd">        :meth:`~.lib.binary.Binary.get_period`</span>
+<span class="sd">        :meth:`~.lib.binary.Binary.get_primary_IDs`</span>
+<span class="sd">        :meth:`~.lib.binary.Binary.get_secondary_IDs`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools</span>
+        
+        <span class="k">if</span> <span class="n">output</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">Simulation</span><span class="o">.</span><span class="n">OutputNotInSimulationError</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">OutputIterator</span><span class="p">):</span>
+            <span class="n">period</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">o</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">output</span><span class="p">):</span>
+                <span class="n">period</span> <span class="o">+=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">get_period</span><span class="p">(</span>
+                    <span class="n">o</span><span class="p">,</span>
+                    <span class="n">distance_threshold</span> <span class="o">=</span> <span class="n">distance_threshold</span><span class="p">,</span>
+                    <span class="n">magnitude_threshold</span> <span class="o">=</span> <span class="n">magnitude_threshold</span><span class="p">,</span>
+                <span class="p">)]</span>
+            <span class="k">return</span> <span class="n">period</span>
+
+        
+        <span class="c1"># Get the center of mass</span>
+        <span class="k">with</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">mask</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="o">~</span><span class="n">output</span><span class="p">[</span><span class="s1">&#39;unbound&#39;</span><span class="p">])</span> <span class="k">as</span> <span class="n">masked</span><span class="p">:</span>
+            <span class="n">com</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">center_of_mass</span><span class="p">(</span>
+                <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;am&#39;</span><span class="p">],</span> <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">],</span> <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">],</span> <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;z&#39;</span><span class="p">],</span>
+            <span class="p">)</span>
+
+        <span class="n">binary</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_binary</span><span class="p">()</span>
+        
+        <span class="k">with</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">mask</span><span class="p">(</span>
+                <span class="n">output</span><span class="p">,</span>
+                <span class="o">~</span><span class="n">output</span><span class="p">[</span><span class="s1">&#39;unbound&#39;</span><span class="p">]</span> <span class="o">&amp;</span> <span class="n">np</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span>
+                    <span class="n">output</span><span class="p">[</span><span class="s1">&#39;ID&#39;</span><span class="p">],</span> <span class="n">binary</span><span class="o">.</span><span class="n">get_primary_IDs</span><span class="p">(),</span>
+                    <span class="n">assume_unique</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                <span class="p">),</span>
+                <span class="n">copy</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span> <span class="k">as</span> <span class="n">masked</span><span class="p">:</span>
+            <span class="n">v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">((</span>
+                    <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;vx&#39;</span><span class="p">],</span> <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;vy&#39;</span><span class="p">],</span> <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;vz&#39;</span><span class="p">]</span>
+                <span class="p">)),</span>
+                <span class="n">axis</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">v1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">v</span><span class="p">,</span><span class="n">v</span><span class="p">))</span>
+            <span class="n">com1</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">center_of_mass</span><span class="p">(</span>
+                <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;am&#39;</span><span class="p">],</span> <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">],</span> <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">],</span> <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;z&#39;</span><span class="p">],</span>
+            <span class="p">)</span>
+            <span class="n">r1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">com1</span> <span class="o">-</span> <span class="n">com</span><span class="p">,</span> <span class="n">com1</span> <span class="o">-</span> <span class="n">com</span><span class="p">))</span>
+        
+        <span class="k">with</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">mask</span><span class="p">(</span>
+                <span class="n">output</span><span class="p">,</span>
+                <span class="o">~</span><span class="n">output</span><span class="p">[</span><span class="s1">&#39;unbound&#39;</span><span class="p">]</span> <span class="o">&amp;</span> <span class="n">np</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span>
+                    <span class="n">output</span><span class="p">[</span><span class="s1">&#39;ID&#39;</span><span class="p">],</span> <span class="n">binary</span><span class="o">.</span><span class="n">get_secondary_IDs</span><span class="p">(),</span>
+                    <span class="n">assume_unique</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                <span class="p">),</span>
+                <span class="n">copy</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span> <span class="k">as</span> <span class="n">masked</span><span class="p">:</span>
+            <span class="n">v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">((</span>
+                    <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;vx&#39;</span><span class="p">],</span> <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;vy&#39;</span><span class="p">],</span> <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;vz&#39;</span><span class="p">]</span>
+                <span class="p">)),</span>
+                <span class="n">axis</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">v2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">v</span><span class="p">,</span><span class="n">v</span><span class="p">))</span>
+            <span class="n">com2</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">center_of_mass</span><span class="p">(</span>
+                <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;am&#39;</span><span class="p">],</span> <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">],</span> <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">],</span> <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;z&#39;</span><span class="p">],</span>
+            <span class="p">)</span>
+            <span class="n">r2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">com2</span> <span class="o">-</span> <span class="n">com</span><span class="p">,</span> <span class="n">com2</span> <span class="o">-</span> <span class="n">com</span><span class="p">))</span>
+
+        <span class="n">unit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">length</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">velocity</span>
+        <span class="n">P1</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">r1</span> <span class="o">/</span> <span class="n">v1</span> <span class="o">*</span> <span class="n">unit</span>
+        <span class="n">P2</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">r2</span> <span class="o">/</span> <span class="n">v2</span> <span class="o">*</span> <span class="n">unit</span>
+
+        <span class="n">rel_frac_diff</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="nb">abs</span><span class="p">(</span><span class="n">P1</span> <span class="o">-</span> <span class="n">P2</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">P1</span> <span class="o">+</span> <span class="n">P2</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">rel_frac_diff</span> <span class="o">&gt;</span> <span class="n">threshold</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;No orbit detected in </span><span class="si">{:s}</span><span class="s2"> while calculating the oribtal period; the relative fractional difference between the results for each individual star exceeds the threshold value: star1 = {:10.4g&gt;4s}   star2 = {:10.4g&gt;4s}   rel_frac_diff = </span><span class="si">{:g}</span><span class="s2">   threshold = </span><span class="si">{:g}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="nb">str</span><span class="p">(</span><span class="n">output</span><span class="p">),</span>
+                <span class="n">P1</span><span class="p">,</span>
+                <span class="n">P2</span><span class="p">,</span>
+                <span class="n">rel_frac_diff</span><span class="p">,</span>
+                <span class="n">threshold</span><span class="p">,</span>
+            <span class="p">))</span>
+        <span class="c1"># The average might be more accurate</span>
+        <span class="k">return</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">P1</span> <span class="o">+</span> <span class="n">P2</span><span class="p">)</span></div>
 </div>
 
+        
 </pre></div>
 
            </div>
