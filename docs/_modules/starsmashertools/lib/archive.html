@@ -364,8 +364,7 @@
             <span class="n">o</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">pickler</span><span class="o">.</span><span class="n">unpickle_object</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
         <span class="k">except</span> <span class="p">(</span><span class="n">binascii</span><span class="o">.</span><span class="n">Error</span><span class="p">,</span> <span class="n">_pickle</span><span class="o">.</span><span class="n">UnpicklingError</span><span class="p">):</span>
             <span class="n">o</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">jsonfile</span><span class="o">.</span><span class="n">load_bytes</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
-        <span class="n">ret</span> <span class="o">=</span> <span class="n">ArchiveValue</span><span class="p">(</span><span class="n">identifier</span><span class="p">,</span> <span class="n">o</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">],</span> <span class="n">o</span><span class="p">[</span><span class="s1">&#39;origin&#39;</span><span class="p">],</span> <span class="n">o</span><span class="p">[</span><span class="s1">&#39;mtime&#39;</span><span class="p">])</span>
-        <span class="k">return</span> <span class="n">ret</span></div>
+        <span class="k">return</span> <span class="n">ArchiveValue</span><span class="p">(</span><span class="n">identifier</span><span class="p">,</span> <span class="n">o</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">],</span> <span class="n">o</span><span class="p">[</span><span class="s1">&#39;origin&#39;</span><span class="p">],</span> <span class="n">o</span><span class="p">[</span><span class="s1">&#39;mtime&#39;</span><span class="p">])</span></div>
 
 
 
@@ -629,7 +628,10 @@
             <span class="s1">&#39;remove&#39;</span> <span class="p">:</span> <span class="p">[],</span>
         <span class="p">}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_buffer_size</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_nosave_holders</span> <span class="o">=</span> <span class="mi">0</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_nosave_holders</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">on_nosave_disabled</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">on_nosave_enabled</span> <span class="o">=</span> <span class="p">[]</span></div>
 
 
     <span class="nd">@property</span>
@@ -670,6 +672,9 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">):</span> <span class="k">return</span> <span class="kc">False</span>
         <span class="n">current_mtime</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getmtime</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">current_mtime</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_previous_mtime</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">is_nosave</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nosave_holders</span> <span class="o">&gt;</span> <span class="mi">0</span>
     
     <span class="k">def</span> <span class="nf">__copy__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span>
@@ -706,12 +711,15 @@
         
         <span class="k">try</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_nosave_holders</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">for</span> <span class="n">function</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">on_nosave_enabled</span><span class="p">:</span> <span class="n">function</span><span class="p">()</span>
             <span class="k">yield</span>
         <span class="k">finally</span><span class="p">:</span>
             <span class="c1"># Clear the buffers</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_clear_buffers</span><span class="p">()</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">thread_safe</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_keys</span> <span class="o">=</span> <span class="n">previous_keys</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_nosave_holders</span> <span class="o">-=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_nosave</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">function</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">on_nosave_disabled</span><span class="p">:</span> <span class="n">function</span><span class="p">()</span>
     
     <span class="k">def</span> <span class="nf">open</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span>
@@ -953,7 +961,7 @@
             <span class="n">update_archive_version</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="n">verbose</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_auto_save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">auto_save</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_buffer_size</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_max_buffer_size</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">auto_save</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_buffer_size</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_max_buffer_size</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
 <div class="viewcode-block" id="Archive.save">
@@ -982,7 +990,7 @@
             <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Archive.save() is being called by a process that is not the main process. Archive.save() is not thread safe, so make sure you are calling Archive.save() from a single process only. You can suppress this warning with warnings.filterwarnings(action = &#39;ignore&#39;).&quot;</span><span class="p">)</span>
         
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">readonly</span><span class="p">:</span> <span class="k">raise</span> <span class="n">Archive</span><span class="o">.</span><span class="n">ReadOnlyError</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nosave_holders</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span> <span class="k">return</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_nosave</span><span class="p">:</span> <span class="k">return</span>
         
         <span class="n">exists</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
         
@@ -1152,12 +1160,12 @@
             <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_buffers</span><span class="p">[</span><span class="s1">&#39;add&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
                 <span class="n">values</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_buffers</span><span class="p">[</span><span class="s1">&#39;add&#39;</span><span class="p">][</span><span class="n">key</span><span class="p">]</span>
             <span class="k">else</span><span class="p">:</span> <span class="n">remaining_keys</span> <span class="o">+=</span> <span class="p">[[</span><span class="n">i</span><span class="p">,</span> <span class="n">key</span><span class="p">]]</span>
-
+        
         <span class="k">if</span> <span class="kc">None</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">values</span><span class="p">:</span> <span class="c1"># We only had to search the buffers! :)</span>
             <span class="k">return</span> <span class="n">values</span>
 
         <span class="c1"># Check the archive file</span>
-        <span class="n">to_deserialize</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">keys</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">open</span><span class="p">(</span>
                 <span class="s1">&#39;r&#39;</span><span class="p">,</span>
                 <span class="n">message</span> <span class="o">=</span> <span class="s2">&quot;Loading values in </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="p">,</span>
@@ -1172,28 +1180,12 @@
             <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">remaining_keys</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">file_keys</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
                 <span class="n">values</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">zfile</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
-                <span class="n">to_deserialize</span> <span class="o">+=</span> <span class="p">[[</span><span class="n">i</span><span class="p">,</span> <span class="n">key</span><span class="p">]]</span>
+                <span class="n">keys</span> <span class="o">+=</span> <span class="p">[</span><span class="n">key</span><span class="p">]</span>
                 <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">zfile</span><span class="p">,</span> <span class="s1">&#39;progress&#39;</span><span class="p">):</span>
                     <span class="n">zfile</span><span class="o">.</span><span class="n">progress</span><span class="o">.</span><span class="n">increment</span><span class="p">()</span>
 
-        <span class="n">keys_to_deserialize</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="n">vals_to_deserialize</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">to_deserialize</span><span class="p">:</span>
-            <span class="n">keys_to_deserialize</span> <span class="o">+=</span> <span class="p">[</span><span class="n">key</span><span class="p">]</span>
-            <span class="n">vals_to_deserialize</span> <span class="o">+=</span> <span class="p">[</span><span class="n">values</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span>
-
         <span class="k">if</span> <span class="n">deserialize</span><span class="p">:</span>
-            <span class="n">deserialized_vals</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_deserialize</span><span class="p">(</span>
-                <span class="n">keys_to_deserialize</span><span class="p">,</span> <span class="n">vals_to_deserialize</span><span class="p">,</span>
-            <span class="p">)</span>
-            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">to_deserialize</span><span class="p">:</span>
-                <span class="n">values</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">deserialized_vals</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
-
-        <span class="k">del</span> <span class="n">keys_to_deserialize</span>
-        <span class="k">del</span> <span class="n">vals_to_deserialize</span>
-        <span class="k">del</span> <span class="n">to_deserialize</span>
-        <span class="k">del</span> <span class="n">remaining_keys</span>
-        <span class="n">gc</span><span class="o">.</span><span class="n">collect</span><span class="p">()</span>
+            <span class="n">values</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_deserialize</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="n">values</span><span class="p">))</span>        
         
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span> <span class="k">return</span> <span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">values</span></div>
@@ -1314,7 +1306,7 @@
                     <span class="n">progress_message</span><span class="o">.</span><span class="n">message</span> <span class="o">+=</span> <span class="s2">&quot; in serial&quot;</span>
                 <span class="c1"># Run in serial</span>
                 <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="n">values</span><span class="p">):</span>
-                    <span class="n">ret</span> <span class="o">+=</span> <span class="p">[</span><span class="n">ArchiveValue</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)]</span>
+                    <span class="k">yield</span> <span class="n">ArchiveValue</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
                     <span class="n">progress</span><span class="o">.</span><span class="n">increment</span><span class="p">()</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">progress_message</span><span class="p">:</span>
@@ -1327,18 +1319,16 @@
                     <span class="n">progress_message</span> <span class="o">=</span> <span class="n">progress</span><span class="p">,</span>
                     <span class="n">start</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
                 <span class="p">)</span>
-                <span class="n">ret</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">get_output</span><span class="p">()</span>
+                <span class="k">yield from</span> <span class="n">p</span><span class="o">.</span><span class="n">get_output</span><span class="p">()</span>
                 <span class="k">del</span> <span class="n">p</span>
-            <span class="k">return</span> <span class="n">ret</span>
-
+        
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
             <span class="k">with</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">string</span><span class="o">.</span><span class="n">progress_message</span><span class="p">(</span>
                     <span class="n">message</span> <span class="o">=</span> <span class="s2">&quot;Deserializing archive values&quot;</span><span class="p">,</span>
                     <span class="nb">max</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">keys</span><span class="p">),</span> <span class="n">delay</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
             <span class="p">)</span> <span class="k">as</span> <span class="n">progress</span><span class="p">:</span>
-                <span class="n">ret</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span><span class="n">progress_message</span> <span class="o">=</span> <span class="n">progress</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span> <span class="n">ret</span> <span class="o">=</span> <span class="n">func</span><span class="p">()</span>
-        <span class="k">return</span> <span class="n">ret</span>
+                <span class="k">yield from</span> <span class="n">func</span><span class="p">(</span><span class="n">progress_message</span> <span class="o">=</span> <span class="n">progress</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span> <span class="k">yield from</span> <span class="n">func</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">find_old_values</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>

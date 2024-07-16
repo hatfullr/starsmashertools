@@ -62,6 +62,30 @@ class TestOutput(basetest.BaseTest):
             else:
                 self.assertAlmostEqual(val, output[key])
 
+        with starsmashertools.mask(output, mask, copy = True) as masked:
+            self.assertTrue(np.array_equal(masked['ID'], output['ID'][mask]))
+
+            for o in [output, orig_output]:
+                for key, val in masked.items():
+                    if isinstance(val, np.ndarray):
+                        self.assertTrue(np.array_equal(val, o[key][mask]))
+                    else:
+                        self.assertAlmostEqual(val, o[key])
+
+        with starsmashertools.mask(output, mask, copy = False) as masked:
+            for key, val in masked.items():
+                if isinstance(val, np.ndarray):
+                    with self.assertRaises(IndexError):
+                        output[key][mask]
+                else:
+                    self.assertAlmostEqual(val, output[key])
+                    self.assertAlmostEqual(val, orig_output[key])
+
+            for key, val in masked.items():
+                if isinstance(val, np.ndarray):
+                    self.assertTrue(np.array_equal(val, orig_output[key][mask]))
+                else:
+                    self.assertAlmostEqual(val, orig_output[key])
         
         def v2(output):
             vxyz = np.column_stack((output['vx'], output['vy'], output['vz']))
@@ -70,10 +94,16 @@ class TestOutput(basetest.BaseTest):
 
         # Accessing the cache before masking should not cause problems
         output['unbound']
-        with starsmashertools.mask(output, [0, 1, 2, 3]) as masked:
+        with starsmashertools.mask(output, [0, 1, 2, 3], copy = False) as masked:
             self.assertEqual(4, len(masked['v2']))
-        
-        
+
+        # After everything, the output file should remain unmodified
+        if output.is_masked: output.unmask()
+        for key, val in orig_output.items():
+            if isinstance(val, np.ndarray):
+                self.assertTrue(np.array_equal(val, output[key]))
+            else:
+                self.assertAlmostEqual(val, output[key])
 
     def test_condense(self):
         import numpy as np

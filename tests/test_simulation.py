@@ -38,6 +38,38 @@ class TestSimulation(basetest.BaseTest):
         iterator = s.get_output_iterator()
         self.assertIn(iterator, s)
 
+    def test_get_output(self):
+        s = starsmashertools.lib.simulation.Simulation(self.simdir)
+
+        outputs = [
+            starsmashertools.lib.output.Output(
+                os.path.join(s.directory, filename),
+                s,
+            ) for filename in ['out000.sph', 'out001.sph', 'out002.sph']
+        ]
+        for i, output in enumerate(s.get_output()):
+            self.assertEqual(outputs[i], output)
+
+        for i, output in enumerate(outputs):
+            self.assertEqual(output, s.get_output(i))
+            
+        self.assertEqual([outputs[0], outputs[-1]], s.get_output(indices = [0,-1]))
+        self.assertEqual(outputs[None:2:None], s.get_output(stop = 2))
+        self.assertEqual(outputs[None:-1:None], s.get_output(stop = -1))
+        self.assertEqual(outputs[1:None:None], s.get_output(start = 1))
+        self.assertEqual(outputs[None:None:2], s.get_output(step = 2))
+
+        times = [output['t'] * output.simulation.units['t'] for output in outputs]
+        
+        self.assertEqual(outputs, s.get_output(time_range = [min(times), max(times)]))
+        self.assertEqual(outputs[:2], s.get_output(time_range = [None, times[1]]))
+        self.assertEqual(outputs[1:], s.get_output(time_range = [times[1], None]))
+        self.assertEqual(outputs[1], s.get_output(time_range = [times[1], times[1]]))
+
+        self.assertEqual(outputs, s.get_output(times = times))
+        for i, time in enumerate(times):
+            self.assertEqual(outputs[i], s.get_output(times = [time]))
+
     def test_join(self):
         sim1 = starsmashertools.lib.simulation.Simulation(self.simdir)
         
@@ -69,7 +101,6 @@ class TestSimulation(basetest.BaseTest):
                 self.assertEqual(1, sim2.archive._nosave_holders)
                 
                 sim1.join(sim2)
-
                 self.assertEqual(1, len(sim1.joined_simulations))
                 self.assertEqual(1, len(sim2.joined_simulations))
                 self.assertIn(sim2, sim1.joined_simulations)

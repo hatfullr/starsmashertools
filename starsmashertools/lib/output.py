@@ -4,6 +4,11 @@ import starsmashertools.helpers.argumentenforcer
 from starsmashertools.helpers.apidecorator import api
 import numpy as np
 import typing
+import copy
+import collections
+import itertools
+import time
+import mmap
 
 try:
     import matplotlib.axes
@@ -44,13 +49,12 @@ class Output(dict, object):
             simulation,
             mode='raw',
     ):
-        import starsmashertools.helpers.path
         import starsmashertools.helpers.string
         
         if mode not in Output.modes:
             s = starsmashertools.helpers.string.list_to_string(Output.modes, join='or')
             raise ValueError("Keyword argument 'mode' must be one of %s, not '%s'" % (s, str(mode)))
-        self.path = starsmashertools.helpers.path.realpath(path)
+        self._path = path
         self.simulation = simulation
         self.mode = mode
         self._isRead = {
@@ -68,6 +72,11 @@ class Output(dict, object):
 
         self._original_data = None
 
+    @property
+    def path(self):
+        import starsmashertools.helpers.path
+        return starsmashertools.helpers.path.realpath(self._path)
+
     @staticmethod
     def _get_path_and_simulation(obj):
         import starsmashertools.helpers.path
@@ -82,7 +91,7 @@ class Output(dict, object):
     def _get_relpath(self):
         import starsmashertools.helpers.path
         return starsmashertools.helpers.path.relpath(
-            starsmashertools.helpers.path.realpath(self.path),
+            self.path,
             start = self.simulation.directory,
         )
 
@@ -91,7 +100,7 @@ class Output(dict, object):
     def __getstate__(self):
         import starsmashertools.helpers.path
         return {
-            'path' : self.path,
+            'path' : self._path,
             'simulation' : self.simulation.directory,
             'mode' : self.mode,
             'mask' : self._mask,
@@ -112,14 +121,12 @@ class Output(dict, object):
     def __str__(self):
         import starsmashertools.helpers.path
         string = self.__class__.__name__ + "(%s)"
-        return string % ("'%s'" % starsmashertools.helpers.path.basename(self.path))
+        return string % ("'%s'" % starsmashertools.helpers.path.basename(self._path))
 
     def __repr__(self): return str(self)
 
     @api
     def __getitem__(self, item):
-        import copy
-        
         if item in self.keys(ensure_read=False):
             if item in self._cache.keys():
                 return self.from_cache(item)
@@ -136,6 +143,12 @@ class Output(dict, object):
 
     def __eq__(self, other):
         import starsmashertools.helpers.file
+        import starsmashertools.helpers.path
+        if isinstance(other, str):
+            if starsmashertools.helpers.path.exists(other):
+                return starsmashertools.helpers.file.compare(self.path, other)
+            return False
+        if not isinstance(other, Output): return False
         return starsmashertools.helpers.file.compare(self.path, other.path)
 
     def __hash__(self, *args, **kwargs):
@@ -143,7 +156,7 @@ class Output(dict, object):
         return self.path.__hash__(*args, **kwargs)
 
     def __copy__(self,*args,**kwargs):
-        ret = Output(self.path, self.simulation, mode=self.mode)
+        ret = Output(self._path, self.simulation, mode=self.mode)
         ret.copy_from(self)
         return ret
     def __deepcopy__(self,*args,**kwargs):
@@ -155,8 +168,7 @@ class Output(dict, object):
             self.read(return_headers=not self._isRead['header'], return_data=not self._isRead['data'])
 
     def _clear_cache(self):
-        import copy
-        self._cache = copy.copy(self.preferences.get('cache'))
+        self._cache = copy.deepcopy(self.preferences.get('cache'))
         # If no cache is defined in preferences
         if self._cache is None: self._cache = {}
 
@@ -171,7 +183,6 @@ class Output(dict, object):
         
     @api
     def keys(self, *args, ensure_read : bool = True, **kwargs):
-        import itertools
         if ensure_read: self._ensure_read()
         return itertools.chain(
             super(Output, self).keys(*args, **kwargs),
@@ -198,7 +209,6 @@ class Output(dict, object):
     
     @api
     def copy_from(self, obj):
-        import copy
         self._mask = copy.deepcopy(obj._mask)
         
         for key in self._isRead.keys():
@@ -242,7 +252,7 @@ class Output(dict, object):
 
         if read_header: self._isRead['header'] = True
         if read_data: self._isRead['data'] = True
-
+    
     @api
     def from_cache(self, key):
         if key in self._cache.keys():
@@ -253,8 +263,6 @@ class Output(dict, object):
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def mask(self, mask : np.ndarray | list | tuple):
-        import copy
-        
         if self.is_masked:
             raise Exception("Cannot apply more than 1 mask to an Output object")
         
@@ -302,7 +310,7 @@ class Output(dict, object):
             any. Note that the IDs are zero'th indexed, unlike the particle IDs
             in ``StarSmasher``, which start at index 1 instead of 0.
         """
-        return np.where(self['u'] == 0)[0]
+        return self['ID'][self['u'] == 0]
 
     @api
     def get_non_core_particles(self):
@@ -315,7 +323,7 @@ class Output(dict, object):
         :class:`numpy.ndarray`
             Non-core-particle IDs.
         """
-        return np.where(self['u'] != 0)[0]
+        return self['ID'][self['u'] != 0]
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
@@ -411,8 +419,6 @@ class Output(dict, object):
         The value returned depends on the contents of positional argument 
         ``func``\, and/or the contents of the simulation archive.
         """
-        import time
-            
         archive_key = 'Output.condense'
         archive_value = {}
         if archive_key in self.simulation.archive.keys():
@@ -820,7 +826,6 @@ class OutputIterator(object):
     
     def __next__(self):
         import starsmashertools.helpers.asynchronous
-        import copy
         if len(self.filenames) == 0: self.stop()
         
         self._buffer_index += 1
@@ -876,9 +881,9 @@ class OutputIterator(object):
 
 class ParticleIterator(OutputIterator, object):
     """
-    Similar to an OutputIterator, but instead of iterating through all the
-    particles in each Output file, we iterate through a list of particles
-    instead. This involves a different kind of Reader.
+    Similar to an :class:`~.OutputIterator`, but instead of iterating through 
+    all the particles in each Output file, we iterate through a list of
+    particles instead.
     """
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
@@ -895,7 +900,6 @@ class ParticleIterator(OutputIterator, object):
     def get(self, filename):
         import starsmashertools.helpers.file
         import starsmashertools.helpers.readonlydict
-        import mmap
         
         if len(self.particle_IDs) == 0: return {}
         # Calculate the file position for the quantity we want to read
@@ -1085,6 +1089,8 @@ class Reader(object):
         new_data = {}
         for name in data[0].dtype.names:
             new_data[name] = np.array(data[name])
+        # Always include an 'ID' key
+        new_data['ID'] = np.arange(ntot, dtype = int)
         return starsmashertools.helpers.readonlydict.ReadOnlyDict(new_data)
 
     def read(
@@ -1096,7 +1102,6 @@ class Reader(object):
     ):
         import starsmashertools.helpers.file
         import starsmashertools.helpers.path
-        import mmap
         
         if verbose: print(filename)
         
@@ -1161,7 +1166,6 @@ class Reader(object):
         import starsmashertools.helpers.path
         import starsmashertools.helpers.file
         import starsmashertools.helpers.string
-        import collections
         
         # Expected data types
         data_types = ('integer', 'real', 'logical', 'character')

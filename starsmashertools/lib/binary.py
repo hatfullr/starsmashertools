@@ -106,13 +106,9 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
             verbose : bool = False,
     ):
         import starsmashertools.lib.relaxation
-        import starsmashertools.lib.simulation
         import starsmashertools.helpers.path
-        search_directory = starsmashertools.lib.simulation.Simulation.preferences.get(
-            'search directory',
-        )
-        search_directory = starsmashertools.helpers.path.realpath(search_directory)
-
+        search_directory = self.get_search_directory()
+        
         if self.isPrimaryPointMass():
             children = ['point mass']
         else:
@@ -140,8 +136,24 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def get_COMs(self, output : starsmashertools.lib.output.Output | starsmashertools.lib.output.OutputIterator):
+        """
+        Obtain the center of mass of both stars in the simulation for the given
+        outputs.
+
+        Parameters
+        ----------
+        output : :class:`~.lib.output.Output`\, :class:`~.lib.output.OutputIterator`
+            The output or outputs for which to get the center of mass of each of
+            the two stars.
+
+        Returns
+        -------
+        :class:`numpy.ndarray`\, :class:`numpy.ndarray`
+            Two NumPy arrays of shape ``(3,)`` containing the ``(x, y, z)``
+            center of mass positions of the primary and secondary stars 
+            respectively.
+        """
         import starsmashertools.math
-        import starsmashertools.lib.simulation
         
         if output not in self:
             raise starsmashertools.lib.simulation.Simulation.OutputNotInSimulationError(self, output)
@@ -156,7 +168,7 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
         primary_IDs = self.get_primary_IDs()
         secondary_IDs = self.get_secondary_IDs()
         
-        with starsmashertools.mask(output, primary_IDs) as masked:
+        with starsmashertools.mask(output, primary_IDs, copy = False) as masked:
             xcom1, ycom1, zcom1 = starsmashertools.math.center_of_mass(
                 masked['am'],
                 masked['x'],
@@ -164,7 +176,7 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
                 masked['z'],
             )
 
-        with starsmashertools.mask(output, secondary_IDs) as masked:
+        with starsmashertools.mask(output, secondary_IDs, copy = False) as masked:
             xcom2, ycom2, zcom2 = starsmashertools.math.center_of_mass(
                 masked['am'],
                 masked['x'],
@@ -177,9 +189,6 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def get_separation(self, output : starsmashertools.lib.output.Output | starsmashertools.lib.output.OutputIterator):
-        import starsmashertools.lib.output
-        import starsmashertools.lib.simulation
-        
         if output not in self:
             raise starsmashertools.lib.simulation.Simulation.OutputNotInSimulationError(self, output)
         
@@ -196,8 +205,6 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
     @api
     def get_period(self, output : starsmashertools.lib.output.Output | starsmashertools.lib.output.OutputIterator):
         import starsmashertools.math
-        import starsmashertools.lib.simulation
-        import starsmashertools.lib.output
         import starsmashertools
         
         if output not in self:
@@ -213,9 +220,9 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
         
         primary_IDs = self.get_primary_IDs()
         secondary_IDs = self.get_secondary_IDs()
-        with starsmashertools.mask(output, primary_IDs) as masked:
+        with starsmashertools.mask(output, primary_IDs, copy = False) as masked:
             m1 = np.sum(masked['am'])
-        with starsmashertools.mask(output, secondary_IDs) as masked:
+        with starsmashertools.mask(output, secondary_IDs, copy = False) as masked:
             m2 = np.sum(masked['am'])
         m1 *= self.units.mass
         m2 *= self.units.mass
@@ -229,8 +236,6 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
     @api
     def get_fRLOF(self, output : starsmashertools.lib.output.Output | starsmashertools.lib.output.OutputIterator):
         import starsmashertools.math
-        import starsmashertools.lib.simulation
-        import starsmashertools.lib.output
         import starsmashertools
         import warnings
         
@@ -249,13 +254,13 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
         primary = self.get_primary_IDs()
         secondary = self.get_secondary_IDs()
 
-        with starsmashertools.mask(output, primary) as masked:
+        with starsmashertools.mask(output, primary, copy = False) as masked:
             m1 = np.sum(masked['am'])
             with warnings.catch_warnings():
                 warnings.simplefilter('ignore')
                 V1 = np.sum(masked['am'] / masked['rho'])
 
-        with starsmashertools.mask(output, secondary) as masked:
+        with starsmashertools.mask(output, secondary, copy = False) as masked:
             m2 = np.sum(masked['am'])
             with warnings.catch_warnings():
                 warnings.simplefilter('ignore')
@@ -461,7 +466,6 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
         """
         import starsmashertools.helpers.path
         import starsmashertools.lib.logfile
-        import starsmashertools.lib.output
         import starsmashertools
         
         logfiles = self.get_logfiles()
@@ -480,7 +484,7 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
                 raise FileNotFoundError("Cannot get the primary's mass because the simulation has no log files, no output files, and the sph.start1u file is missing, in '%s'" % self.directory)
             output = starsmashertools.lib.output.Output(start1u, self)
 
-        with starsmashertools.mask(output, self.get_primary_IDs()) as masked:
+        with starsmashertools.mask(output, self.get_primary_IDs(), copy = False) as masked:
             return np.sum(masked['am'])
 
     @api
@@ -501,7 +505,6 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
         """
         import starsmashertools.helpers.path
         import starsmashertools.lib.logfile
-        import starsmashertools.lib.output
         import starsmashertools
         
         logfiles = self.get_logfiles()
@@ -520,7 +523,7 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
                 raise FileNotFoundError("Cannot get the secondary's mass because the simulation has no log files, no output files, and the sph.start2u file is missing, in '%s'" % self.directory)
             output = starsmashertools.lib.output.Output(start2u, self)
         
-        with starsmashertools.mask(output, self.get_secondary_IDs()) as masked:
+        with starsmashertools.mask(output, self.get_secondary_IDs(), copy = False) as masked:
             return np.sum(masked['am'])
 
     @api
@@ -547,7 +550,6 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
         import starsmashertools.helpers.path
         import starsmashertools.lib.logfile
         import starsmashertools
-        import starsmashertools.lib.output
         
         if self.get_n1() == 1: # The primary is a point mass particle
             return self['mbh']
@@ -600,7 +602,6 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
         :func:`~.get_primary_core_mass`\, :func:`~.lib.output.Output.get_core_particles`
         """
         import starsmashertools.helpers.path
-        import starsmashertools.lib.output
         import starsmashertools
 
         if self.get_n2() == 1: # The secondary is a point mass particle

@@ -107,6 +107,10 @@
 <span class="kn">import</span> <span class="nn">typing</span>
 <span class="kn">import</span> <span class="nn">atexit</span>
 <span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">filecmp</span>
+<span class="kn">import</span> <span class="nn">mmap</span>
 
 <span class="n">fortran_comment_characters</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;c&#39;</span><span class="p">,</span><span class="s1">&#39;C&#39;</span><span class="p">,</span><span class="s1">&#39;!&#39;</span><span class="p">,</span><span class="s1">&#39;*&#39;</span><span class="p">]</span>
 
@@ -134,11 +138,6 @@
             <span class="n">mode</span> <span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
             <span class="n">timeout</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">Pref</span><span class="p">(</span><span class="s1">&#39;timeout&#39;</span><span class="p">),</span>
     <span class="p">):</span>
-        <span class="kn">import</span> <span class="nn">os</span>
-        <span class="kn">import</span> <span class="nn">starsmashertools</span>
-        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.path</span>
-        <span class="kn">import</span> <span class="nn">copy</span>
-        
         <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">realpath</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">=</span> <span class="n">mode</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">timeout</span> <span class="o">=</span> <span class="n">timeout</span>
@@ -148,45 +147,11 @@
             <span class="s1">&#39;_&#39;</span><span class="p">,</span>
         <span class="p">)</span>
 
-        <span class="n">basename</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">sep</span><span class="p">,</span> <span class="s1">&#39;_&#39;</span><span class="p">)</span>
-        <span class="n">basename_with_mode</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">basename</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">modes</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">val</span><span class="p">:</span> <span class="k">continue</span>
-            <span class="n">basename_with_mode</span> <span class="o">+=</span> <span class="s1">&#39;.&#39;</span> <span class="o">+</span> <span class="n">key</span>
-            <span class="k">break</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Unknown file mode &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span><span class="p">)</span>
-        
-        <span class="n">directory</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">LOCK_DIRECTORY</span>
-        
-        <span class="n">full_name</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
-            <span class="n">directory</span><span class="p">,</span> <span class="n">basename_with_mode</span><span class="p">,</span>
-        <span class="p">)</span>
-        
-        <span class="c1"># Find other files that start with the same name and mode identifier. It</span>
-        <span class="c1"># doesn&#39;t need to match the mode we are in, it just needs to exist. This</span>
-        <span class="c1"># keeps our order of operations consistent with what user&#39;s code wants</span>
-        <span class="c1"># to do. It works like a &quot;stack&quot;.</span>
-        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span> <span class="c1"># Keep trying until we make a correct file</span>
-            <span class="n">existing</span> <span class="o">=</span> <span class="p">[]</span>
-            <span class="k">for</span> <span class="n">filename</span> <span class="ow">in</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">directory</span><span class="p">):</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="n">filename</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">basename</span><span class="p">):</span> <span class="k">continue</span>
-                <span class="n">existing</span> <span class="o">+=</span> <span class="p">[</span><span class="n">filename</span><span class="p">]</span>
-
-            <span class="bp">self</span><span class="o">.</span><span class="n">lockfile</span> <span class="o">=</span> <span class="n">full_name</span> <span class="o">+</span> <span class="s1">&#39;.</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">existing</span><span class="p">)</span>
-            
-            <span class="k">try</span><span class="p">:</span>
-                <span class="c1"># Touch to create the lock file, regardless if we are reading or</span>
-                <span class="c1"># writing</span>
-                <span class="n">builtins</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lockfile</span><span class="p">,</span> <span class="s1">&#39;x&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-            <span class="k">except</span> <span class="ne">FileExistsError</span><span class="p">:</span>
-                <span class="k">continue</span>
-            
-            <span class="k">break</span>
-
-        
-        <span class="c1"># Always unlock before program exit</span>
-        <span class="n">atexit</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">unlock</span><span class="p">)</span>
+    <span class="k">def</span> <span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">locked</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">lock</span><span class="p">()</span>
+    
+    <span class="k">def</span> <span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">locked</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">unlock</span><span class="p">()</span>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">get_lockfile_mode</span><span class="p">(</span><span class="n">lockfile</span> <span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
@@ -200,9 +165,12 @@
     <span class="k">def</span> <span class="nf">get_lockfile_basename</span><span class="p">(</span><span class="n">lockfile</span> <span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
         <span class="k">return</span> <span class="s1">&#39;.&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lockfile</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)[:</span><span class="o">-</span><span class="mi">2</span><span class="p">])</span>
 
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">locked</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="k">return</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;lockfile&#39;</span><span class="p">)</span>
+
     <span class="k">def</span> <span class="nf">get_all_locks</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="c1"># Obtain all the lock files including us.</span>
-        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.path</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">locked</span><span class="p">:</span> <span class="k">return</span> <span class="p">[]</span>
         <span class="n">directory</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lockfile</span><span class="p">)</span>
         <span class="n">basename</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lockfile</span><span class="p">)</span>
         <span class="n">base_lock_name</span> <span class="o">=</span> <span class="n">Lock</span><span class="o">.</span><span class="n">get_lockfile_basename</span><span class="p">(</span><span class="n">basename</span><span class="p">)</span>
@@ -251,17 +219,56 @@
                 <span class="k">if</span> <span class="n">Lock</span><span class="o">.</span><span class="n">get_lockfile_mode</span><span class="p">(</span><span class="n">lock</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;write&#39;</span><span class="p">:</span> <span class="k">return</span> <span class="kc">False</span>
             <span class="k">return</span> <span class="kc">True</span>
 
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Unknown file mode &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="n">mode</span><span class="p">)</span>    
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Unknown file mode &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="n">mode</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">lock</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="kn">from</span> <span class="nn">starsmashertools</span> <span class="kn">import</span> <span class="n">LOCK_DIRECTORY</span>
+        
+        <span class="n">basename</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">sep</span><span class="p">,</span> <span class="s1">&#39;_&#39;</span><span class="p">)</span>
+        <span class="n">basename_with_mode</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">basename</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">modes</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">val</span><span class="p">:</span> <span class="k">continue</span>
+            <span class="n">basename_with_mode</span> <span class="o">+=</span> <span class="s1">&#39;.&#39;</span> <span class="o">+</span> <span class="n">key</span>
+            <span class="k">break</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Unknown file mode &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span><span class="p">)</span>
+        
+        <span class="n">full_name</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+            <span class="n">LOCK_DIRECTORY</span><span class="p">,</span> <span class="n">basename_with_mode</span><span class="p">,</span>
+        <span class="p">)</span>
+        
+        <span class="c1"># Find other files that start with the same name and mode identifier. It</span>
+        <span class="c1"># doesn&#39;t need to match the mode we are in, it just needs to exist. This</span>
+        <span class="c1"># keeps our order of operations consistent with what user&#39;s code wants</span>
+        <span class="c1"># to do. It works like a &quot;stack&quot;.</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span> <span class="c1"># Keep trying until we make a correct file</span>
+            <span class="n">existing</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">filename</span> <span class="ow">in</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">LOCK_DIRECTORY</span><span class="p">):</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">filename</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">basename</span><span class="p">):</span> <span class="k">continue</span>
+                <span class="n">existing</span> <span class="o">+=</span> <span class="p">[</span><span class="n">filename</span><span class="p">]</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">lockfile</span> <span class="o">=</span> <span class="n">full_name</span> <span class="o">+</span> <span class="s1">&#39;.</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">existing</span><span class="p">)</span>
+            
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c1"># Touch to create the lock file, regardless if we are reading or</span>
+                <span class="c1"># writing</span>
+                <span class="n">builtins</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lockfile</span><span class="p">,</span> <span class="s1">&#39;x&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="k">except</span> <span class="ne">FileExistsError</span><span class="p">:</span>
+                <span class="k">continue</span>
+            
+            <span class="k">break</span>
+
+        <span class="c1"># Always unlock before program exit</span>
+        <span class="n">atexit</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">unlock</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">unlock</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.path</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lockfile</span><span class="p">)</span>
-        <span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span> <span class="k">pass</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">locked</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lockfile</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span> <span class="k">pass</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">lockfile</span>
+        <span class="n">atexit</span><span class="o">.</span><span class="n">unregister</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">unlock</span><span class="p">)</span>
     
     <span class="k">def</span> <span class="nf">wait</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="kn">import</span> <span class="nn">time</span>
-        
         <span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
         <span class="k">while</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">ready</span><span class="p">():</span>
             <span class="c1">#print(&quot;Still waiting&quot;, time.time() - t0)</span>
@@ -413,10 +420,10 @@
     
     <span class="c1"># Always lock no matter what, unless we have been told explicitly that we</span>
     <span class="c1"># don&#39;t need to</span>
-    <span class="n">_lock</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">timeout</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="n">_lock</span> <span class="o">=</span> <span class="n">Lock</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">mode</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span> <span class="n">_lock</span> <span class="o">=</span> <span class="n">Lock</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span> <span class="n">timeout</span> <span class="o">=</span> <span class="n">timeout</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">lock</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">timeout</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="n">_lock</span> <span class="o">=</span> <span class="n">Lock</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">mode</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span> <span class="n">_lock</span> <span class="o">=</span> <span class="n">Lock</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span> <span class="n">timeout</span> <span class="o">=</span> <span class="n">timeout</span><span class="p">)</span>
+        <span class="n">_lock</span><span class="o">.</span><span class="n">lock</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">_lock</span><span class="o">.</span><span class="n">timeout</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">verbose</span><span class="p">:</span> <span class="n">_lock</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
             <span class="k">else</span><span class="p">:</span>
@@ -462,9 +469,6 @@
 
 <span class="c1"># Check if the file at the given path is a MESA file</span>
 <span class="k">def</span> <span class="nf">isMESA</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
-    <span class="kn">import</span> <span class="nn">starsmashertools.helpers.path</span>
-    <span class="kn">import</span> <span class="nn">starsmashertools.helpers.string</span>
-    
     <span class="k">if</span> <span class="ow">not</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">path</span><span class="p">):</span> <span class="k">return</span> <span class="kc">False</span>
     
     <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
@@ -527,8 +531,6 @@
 <span class="c1"># Check if 2 files are identical</span>
 <span class="c1">#@profile</span>
 <span class="k">def</span> <span class="nf">compare</span><span class="p">(</span><span class="n">file1</span><span class="p">,</span> <span class="n">file2</span><span class="p">):</span>
-    <span class="kn">import</span> <span class="nn">starsmashertools.helpers.path</span>
-    <span class="kn">import</span> <span class="nn">filecmp</span>
     <span class="c1">#file1 = starsmashertools.helpers.path.realpath(file1)</span>
     <span class="c1">#file2 = starsmashertools.helpers.path.realpath(file2)</span>
     
@@ -569,8 +571,6 @@
 <span class="sd">    -------</span>
 <span class="sd">    str</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">import</span> <span class="nn">mmap</span>
-    
     <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
         <span class="n">buffer</span> <span class="o">=</span> <span class="n">mmap</span><span class="o">.</span><span class="n">mmap</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">fileno</span><span class="p">(),</span> <span class="mi">0</span><span class="p">,</span> <span class="n">access</span><span class="o">=</span><span class="n">mmap</span><span class="o">.</span><span class="n">ACCESS_READ</span><span class="p">)</span>
 
@@ -618,9 +618,6 @@
 <span class="sd">    -------</span>
 <span class="sd">    list</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">import</span> <span class="nn">copy</span>
-    <span class="kn">import</span> <span class="nn">starsmashertools.helpers.path</span>
-    
     <span class="n">ret</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">files</span><span class="p">)</span>
     <span class="n">ret</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">f</span><span class="p">:</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getmtime</span><span class="p">(</span><span class="n">f</span><span class="p">))</span>
     <span class="k">return</span> <span class="n">ret</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
@@ -631,13 +628,11 @@
 <span class="k">def</span> <span class="nf">reverse_readline</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;A generator that returns the lines of a file in reverse order</span>
 <span class="sd">    https://stackoverflow.com/a/23646049/4954083&quot;&quot;&quot;</span>
-    <span class="kn">import</span> <span class="nn">mmap</span>
     <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>
         <span class="n">buffer</span> <span class="o">=</span> <span class="n">mmap</span><span class="o">.</span><span class="n">mmap</span><span class="p">(</span><span class="n">fh</span><span class="o">.</span><span class="n">fileno</span><span class="p">(),</span> <span class="mi">0</span><span class="p">,</span> <span class="n">access</span><span class="o">=</span><span class="n">mmap</span><span class="o">.</span><span class="n">ACCESS_READ</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">reverse_readline_buffer</span><span class="p">(</span><span class="n">buffer</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
 <span class="k">def</span> <span class="nf">reverse_readline_buffer</span><span class="p">(</span><span class="n">_buffer</span><span class="p">,</span> <span class="n">buf_size</span><span class="o">=</span><span class="mi">8192</span><span class="p">):</span>
-    <span class="kn">import</span> <span class="nn">os</span>
     <span class="n">_buffer</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">SEEK_END</span><span class="p">)</span>
     <span class="n">segment</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span>

@@ -34,6 +34,8 @@ def find(
 
     
 class LogFile(object):
+    class PhraseNotFoundError(Exception): pass
+    
     @api
     def __init__(self, path, simulation):
         import starsmashertools.helpers.path
@@ -315,7 +317,6 @@ class LogFile(object):
 
         toget += first_iteration['iteration']
 
-        iterations = []
         for number in toget:
             tomatch = (startline + '%8d') % number
             index = self._buffer.find(
@@ -331,7 +332,7 @@ class LogFile(object):
             content = self._buffer.read(length)
             
             try:
-                iteration = LogFile.Iteration(content, self)
+                yield LogFile.Iteration(content, self)
             except LogFile.PhraseNotFoundError:
                 break
             
@@ -341,17 +342,12 @@ class LogFile(object):
             # file at the front and back before seeking ahead. We do the front-
             # back seeking above before the loop to save time.
             #try:
-            #    iteration = self.get_iteration(number)
+            #    yield self.get_iteration(number)
             #except LogFile.PhraseNotFoundError:
             #    break
             #if iteration is None: raise Exception("Failed to find iteration %d" % (first_iteration['iteration'] + number))
-            #print("Got iteration %d" % iteration['iteration'])
-            
-            iterations += [iteration]
 
-        return iterations
-
-    class PhraseNotFoundError(Exception): pass
+    
 
 
 

@@ -13,6 +13,10 @@ import warnings
 import typing
 import collections
 import gc
+import pickle
+import gzip
+import tempfile
+import os
 
 try:
     import matplotlib.axes
@@ -20,12 +24,6 @@ try:
 except ImportError:
     has_matplotlib = False
 
-
-def get(*args, **kwargs):
-    weighted_averages = kwargs.pop('weighted_averages', [])
-    finder = FluxFinder(*args, **kwargs)
-    finder.get()
-    return finder.result
 
 @starsmashertools.preferences.use
 class FluxFinder(object):
@@ -48,13 +46,12 @@ class FluxFinder(object):
             rays : bool = Pref('rays', True),
             tau_s : float | int = Pref('tau_s', 20.),
             tau_skip : float | int = Pref('tau_skip', 1.e-5),
-            teff_cut : float | int = Pref('teff_cut', 3500.),
             dust_opacity : float | int | type(None) = Pref('dust_opacity', 1),
             dust_Trange : list | tuple | type(None) = Pref('dust_Trange', (100, 1000)),
             flux_limit_min : int | float | type(None) = None,
 
             # Spectrum
-            spectrum_size : int | float = Pref('spectrum_size', 1000),
+            spectrum_size : int = Pref('spectrum_size', 1000),
             lmax : int | float = Pref('lmax', 3000),
             dl_il : int | float = Pref('dl_il', 3.),
             dl : int | float = Pref('dl', 10),
@@ -98,7 +95,6 @@ class FluxFinder(object):
         self.rays = rays
         self.tau_s = tau_s
         self.tau_skip = tau_skip
-        self.teff_cut = teff_cut
         self.dust_opacity = dust_opacity
         self.dust_Trange = dust_Trange
         self.flux_limit_min = flux_limit_min
@@ -138,13 +134,23 @@ class FluxFinder(object):
 
         self.images = collections.OrderedDict()
         self.images['flux'] = FluxFinder.Image(self.resolution)
-        self.images['flux v'] = FluxFinder.Image(self.resolution)
 
         # We multiply by the flux later in _init_particles
         for i, array in enumerate(weighted_averages):
-            self.images['weightedaverage%d' % i] = FluxFinder.Image(
-                self.resolution, particle_array = copy.deepcopy(array),
-            )
+            if isinstance(array, str):
+                self.images['weightedaverage%d' % i] = FluxFinder.Image(
+                    self.resolution,
+                    # This should hopefully send a reference to the image for
+                    # use. This way, if the user wants to use, say, a
+                    # component of the particle velocity, then the value used
+                    # will be the one after rotations have been done.
+                    particle_array = self.output[array],
+                )
+            else:
+                self.images['weightedaverage%d' % i] = FluxFinder.Image(
+                    self.resolution,
+                    particle_array = array, # a reference (rotate)
+                )
 
         self.result = FluxResult({
             'version' : starsmashertools.__version__,
@@ -178,7 +184,6 @@ class FluxFinder(object):
         surf_t = np.zeros(self.images['flux'].array.shape, dtype = float)
         surf_t[:self.resolution[0]-1,:self.resolution[1]-1] = (area_br/float(constants['sigmaSB']))**0.25
         flux_tot = self.images['flux'].get_total()
-        flux_tot_v = np.sum(self.images['flux v'].array[:self.resolution[0]-1,:self.resolution[1]-1])
 
         # Vectorized:
         with warnings.catch_warnings():
@@ -187,14 +192,12 @@ class FluxFinder(object):
 
         # Units of energy/time/area
         flux_tot = starsmashertools.lib.units.Unit(flux_tot, 'g/s*s*s')
-        flux_tot_v = starsmashertools.lib.units.Unit(flux_tot_v, 'g/s*s*s')
         
-        # Finish the ltot and l_v calculations
+        # Finish the ltot calculations
         length = self.units.get('length', 1.)
         cell_area = self.dx * self.dy * length**2
         ltot = 4 * cell_area * flux_tot
-        l_v  = 4 * cell_area * flux_tot_v
-
+        
         self.spectrum.finalize()
         
         ltot_spectrum = 4 * cell_area * self.spectrum.flux['total']
@@ -204,14 +207,15 @@ class FluxFinder(object):
         self.result['image','teff_aver'] = teff_aver
         self.result['image','ltot'] = ltot
         self.result['image','flux_tot'] = flux_tot
-        self.result['image','l_v'] = l_v
-        self.result['spectrum','ltot_spectrum'] = ltot_spectrum
-        self.result['spectrum','l_spectrum'] = l_spectrum
+        self.result['spectrum','ltot'] = ltot_spectrum
+        self.result['spectrum','luminosities'] = l_spectrum
         self.result['spectrum','output'] = self.spectrum.output
         self.result['spectrum','teff'] = self.spectrum.teff
+        self.result['spectrum','teff_min'] = self.spectrum.teff_min
+        self.result['spectrum','teff_max'] = self.spectrum.teff_max
 
-        del area_br, surf_t, flux_tot, flux_tot_v, teff_aver, length, cell_area
-        del ltot, l_v, ltot_spectrum, l_spectrum
+        del area_br, surf_t, flux_tot, teff_aver, length, cell_area
+        del ltot, ltot_spectrum, l_spectrum
         gc.collect()
         
 
@@ -255,8 +259,9 @@ class FluxFinder(object):
         m = self.output['am'] * float(units['am'])
         rho = copy.deepcopy(self.output['rho']) * float(units['rho'])
         
-        i = np.logical_and(idx, ~cores)
-        if i.any():
+        i = idx & ~cores
+        # if uraddot_emerg[i] < uraddot_diff[i] and do_fluffy == 1:
+        if self.fluffy and i.any():
             self._rloc[i] = 2.*self.output['hp'][i] * float(units['hp'])
             rho[i]=m[i]/pow(self._rloc[i],3.)
             self._tau[i]=rho[i]*kappa[i]*self._rloc[i]*4./3.
@@ -265,8 +270,9 @@ class FluxFinder(object):
             flux_rad[i] = flux_em[i]
 
         temp = self.output['temperatures'] * float(self.output.simulation.units['temperatures'])
-        i = np.logical_and(~idx, ~cores)
-        if i.any():
+        i = ~idx & ~cores
+        # else:
+        if not self.fluffy or i.any():
             # this particle is considered in "dense" approximation
             self._rloc[i]=pow(m[i]/(4/3.*np.pi)/rho[i],0.33333)
             self._tau[i]=rho[i]*kappa[i]*self._rloc[i]*4./3.
@@ -276,25 +282,21 @@ class FluxFinder(object):
             dd=c_speed/kappa[i]/rho[i]
             gradt=a_const*pow(temp[i],4)/self._rloc[i]
             dedt=ad/3.*dd*gradt/m[i]
-            self._flux[i]=dedt*m[i]/ad
-            flux_rad[i] = dedt * m[i] / ad
 
+            flux_rad[i] = dedt * m[i] / ad
+            self._flux[i] = dedt * m[i] / ad
+            
             if self.rays:
                 ratio = np.full(self._flux.shape, np.nan)
-                ratio[i] = -uraddotcool[i]/dedt*12. # to figure out how many effective cooling rays
-                _idx1 = np.logical_and(
-                    ~cores,
-                    np.logical_and(i, ratio <= 6),
-                )
+                ratio[i] = np.abs(uraddotcool[i]/dedt*12.) # to figure out how many effective cooling rays
+                _idx1 = ~cores & i & (ratio <= 6)
+                # if ratio <= 6:
                 if _idx1.any():
                     ad_cool = 2.*np.pi*self._rloc[_idx1]*self._rloc[_idx1]
-                    self._flux[_idx1]=-uraddotcool[_idx1]*m[_idx1]/ad_cool
-
-
-                _idx2 = np.logical_and(
-                    ~cores,
-                    np.logical_and(i, ratio > 6),
-                )
+                    self._flux[_idx1]=np.abs(uraddotcool[_idx1]*m[_idx1]/ad_cool) # all what is cooled is to goes through the outer hemisphere
+                
+                _idx2 = ~cores & i & (ratio > 6)
+                # if ratio > 6:
                 if _idx2.any():
                     ad      = 4.*np.pi*self._rloc[_idx2]*self._rloc[_idx2]
                     gradt = a_const*pow(temp[_idx2],4)/self._rloc[_idx2]
@@ -304,10 +306,7 @@ class FluxFinder(object):
 
                 del ratio, _idx1, _idx2
 
-            _idx = np.logical_and(
-                ~cores,
-                np.logical_and(i, self._tau < 100),
-            )
+            _idx = ~cores & i & (self._tau < 100) # we anticipate that emergent flux computation breaks down at very large tau, where flux_em becomes zero and nullifies total flux is no limit on tau is placed
             if _idx.any():
                 self._flux[_idx] = np.minimum(self._flux[_idx], flux_em[_idx])
 
@@ -316,23 +315,13 @@ class FluxFinder(object):
 
         self._teff[~cores] = (flux_rad[~cores] / sigma_const)**0.25
 
-        #self.spectrum.spect_type[~cores] = 1 # black body
-        i = np.logical_and(
-            ~cores,
-            np.logical_and(flux_rad > flux_em, self._tau < 100),
-        )
+        i = ~cores & (flux_rad > flux_em) & (self._tau < 100)
         if i.any():
             self._teff[i] = temp[i]
-        #    self.spectrum.spect_type[i] = 2 # emerging
 
         self._rloc /= float(self.units.get('length', 1.))
-
         
-        flux_v = copy.deepcopy(self._flux)
-        flux_v[self._teff <= self.teff_cut] = 0
-
         self.images['flux'].particle_array = self._flux
-        self.images['flux v'].particle_array = flux_v
 
         # Finish adding the weights for the averages
         for key in self.images.keys():
@@ -347,7 +336,7 @@ class FluxFinder(object):
 
         del c_speed, sigma_const, a_const, units, kappa, uraddotcool
         del uraddot_emerg, uraddot_diff, flux_rad, flux_em, idx
-        del cores, m, rho, i, temp, flux_v
+        del cores, m, rho, i, temp
         gc.collect()
 
     def _init_grid(self):
@@ -420,37 +409,15 @@ class FluxFinder(object):
             kappa = self.output['popacity'] * float(self.output.simulation.units['popacity'])
         T = np.asarray(T)
         kappa = np.asarray(kappa)
+        
+        if self.dust_opacity is None: # No dust
+            return np.full(T.shape, False, dtype = bool)
 
         T_dust_min, T_dust_max = self.dust_Trange
-        if self.dust_opacity is not None:
-            if T_dust_max is None and T_dust_min is not None:
-                return np.logical_and(
-                    T > T_dust_min,
-                    kappa < self.dust_opacity,
-                )
-            elif T_dust_max is not None and T_dust_min is None:
-                return np.logical_and(
-                    T < T_dust_max,
-                    kappa < self.dust_opacity,
-                )
+        if T_dust_min is None: T_dust_min = 0
+        if T_dust_max is None: T_dust_max = np.nanmax(T[np.isfinite(T)])
 
-            if T_dust_max is None and T_dust_min is None:
-                return kappa < self.dust_opacity
-
-            return np.logical_and(
-                np.logical_and(
-                    T < T_dust_max,
-                    T > T_dust_min,
-                ),
-                kappa < self.dust_opacity,
-            )
-        if T_dust_max is None and T_dust_min is not None:
-            return T > T_dust_min
-        elif T_dust_max is not None and T_dust_min is None:
-            return T < T_dust_max
-            
-        return np.full(T.shape, False, dtype = bool)
-        
+        return (T_dust_min < T) & (T < T_dust_max) & (kappa < self.dust_opacity)
 
     def _apply_dust(self, kappa):
         idx = self.find_dust(kappa = kappa)
@@ -576,8 +543,10 @@ class FluxFinder(object):
 
             surf_d[_slice][idx] = _z
             surf_id[_slice][idx] = i
-
+        
         tau_min=1
+        flux_min = float('inf')
+        flux_max = -float('inf')
 
         # Use only particles with large enough tau
         mask2 = mask & (self._tau >= self.tau_skip)
@@ -599,6 +568,8 @@ class FluxFinder(object):
             if not idx.any(): continue
             
             tau_min = min(tau_min, _tau)
+            flux_min = min(flux_min, self._flux[i])
+            flux_max = max(flux_max, self._flux[i])
 
             for ii, jj in grid_indices[_slice][idx]:
                 ray_id[ii, jj].append(i)
@@ -612,7 +583,9 @@ class FluxFinder(object):
             i_maxray, j_maxray = np.unravel_index(idx_maxray, ray_n.shape)
 
             print("maximum number of particles above the cut off optically thick surface is %d %d %d"%(max_ray,i_maxray,j_maxray))            
-            print("minimum tau account for is  is %f"%(tau_min))
+            print('minimum tau account for is  %f' % tau_min)
+            print('minimum flux account for is %le' % flux_min)
+            print('maximum flux account for is %le' % flux_max)
             del max_ray,idx_maxray, i_maxray, j_maxray
 
         
@@ -647,7 +620,7 @@ class FluxFinder(object):
         )
         for ii, (surf_id_row, ray_id_ii) in enumerate(zipped):
             for jj, (i, ray_id_iijj) in enumerate(zip(surf_id_row, ray_id_ii)):
-                tau_ray=0.    
+                tau_ray=0.
                 # Reversing an array is easy. This produces an iterator ('view'
                 # of the list) which runs faster than ray_id[ii][jj][::-1] and
                 # also faster than range(ray_n[ii][jj]-1, -1, -1).
@@ -657,9 +630,6 @@ class FluxFinder(object):
                     
                     for key, image in self.images.items():
                         image.add(ir, ii, jj, attenuation)
-                    
-                    if self.images['flux v'].array[ii,jj] > self.images['flux'].array[ii,jj]:
-                        raise Exception("part of the flux is larger than the whole flux? " + str(ir) + " "+ str(ii) + " " + str(jj))
                     
                     flux_from_contributors[ir] += f
                     self.spectrum.add(f, self._teff[ir])
@@ -672,9 +642,6 @@ class FluxFinder(object):
                     for key, image in self.images.items():
                         image.add(i, ii, jj, attenuation)
 
-                    if self.images['flux v'].array[ii,jj] > self.images['flux'].array[ii,jj]:
-                        raise Exception("part of the flux is larger than the whole flux? " + str(ir) + " "+ str(ii) + " " + str(jj))
-                    
                     flux_from_contributors[i] += f
                     
                     self.spectrum.add(f, self._teff[i])
@@ -701,7 +668,6 @@ class FluxFinder(object):
         self.result['particles','flux_from_contributors'] = flux_from_contributors[contributors]
         
         self.result['image','flux'] = self.images['flux'].array
-        self.result['image','flux_v'] = self.images['flux v'].array
         self.result['image','surf_d'] = surf_d
         self.result['image','surf_id'] = surf_id
         self.result['image','ray_n'] = ray_n
@@ -768,40 +734,53 @@ class FluxFinder(object):
             
             # Finish spectrum calculations
             self.teff = 0
-            max_flux = 0
             #ltot_spectrum = 0
             # [0.00000000e+00 7.39256413e-21 2.00355212e-07 6.82084616e-01
             #  4.39889814e+03 1.28926397e+06 6.63126098e+07 1.17342608e+09
             #  1.04031610e+10 5.80568647e+10]
-
+            
             self.flux = {
                 'total' : np.sum(self.spectrum[:self.il_max - 1] * self.dl * 1e-7),
             }
             for key in self.filters.keys(): self.flux[key] = 0.
             
+            max_flux = -10.
+            il_flux = 0
             for il in range(self.il_max - 1):
                 sp = self.spectrum[il]
                 #ltot_spectrum += sp * self.dl * 1e-7 # nanom = 1e-7
-                if sp <= 1: continue
-
+                if sp <= 0: continue
+                
                 sp = np.log10(sp)
                 lamb = self.lam[il] / 1e-7 # nanom = 1e-7
                 teff_loc = 2.9*1.e6/lamb
                 if sp > max_flux:
                     max_flux = sp
+                    il_flux = il
                     self.teff = teff_loc
-
+                
                 for key, (lamb_low, lamb_hi) in self.filters.items():
                     if lamb_low is not None and lamb < lamb_low: continue
                     if lamb_hi is not None and lamb > lamb_hi: continue
 
                     self.flux[key] += self.spectrum[il] * self.dl * 1e-7 # nanom = 1e-7
             
+            self.teff_min = self.teff
+            self.teff_max = self.teff
+            min_flux = 0.95 * 10**max_flux
+            for il in range(il_flux, 1, -1):
+                if self.spectrum[il] < min_flux: break
+                self.teff_max = 2.9 * 1.e6 / self.lam[il] * 1.e-7
+            
+            for il in range(il_flux, self.il_max - 1):
+                if self.spectrum[il] < min_flux: break
+                self.teff_min = 2.9 * 1.e6 / self.lam[il] * 1.e-7
+            
             self.output = []
             b_full = self._sigma / np.pi * self.teff**4
             for il in range(self.il_max - 1):
                 sp = self.spectrum[il]
-                if sp <= 1: continue
+                if sp <= 0: continue
                 sp = np.log10(sp)
                 lamb = self.lam[il] / 1e-7
                 teff_loc = 2.9*1.e6/lamb
@@ -840,10 +819,10 @@ class FluxFinder(object):
         def get_total(self):
             # Vectorized. Same as Natasha's way of doing it.
             return np.sum(0.25 * (\
-                self.array[  :self.resolution[0]-1,  :self.resolution[1]-1 ] + \
-                self.array[  :self.resolution[0]-1, 1:self.resolution[1]   ] + \
-                self.array[ 1:self.resolution[0]  ,  :self.resolution[1]-1 ] + \
-                self.array[ 1:self.resolution[0]  , 1:self.resolution[1]   ]))
+                self.array[  :self.resolution[0]-1,  :self.resolution[1]-1] + \
+                self.array[  :self.resolution[0]-1, 1:self.resolution[1]  ] + \
+                self.array[ 1:self.resolution[0]  ,  :self.resolution[1]-1] + \
+                self.array[ 1:self.resolution[0]  , 1:self.resolution[1]  ]))
 
 
 
@@ -863,36 +842,20 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
         self._output = None
         super(FluxResult, self).__init__(*args, **kwargs)
     
-    @property
-    def simulation(self):
-        if self._simulation is None:
-            import starsmashertools
-            self._simulation = starsmashertools.get_simulation(self['simulation'])
-        return self._simulation
-
-    @property
-    def output(self):
-        if self._output is None:
-            self._output = starsmashertools.lib.output.Output(
-                self['output'], self.simulation,
-            )
-        return self._output
-    
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def save(
             self,
             filename : str = Pref('save.filename'),
             allowed : dict | starsmashertools.helpers.nesteddict.NestedDict = Pref('save.allowed'),
-            **kwargs
     ):
         """
-        Save the results to disk as an :class:`~.lib.archive.Archive`\.
+        Save the results to disk as a compressed binary file.
         
         Other Parameters
         ----------
         filename : str, default = ``Pref('save.filename')``
-            The name of the Archive.
+            The name of the file.
 
         allowed : dict, :class:`~.helpers.nesteddict.NestedDict`\, default = ``Pref('save.allowed')``
             The items to include in the file. Only the keys of the dictionary
@@ -902,46 +865,32 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
             deepest nesting levels (the "flowers") are considered. See the 
             preferences file for an example.
 
-        **kwargs
-            Keyword arguments are passed directly to 
-            :meth:`~.lib.archive.Archive.__init__`\.
-        
-        Returns
-        -------
-        archive : :class:`~.lib.archive.Archive`
-            The newly created Archive.
-
         See Also
         --------
         :meth:`~.load`
         """
-        import starsmashertools.lib.archive
-        
-        if not isinstance(allowed, starsmashertools.helpers.nesteddict.NestedDict):
+        if isinstance(allowed, dict):
             allowed = starsmashertools.helpers.nesteddict.NestedDict(allowed)
-
-        allowed_branches = allowed.branches()
-        kwargs['auto_save'] = False
-        archive = starsmashertools.lib.archive.Archive(filename, **kwargs)
+        
+        branches = self.branches()
+        towrite = starsmashertools.helpers.nesteddict.NestedDict()
         for branch, leaf in allowed.flowers():
-            if branch not in allowed_branches: continue
-            if not allowed[branch]: continue
-            archive.add(
-                str(branch),
-                self[branch],
-                origin = self['output'],
-            )
-        archive.save()
+            if not leaf: continue
+            if branch in self.stems():
+                for b, l in self.flowers(stems = (branch,)):
+                    towrite[b] = self[b]
+            elif branch in branches:
+                towrite[branch] = self[branch]
 
-        return archive
-    
+        with gzip.open(filename, 'wb') as f:
+            pickle.dump(towrite, f)
+        
     @staticmethod
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def load(
             filename : str,
-            allowed : dict | starsmashertools.helpers.nesteddict.NestedDict = Pref('save.allowed'),
-            deserialize : bool = True,
+            allowed : dict | starsmashertools.helpers.nesteddict.NestedDict | type(None) = None,
     ):
         """
         Load results from disk which were saved by :meth:`~.save`\.
@@ -953,11 +902,10 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
 
         Other Parameters
         ----------------
-        allowed : dict, :class:`~.helpers.nesteddict.NestedDict`\, default = ``Pref('save.allowed')``
-            The same as ``allowed`` in :meth:`~.save`\.
-
-        deserialize : bool, default = True
-            Given to :meth:`~.lib.archive.Archive.get`\.
+        allowed : dict, :class:`~.helpers.nesteddict.NestedDict`\, None, default = None
+            Similar to ``allowed`` in :meth:`~.save`\. If `None` is given, then
+            all the values will be loaded into the returned 
+            :class:`~.FluxResult` object.
 
         Returns
         -------
@@ -967,20 +915,18 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
         --------
         :meth:`~.save`
         """
-        import starsmashertools.lib.archive
-        archive = starsmashertools.lib.archive.Archive(filename, readonly=True)
-
-        if not isinstance(allowed, starsmashertools.helpers.nesteddict.NestedDict):
+        if isinstance(allowed, dict):
             allowed = starsmashertools.helpers.nesteddict.NestedDict(allowed)
-
-        toload = starsmashertools.helpers.nesteddict.NestedDict()
-        keys = [str(a) for a in allowed.branches()]
-        for key, val in zip(keys, archive.get(keys, deserialize=deserialize)):
-            try: key = eval(key)
-            except: pass
-            if deserialize: toload[key] = val.value
-            else: toload[key] = val
-        return FluxResult(toload)
+            
+        with gzip.open(filename, 'rb') as f:
+            loaded = pickle.load(f)
+        
+        if allowed:
+            for branch, leaf in allowed.flowers():
+                if leaf: continue
+                if branch not in loaded: continue
+                loaded.pop(branch)
+        return FluxResult(loaded)
     
     if has_matplotlib:
         @starsmashertools.helpers.argumentenforcer.enforcetypes
@@ -988,7 +934,7 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
         def plot(
                 self,
                 ax : matplotlib.axes.Axes | type(None) = None,
-                key : str | typing.Callable = 'flux',
+                key : str | list | tuple | typing.Callable = 'flux',
                 weighted_average : int | type(None) = None,
                 log10 : bool = False,
                 **kwargs
@@ -1005,7 +951,7 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
                 `None`\, the plot is created on the axes returned by
                 ``plt.gca()``\.
 
-            key : str, default = 'flux'
+            key : str, list, tuple, :class:`typing.Callable`\, default = 'flux'
                 The dictionary key in the ``['image']`` :py:class:`dict` to 
                 obtain the data for plotting, or a function which accepts a 
                 FluxResult as input and returns a 2D NumPy array and a dict, 
@@ -1114,149 +1060,50 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
         self._allowed = allowed
         super(FluxResults, self).__init__(*args, **kwargs)
 
-    @starsmashertools.helpers.argumentenforcer.enforcetypes
-    @api
-    def add(
-            self,
-            result : str | FluxResult,
-            order : str | list | tuple = Pref('add.order'),
-    ):
-        """
-        Add a :class:`~.FluxResult`\. The values in the :class:`~.FluxResult` 
-        will be inserted in a way which preserves the specified order.
-        
-        Parameters
-        ----------
-        result : str, FluxResult
-            If a `str`\, it must be a path to a saved :class:`~.FluxResult`\. 
-            The :class:`~.FluxResult` is loaded and its contents are added to 
-            this dictionary.
+    def is_allowed(self, branch):
+        for b, l in self._allowed.flowers():
+            if not l: continue
+            if branch == b or starsmashertools.helpers.nesteddict.NestedDict.is_child_branch(branch, b):
+                return True
+        return False
 
-
-        Other Parameters
-        ----------------
-        order : str, list, tuple, default = ``Pref('add.order')``
-            The order with which to insert the :class:`~.FluxResult`. If a 
-            `list` or `tuple` are given, it refers to the nested key. For
-            example, ``['image', 'teff_aver']`` refers to the value found at
-            ``FluxResult['image']['teff_aver']``\. See 
-            :class:`~.helpers.nesteddict.NestedDict` for details.
-
-        See Also
-        --------
-        :class:`~.helpers.nesteddict.NestedDict`
-        """
-        import bisect
-        
+    def add(self, result : str | FluxResult):
         if isinstance(result, str):
-            result = FluxResult.load(
-                result,
-                allowed = self._allowed,
-            )
-
-        index = None
-        if order in self.branches():
-            index = bisect.bisect(self.get(order), result.get(order))
-
+            result = FluxResult.load(result)
+        
         for branch, leaf in result.flowers():
-            if not self._allowed.get(branch, False): continue
+            if not self.is_allowed(branch): continue
             
-            if branch not in self.branches():
-                self[branch] = [leaf]
+            if branch not in self: self[branch] = [leaf]
+            else: self[branch] += [leaf]
+
+    def save(self, filename : str):
+        import starsmashertools.helpers.path
+        if starsmashertools.helpers.path.exists(filename):
+            tname = None
+            try:
+                with tempfile.NamedTemporaryFile(dir = os.getcwd(), delete = False) as output:
+                    tname = output.name
+                    _input = gzip.GzipFile(mode = 'wb', fileobj = output)
+                    pickle.dump(self, _input)
+                    _input.flush()
+                    _input.close()
+            except:
+                # temporary files are always local
+                if tname is not None and os.path.exists(tname): os.remove(tname)
+                raise
             else:
-                if index is None: index = len(self[branch])
-                self[branch].insert(index, leaf)
-                
-    
-    @starsmashertools.helpers.argumentenforcer.enforcetypes
-    @api
-    def save(
-            self,
-            filename : str = Pref('save.filename'),
-            **kwargs
-    ):
-        """
-        Save the :class:`~.FluxResult` objects to disk. Each result is stored in
-        the same format as :meth:`~.FluxResult.save`\, except stacked in a list.
-        For example, the ``'image'`` key in the archive will be a list, where 
-        each element is the ``'image'`` key from the corresponding 
-        :class:`~.FluxResult`.
-        
-        Other Parameters
-        ----------
-        filename : str, default = ``Pref('save.filename')``
-            The path to the file to create.
-        
-        **kwargs
-            Other keyword arguments are passed directly to 
-            :meth:`~.lib.archive.Archive.__init__`\.
-
-        Returns
-        -------
-        archive : :class:`~.lib.archive.Archive`
-            The newly created Archive.
-
-        See Also
-        --------
-        :meth:`~.load`
-        """
-        import starsmashertools.lib.archive
-        import time
-        
-        kwargs['auto_save'] = False
-        archive = starsmashertools.lib.archive.Archive(filename, **kwargs)
-        mtime = time.time()
-        for branch, leaf in self.flowers():
-            archive.add(str(branch), leaf, mtime = mtime)
-        archive.save()
+                starsmashertools.helpers.path.rename(tname, filename)
+        else:
+            try:
+                with gzip.open(filename, 'wb') as f:
+                    pickle.dump(self, f)
+            except:
+                # the gzip method is always local
+                if os.path.exists(filename): os.remove(filename)
+                raise
 
     @staticmethod
-    @starsmashertools.helpers.argumentenforcer.enforcetypes
-    @api
-    def load(
-            filename : str,
-            keys : list | tuple | type(None) = None,
-    ):
-        """
-        Load the :class:`~.FluxResult` objects from disk. Each result is stored
-        in the same format as :meth:`~.FluxResult.save`\, except stacked in a 
-        list. For example, the ``'image'`` key in the archive will be a list, 
-        where each element is the ``'image'`` key from the corresponding 
-        :class:`~.FluxResult`.
-        
-        Parameters
-        ----------
-        filename : str
-            The path to the file to load.
-
-        Other Parameters
-        ----------------
-        keys : list, tuple, None, default = None
-            To retrieve only specific keys, specify the keys here. Note that
-            each element must point to a "branch" in the archived 
-            :class:`~.helpers.nesteddict.NestedDict`\.
-        
-        Returns
-        -------
-        fluxresults : :class:`~.FluxResults`
-            The :class:`~.FluxResult` objects in the same order as stored in the
-            archive.
-        
-        See Also
-        --------
-        :meth:`~.save`
-        """
-        import starsmashertools.lib.archive
-        archive = starsmashertools.lib.archive.Archive(filename, readonly=True)
-        toload = starsmashertools.helpers.nesteddict.NestedDict()
-        if keys is not None:
-            for key, val in zip(keys, archive.get([str(k) for k in keys])):
-                toload[key] = val.value
-        else:
-            for key, val in archive.items():
-                try: key = eval(key)
-                except: pass
-                toload[key] = val.value
-        return FluxResults(toload)
-
-
+    def load(filename : str):
+        with gzip.open(filename, 'rb') as f:
+            return pickle.load(f)

@@ -96,13 +96,14 @@
   <h1>Source code for starsmashertools.mpl.artists</h1><div class="highlight"><pre>
 <span></span><span class="c1"># Additional Matplotlib Artists for easier plotting</span>
 <span class="kn">import</span> <span class="nn">starsmashertools.preferences</span>
+<span class="kn">from</span> <span class="nn">starsmashertools.preferences</span> <span class="kn">import</span> <span class="n">Pref</span>
 <span class="kn">import</span> <span class="nn">matplotlib.collections</span>
-<span class="kn">import</span> <span class="nn">matplotlib.artist</span>
 <span class="kn">import</span> <span class="nn">matplotlib.axes</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">starsmashertools.helpers.argumentenforcer</span>
 <span class="kn">from</span> <span class="nn">starsmashertools.helpers.apidecorator</span> <span class="kn">import</span> <span class="n">api</span>
 <span class="kn">import</span> <span class="nn">starsmashertools.lib.flux</span>
+<span class="kn">import</span> <span class="nn">starsmashertools.lib.output</span>
 <span class="kn">import</span> <span class="nn">copy</span>
 
 
@@ -200,8 +201,8 @@
 
 <span class="k">class</span> <span class="nc">OutputPlot</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    A :class:`matplotlib.artist.Artist` which represents the data contained in</span>
-<span class="sd">    a :class:`~starsmashertools.lib.output.Output`\.</span>
+<span class="sd">    A class which represents the data contained in a </span>
+<span class="sd">    :class:`~starsmashertools.lib.output.Output` for plotting.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
@@ -266,14 +267,9 @@
                     <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">],</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">]</span>
                 <span class="p">))</span>
             <span class="p">)</span>
-    
-    <span class="k">def</span> <span class="nf">set_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span><span class="p">):</span>
-        <span class="kn">import</span> <span class="nn">starsmashertools.lib.output</span>
 
-        <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span><span class="p">({</span>
-            <span class="s1">&#39;output&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">Output</span><span class="p">],</span>
-        <span class="p">})</span>
-        
+    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+    <span class="k">def</span> <span class="nf">set_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span> <span class="p">:</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">Output</span><span class="p">):</span>
         <span class="n">x</span> <span class="o">=</span> <span class="n">output</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">]</span>
         <span class="n">y</span> <span class="o">=</span> <span class="n">output</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">]</span>
 

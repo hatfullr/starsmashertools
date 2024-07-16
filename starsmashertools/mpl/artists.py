@@ -1,12 +1,13 @@
 # Additional Matplotlib Artists for easier plotting
 import starsmashertools.preferences
+from starsmashertools.preferences import Pref
 import matplotlib.collections
-import matplotlib.artist
 import matplotlib.axes
 import numpy as np
 import starsmashertools.helpers.argumentenforcer
 from starsmashertools.helpers.apidecorator import api
 import starsmashertools.lib.flux
+import starsmashertools.lib.output
 import copy
 
 
@@ -104,8 +105,8 @@ class ColoredPlot(matplotlib.collections.LineCollection, object):
 
 class OutputPlot(object):
     """
-    A :class:`matplotlib.artist.Artist` which represents the data contained in
-    a :class:`~starsmashertools.lib.output.Output`\.
+    A class which represents the data contained in a 
+    :class:`~starsmashertools.lib.output.Output` for plotting.
     """
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     def __init__(
@@ -170,14 +171,9 @@ class OutputPlot(object):
                     [np.nan, np.nan], [np.nan, np.nan]
                 ))
             )
-    
-    def set_output(self, output):
-        import starsmashertools.lib.output
 
-        starsmashertools.helpers.argumentenforcer.enforcetypes({
-            'output' : [starsmashertools.lib.output.Output],
-        })
-        
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    def set_output(self, output : starsmashertools.lib.output.Output):
         x = output[self.x]
         y = output[self.y]
 

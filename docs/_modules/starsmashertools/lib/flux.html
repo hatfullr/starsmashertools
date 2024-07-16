@@ -109,6 +109,10 @@
 <span class="kn">import</span> <span class="nn">typing</span>
 <span class="kn">import</span> <span class="nn">collections</span>
 <span class="kn">import</span> <span class="nn">gc</span>
+<span class="kn">import</span> <span class="nn">pickle</span>
+<span class="kn">import</span> <span class="nn">gzip</span>
+<span class="kn">import</span> <span class="nn">tempfile</span>
+<span class="kn">import</span> <span class="nn">os</span>
 
 <span class="k">try</span><span class="p">:</span>
     <span class="kn">import</span> <span class="nn">matplotlib.axes</span>
@@ -116,12 +120,6 @@
 <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
     <span class="n">has_matplotlib</span> <span class="o">=</span> <span class="kc">False</span>
 
-
-<span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="n">weighted_averages</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;weighted_averages&#39;</span><span class="p">,</span> <span class="p">[])</span>
-    <span class="n">finder</span> <span class="o">=</span> <span class="n">FluxFinder</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-    <span class="n">finder</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
-    <span class="k">return</span> <span class="n">finder</span><span class="o">.</span><span class="n">result</span>
 
 <div class="viewcode-block" id="FluxFinder">
 <a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.flux.html#starsmashertools.lib.flux.FluxFinder">[docs]</a>
@@ -148,13 +146,12 @@
             <span class="n">rays</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">Pref</span><span class="p">(</span><span class="s1">&#39;rays&#39;</span><span class="p">,</span> <span class="kc">True</span><span class="p">),</span>
             <span class="n">tau_s</span> <span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Pref</span><span class="p">(</span><span class="s1">&#39;tau_s&#39;</span><span class="p">,</span> <span class="mf">20.</span><span class="p">),</span>
             <span class="n">tau_skip</span> <span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Pref</span><span class="p">(</span><span class="s1">&#39;tau_skip&#39;</span><span class="p">,</span> <span class="mf">1.e-5</span><span class="p">),</span>
-            <span class="n">teff_cut</span> <span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Pref</span><span class="p">(</span><span class="s1">&#39;teff_cut&#39;</span><span class="p">,</span> <span class="mf">3500.</span><span class="p">),</span>
             <span class="n">dust_opacity</span> <span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="o">=</span> <span class="n">Pref</span><span class="p">(</span><span class="s1">&#39;dust_opacity&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
             <span class="n">dust_Trange</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="o">=</span> <span class="n">Pref</span><span class="p">(</span><span class="s1">&#39;dust_Trange&#39;</span><span class="p">,</span> <span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">1000</span><span class="p">)),</span>
             <span class="n">flux_limit_min</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 
             <span class="c1"># Spectrum</span>
-            <span class="n">spectrum_size</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">Pref</span><span class="p">(</span><span class="s1">&#39;spectrum_size&#39;</span><span class="p">,</span> <span class="mi">1000</span><span class="p">),</span>
+            <span class="n">spectrum_size</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Pref</span><span class="p">(</span><span class="s1">&#39;spectrum_size&#39;</span><span class="p">,</span> <span class="mi">1000</span><span class="p">),</span>
             <span class="n">lmax</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">Pref</span><span class="p">(</span><span class="s1">&#39;lmax&#39;</span><span class="p">,</span> <span class="mi">3000</span><span class="p">),</span>
             <span class="n">dl_il</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">Pref</span><span class="p">(</span><span class="s1">&#39;dl_il&#39;</span><span class="p">,</span> <span class="mf">3.</span><span class="p">),</span>
             <span class="n">dl</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">Pref</span><span class="p">(</span><span class="s1">&#39;dl&#39;</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span>
@@ -198,7 +195,6 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">rays</span> <span class="o">=</span> <span class="n">rays</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">tau_s</span> <span class="o">=</span> <span class="n">tau_s</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">tau_skip</span> <span class="o">=</span> <span class="n">tau_skip</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">teff_cut</span> <span class="o">=</span> <span class="n">teff_cut</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dust_opacity</span> <span class="o">=</span> <span class="n">dust_opacity</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dust_Trange</span> <span class="o">=</span> <span class="n">dust_Trange</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">flux_limit_min</span> <span class="o">=</span> <span class="n">flux_limit_min</span>
@@ -238,13 +234,23 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">images</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">OrderedDict</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="s1">&#39;flux&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">FluxFinder</span><span class="o">.</span><span class="n">Image</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">resolution</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="s1">&#39;flux v&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">FluxFinder</span><span class="o">.</span><span class="n">Image</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">resolution</span><span class="p">)</span>
 
         <span class="c1"># We multiply by the flux later in _init_particles</span>
         <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">array</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">weighted_averages</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="s1">&#39;weightedaverage</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">FluxFinder</span><span class="o">.</span><span class="n">Image</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">resolution</span><span class="p">,</span> <span class="n">particle_array</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">array</span><span class="p">),</span>
-            <span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="s1">&#39;weightedaverage</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">FluxFinder</span><span class="o">.</span><span class="n">Image</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">resolution</span><span class="p">,</span>
+                    <span class="c1"># This should hopefully send a reference to the image for</span>
+                    <span class="c1"># use. This way, if the user wants to use, say, a</span>
+                    <span class="c1"># component of the particle velocity, then the value used</span>
+                    <span class="c1"># will be the one after rotations have been done.</span>
+                    <span class="n">particle_array</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">[</span><span class="n">array</span><span class="p">],</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="s1">&#39;weightedaverage</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">FluxFinder</span><span class="o">.</span><span class="n">Image</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">resolution</span><span class="p">,</span>
+                    <span class="n">particle_array</span> <span class="o">=</span> <span class="n">array</span><span class="p">,</span> <span class="c1"># a reference (rotate)</span>
+                <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">result</span> <span class="o">=</span> <span class="n">FluxResult</span><span class="p">({</span>
             <span class="s1">&#39;version&#39;</span> <span class="p">:</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">__version__</span><span class="p">,</span>
@@ -279,7 +285,6 @@
         <span class="n">surf_t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="s1">&#39;flux&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">array</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span> <span class="o">=</span> <span class="nb">float</span><span class="p">)</span>
         <span class="n">surf_t</span><span class="p">[:</span><span class="bp">self</span><span class="o">.</span><span class="n">resolution</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">,:</span><span class="bp">self</span><span class="o">.</span><span class="n">resolution</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">area_br</span><span class="o">/</span><span class="nb">float</span><span class="p">(</span><span class="n">constants</span><span class="p">[</span><span class="s1">&#39;sigmaSB&#39;</span><span class="p">]))</span><span class="o">**</span><span class="mf">0.25</span>
         <span class="n">flux_tot</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="s1">&#39;flux&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get_total</span><span class="p">()</span>
-        <span class="n">flux_tot_v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="s1">&#39;flux v&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">array</span><span class="p">[:</span><span class="bp">self</span><span class="o">.</span><span class="n">resolution</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">,:</span><span class="bp">self</span><span class="o">.</span><span class="n">resolution</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
 
         <span class="c1"># Vectorized:</span>
         <span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
@@ -288,14 +293,12 @@
 
         <span class="c1"># Units of energy/time/area</span>
         <span class="n">flux_tot</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">Unit</span><span class="p">(</span><span class="n">flux_tot</span><span class="p">,</span> <span class="s1">&#39;g/s*s*s&#39;</span><span class="p">)</span>
-        <span class="n">flux_tot_v</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">Unit</span><span class="p">(</span><span class="n">flux_tot_v</span><span class="p">,</span> <span class="s1">&#39;g/s*s*s&#39;</span><span class="p">)</span>
         
-        <span class="c1"># Finish the ltot and l_v calculations</span>
+        <span class="c1"># Finish the ltot calculations</span>
         <span class="n">length</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;length&#39;</span><span class="p">,</span> <span class="mf">1.</span><span class="p">)</span>
         <span class="n">cell_area</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dx</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">dy</span> <span class="o">*</span> <span class="n">length</span><span class="o">**</span><span class="mi">2</span>
         <span class="n">ltot</span> <span class="o">=</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">cell_area</span> <span class="o">*</span> <span class="n">flux_tot</span>
-        <span class="n">l_v</span>  <span class="o">=</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">cell_area</span> <span class="o">*</span> <span class="n">flux_tot_v</span>
-
+        
         <span class="bp">self</span><span class="o">.</span><span class="n">spectrum</span><span class="o">.</span><span class="n">finalize</span><span class="p">()</span>
         
         <span class="n">ltot_spectrum</span> <span class="o">=</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">cell_area</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">spectrum</span><span class="o">.</span><span class="n">flux</span><span class="p">[</span><span class="s1">&#39;total&#39;</span><span class="p">]</span>
@@ -305,14 +308,15 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;image&#39;</span><span class="p">,</span><span class="s1">&#39;teff_aver&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">teff_aver</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;image&#39;</span><span class="p">,</span><span class="s1">&#39;ltot&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ltot</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;image&#39;</span><span class="p">,</span><span class="s1">&#39;flux_tot&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">flux_tot</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;image&#39;</span><span class="p">,</span><span class="s1">&#39;l_v&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">l_v</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;spectrum&#39;</span><span class="p">,</span><span class="s1">&#39;ltot_spectrum&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ltot_spectrum</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;spectrum&#39;</span><span class="p">,</span><span class="s1">&#39;l_spectrum&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">l_spectrum</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;spectrum&#39;</span><span class="p">,</span><span class="s1">&#39;ltot&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ltot_spectrum</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;spectrum&#39;</span><span class="p">,</span><span class="s1">&#39;luminosities&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">l_spectrum</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;spectrum&#39;</span><span class="p">,</span><span class="s1">&#39;output&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spectrum</span><span class="o">.</span><span class="n">output</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;spectrum&#39;</span><span class="p">,</span><span class="s1">&#39;teff&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spectrum</span><span class="o">.</span><span class="n">teff</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;spectrum&#39;</span><span class="p">,</span><span class="s1">&#39;teff_min&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spectrum</span><span class="o">.</span><span class="n">teff_min</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;spectrum&#39;</span><span class="p">,</span><span class="s1">&#39;teff_max&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spectrum</span><span class="o">.</span><span class="n">teff_max</span>
 
-        <span class="k">del</span> <span class="n">area_br</span><span class="p">,</span> <span class="n">surf_t</span><span class="p">,</span> <span class="n">flux_tot</span><span class="p">,</span> <span class="n">flux_tot_v</span><span class="p">,</span> <span class="n">teff_aver</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="n">cell_area</span>
-        <span class="k">del</span> <span class="n">ltot</span><span class="p">,</span> <span class="n">l_v</span><span class="p">,</span> <span class="n">ltot_spectrum</span><span class="p">,</span> <span class="n">l_spectrum</span>
+        <span class="k">del</span> <span class="n">area_br</span><span class="p">,</span> <span class="n">surf_t</span><span class="p">,</span> <span class="n">flux_tot</span><span class="p">,</span> <span class="n">teff_aver</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="n">cell_area</span>
+        <span class="k">del</span> <span class="n">ltot</span><span class="p">,</span> <span class="n">ltot_spectrum</span><span class="p">,</span> <span class="n">l_spectrum</span>
         <span class="n">gc</span><span class="o">.</span><span class="n">collect</span><span class="p">()</span>
         
 
@@ -356,8 +360,9 @@
         <span class="n">m</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">[</span><span class="s1">&#39;am&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="nb">float</span><span class="p">(</span><span class="n">units</span><span class="p">[</span><span class="s1">&#39;am&#39;</span><span class="p">])</span>
         <span class="n">rho</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">[</span><span class="s1">&#39;rho&#39;</span><span class="p">])</span> <span class="o">*</span> <span class="nb">float</span><span class="p">(</span><span class="n">units</span><span class="p">[</span><span class="s1">&#39;rho&#39;</span><span class="p">])</span>
         
-        <span class="n">i</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="o">~</span><span class="n">cores</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">i</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="n">idx</span> <span class="o">&amp;</span> <span class="o">~</span><span class="n">cores</span>
+        <span class="c1"># if uraddot_emerg[i] &lt; uraddot_diff[i] and do_fluffy == 1:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">fluffy</span> <span class="ow">and</span> <span class="n">i</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_rloc</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mf">2.</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">[</span><span class="s1">&#39;hp&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="nb">float</span><span class="p">(</span><span class="n">units</span><span class="p">[</span><span class="s1">&#39;hp&#39;</span><span class="p">])</span>
             <span class="n">rho</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">=</span><span class="n">m</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">/</span><span class="nb">pow</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_rloc</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="mf">3.</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_tau</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">=</span><span class="n">rho</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">kappa</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">_rloc</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="mf">4.</span><span class="o">/</span><span class="mf">3.</span>
@@ -366,8 +371,9 @@
             <span class="n">flux_rad</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">flux_em</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
 
         <span class="n">temp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">[</span><span class="s1">&#39;temperatures&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">units</span><span class="p">[</span><span class="s1">&#39;temperatures&#39;</span><span class="p">])</span>
-        <span class="n">i</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="o">~</span><span class="n">idx</span><span class="p">,</span> <span class="o">~</span><span class="n">cores</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">i</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="o">~</span><span class="n">idx</span> <span class="o">&amp;</span> <span class="o">~</span><span class="n">cores</span>
+        <span class="c1"># else:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">fluffy</span> <span class="ow">or</span> <span class="n">i</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
             <span class="c1"># this particle is considered in &quot;dense&quot; approximation</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_rloc</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">=</span><span class="nb">pow</span><span class="p">(</span><span class="n">m</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">/</span><span class="p">(</span><span class="mi">4</span><span class="o">/</span><span class="mf">3.</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span><span class="o">/</span><span class="n">rho</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="mf">0.33333</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_tau</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">=</span><span class="n">rho</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">kappa</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">_rloc</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="mf">4.</span><span class="o">/</span><span class="mf">3.</span>
@@ -377,25 +383,21 @@
             <span class="n">dd</span><span class="o">=</span><span class="n">c_speed</span><span class="o">/</span><span class="n">kappa</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">/</span><span class="n">rho</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
             <span class="n">gradt</span><span class="o">=</span><span class="n">a_const</span><span class="o">*</span><span class="nb">pow</span><span class="p">(</span><span class="n">temp</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="mi">4</span><span class="p">)</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">_rloc</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
             <span class="n">dedt</span><span class="o">=</span><span class="n">ad</span><span class="o">/</span><span class="mf">3.</span><span class="o">*</span><span class="n">dd</span><span class="o">*</span><span class="n">gradt</span><span class="o">/</span><span class="n">m</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_flux</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">=</span><span class="n">dedt</span><span class="o">*</span><span class="n">m</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">/</span><span class="n">ad</span>
-            <span class="n">flux_rad</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">dedt</span> <span class="o">*</span> <span class="n">m</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">/</span> <span class="n">ad</span>
 
+            <span class="n">flux_rad</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">dedt</span> <span class="o">*</span> <span class="n">m</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">/</span> <span class="n">ad</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_flux</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">dedt</span> <span class="o">*</span> <span class="n">m</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">/</span> <span class="n">ad</span>
+            
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">rays</span><span class="p">:</span>
                 <span class="n">ratio</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_flux</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
-                <span class="n">ratio</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">uraddotcool</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">/</span><span class="n">dedt</span><span class="o">*</span><span class="mf">12.</span> <span class="c1"># to figure out how many effective cooling rays</span>
-                <span class="n">_idx1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span>
-                    <span class="o">~</span><span class="n">cores</span><span class="p">,</span>
-                    <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">ratio</span> <span class="o">&lt;=</span> <span class="mi">6</span><span class="p">),</span>
-                <span class="p">)</span>
+                <span class="n">ratio</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">uraddotcool</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">/</span><span class="n">dedt</span><span class="o">*</span><span class="mf">12.</span><span class="p">)</span> <span class="c1"># to figure out how many effective cooling rays</span>
+                <span class="n">_idx1</span> <span class="o">=</span> <span class="o">~</span><span class="n">cores</span> <span class="o">&amp;</span> <span class="n">i</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">ratio</span> <span class="o">&lt;=</span> <span class="mi">6</span><span class="p">)</span>
+                <span class="c1"># if ratio &lt;= 6:</span>
                 <span class="k">if</span> <span class="n">_idx1</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
                     <span class="n">ad_cool</span> <span class="o">=</span> <span class="mf">2.</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">_rloc</span><span class="p">[</span><span class="n">_idx1</span><span class="p">]</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">_rloc</span><span class="p">[</span><span class="n">_idx1</span><span class="p">]</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">_flux</span><span class="p">[</span><span class="n">_idx1</span><span class="p">]</span><span class="o">=-</span><span class="n">uraddotcool</span><span class="p">[</span><span class="n">_idx1</span><span class="p">]</span><span class="o">*</span><span class="n">m</span><span class="p">[</span><span class="n">_idx1</span><span class="p">]</span><span class="o">/</span><span class="n">ad_cool</span>
-
-
-                <span class="n">_idx2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span>
-                    <span class="o">~</span><span class="n">cores</span><span class="p">,</span>
-                    <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">ratio</span> <span class="o">&gt;</span> <span class="mi">6</span><span class="p">),</span>
-                <span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_flux</span><span class="p">[</span><span class="n">_idx1</span><span class="p">]</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">uraddotcool</span><span class="p">[</span><span class="n">_idx1</span><span class="p">]</span><span class="o">*</span><span class="n">m</span><span class="p">[</span><span class="n">_idx1</span><span class="p">]</span><span class="o">/</span><span class="n">ad_cool</span><span class="p">)</span> <span class="c1"># all what is cooled is to goes through the outer hemisphere</span>
+                
+                <span class="n">_idx2</span> <span class="o">=</span> <span class="o">~</span><span class="n">cores</span> <span class="o">&amp;</span> <span class="n">i</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">ratio</span> <span class="o">&gt;</span> <span class="mi">6</span><span class="p">)</span>
+                <span class="c1"># if ratio &gt; 6:</span>
                 <span class="k">if</span> <span class="n">_idx2</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
                     <span class="n">ad</span>      <span class="o">=</span> <span class="mf">4.</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">_rloc</span><span class="p">[</span><span class="n">_idx2</span><span class="p">]</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">_rloc</span><span class="p">[</span><span class="n">_idx2</span><span class="p">]</span>
                     <span class="n">gradt</span> <span class="o">=</span> <span class="n">a_const</span><span class="o">*</span><span class="nb">pow</span><span class="p">(</span><span class="n">temp</span><span class="p">[</span><span class="n">_idx2</span><span class="p">],</span><span class="mi">4</span><span class="p">)</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">_rloc</span><span class="p">[</span><span class="n">_idx2</span><span class="p">]</span>
@@ -405,10 +407,7 @@
 
                 <span class="k">del</span> <span class="n">ratio</span><span class="p">,</span> <span class="n">_idx1</span><span class="p">,</span> <span class="n">_idx2</span>
 
-            <span class="n">_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span>
-                <span class="o">~</span><span class="n">cores</span><span class="p">,</span>
-                <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tau</span> <span class="o">&lt;</span> <span class="mi">100</span><span class="p">),</span>
-            <span class="p">)</span>
+            <span class="n">_idx</span> <span class="o">=</span> <span class="o">~</span><span class="n">cores</span> <span class="o">&amp;</span> <span class="n">i</span> <span class="o">&amp;</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_tau</span> <span class="o">&lt;</span> <span class="mi">100</span><span class="p">)</span> <span class="c1"># we anticipate that emergent flux computation breaks down at very large tau, where flux_em becomes zero and nullifies total flux is no limit on tau is placed</span>
             <span class="k">if</span> <span class="n">_idx</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_flux</span><span class="p">[</span><span class="n">_idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">minimum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_flux</span><span class="p">[</span><span class="n">_idx</span><span class="p">],</span> <span class="n">flux_em</span><span class="p">[</span><span class="n">_idx</span><span class="p">])</span>
 
@@ -417,23 +416,13 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_teff</span><span class="p">[</span><span class="o">~</span><span class="n">cores</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">flux_rad</span><span class="p">[</span><span class="o">~</span><span class="n">cores</span><span class="p">]</span> <span class="o">/</span> <span class="n">sigma_const</span><span class="p">)</span><span class="o">**</span><span class="mf">0.25</span>
 
-        <span class="c1">#self.spectrum.spect_type[~cores] = 1 # black body</span>
-        <span class="n">i</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span>
-            <span class="o">~</span><span class="n">cores</span><span class="p">,</span>
-            <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">flux_rad</span> <span class="o">&gt;</span> <span class="n">flux_em</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tau</span> <span class="o">&lt;</span> <span class="mi">100</span><span class="p">),</span>
-        <span class="p">)</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="o">~</span><span class="n">cores</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">flux_rad</span> <span class="o">&gt;</span> <span class="n">flux_em</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_tau</span> <span class="o">&lt;</span> <span class="mi">100</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">i</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_teff</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">temp</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
-        <span class="c1">#    self.spectrum.spect_type[i] = 2 # emerging</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_rloc</span> <span class="o">/=</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;length&#39;</span><span class="p">,</span> <span class="mf">1.</span><span class="p">))</span>
-
         
-        <span class="n">flux_v</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_flux</span><span class="p">)</span>
-        <span class="n">flux_v</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_teff</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">teff_cut</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
-
         <span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="s1">&#39;flux&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">particle_array</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_flux</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="s1">&#39;flux v&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">particle_array</span> <span class="o">=</span> <span class="n">flux_v</span>
 
         <span class="c1"># Finish adding the weights for the averages</span>
         <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
@@ -448,7 +437,7 @@
 
         <span class="k">del</span> <span class="n">c_speed</span><span class="p">,</span> <span class="n">sigma_const</span><span class="p">,</span> <span class="n">a_const</span><span class="p">,</span> <span class="n">units</span><span class="p">,</span> <span class="n">kappa</span><span class="p">,</span> <span class="n">uraddotcool</span>
         <span class="k">del</span> <span class="n">uraddot_emerg</span><span class="p">,</span> <span class="n">uraddot_diff</span><span class="p">,</span> <span class="n">flux_rad</span><span class="p">,</span> <span class="n">flux_em</span><span class="p">,</span> <span class="n">idx</span>
-        <span class="k">del</span> <span class="n">cores</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">rho</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">temp</span><span class="p">,</span> <span class="n">flux_v</span>
+        <span class="k">del</span> <span class="n">cores</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">rho</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">temp</span>
         <span class="n">gc</span><span class="o">.</span><span class="n">collect</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">_init_grid</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -521,37 +510,15 @@
             <span class="n">kappa</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">[</span><span class="s1">&#39;popacity&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">units</span><span class="p">[</span><span class="s1">&#39;popacity&#39;</span><span class="p">])</span>
         <span class="n">T</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
         <span class="n">kappa</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">kappa</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dust_opacity</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="c1"># No dust</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">T</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="n">dtype</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">)</span>
 
         <span class="n">T_dust_min</span><span class="p">,</span> <span class="n">T_dust_max</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dust_Trange</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dust_opacity</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">T_dust_max</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">T_dust_min</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span>
-                    <span class="n">T</span> <span class="o">&gt;</span> <span class="n">T_dust_min</span><span class="p">,</span>
-                    <span class="n">kappa</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">dust_opacity</span><span class="p">,</span>
-                <span class="p">)</span>
-            <span class="k">elif</span> <span class="n">T_dust_max</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">T_dust_min</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span>
-                    <span class="n">T</span> <span class="o">&lt;</span> <span class="n">T_dust_max</span><span class="p">,</span>
-                    <span class="n">kappa</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">dust_opacity</span><span class="p">,</span>
-                <span class="p">)</span>
+        <span class="k">if</span> <span class="n">T_dust_min</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="n">T_dust_min</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="n">T_dust_max</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="n">T_dust_max</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">T</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">T</span><span class="p">)])</span>
 
-            <span class="k">if</span> <span class="n">T_dust_max</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">T_dust_min</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="k">return</span> <span class="n">kappa</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">dust_opacity</span>
-
-            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span>
-                <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span>
-                    <span class="n">T</span> <span class="o">&lt;</span> <span class="n">T_dust_max</span><span class="p">,</span>
-                    <span class="n">T</span> <span class="o">&gt;</span> <span class="n">T_dust_min</span><span class="p">,</span>
-                <span class="p">),</span>
-                <span class="n">kappa</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">dust_opacity</span><span class="p">,</span>
-            <span class="p">)</span>
-        <span class="k">if</span> <span class="n">T_dust_max</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">T_dust_min</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">T</span> <span class="o">&gt;</span> <span class="n">T_dust_min</span>
-        <span class="k">elif</span> <span class="n">T_dust_max</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">T_dust_min</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">T</span> <span class="o">&lt;</span> <span class="n">T_dust_max</span>
-            
-        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">T</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="n">dtype</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">)</span>
-        
+        <span class="k">return</span> <span class="p">(</span><span class="n">T_dust_min</span> <span class="o">&lt;</span> <span class="n">T</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">T</span> <span class="o">&lt;</span> <span class="n">T_dust_max</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">kappa</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">dust_opacity</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_apply_dust</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kappa</span><span class="p">):</span>
         <span class="n">idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">find_dust</span><span class="p">(</span><span class="n">kappa</span> <span class="o">=</span> <span class="n">kappa</span><span class="p">)</span>
@@ -677,8 +644,10 @@
 
             <span class="n">surf_d</span><span class="p">[</span><span class="n">_slice</span><span class="p">][</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">_z</span>
             <span class="n">surf_id</span><span class="p">[</span><span class="n">_slice</span><span class="p">][</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">i</span>
-
+        
         <span class="n">tau_min</span><span class="o">=</span><span class="mi">1</span>
+        <span class="n">flux_min</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">)</span>
+        <span class="n">flux_max</span> <span class="o">=</span> <span class="o">-</span><span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">)</span>
 
         <span class="c1"># Use only particles with large enough tau</span>
         <span class="n">mask2</span> <span class="o">=</span> <span class="n">mask</span> <span class="o">&amp;</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_tau</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tau_skip</span><span class="p">)</span>
@@ -700,6 +669,8 @@
             <span class="k">if</span> <span class="ow">not</span> <span class="n">idx</span><span class="o">.</span><span class="n">any</span><span class="p">():</span> <span class="k">continue</span>
             
             <span class="n">tau_min</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">tau_min</span><span class="p">,</span> <span class="n">_tau</span><span class="p">)</span>
+            <span class="n">flux_min</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">flux_min</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_flux</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="n">flux_max</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">flux_max</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_flux</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
 
             <span class="k">for</span> <span class="n">ii</span><span class="p">,</span> <span class="n">jj</span> <span class="ow">in</span> <span class="n">grid_indices</span><span class="p">[</span><span class="n">_slice</span><span class="p">][</span><span class="n">idx</span><span class="p">]:</span>
                 <span class="n">ray_id</span><span class="p">[</span><span class="n">ii</span><span class="p">,</span> <span class="n">jj</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
@@ -713,7 +684,9 @@
             <span class="n">i_maxray</span><span class="p">,</span> <span class="n">j_maxray</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unravel_index</span><span class="p">(</span><span class="n">idx_maxray</span><span class="p">,</span> <span class="n">ray_n</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
 
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;maximum number of particles above the cut off optically thick surface is </span><span class="si">%d</span><span class="s2"> </span><span class="si">%d</span><span class="s2"> </span><span class="si">%d</span><span class="s2">&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">max_ray</span><span class="p">,</span><span class="n">i_maxray</span><span class="p">,</span><span class="n">j_maxray</span><span class="p">))</span>            
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;minimum tau account for is  is </span><span class="si">%f</span><span class="s2">&quot;</span><span class="o">%</span><span class="p">(</span><span class="n">tau_min</span><span class="p">))</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;minimum tau account for is  </span><span class="si">%f</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">tau_min</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;minimum flux account for is </span><span class="si">%le</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">flux_min</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;maximum flux account for is </span><span class="si">%le</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">flux_max</span><span class="p">)</span>
             <span class="k">del</span> <span class="n">max_ray</span><span class="p">,</span><span class="n">idx_maxray</span><span class="p">,</span> <span class="n">i_maxray</span><span class="p">,</span> <span class="n">j_maxray</span>
 
         
@@ -748,7 +721,7 @@
         <span class="p">)</span>
         <span class="k">for</span> <span class="n">ii</span><span class="p">,</span> <span class="p">(</span><span class="n">surf_id_row</span><span class="p">,</span> <span class="n">ray_id_ii</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">zipped</span><span class="p">):</span>
             <span class="k">for</span> <span class="n">jj</span><span class="p">,</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">ray_id_iijj</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">surf_id_row</span><span class="p">,</span> <span class="n">ray_id_ii</span><span class="p">)):</span>
-                <span class="n">tau_ray</span><span class="o">=</span><span class="mf">0.</span>    
+                <span class="n">tau_ray</span><span class="o">=</span><span class="mf">0.</span>
                 <span class="c1"># Reversing an array is easy. This produces an iterator (&#39;view&#39;</span>
                 <span class="c1"># of the list) which runs faster than ray_id[ii][jj][::-1] and</span>
                 <span class="c1"># also faster than range(ray_n[ii][jj]-1, -1, -1).</span>
@@ -758,9 +731,6 @@
                     
                     <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">image</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
                         <span class="n">image</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">ir</span><span class="p">,</span> <span class="n">ii</span><span class="p">,</span> <span class="n">jj</span><span class="p">,</span> <span class="n">attenuation</span><span class="p">)</span>
-                    
-                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="s1">&#39;flux v&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">array</span><span class="p">[</span><span class="n">ii</span><span class="p">,</span><span class="n">jj</span><span class="p">]</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="s1">&#39;flux&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">array</span><span class="p">[</span><span class="n">ii</span><span class="p">,</span><span class="n">jj</span><span class="p">]:</span>
-                        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;part of the flux is larger than the whole flux? &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">ir</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; &quot;</span><span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">ii</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">jj</span><span class="p">))</span>
                     
                     <span class="n">flux_from_contributors</span><span class="p">[</span><span class="n">ir</span><span class="p">]</span> <span class="o">+=</span> <span class="n">f</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">spectrum</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_teff</span><span class="p">[</span><span class="n">ir</span><span class="p">])</span>
@@ -773,9 +743,6 @@
                     <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">image</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
                         <span class="n">image</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">ii</span><span class="p">,</span> <span class="n">jj</span><span class="p">,</span> <span class="n">attenuation</span><span class="p">)</span>
 
-                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="s1">&#39;flux v&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">array</span><span class="p">[</span><span class="n">ii</span><span class="p">,</span><span class="n">jj</span><span class="p">]</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="s1">&#39;flux&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">array</span><span class="p">[</span><span class="n">ii</span><span class="p">,</span><span class="n">jj</span><span class="p">]:</span>
-                        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;part of the flux is larger than the whole flux? &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">ir</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; &quot;</span><span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">ii</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">jj</span><span class="p">))</span>
-                    
                     <span class="n">flux_from_contributors</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+=</span> <span class="n">f</span>
                     
                     <span class="bp">self</span><span class="o">.</span><span class="n">spectrum</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_teff</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
@@ -802,7 +769,6 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;particles&#39;</span><span class="p">,</span><span class="s1">&#39;flux_from_contributors&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">flux_from_contributors</span><span class="p">[</span><span class="n">contributors</span><span class="p">]</span>
         
         <span class="bp">self</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;image&#39;</span><span class="p">,</span><span class="s1">&#39;flux&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="s1">&#39;flux&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">array</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;image&#39;</span><span class="p">,</span><span class="s1">&#39;flux_v&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="s1">&#39;flux v&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">array</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;image&#39;</span><span class="p">,</span><span class="s1">&#39;surf_d&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">surf_d</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;image&#39;</span><span class="p">,</span><span class="s1">&#39;surf_id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">surf_id</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;image&#39;</span><span class="p">,</span><span class="s1">&#39;ray_n&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ray_n</span>
@@ -869,40 +835,53 @@
             
             <span class="c1"># Finish spectrum calculations</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">teff</span> <span class="o">=</span> <span class="mi">0</span>
-            <span class="n">max_flux</span> <span class="o">=</span> <span class="mi">0</span>
             <span class="c1">#ltot_spectrum = 0</span>
             <span class="c1"># [0.00000000e+00 7.39256413e-21 2.00355212e-07 6.82084616e-01</span>
             <span class="c1">#  4.39889814e+03 1.28926397e+06 6.63126098e+07 1.17342608e+09</span>
             <span class="c1">#  1.04031610e+10 5.80568647e+10]</span>
-
+            
             <span class="bp">self</span><span class="o">.</span><span class="n">flux</span> <span class="o">=</span> <span class="p">{</span>
                 <span class="s1">&#39;total&#39;</span> <span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spectrum</span><span class="p">[:</span><span class="bp">self</span><span class="o">.</span><span class="n">il_max</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">dl</span> <span class="o">*</span> <span class="mf">1e-7</span><span class="p">),</span>
             <span class="p">}</span>
             <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">filters</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span> <span class="bp">self</span><span class="o">.</span><span class="n">flux</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.</span>
             
+            <span class="n">max_flux</span> <span class="o">=</span> <span class="o">-</span><span class="mf">10.</span>
+            <span class="n">il_flux</span> <span class="o">=</span> <span class="mi">0</span>
             <span class="k">for</span> <span class="n">il</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">il_max</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
                 <span class="n">sp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spectrum</span><span class="p">[</span><span class="n">il</span><span class="p">]</span>
                 <span class="c1">#ltot_spectrum += sp * self.dl * 1e-7 # nanom = 1e-7</span>
-                <span class="k">if</span> <span class="n">sp</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span> <span class="k">continue</span>
-
+                <span class="k">if</span> <span class="n">sp</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span> <span class="k">continue</span>
+                
                 <span class="n">sp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">sp</span><span class="p">)</span>
                 <span class="n">lamb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lam</span><span class="p">[</span><span class="n">il</span><span class="p">]</span> <span class="o">/</span> <span class="mf">1e-7</span> <span class="c1"># nanom = 1e-7</span>
                 <span class="n">teff_loc</span> <span class="o">=</span> <span class="mf">2.9</span><span class="o">*</span><span class="mf">1.e6</span><span class="o">/</span><span class="n">lamb</span>
                 <span class="k">if</span> <span class="n">sp</span> <span class="o">&gt;</span> <span class="n">max_flux</span><span class="p">:</span>
                     <span class="n">max_flux</span> <span class="o">=</span> <span class="n">sp</span>
+                    <span class="n">il_flux</span> <span class="o">=</span> <span class="n">il</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">teff</span> <span class="o">=</span> <span class="n">teff_loc</span>
-
+                
                 <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="p">(</span><span class="n">lamb_low</span><span class="p">,</span> <span class="n">lamb_hi</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">filters</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
                     <span class="k">if</span> <span class="n">lamb_low</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">lamb</span> <span class="o">&lt;</span> <span class="n">lamb_low</span><span class="p">:</span> <span class="k">continue</span>
                     <span class="k">if</span> <span class="n">lamb_hi</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">lamb</span> <span class="o">&gt;</span> <span class="n">lamb_hi</span><span class="p">:</span> <span class="k">continue</span>
 
                     <span class="bp">self</span><span class="o">.</span><span class="n">flux</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spectrum</span><span class="p">[</span><span class="n">il</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">dl</span> <span class="o">*</span> <span class="mf">1e-7</span> <span class="c1"># nanom = 1e-7</span>
             
+            <span class="bp">self</span><span class="o">.</span><span class="n">teff_min</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">teff</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">teff_max</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">teff</span>
+            <span class="n">min_flux</span> <span class="o">=</span> <span class="mf">0.95</span> <span class="o">*</span> <span class="mi">10</span><span class="o">**</span><span class="n">max_flux</span>
+            <span class="k">for</span> <span class="n">il</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">il_flux</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">spectrum</span><span class="p">[</span><span class="n">il</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">min_flux</span><span class="p">:</span> <span class="k">break</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">teff_max</span> <span class="o">=</span> <span class="mf">2.9</span> <span class="o">*</span> <span class="mf">1.e6</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">lam</span><span class="p">[</span><span class="n">il</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.e-7</span>
+            
+            <span class="k">for</span> <span class="n">il</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">il_flux</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">il_max</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">spectrum</span><span class="p">[</span><span class="n">il</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">min_flux</span><span class="p">:</span> <span class="k">break</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">teff_min</span> <span class="o">=</span> <span class="mf">2.9</span> <span class="o">*</span> <span class="mf">1.e6</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">lam</span><span class="p">[</span><span class="n">il</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.e-7</span>
+            
             <span class="bp">self</span><span class="o">.</span><span class="n">output</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="n">b_full</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sigma</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">teff</span><span class="o">**</span><span class="mi">4</span>
             <span class="k">for</span> <span class="n">il</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">il_max</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
                 <span class="n">sp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spectrum</span><span class="p">[</span><span class="n">il</span><span class="p">]</span>
-                <span class="k">if</span> <span class="n">sp</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span> <span class="k">continue</span>
+                <span class="k">if</span> <span class="n">sp</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span> <span class="k">continue</span>
                 <span class="n">sp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">sp</span><span class="p">)</span>
                 <span class="n">lamb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lam</span><span class="p">[</span><span class="n">il</span><span class="p">]</span> <span class="o">/</span> <span class="mf">1e-7</span>
                 <span class="n">teff_loc</span> <span class="o">=</span> <span class="mf">2.9</span><span class="o">*</span><span class="mf">1.e6</span><span class="o">/</span><span class="n">lamb</span>
@@ -941,10 +920,10 @@
         <span class="k">def</span> <span class="nf">get_total</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
             <span class="c1"># Vectorized. Same as Natasha&#39;s way of doing it.</span>
             <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mf">0.25</span> <span class="o">*</span> <span class="p">(</span>\
-                <span class="bp">self</span><span class="o">.</span><span class="n">array</span><span class="p">[</span>  <span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">resolution</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span>  <span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">resolution</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span> <span class="p">]</span> <span class="o">+</span> \
-                <span class="bp">self</span><span class="o">.</span><span class="n">array</span><span class="p">[</span>  <span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">resolution</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">resolution</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>   <span class="p">]</span> <span class="o">+</span> \
-                <span class="bp">self</span><span class="o">.</span><span class="n">array</span><span class="p">[</span> <span class="mi">1</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">resolution</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>  <span class="p">,</span>  <span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">resolution</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span> <span class="p">]</span> <span class="o">+</span> \
-                <span class="bp">self</span><span class="o">.</span><span class="n">array</span><span class="p">[</span> <span class="mi">1</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">resolution</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>  <span class="p">,</span> <span class="mi">1</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">resolution</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>   <span class="p">]))</span></div>
+                <span class="bp">self</span><span class="o">.</span><span class="n">array</span><span class="p">[</span>  <span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">resolution</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span>  <span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">resolution</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> \
+                <span class="bp">self</span><span class="o">.</span><span class="n">array</span><span class="p">[</span>  <span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">resolution</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">resolution</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>  <span class="p">]</span> <span class="o">+</span> \
+                <span class="bp">self</span><span class="o">.</span><span class="n">array</span><span class="p">[</span> <span class="mi">1</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">resolution</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>  <span class="p">,</span>  <span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">resolution</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> \
+                <span class="bp">self</span><span class="o">.</span><span class="n">array</span><span class="p">[</span> <span class="mi">1</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">resolution</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>  <span class="p">,</span> <span class="mi">1</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">resolution</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>  <span class="p">]))</span></div>
 
 
 
@@ -967,21 +946,6 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_output</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">FluxResult</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
     
-    <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">simulation</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_simulation</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="kn">import</span> <span class="nn">starsmashertools</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_simulation</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">get_simulation</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;simulation&#39;</span><span class="p">])</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_simulation</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">output</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_output</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_output</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">Output</span><span class="p">(</span>
-                <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;output&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">simulation</span><span class="p">,</span>
-            <span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_output</span>
-    
 <div class="viewcode-block" id="FluxResult.save">
 <a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.flux.html#starsmashertools.lib.flux.FluxResult.save">[docs]</a>
     <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
@@ -990,15 +954,14 @@
             <span class="bp">self</span><span class="p">,</span>
             <span class="n">filename</span> <span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Pref</span><span class="p">(</span><span class="s1">&#39;save.filename&#39;</span><span class="p">),</span>
             <span class="n">allowed</span> <span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">nesteddict</span><span class="o">.</span><span class="n">NestedDict</span> <span class="o">=</span> <span class="n">Pref</span><span class="p">(</span><span class="s1">&#39;save.allowed&#39;</span><span class="p">),</span>
-            <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Save the results to disk as an :class:`~.lib.archive.Archive`\.</span>
+<span class="sd">        Save the results to disk as a compressed binary file.</span>
 <span class="sd">        </span>
 <span class="sd">        Other Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        filename : str, default = ``Pref(&#39;save.filename&#39;)``</span>
-<span class="sd">            The name of the Archive.</span>
+<span class="sd">            The name of the file.</span>
 
 <span class="sd">        allowed : dict, :class:`~.helpers.nesteddict.NestedDict`\, default = ``Pref(&#39;save.allowed&#39;)``</span>
 <span class="sd">            The items to include in the file. Only the keys of the dictionary</span>
@@ -1008,40 +971,27 @@
 <span class="sd">            deepest nesting levels (the &quot;flowers&quot;) are considered. See the </span>
 <span class="sd">            preferences file for an example.</span>
 
-<span class="sd">        **kwargs</span>
-<span class="sd">            Keyword arguments are passed directly to </span>
-<span class="sd">            :meth:`~.lib.archive.Archive.__init__`\.</span>
-<span class="sd">        </span>
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        archive : :class:`~.lib.archive.Archive`</span>
-<span class="sd">            The newly created Archive.</span>
-
 <span class="sd">        See Also</span>
 <span class="sd">        --------</span>
 <span class="sd">        :meth:`~.load`</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">import</span> <span class="nn">starsmashertools.lib.archive</span>
-        
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">allowed</span><span class="p">,</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">nesteddict</span><span class="o">.</span><span class="n">NestedDict</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">allowed</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
             <span class="n">allowed</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">nesteddict</span><span class="o">.</span><span class="n">NestedDict</span><span class="p">(</span><span class="n">allowed</span><span class="p">)</span>
-
-        <span class="n">allowed_branches</span> <span class="o">=</span> <span class="n">allowed</span><span class="o">.</span><span class="n">branches</span><span class="p">()</span>
-        <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;auto_save&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
-        <span class="n">archive</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">archive</span><span class="o">.</span><span class="n">Archive</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        
+        <span class="n">branches</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">branches</span><span class="p">()</span>
+        <span class="n">towrite</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">nesteddict</span><span class="o">.</span><span class="n">NestedDict</span><span class="p">()</span>
         <span class="k">for</span> <span class="n">branch</span><span class="p">,</span> <span class="n">leaf</span> <span class="ow">in</span> <span class="n">allowed</span><span class="o">.</span><span class="n">flowers</span><span class="p">():</span>
-            <span class="k">if</span> <span class="n">branch</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">allowed_branches</span><span class="p">:</span> <span class="k">continue</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">allowed</span><span class="p">[</span><span class="n">branch</span><span class="p">]:</span> <span class="k">continue</span>
-            <span class="n">archive</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>
-                <span class="nb">str</span><span class="p">(</span><span class="n">branch</span><span class="p">),</span>
-                <span class="bp">self</span><span class="p">[</span><span class="n">branch</span><span class="p">],</span>
-                <span class="n">origin</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;output&#39;</span><span class="p">],</span>
-            <span class="p">)</span>
-        <span class="n">archive</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">leaf</span><span class="p">:</span> <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">branch</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">stems</span><span class="p">():</span>
+                <span class="k">for</span> <span class="n">b</span><span class="p">,</span> <span class="n">l</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">flowers</span><span class="p">(</span><span class="n">stems</span> <span class="o">=</span> <span class="p">(</span><span class="n">branch</span><span class="p">,)):</span>
+                    <span class="n">towrite</span><span class="p">[</span><span class="n">b</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">b</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="n">branch</span> <span class="ow">in</span> <span class="n">branches</span><span class="p">:</span>
+                <span class="n">towrite</span><span class="p">[</span><span class="n">branch</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">branch</span><span class="p">]</span>
 
-        <span class="k">return</span> <span class="n">archive</span></div>
+        <span class="k">with</span> <span class="n">gzip</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;wb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">towrite</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span></div>
 
-    
+        
 <div class="viewcode-block" id="FluxResult.load">
 <a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.flux.html#starsmashertools.lib.flux.FluxResult.load">[docs]</a>
     <span class="nd">@staticmethod</span>
@@ -1049,8 +999,7 @@
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="nf">load</span><span class="p">(</span>
             <span class="n">filename</span> <span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-            <span class="n">allowed</span> <span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">nesteddict</span><span class="o">.</span><span class="n">NestedDict</span> <span class="o">=</span> <span class="n">Pref</span><span class="p">(</span><span class="s1">&#39;save.allowed&#39;</span><span class="p">),</span>
-            <span class="n">deserialize</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="n">allowed</span> <span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">nesteddict</span><span class="o">.</span><span class="n">NestedDict</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Load results from disk which were saved by :meth:`~.save`\.</span>
@@ -1062,11 +1011,10 @@
 
 <span class="sd">        Other Parameters</span>
 <span class="sd">        ----------------</span>
-<span class="sd">        allowed : dict, :class:`~.helpers.nesteddict.NestedDict`\, default = ``Pref(&#39;save.allowed&#39;)``</span>
-<span class="sd">            The same as ``allowed`` in :meth:`~.save`\.</span>
-
-<span class="sd">        deserialize : bool, default = True</span>
-<span class="sd">            Given to :meth:`~.lib.archive.Archive.get`\.</span>
+<span class="sd">        allowed : dict, :class:`~.helpers.nesteddict.NestedDict`\, None, default = None</span>
+<span class="sd">            Similar to ``allowed`` in :meth:`~.save`\. If `None` is given, then</span>
+<span class="sd">            all the values will be loaded into the returned </span>
+<span class="sd">            :class:`~.FluxResult` object.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -1076,20 +1024,18 @@
 <span class="sd">        --------</span>
 <span class="sd">        :meth:`~.save`</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">import</span> <span class="nn">starsmashertools.lib.archive</span>
-        <span class="n">archive</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">archive</span><span class="o">.</span><span class="n">Archive</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">readonly</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">allowed</span><span class="p">,</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">nesteddict</span><span class="o">.</span><span class="n">NestedDict</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">allowed</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
             <span class="n">allowed</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">nesteddict</span><span class="o">.</span><span class="n">NestedDict</span><span class="p">(</span><span class="n">allowed</span><span class="p">)</span>
-
-        <span class="n">toload</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">nesteddict</span><span class="o">.</span><span class="n">NestedDict</span><span class="p">()</span>
-        <span class="n">keys</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">allowed</span><span class="o">.</span><span class="n">branches</span><span class="p">()]</span>
-        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="n">archive</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="n">deserialize</span><span class="o">=</span><span class="n">deserialize</span><span class="p">)):</span>
-            <span class="k">try</span><span class="p">:</span> <span class="n">key</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
-            <span class="k">except</span><span class="p">:</span> <span class="k">pass</span>
-            <span class="k">if</span> <span class="n">deserialize</span><span class="p">:</span> <span class="n">toload</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span><span class="o">.</span><span class="n">value</span>
-            <span class="k">else</span><span class="p">:</span> <span class="n">toload</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span>
-        <span class="k">return</span> <span class="n">FluxResult</span><span class="p">(</span><span class="n">toload</span><span class="p">)</span></div>
+            
+        <span class="k">with</span> <span class="n">gzip</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">loaded</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="n">allowed</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">branch</span><span class="p">,</span> <span class="n">leaf</span> <span class="ow">in</span> <span class="n">allowed</span><span class="o">.</span><span class="n">flowers</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">leaf</span><span class="p">:</span> <span class="k">continue</span>
+                <span class="k">if</span> <span class="n">branch</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">loaded</span><span class="p">:</span> <span class="k">continue</span>
+                <span class="n">loaded</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">branch</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">FluxResult</span><span class="p">(</span><span class="n">loaded</span><span class="p">)</span></div>
 
     
     <span class="k">if</span> <span class="n">has_matplotlib</span><span class="p">:</span>
@@ -1100,7 +1046,7 @@
         <span class="k">def</span> <span class="nf">plot</span><span class="p">(</span>
                 <span class="bp">self</span><span class="p">,</span>
                 <span class="n">ax</span> <span class="p">:</span> <span class="n">matplotlib</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">Axes</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                <span class="n">key</span> <span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">typing</span><span class="o">.</span><span class="n">Callable</span> <span class="o">=</span> <span class="s1">&#39;flux&#39;</span><span class="p">,</span>
+                <span class="n">key</span> <span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">typing</span><span class="o">.</span><span class="n">Callable</span> <span class="o">=</span> <span class="s1">&#39;flux&#39;</span><span class="p">,</span>
                 <span class="n">weighted_average</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                 <span class="n">log10</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
                 <span class="o">**</span><span class="n">kwargs</span>
@@ -1117,7 +1063,7 @@
 <span class="sd">                `None`\, the plot is created on the axes returned by</span>
 <span class="sd">                ``plt.gca()``\.</span>
 
-<span class="sd">            key : str, default = &#39;flux&#39;</span>
+<span class="sd">            key : str, list, tuple, :class:`typing.Callable`\, default = &#39;flux&#39;</span>
 <span class="sd">                The dictionary key in the ``[&#39;image&#39;]`` :py:class:`dict` to </span>
 <span class="sd">                obtain the data for plotting, or a function which accepts a </span>
 <span class="sd">                FluxResult as input and returns a 2D NumPy array and a dict, </span>
@@ -1233,161 +1179,53 @@
         <span class="nb">super</span><span class="p">(</span><span class="n">FluxResults</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="FluxResults.add">
-<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.flux.html#starsmashertools.lib.flux.FluxResults.add">[docs]</a>
-    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
-    <span class="nd">@api</span>
-    <span class="k">def</span> <span class="nf">add</span><span class="p">(</span>
-            <span class="bp">self</span><span class="p">,</span>
-            <span class="n">result</span> <span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">FluxResult</span><span class="p">,</span>
-            <span class="n">order</span> <span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">=</span> <span class="n">Pref</span><span class="p">(</span><span class="s1">&#39;add.order&#39;</span><span class="p">),</span>
-    <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Add a :class:`~.FluxResult`\. The values in the :class:`~.FluxResult` </span>
-<span class="sd">        will be inserted in a way which preserves the specified order.</span>
-<span class="sd">        </span>
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        result : str, FluxResult</span>
-<span class="sd">            If a `str`\, it must be a path to a saved :class:`~.FluxResult`\. </span>
-<span class="sd">            The :class:`~.FluxResult` is loaded and its contents are added to </span>
-<span class="sd">            this dictionary.</span>
+    <span class="k">def</span> <span class="nf">is_allowed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">branch</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">b</span><span class="p">,</span> <span class="n">l</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_allowed</span><span class="o">.</span><span class="n">flowers</span><span class="p">():</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">l</span><span class="p">:</span> <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">branch</span> <span class="o">==</span> <span class="n">b</span> <span class="ow">or</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">nesteddict</span><span class="o">.</span><span class="n">NestedDict</span><span class="o">.</span><span class="n">is_child_branch</span><span class="p">(</span><span class="n">branch</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+                <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="kc">False</span>
 
-
-<span class="sd">        Other Parameters</span>
-<span class="sd">        ----------------</span>
-<span class="sd">        order : str, list, tuple, default = ``Pref(&#39;add.order&#39;)``</span>
-<span class="sd">            The order with which to insert the :class:`~.FluxResult`. If a </span>
-<span class="sd">            `list` or `tuple` are given, it refers to the nested key. For</span>
-<span class="sd">            example, ``[&#39;image&#39;, &#39;teff_aver&#39;]`` refers to the value found at</span>
-<span class="sd">            ``FluxResult[&#39;image&#39;][&#39;teff_aver&#39;]``\. See </span>
-<span class="sd">            :class:`~.helpers.nesteddict.NestedDict` for details.</span>
-
-<span class="sd">        See Also</span>
-<span class="sd">        --------</span>
-<span class="sd">        :class:`~.helpers.nesteddict.NestedDict`</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">import</span> <span class="nn">bisect</span>
-        
+    <span class="k">def</span> <span class="nf">add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result</span> <span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">FluxResult</span><span class="p">):</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-            <span class="n">result</span> <span class="o">=</span> <span class="n">FluxResult</span><span class="o">.</span><span class="n">load</span><span class="p">(</span>
-                <span class="n">result</span><span class="p">,</span>
-                <span class="n">allowed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_allowed</span><span class="p">,</span>
-            <span class="p">)</span>
-
-        <span class="n">index</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="k">if</span> <span class="n">order</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">branches</span><span class="p">():</span>
-            <span class="n">index</span> <span class="o">=</span> <span class="n">bisect</span><span class="o">.</span><span class="n">bisect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">order</span><span class="p">),</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">order</span><span class="p">))</span>
-
-        <span class="k">for</span> <span class="n">branch</span><span class="p">,</span> <span class="n">leaf</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">flowers</span><span class="p">():</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_allowed</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">branch</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span> <span class="k">continue</span>
-            
-            <span class="k">if</span> <span class="n">branch</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">branches</span><span class="p">():</span>
-                <span class="bp">self</span><span class="p">[</span><span class="n">branch</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">leaf</span><span class="p">]</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">index</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="n">index</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="n">branch</span><span class="p">])</span>
-                <span class="bp">self</span><span class="p">[</span><span class="n">branch</span><span class="p">]</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">leaf</span><span class="p">)</span></div>
-
-                
-    
-<div class="viewcode-block" id="FluxResults.save">
-<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.flux.html#starsmashertools.lib.flux.FluxResults.save">[docs]</a>
-    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
-    <span class="nd">@api</span>
-    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span>
-            <span class="bp">self</span><span class="p">,</span>
-            <span class="n">filename</span> <span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Pref</span><span class="p">(</span><span class="s1">&#39;save.filename&#39;</span><span class="p">),</span>
-            <span class="o">**</span><span class="n">kwargs</span>
-    <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Save the :class:`~.FluxResult` objects to disk. Each result is stored in</span>
-<span class="sd">        the same format as :meth:`~.FluxResult.save`\, except stacked in a list.</span>
-<span class="sd">        For example, the ``&#39;image&#39;`` key in the archive will be a list, where </span>
-<span class="sd">        each element is the ``&#39;image&#39;`` key from the corresponding </span>
-<span class="sd">        :class:`~.FluxResult`.</span>
-<span class="sd">        </span>
-<span class="sd">        Other Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        filename : str, default = ``Pref(&#39;save.filename&#39;)``</span>
-<span class="sd">            The path to the file to create.</span>
-<span class="sd">        </span>
-<span class="sd">        **kwargs</span>
-<span class="sd">            Other keyword arguments are passed directly to </span>
-<span class="sd">            :meth:`~.lib.archive.Archive.__init__`\.</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        archive : :class:`~.lib.archive.Archive`</span>
-<span class="sd">            The newly created Archive.</span>
-
-<span class="sd">        See Also</span>
-<span class="sd">        --------</span>
-<span class="sd">        :meth:`~.load`</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">import</span> <span class="nn">starsmashertools.lib.archive</span>
-        <span class="kn">import</span> <span class="nn">time</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">FluxResult</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
         
-        <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;auto_save&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
-        <span class="n">archive</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">archive</span><span class="o">.</span><span class="n">Archive</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="n">mtime</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
-        <span class="k">for</span> <span class="n">branch</span><span class="p">,</span> <span class="n">leaf</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">flowers</span><span class="p">():</span>
-            <span class="n">archive</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">branch</span><span class="p">),</span> <span class="n">leaf</span><span class="p">,</span> <span class="n">mtime</span> <span class="o">=</span> <span class="n">mtime</span><span class="p">)</span>
-        <span class="n">archive</span><span class="o">.</span><span class="n">save</span><span class="p">()</span></div>
+        <span class="k">for</span> <span class="n">branch</span><span class="p">,</span> <span class="n">leaf</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">flowers</span><span class="p">():</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_allowed</span><span class="p">(</span><span class="n">branch</span><span class="p">):</span> <span class="k">continue</span>
+            
+            <span class="k">if</span> <span class="n">branch</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span> <span class="bp">self</span><span class="p">[</span><span class="n">branch</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">leaf</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span> <span class="bp">self</span><span class="p">[</span><span class="n">branch</span><span class="p">]</span> <span class="o">+=</span> <span class="p">[</span><span class="n">leaf</span><span class="p">]</span>
 
-
-<div class="viewcode-block" id="FluxResults.load">
-<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.flux.html#starsmashertools.lib.flux.FluxResults.load">[docs]</a>
-    <span class="nd">@staticmethod</span>
-    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
-    <span class="nd">@api</span>
-    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span>
-            <span class="n">filename</span> <span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-            <span class="n">keys</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Load the :class:`~.FluxResult` objects from disk. Each result is stored</span>
-<span class="sd">        in the same format as :meth:`~.FluxResult.save`\, except stacked in a </span>
-<span class="sd">        list. For example, the ``&#39;image&#39;`` key in the archive will be a list, </span>
-<span class="sd">        where each element is the ``&#39;image&#39;`` key from the corresponding </span>
-<span class="sd">        :class:`~.FluxResult`.</span>
-<span class="sd">        </span>
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        filename : str</span>
-<span class="sd">            The path to the file to load.</span>
-
-<span class="sd">        Other Parameters</span>
-<span class="sd">        ----------------</span>
-<span class="sd">        keys : list, tuple, None, default = None</span>
-<span class="sd">            To retrieve only specific keys, specify the keys here. Note that</span>
-<span class="sd">            each element must point to a &quot;branch&quot; in the archived </span>
-<span class="sd">            :class:`~.helpers.nesteddict.NestedDict`\.</span>
-<span class="sd">        </span>
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        fluxresults : :class:`~.FluxResults`</span>
-<span class="sd">            The :class:`~.FluxResult` objects in the same order as stored in the</span>
-<span class="sd">            archive.</span>
-<span class="sd">        </span>
-<span class="sd">        See Also</span>
-<span class="sd">        --------</span>
-<span class="sd">        :meth:`~.save`</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">import</span> <span class="nn">starsmashertools.lib.archive</span>
-        <span class="n">archive</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">archive</span><span class="o">.</span><span class="n">Archive</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">readonly</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="n">toload</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">nesteddict</span><span class="o">.</span><span class="n">NestedDict</span><span class="p">()</span>
-        <span class="k">if</span> <span class="n">keys</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="n">archive</span><span class="o">.</span><span class="n">get</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">])):</span>
-                <span class="n">toload</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span><span class="o">.</span><span class="n">value</span>
+    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span> <span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.path</span>
+        <span class="k">if</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+            <span class="n">tname</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">with</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">NamedTemporaryFile</span><span class="p">(</span><span class="nb">dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">(),</span> <span class="n">delete</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="k">as</span> <span class="n">output</span><span class="p">:</span>
+                    <span class="n">tname</span> <span class="o">=</span> <span class="n">output</span><span class="o">.</span><span class="n">name</span>
+                    <span class="n">_input</span> <span class="o">=</span> <span class="n">gzip</span><span class="o">.</span><span class="n">GzipFile</span><span class="p">(</span><span class="n">mode</span> <span class="o">=</span> <span class="s1">&#39;wb&#39;</span><span class="p">,</span> <span class="n">fileobj</span> <span class="o">=</span> <span class="n">output</span><span class="p">)</span>
+                    <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_input</span><span class="p">)</span>
+                    <span class="n">_input</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+                    <span class="n">_input</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="c1"># temporary files are always local</span>
+                <span class="k">if</span> <span class="n">tname</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">tname</span><span class="p">):</span> <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">tname</span><span class="p">)</span>
+                <span class="k">raise</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">tname</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">archive</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-                <span class="k">try</span><span class="p">:</span> <span class="n">key</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
-                <span class="k">except</span><span class="p">:</span> <span class="k">pass</span>
-                <span class="n">toload</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span><span class="o">.</span><span class="n">value</span>
-        <span class="k">return</span> <span class="n">FluxResults</span><span class="p">(</span><span class="n">toload</span><span class="p">)</span></div>
-</div>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">with</span> <span class="n">gzip</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;wb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                    <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="c1"># the gzip method is always local</span>
+                <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span> <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+                <span class="k">raise</span>
 
-
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="n">filename</span> <span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">with</span> <span class="n">gzip</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span></div>
 
 </pre></div>
 

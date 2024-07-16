@@ -4,6 +4,7 @@ import starsmashertools.helpers.argumentenforcer
 import unittest
 import numpy as np
 import basetest
+import math
 
 class TestUnits(basetest.BaseTest):
     def test_labels(self):
@@ -61,9 +62,9 @@ class TestUnits(basetest.BaseTest):
         L = l1 / l0
         self.assertEqual(L.long, 's/cm')
 
+        # Test label cancellation
         l1 = starsmashertools.lib.units.Unit.Label('cm')
-        L = l0 / l1
-        self.assertEqual(L.long, '')
+        self.assertEqual((l0 / l1).long, '')
 
         l0 = starsmashertools.lib.units.Unit.Label('cm*g*s/cm*cm*cm*cm')
         l1 = starsmashertools.lib.units.Unit.Label('g*s/cm')
@@ -159,24 +160,84 @@ class TestUnits(basetest.BaseTest):
         
         with self.assertRaises(TypeError):
             u.convert(new_label = None, to = None)
+
+        u = starsmashertools.lib.units.Unit(1, 'min')
+        self.assertEqual(
+            u.convert('s'),
+            starsmashertools.lib.units.Unit(60, 's'),
+            msg = 'conversion down',
+        )
+        u = starsmashertools.lib.units.Unit(1, 'km')
+        self.assertEqual(
+            u.convert('m'),
+            starsmashertools.lib.units.Unit(1000, 'm'),
+        )
+            
         
         # A more complex conversion
         u = starsmashertools.lib.units.Unit(1, 'cm/s')
         u = u.convert('km/hr')
+        self.assertEqual(u.label.left, ['km'])
+        self.assertEqual(u.label.right, ['hr'])
         self.assertEqual(u.label, 'km/hr')
         self.assertAlmostEqual(u.value, 1. / 1e5 * 3600)
         
         # Conversion of only specific units
         u = starsmashertools.lib.units.Unit(1, 'cm*cm/g*s')
         u = u.convert(to = ['km', 'hr'])
+        self.assertEqual(u.label.left, ['km', 'km'])
+        self.assertEqual(u.label.right, ['g', 'hr'])
         self.assertEqual(u.label, 'km*km/g*hr')
         self.assertAlmostEqual(u.value, (1/1e5) * (1/1e5) / (1/3600))
+
+        u = starsmashertools.lib.units.Unit(1, 'cm*cm*g/s*s')
+        self.assertEqual(u.label.left, ['cm', 'cm', 'g'])
+        self.assertEqual(u.label.right, ['s', 's'])
+        self.assertEqual(u.label.short, 'erg')
+
+        u = starsmashertools.lib.units.Unit(1, 'erg')
+        self.assertEqual(u.label.left, ['cm', 'cm', 'g'])
+        self.assertEqual(u.label.right, ['s', 's'])
+        self.assertEqual(u.label.long, 'cm*cm*g/s*s')
+
+        u = starsmashertools.lib.units.Unit(1, 'erg/s')
+        self.assertEqual(u.label.left, ['cm', 'cm', 'g'])
+        self.assertEqual(u.label.right, ['s', 's', 's'])
+        self.assertEqual(u.label.long, 'cm*cm*g/s*s*s')
 
         # Lsun conversion
         u = starsmashertools.lib.units.Unit(1, 'Lsun')
         base = u.get_base()
-        self.assertEqual(base.label, 'erg/s')
-        self.assertEqual(u.get_base().value, starsmashertools.lib.units.constants['Lsun'])
+        self.assertEqual(base.label.left, ['cm', 'cm', 'g'])
+        self.assertEqual(base.label.right, ['s', 's', 's'])
+        self.assertEqual(base.label.short, 'erg/s')
+        self.assertEqual(base.label.long, 'cm*cm*g/s*s*s')
+        self.assertEqual(base.value, starsmashertools.lib.units.constants['Lsun'])
+        u = starsmashertools.lib.units.constants['Lsun']
+        u = u.convert('Lsun')
+        self.assertEqual(1, u.value)
+
+        u = starsmashertools.lib.units.Unit(2, 'Lsun')
+        self.assertEqual(u, 2 * starsmashertools.lib.units.constants['Lsun'])
+        
+        #u = starsmashertools.lib.units.Unit(1, 'Lsun/s')
+        #self.assertEqual(u.label.short, 'erg/s*s')
+        #self.assertEqual(u.label.long, 'cm*cm*g/s*s*s*s')
+
+        #self.assertEqual(
+        #    u.convert('erg/s*s'),
+        #    starsmashertools.lib.units.Unit(
+        #        float(starsmashertools.lib.units.constants['Lsun']),
+        #        'cm*cm*g/s*s*s*s',
+        #    ),
+        #)
+
+        # Dividing by the same base units should result in conversions, always
+        # converting to the base
+        u = starsmashertools.lib.units.Unit(1, 'cm')
+        u2 = starsmashertools.lib.units.Unit(1, 'm')
+        self.assertEqual(u/u2, starsmashertools.lib.units.Unit(0.01, 'cm'))
+        self.assertEqual(u2/u, starsmashertools.lib.units.Unit(100, 'cm'))
     
     def test_integers(self):
         u = starsmashertools.lib.units.Unit(1, 's')
@@ -325,6 +386,66 @@ class TestUnits(basetest.BaseTest):
         self.assertAlmostEqual(float(u), np.sqrt(expected))
 
 
+        # Test operations with same bases but different labels
+        u1 = starsmashertools.lib.units.Unit(1, 'cm')
+        u2 = starsmashertools.lib.units.Unit(1, 'm')
+        self.assertEqual(
+            u1 + u2,
+            starsmashertools.lib.units.Unit(101, 'cm'),
+            msg = '__add__',
+        )
+        self.assertEqual(
+            u1 * u2,
+            starsmashertools.lib.units.Unit(100, 'cm*cm'),
+            msg = '__mul__',
+        )
+        u1 = starsmashertools.lib.units.Unit(1, 'm')
+        u2 = starsmashertools.lib.units.Unit(1, 'km')
+        self.assertEqual(
+            u1 * u2,
+            starsmashertools.lib.units.Unit(1000, 'm*m'),
+            msg = '__mul__',
+        )
+        
+
+        # Test some weird operators
+        for i in range(0, 10):
+            u = starsmashertools.lib.units.Unit(i, 's')
+            for j in range(0, 10):
+                if j != 0:
+                    self.assertEqual(u % j, i % j, msg = '%d %d' % (i,j))
+                    self.assertEqual((u % j).label, 's', msg = '%d %d' % (i,j))
+                if i != 0:
+                    self.assertEqual(j % u, j % i, msg = '%d %d' % (i,j))
+                    self.assertEqual((j % u).label, 's', msg = '%d %d' % (i,j))
+        u = starsmashertools.lib.units.Unit(1, 's')
+        self.assertEqual(
+            -starsmashertools.lib.units.Unit(1, 's'),
+            starsmashertools.lib.units.Unit(-(1), 's'),
+            msg = '__neg__',
+        )
+        self.assertEqual(
+            +starsmashertools.lib.units.Unit(-1, 's'),
+            starsmashertools.lib.units.Unit(+(-1), 's'),
+            msg = '__pos__'
+        )
+        self.assertEqual(
+            abs(starsmashertools.lib.units.Unit(-1, 's')),
+            starsmashertools.lib.units.Unit(1, 's'),
+            msg = '__abs__',
+        )
+        self.assertEqual(
+            round(starsmashertools.lib.units.Unit(0.8, 's')),
+            starsmashertools.lib.units.Unit(1, 's'),
+            msg = '__round__'
+        )
+        self.assertEqual(
+            math.trunc(starsmashertools.lib.units.Unit(0.8, 's')),
+            starsmashertools.lib.units.Unit(0, 's'),
+            msg = '__trunc__'
+        )
+
+
     def test_units(self):
         import starsmashertools.helpers.readonlydict
         simulation = starsmashertools.get_simulation("data")
@@ -347,6 +468,112 @@ class TestUnits(basetest.BaseTest):
         self.assertEqual(s, '1000.0 day')
 
 
+    def test_different_label_comparisons(self):
+        # Equalities
+        self.assertEqual(
+            starsmashertools.lib.units.Unit(1, 's'),
+            starsmashertools.lib.units.Unit(1, 's'),
+        )
+        self.assertNotEqual(
+            starsmashertools.lib.units.Unit(1, 's'),
+            starsmashertools.lib.units.Unit(2, 's'),
+        )
+        self.assertLessEqual(
+            starsmashertools.lib.units.Unit(1, 's'),
+            starsmashertools.lib.units.Unit(1, 's'),
+        )
+        self.assertGreaterEqual(
+            starsmashertools.lib.units.Unit(1, 's'),
+            starsmashertools.lib.units.Unit(1, 's'),
+        )
+        self.assertAlmostEqual(
+            starsmashertools.lib.units.Unit(    1,   's'),
+            starsmashertools.lib.units.Unit(1./60, 'min'),
+        )
+        self.assertAlmostEqual(
+            starsmashertools.lib.units.Unit(      1,     's*s'),
+            starsmashertools.lib.units.Unit(1./3600, 'min*min'),
+        )
+
+        # Inequalities
+        self.assertLess(
+            starsmashertools.lib.units.Unit(1, 's'),
+            starsmashertools.lib.units.Unit(2, 's'),
+        )
+        self.assertGreater(
+            starsmashertools.lib.units.Unit(2, 's'),
+            starsmashertools.lib.units.Unit(1, 's'),
+        )
+        self.assertLess(
+            starsmashertools.lib.units.Unit(    1,   's'),
+            starsmashertools.lib.units.Unit(2./60, 'min'),
+        )
+        self.assertGreater(
+            starsmashertools.lib.units.Unit(2./60, 'min'),
+            starsmashertools.lib.units.Unit(    1,   's'),
+        )
+
+        # Error checking
+        u1 = starsmashertools.lib.units.Unit(1, 's')
+        u2 = starsmashertools.lib.units.Unit(1, 'g')
+        with self.assertRaises(starsmashertools.lib.units.Unit.InvalidLabelError):
+            u1 > u2
+        with self.assertRaises(starsmashertools.lib.units.Unit.InvalidLabelError):
+            u1 >= u2
+        with self.assertRaises(starsmashertools.lib.units.Unit.InvalidLabelError):
+            u1 < u2
+        with self.assertRaises(starsmashertools.lib.units.Unit.InvalidLabelError):
+            u1 <= u2
+            
+        
+    def test_different_label_operations(self):
+        s = starsmashertools.lib.units.Unit(1,'s')
+        m = starsmashertools.lib.units.Unit(2./60,'min')
+        g = starsmashertools.lib.units.Unit(1,'g')
+        self.assertEqual(m - s, s)
+        with self.assertRaises(starsmashertools.lib.units.Unit.InvalidLabelError):
+            g - s
+        
+        self.assertEqual(s + m, 3 * s)
+        with self.assertRaises(starsmashertools.lib.units.Unit.InvalidLabelError):
+            g + s
+        self.assertEqual(m // s, 2)
+        self.assertEqual(s // m, 0)
+        self.assertEqual(s % m, starsmashertools.lib.units.Unit(1, 's'))
+        self.assertEqual(m % s, starsmashertools.lib.units.Unit(0, 'min'))
+
+
+class TestLoader(unittest.TestLoader, object):
+    def getTestCaseNames(self, *args, **kwargs):
+        return [name for name in dir(TestUnits()) if name.startswith('test')]
+        
 
 if __name__ == "__main__":
-    unittest.main(failfast=True)
+    import inspect
+    import re
+    
+    comment_checks = [
+        # Remove # comments first
+        re.compile("(?<!['\"])#.*", flags = re.M),
+        # Then remove block comments (which can be commented out by #)
+        re.compile('(?<!\')(?<!\\\\)""".*?"""', flags = re.M | re.S),
+        re.compile("(?<!\")(?<!\\\\)'''.*?'''", flags = re.M | re.S),
+    ]
+    
+    src = inspect.getsource(starsmashertools.lib.units)
+
+    # Remove all comments
+    for check in comment_checks:
+        for match in check.findall(src):
+            src = src.replace(match, '')
+    
+    if '@profile' in src:
+        loader = TestLoader()
+        suite = unittest.TestSuite()
+        for name in loader.getTestCaseNames():
+            suite.addTest(TestUnits(name))
+        runner = unittest.TextTestRunner()
+        runner.run(suite)
+    else:
+        # This is the normal method
+        unittest.main(failfast=True, testLoader=TestLoader())

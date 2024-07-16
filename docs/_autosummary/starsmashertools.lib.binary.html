@@ -128,7 +128,23 @@
 <dd><dl class="py method">
 <dt class="sig sig-object py" id="starsmashertools.lib.binary.Binary.get_COMs">
 <span class="sig-name descname"><span class="pre">get_COMs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="starsmashertools.lib.output.html#starsmashertools.lib.output.Output" title="starsmashertools.lib.output.Output"><span class="pre">Output</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="starsmashertools.lib.output.html#starsmashertools.lib.output.OutputIterator" title="starsmashertools.lib.output.OutputIterator"><span class="pre">OutputIterator</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/binary.html#Binary.get_COMs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.binary.Binary.get_COMs" title="Link to this definition"></a></dt>
-<dd></dd></dl>
+<dd><p>Obtain the center of mass of both stars in the simulation for the given
+outputs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>output</strong> (<a class="reference internal" href="starsmashertools.lib.output.html#starsmashertools.lib.output.Output" title="starsmashertools.lib.output.Output"><code class="xref py py-class docutils literal notranslate"><span class="pre">Output</span></code></a>, <a class="reference internal" href="starsmashertools.lib.output.html#starsmashertools.lib.output.OutputIterator" title="starsmashertools.lib.output.OutputIterator"><code class="xref py py-class docutils literal notranslate"><span class="pre">OutputIterator</span></code></a>) – The output or outputs for which to get the center of mass of each of
+the two stars.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Two NumPy arrays of shape <code class="docutils literal notranslate"><span class="pre">(3,)</span></code> containing the <code class="docutils literal notranslate"><span class="pre">(x,</span> <span class="pre">y,</span> <span class="pre">z)</span></code>
+center of mass positions of the primary and secondary stars
+respectively.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></a>, <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="starsmashertools.lib.binary.Binary.get_RLOF">

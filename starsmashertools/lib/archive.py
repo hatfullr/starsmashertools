@@ -263,8 +263,7 @@ class ArchiveValue(object):
             o = starsmashertools.helpers.pickler.unpickle_object(obj)
         except (binascii.Error, _pickle.UnpicklingError):
             o = starsmashertools.helpers.jsonfile.load_bytes(obj)
-        ret = ArchiveValue(identifier, o['value'], o['origin'], o['mtime'])
-        return ret
+        return ArchiveValue(identifier, o['value'], o['origin'], o['mtime'])
 
 
 class ArchiveItems(object):
@@ -525,6 +524,9 @@ class Archive(object):
         self._buffer_size = 0
         self._nosave_holders = 0
 
+        self.on_nosave_disabled = []
+        self.on_nosave_enabled = []
+
     @property
     def _keys(self):
         if not hasattr(self, '_keys_internal'):
@@ -563,6 +565,9 @@ class Archive(object):
         if not starsmashertools.helpers.path.exists(self.filename): return False
         current_mtime = starsmashertools.helpers.path.getmtime(self.filename)
         return current_mtime > self._previous_mtime
+
+    @property
+    def is_nosave(self): return self._nosave_holders > 0
     
     def __copy__(self, *args, **kwargs):
         raise NotImplementedError
@@ -599,12 +604,15 @@ class Archive(object):
         
         try:
             self._nosave_holders += 1
+            for function in self.on_nosave_enabled: function()
             yield
         finally:
             # Clear the buffers
             self._clear_buffers()
             if not self.thread_safe: self._keys = previous_keys
             self._nosave_holders -= 1
+            if not self.is_nosave:
+                for function in self.on_nosave_disabled: function()
     
     def open(
             self,
@@ -825,7 +833,7 @@ class Archive(object):
             update_archive_version(self.filename, verbose = self.verbose)
 
     def _auto_save(self, *args, **kwargs):
-        if self.auto_save and self._buffer_size >= self._max_buffer_size:
+        if self.auto_save or self._buffer_size >= self._max_buffer_size:
             self.save(*args, **kwargs)
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
@@ -852,7 +860,7 @@ class Archive(object):
             starsmashertools.helpers.warnings.warn("Archive.save() is being called by a process that is not the main process. Archive.save() is not thread safe, so make sure you are calling Archive.save() from a single process only. You can suppress this warning with warnings.filterwarnings(action = 'ignore').")
         
         if self.readonly: raise Archive.ReadOnlyError(self.filename)
-        if self._nosave_holders > 0: return
+        if self.is_nosave: return
         
         exists = starsmashertools.helpers.path.isfile(self.filename)
         
@@ -1013,12 +1021,12 @@ class Archive(object):
             if key in self._buffers['add'].keys():
                 values[i] = self._buffers['add'][key]
             else: remaining_keys += [[i, key]]
-
+        
         if None not in values: # We only had to search the buffers! :)
             return values
 
         # Check the archive file
-        to_deserialize = []
+        keys = []
         with self.open(
                 'r',
                 message = "Loading values in %s" % self,
@@ -1033,28 +1041,12 @@ class Archive(object):
             for i, key in remaining_keys:
                 if key not in file_keys: raise KeyError(key)
                 values[i] = zfile.read(key)
-                to_deserialize += [[i, key]]
+                keys += [key]
                 if hasattr(zfile, 'progress'):
                     zfile.progress.increment()
 
-        keys_to_deserialize = []
-        vals_to_deserialize = []
-        for i, key in to_deserialize:
-            keys_to_deserialize += [key]
-            vals_to_deserialize += [values[i]]
-
         if deserialize:
-            deserialized_vals = self._deserialize(
-                keys_to_deserialize, vals_to_deserialize,
-            )
-            for i, key in to_deserialize:
-                values[i] = deserialized_vals[i]
-
-        del keys_to_deserialize
-        del vals_to_deserialize
-        del to_deserialize
-        del remaining_keys
-        gc.collect()
+            values = list(self._deserialize(keys, values))        
         
         if len(values) == 1: return values[0]
         return values
@@ -1168,7 +1160,7 @@ class Archive(object):
                     progress_message.message += " in serial"
                 # Run in serial
                 for key, value in zip(keys, values):
-                    ret += [ArchiveValue.deserialize(key, value)]
+                    yield ArchiveValue.deserialize(key, value)
                     progress.increment()
             else:
                 if progress_message:
@@ -1181,18 +1173,16 @@ class Archive(object):
                     progress_message = progress,
                     start = True,
                 )
-                ret = p.get_output()
+                yield from p.get_output()
                 del p
-            return ret
-
+        
         if self.verbose:
             with starsmashertools.helpers.string.progress_message(
                     message = "Deserializing archive values",
                     max = len(keys), delay = 5,
             ) as progress:
-                ret = func(progress_message = progress)
-        else: ret = func()
-        return ret
+                yield from func(progress_message = progress)
+        else: yield from func()
 
     def find_old_values(self):
         """

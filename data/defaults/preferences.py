@@ -84,6 +84,9 @@ prefs = {
                     'threshold_frac' : None,
                     'threshold' : 0.05,
                 },
+                'get_period' : {
+                    'threshold' : 0.01, # 1%
+                },
             },
         }, # 'dynamical'
 
@@ -105,9 +108,7 @@ prefs = {
                 'tau_s' : 20.,
                 # Particles with tau < tau_skip are ignored entirely.
                 'tau_skip' : 1.e-5,
-                # Particles with Teff <= teff_cut are excluded in surf_br_v.
-                'teff_cut' : 3500.,
-
+                
                 # Dust
                 # Give a value in cm^2/g, or None to turn off artificial
                 # dust.
@@ -136,7 +137,7 @@ prefs = {
             }, # 'FluxFinder'
             'FluxResult' : {
                 'save' : {
-                    'filename' : 'fluxresult.zip',
+                    'filename' : 'fluxresult.dat',
                     # Changing values here doesn't improve performance, it only
                     # affects what gets saved in the save() method in FluxResult
                     # 'True' means don't save it, 'False' means save it.
@@ -160,22 +161,22 @@ prefs = {
                             'teff_aver' : True, # average effective temperature
                             'ltot'      : True, # total bolometric luminosity
                             'flux_tot'  : True, # total bolometric flux
-                            'l_v'       : True,
                             'extent'    : True, # x,y screen space limits
                             'dx'        : True, # x cell size
                             'dy'        : True, # y cell size
                             'flux'      : True, # flux map
-                            'flux_v'    : True,
                             'surf_d'    : True, # distance map?
                             'surf_id'   : True, # maybe particle IDs at surface
                             'ray_n'     : True, # number of particles on rays
                             'weighted_averages' : True, # weighted average maps
                         },
                         'spectrum' : {
-                            'ltot_spectrum' : True, # spectral luminosity
-                            'l_spectrum'    : True, # L in filters
+                            'ltot'          : True, # total spectral luminosity
+                            'luminosities'  : True, # filter luminosities
                             'output'        : True, # spectrum information
                             'teff'          : True, # effective temperature
+                            'teff_min'      : True, # minimum Teff
+                            'teff_max'      : True, # maximum Teff
                         },
                     }, # 'exclude'
                 }, # 'save'
@@ -250,7 +251,6 @@ prefs = {
                 # To specify your own units edit the 'units' object in
                 # 'Simulation'.
                 'cache' : {
-                    'ID' : lambda obj: np.arange(obj['ntot']),
                     'xyz': lambda obj: np.column_stack((obj['x'], obj['y'], obj['z'])),
                     'r2' : lambda obj: np.sum(obj['xyz']**2, axis=-1),
                     'r' : lambda obj: np.sqrt(obj['r2']),
@@ -298,7 +298,7 @@ prefs = {
                             'shorten' : {
                                 'args' : (20,),
                                 'kwargs' : {
-                                    'where' : 'left',
+                                    'where' : 'center',
                                 },
                             },
                         },
@@ -440,11 +440,21 @@ prefs = {
             }, # 'Units'
         }, # 'units'
     }, # 'lib'
+
+    ############################################################################
+    'math' : {
+        'EffGravPot' : {
+            'as_point_masses' : True,
+        }, # 'EffGravPot'
+    }, # 'math'
     
     ############################################################################
 
     'mpl' : {
         'artists' : {
+            'LagrangePoints' : {
+                'n' : 3,
+            }, # 'LagrangePoints'
             'PlottingPreferences' : {
                 # The given kwargs below override the settings here
                 'defaults' : {

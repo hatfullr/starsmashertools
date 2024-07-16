@@ -1,10 +1,11 @@
 import starsmashertools.helpers.nesteddict
 import unittest
-import basetest
 import copy
 import os
 
-class TestNestedDict(basetest.BaseTest):
+# It doesn't inherit from BaseTest because we don't need to extract the zipped
+# test data to perform our tests.
+class TestNestedDict(unittest.TestCase, object):
     def tearDown(self):
         if os.path.isfile('test.pickle'): os.remove('test.pickle')
         
@@ -69,6 +70,21 @@ class TestNestedDict(basetest.BaseTest):
         self.assertEqual(len(expected), len(found), msg = 'found = %s, expected = %s' % (found, expected))
         for key1, key2 in zip(expected, found):
             self.assertEqual(key1, key2)
+            self.assertIn(key1, found)
+
+        expected = [('1', '1a'), ('1', '1a', '1ai'), ('1', '1a', '1aii')]
+        found = d.keys(stems = [('1', '1a')])
+        self.assertEqual(len(expected), len(found))
+        for key1, key2 in zip(expected, found):
+            self.assertEqual(key1, key2)
+            self.assertIn(key1, found)
+
+        expected = ['2']
+        found = d.keys(stems = ['2'])
+        self.assertEqual(1, len(found))
+        for key1, key2 in zip(expected, found):
+            self.assertEqual(key1, key2)
+            self.assertIn(key1, found)
 
     def test_values(self):
         d = starsmashertools.helpers.nesteddict.NestedDict({
@@ -97,6 +113,27 @@ class TestNestedDict(basetest.BaseTest):
         self.assertEqual(len(expected), len(found))
         for key, val1, val2 in zip(d.keys(), expected, found):
             self.assertEqual(val1, val2, msg = 'key = %s: expected = %s, found = %s' % (key, val1, val2))
+            self.assertIn(val1, found)
+
+        
+        expected = [
+            {'1ai': 1, '1aii': 2}, # d['1','1a']
+            1, # d['1','1a','1ai']
+            2, # d['1','1a','1aii']
+        ]
+        found = d.values(stems = [('1', '1a')])
+        self.assertEqual(len(expected), len(found))
+        for key, val1, val2 in zip(d.keys(), expected, found):
+            self.assertEqual(val1, val2, msg = 'key = %s: expected = %s, found = %s' % (key, val1, val2))
+            self.assertIn(val1, found)
+
+        expected = [None]
+        found = d.values(stems = ['2'])
+        self.assertEqual(1, len(found))
+        for key, val1, val2 in zip(d.keys(), expected, found):
+            self.assertEqual(val1, val2, msg = 'key = %s: expected = %s, found = %s' % (key, val1, val2))
+            self.assertIn(val1, found)
+
 
     def test_items(self):
         d = starsmashertools.helpers.nesteddict.NestedDict({
@@ -126,6 +163,25 @@ class TestNestedDict(basetest.BaseTest):
         self.assertEqual(len(expected), len(found))
         for item1, item2 in zip(expected, found):
             self.assertEqual(item1, item2)
+            self.assertIn(item1, found)
+
+        expected = [
+            (('1','1a'), {'1ai': 1, '1aii': 2}), # d['1','1a']
+            (('1','1a','1ai'), 1), # d['1','1a','1ai']
+            (('1','1a','1aii'),2), # d['1','1a','1aii']
+        ]
+        found = d.items(stems = [('1','1a')])
+        self.assertEqual(len(expected), len(found))
+        for item1, item2 in zip(expected, found):
+            self.assertEqual(item1, item2)
+            self.assertIn(item1, found)
+
+        expected = [('2', None)]
+        found = d.items(stems = ['2'])
+        self.assertEqual(1, len(found))
+        for item1, item2 in zip(expected, found):
+            self.assertEqual(item1, item2)
+            self.assertIn(item1, found)
 
     def test_branches(self):
         d = starsmashertools.helpers.nesteddict.NestedDict({
@@ -146,7 +202,69 @@ class TestNestedDict(basetest.BaseTest):
         self.assertEqual(len(expected), len(branches))
         for exp, branch in zip(expected, branches):
             self.assertEqual(exp, branch)
+            self.assertIn(exp, branches)
 
+        expected = [('1','1a','1ai'), ('1','1a','1aii')]
+        branches = d.branches(stems = [('1', '1a')])
+        #for branch in branches: print(branch)
+        self.assertEqual(len(expected), len(branches))
+        for exp, branch in zip(expected, branches):
+            self.assertEqual(exp, branch)
+            self.assertIn(exp, branches)
+
+        expected = [('1','1b','1bi')]
+        branches = d.branches(stems = [('1', '1b')])
+        self.assertEqual(len(expected), len(branches))
+        for exp, branch in zip(expected, branches):
+            self.assertEqual(exp, branch)
+            self.assertIn(exp, branches)
+
+        expected = ['2']
+        branches = d.branches(stems = ['2'])
+        self.assertEqual(len(expected), len(branches))
+        for exp, branch in zip(expected, branches):
+            self.assertEqual(exp, branch)
+            self.assertIn(exp, branches)
+    
+    def test_stems(self):
+        d = starsmashertools.helpers.nesteddict.NestedDict({
+            '1' : {
+                '1a' : {
+                    '1ai'  : 1,
+                    '1aii' : 2,
+                    '1aiii' : {
+                        '1aiii1' : 1,
+                    },
+                },
+                '1b' : {
+                    '1bi' : 3,
+                },
+            },
+            '2' : None,
+        })
+        expected = ['1', ('1','1a'), ('1','1a','1aiii'), ('1','1b')]
+        stems = d.stems()
+        self.assertEqual(len(expected), len(stems))
+        for exp, stem in zip(expected, stems):
+            self.assertEqual(exp, stem)
+            self.assertIn(exp, stems)
+
+        expected = [('1', '1a'), ('1', '1a', '1aiii')]
+        stems = d.stems(stems = [('1', '1a')])
+        self.assertEqual(len(expected), len(stems))
+        for exp, stem in zip(expected, stems):
+            self.assertEqual(exp, stem)
+            self.assertIn(exp, stems)
+
+        self.assertEqual(
+            ['1', ('1', '1a'), ('1', '1a', '1aiii')],
+            list(d.get_stems(('1','1a','1aiii','1aiii1'))),
+        )
+        # stems can be branches, branches can't be stems
+        stems = d.stems()
+        for branch in d.branches():
+            self.assertNotIn(branch, stems)
+        
     def test_leaves(self):
         d = starsmashertools.helpers.nesteddict.NestedDict({
             '1' : {
@@ -166,6 +284,14 @@ class TestNestedDict(basetest.BaseTest):
         self.assertEqual(len(expected), len(leaves))
         for exp, leaf in zip(expected, leaves):
             self.assertEqual(exp, leaf)
+            self.assertIn(exp, leaves)
+
+        expected = [1, 2]
+        leaves = d.leaves(stems = [('1', '1a')])
+        self.assertEqual(len(expected), len(leaves))
+        for exp, leaf in zip(expected, leaves):
+            self.assertEqual(exp, leaf)
+            self.assertIn(exp, leaves)
 
     def test_flowers(self):
         d = starsmashertools.helpers.nesteddict.NestedDict({
@@ -192,6 +318,19 @@ class TestNestedDict(basetest.BaseTest):
         self.assertEqual(len(expected), len(found))
         for item1, item2 in zip(expected, found):
             self.assertEqual(item1, item2)
+            self.assertIn(item1, found)
+
+
+        expected = [
+            (('1','1a','1ai'), 1), # d['1','1a','1ai']
+            (('1','1a','1aii'),2), # d['1','1a','1aii']
+        ]
+
+        found = d.flowers(stems = [('1', '1a')])
+        self.assertEqual(len(expected), len(found))
+        for item1, item2 in zip(expected, found):
+            self.assertEqual(item1, item2)
+            self.assertIn(item1, found)
             
     def test_list(self):
         d = starsmashertools.helpers.nesteddict.NestedDict({'1':{'1a':1}})
@@ -221,18 +360,23 @@ class TestNestedDict(basetest.BaseTest):
         })
 
         self.assertIn('1', d)
+        self.assertIn(('1',), d)
         self.assertIn(('1','1a'), d)
         self.assertIn(('1','1a','1ai'), d)
         self.assertIn(('1','1a','1aii'),d)
         self.assertIn(('1','1b'), d)
         self.assertIn(('1','1b','1bi'), d)
         self.assertIn('2', d)
-
-        self.assertNotIn(('1','1a','1aiii'), d)
-        self.assertNotIn(('1','1c'), d)
-        self.assertNotIn(('2',), d)
+        self.assertIn(('2',), d)
         self.assertNotIn(('2', None), d)
-        self.assertNotIn('3', d)
+        
+        branches = d.branches()
+        self.assertIn(('1','1a','1ai'), branches)
+        self.assertIn(('1','1a','1aii'),branches)
+        self.assertIn(('1','1b','1bi'), branches)
+        self.assertIn('2', branches)
+        self.assertIn(('2',), branches)
+        self.assertNotIn(('2', None), branches)
 
     def test_iter(self):
         d = starsmashertools.helpers.nesteddict.NestedDict({
@@ -608,8 +752,14 @@ class TestNestedDict(basetest.BaseTest):
         self.assertEqual(d['1','1a','1ai'], 1)
         self.assertEqual(d['1','1a','1aii'], 2)
         self.assertEqual(d['1','1b','1bi'], 3)
-        
-        
+
+    def test_is_child_branch(self):
+        d = starsmashertools.helpers.nesteddict.NestedDict
+        self.assertTrue(d.is_child_branch(('1', '1a', '1ai'), ('1',)))
+        self.assertTrue(d.is_child_branch(('1', '1a', '1ai'), '1'))
+        self.assertFalse(d.is_child_branch('2', '2'))
+        self.assertFalse(d.is_child_branch('1', ('1', '1a')))
+        self.assertFalse(d.is_child_branch(('1','1a'), ('1','1a')))
 
 class TestLoader(unittest.TestLoader, object):
     def getTestCaseNames(self, *args, **kwargs):
@@ -618,6 +768,7 @@ class TestLoader(unittest.TestLoader, object):
             'test_values',
             'test_items',
             'test_branches',
+            'test_stems',
             'test_leaves',
             'test_flowers',
             'test_getitem',
@@ -641,6 +792,7 @@ class TestLoader(unittest.TestLoader, object):
             'test_or_ior',
             'test_pickle',
             'test_convert_to_dict',
+            'test_is_child_branch',
         ]
 
 if __name__ == "__main__":
