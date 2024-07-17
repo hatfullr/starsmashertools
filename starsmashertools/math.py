@@ -484,7 +484,7 @@ class EffGravPot(object):
         :meth:`~.get`
         :meth:`numpy.gradient`
         """
-        return np.gradient(self.get_potential(*args, **kwargs))
+        return np.gradient(self.get(*args, **kwargs))
 
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
