@@ -36,7 +36,18 @@ class Table(object):
 
 
 class TEOS(Table, object):
-    def __init__(self, *args, verbose = False, **kwargs):
+    r"""
+    The tabulated equation of state (TEOS) used in a StarSmasher simulation. Use
+    :meth:`~.interpolate` to obtain values from the TEOS. Note that this class
+    is equipped only to read a specific table format. If you are experiencing
+    troubles with your table's format, you may need to create your own file 
+    reading protocol, likely by creating a subclass. Implement your subclass by
+    creating an instance of your subclass and then setting the ``_teos`` 
+    attribute of your simulation to that instance. The next time you access the
+    ``teos`` attribute, it should return your subclass instance.
+    """
+    @api
+    def __init__(self, *args, verbose : bool = False, **kwargs):
         self.verbose = verbose
         self.info = {}
         self._interpolators = {}
@@ -109,12 +120,27 @@ class TEOS(Table, object):
         return self._interpolators[which]
         
     @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
     def interpolate(
             self,
             rho : float | list | tuple | np.ndarray,
             u : float | list | tuple | np.ndarray,
             which : str | int,
     ):
+        r"""
+        Parameters
+        ----------
+        rho : float, list, tuple, :class:`numpy.ndarray`
+            Density values for interpolation, in cgs units.
+
+        u : float, list, tuple, :class:`numpy.ndarray`
+            Specific internal energy values for interpolation, in cgs units.
+
+        which : str, int
+            The value to obtain by interpolation. If a :py:class:`str` is given,
+            it must correspond to one of the table column headers. If a
+            :py:class:`int` is given it is interpreted as a column number.
+        """
         import starsmashertools.lib.interpolation
         
         if isinstance(which, int): which = self._header_order[which]

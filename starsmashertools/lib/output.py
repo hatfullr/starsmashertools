@@ -18,24 +18,9 @@ except ImportError:
 
 @starsmashertools.preferences.use
 class Output(dict, object):
-    """
+    r"""
     A container for StarSmasher binary output data, usually appearing as
     ``out*.sph`` in simulation directories.
-
-    Parameters
-    ----------
-    path : str
-        The file path to a ``StarSmasher`` binary output data file.
-
-    simulation : :class:`~.simulation.Simulation`
-        The :class:`~.simulation.Simulation` object that this output file 
-        belongs to.
-
-    Other Parameters
-    ----------------
-    mode : str, default = 'raw'
-        Affects the units of the data. Deprecated.
-    
     """
     
     modes = [
@@ -49,6 +34,21 @@ class Output(dict, object):
             simulation,
             mode='raw',
     ):
+        r"""
+        Parameters
+        ----------
+        path : str
+            The file path to a ``StarSmasher`` binary output data file.
+        
+        simulation : :class:`~.simulation.Simulation`
+            The :class:`~.simulation.Simulation` object that this output file 
+            belongs to.
+        
+        Other Parameters
+        ----------------
+        mode : str, default = 'raw'
+            Affects the units of the data. Deprecated.
+        """
         import starsmashertools.helpers.string
         
         if mode not in Output.modes:
@@ -127,6 +127,10 @@ class Output(dict, object):
 
     @api
     def __getitem__(self, item):
+        """
+        If the file has not yet been read, read it. Then return the requested
+        item.
+        """
         if item in self.keys(ensure_read=False):
             if item in self._cache.keys():
                 return self.from_cache(item)
@@ -208,13 +212,13 @@ class Output(dict, object):
         return super(Output, self).items(*args, **kwargs)
     
     @api
-    def copy_from(self, obj):
-        self._mask = copy.deepcopy(obj._mask)
+    def copy_from(self, output : 'starsmashertools.lib.output.Output'):
+        self._mask = copy.deepcopy(output._mask)
         
         for key in self._isRead.keys():
             self._isRead[key] = True
         
-        for key, val in obj.items():
+        for key, val in output.items():
             self[key] = copy.deepcopy(val)
     
     def read(self, return_headers=True, return_data=True, **kwargs):
@@ -254,7 +258,7 @@ class Output(dict, object):
         if read_data: self._isRead['data'] = True
     
     @api
-    def from_cache(self, key):
+    def from_cache(self, key : str):
         if key in self._cache.keys():
             if callable(self._cache[key]):
                 self._cache[key] = self._cache[key](self)

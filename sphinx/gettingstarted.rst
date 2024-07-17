@@ -19,7 +19,7 @@ Then run the install script:
 
    ./install
 
-If you don't have an internet connection (how did you get here?) you can use the offline installer:
+If you don't have an internet connection, you can try the offline installer:
 
 .. code-block:: console
 
@@ -29,7 +29,7 @@ If you don't have an internet connection (how did you get here?) you can use the
 Simulation Directories
 ----------------------
 
-To use `starsmashertools`, your `StarSmasher` simulations must be structured at a bare minimum in the following way:
+To use ``starsmashertools``, your ``StarSmasher`` simulations must be structured at a bare minimum in the following way:
 
 .. code-block::
 
@@ -40,7 +40,7 @@ To use `starsmashertools`, your `StarSmasher` simulations must be structured at 
    |       |-- output.f
    |       |-- starsmasher.h
 
-Other files may also be required depending on if the simulation is a stellar relaxation (`nrelax=1`), a binary scanning run (`nrelax=2` or `nrelax=3`), or a dynamical calculation (`nrelax=0`). Here is an example directory structure of a generic `StarSmasher` simulation that has been run and produced 5 output files:
+Other files may also be required depending on if the simulation is a stellar relaxation (``nrelax=1``), a binary scanning run (``nrelax=2`` or ``nrelax=3``), or a dynamical calculation (``nrelax=0``). Here is an example directory structure of a generic ``StarSmasher`` simulation that has been run and produced 5 output files:
 
 .. code-block::
    :caption: Simulation directory structure
@@ -62,91 +62,78 @@ Other files may also be required depending on if the simulation is a stellar rel
    |       |-- starsmasher.h
    |       |-- ...
    
-
-Using the CLI
--------------
-
-The Command Line Interface (CLI) programs included with `starsmashertools` make analyzing `StarSmasher` simulation a breeze. Inside the simulation directory we run the following command:
-
-.. code-block:: console
-
-   starsmashertools
-
-This will launch a CLI application which might look something like this:
-
-.. code-block:: console
-
-    Main Menu
-
-    Directory = .../simulation-directory
-
-    Choose an option
-         0) get_children
-         1) get_n
-         2) get_final_radius
-
-   q) quit
-   : 
-
+    
 
 Using the API
 -------------
 
-For more granular control you can use `starsmashertools` as a module in any Python3 script:
+Here is an example run from a simulation directory, which happens to be a dynamical simulation:
 
 .. code-block:: python
-   :caption: Example API usage to get a list containing Output objects
 
-   import starsmashertools
-   simulation = starsmashertools.get_simulation('simulation-directory')
-   print(simulation)
-   print(simulation['nrelax'])
-
-.. code-block :: console
-   :caption: Console output
-	     
+   >>> import starsmashertools
+   >>> simulation = starsmashertools.get_simulation('.')
+   >>> simulation
    <starsmashertools.lib.dynamical.Dynamical object at 0x7f4744a9e740>
+   >>> simulation['nrelax']
    0
 
-Here `starsmashertools` has automatically detected the simulation as a dynamical calculation, and we can see that the `nrelax` input variable is `0` as expected. Inspecting the simulation outputs is simple:
+   
+Let's inspect the simulation's output files:
 	     
 .. code-block:: python
-   :caption: Simulation outputs
 
-   print(simulation.get_output())
-
-.. code-block:: console
-   :caption: Console output
-
+   >>> simulation.get_output()
    [Output('out0000.sph'), Output('out0001.sph'), Output('out0002.sph'), Output('out0003.sph'), Output('out0004.sph')]
 
-The output files in the simulation directory are stored as :py:meth:`~starsmashertools.lib.output.Output` objects, which function like Python dictionaries except their values cannot be modified and information is read from the files only after the first `__getitem__` request, such as `output['x']` to get the particle x positions:
+   
+An :class:`~starsmashertools.lib.output.Output` object functions like a :py:class:`dict` except information is read from the files only after the first :meth:`~starsmashertools.lib.output.Output.__getitem__` request, after which the dictionary is filled.
 
 .. code-block:: python
 
-   first = simulation.get_output(0)
-   print(first['x'])
-
-.. code-block :: console
-   :caption: Console output
-
+   >>> first = simulation.get_output(0)
+   >>> first['x']
    array([ 1.00787165e-17, -3.23741675e+00, -3.23741667e+00, ...,
         3.30216492e+00,  3.30216494e+00,  3.30216505e+00])
 
-Header information from the output files is also available, as well as special additional cached data which can be edited and ammended in the `starsmashertools.preferences` file located in `starsmashertools/starsmashertools/preferences.py` under `'Output'` in `'cache'`. A list of available keys can be found using the `keys()` method on an :py:meth:`~starsmashertools.lib.output.Output` object.
 
-For accelerated file reading when dealing with many output files we suggest you use an :py:meth:`~starsmashertools.lib.output.OutputIterator`:
+Header information from the output files is also available, as well as special additional cached data which can be edited and ammended in your preferences file ``starsmashertools/data/user/preferences.py``\. If you do not have a preferences file yet, copy the one from ``starsmashertools/data/defaults/preferences.py``\.
+
+If your use case involves long calculations, you can defer the reading of output files to a separate process to speed up your code:
 
 .. code-block:: python
-   :caption: Example API usage to get an OutputIterator
 
-   import starsmashertools
-   simulation = starsmashertools.get_simulation('simulation-directory')
-   print(simulation.get_output_iterator())
-
-.. code-block:: console
-   :caption: Console output
-   
+   >>> simulation.get_output_iterator()
    OutputIterator('out0000.sph' ... 'out0004.sph')
 
-An OutputIterator "reads ahead" asynchronously to prepare output objects in the background while your code runs, which can be helpful for speeding up slow analysis tasks. See the :py:meth:`~starsmashertools.lib.output.OutputIterator` and :py:meth:`~starsmashertools.lib.output.Output` classes for more details.
+See the :class:`~starsmashertools.lib.output.OutputIterator` and :class:`~starsmashertools.lib.output.Output` classes for more details.
+
+
+Using the CLI
+-------------
+
+There are some Command Line Interface (CLI) programs included with ``starsmashertools``. Inside a simulation directory, run the ``starsmashertools`` command, which will launch a CLI application that looks like:
+
+.. code-block:: console
+
+     Main Menu
+
+     Directory = [snipped]
+
+     Choose an option
+          0) Set children (set_children)
+          1) Show children (get_children)
+          2) Show output files (get_output)
+          3) Plot energies (plot_energy)
+          4) Plot animation (plot_animation)
+          5) Concatenate simulations (join)
+          6) Detach concatenated simulations (split)
+          7) Show concatenated simulations (show_joined_simulations)
+          8) get_relaxations
+          9) get_binary
+         10) get_plunge_time
+
+    q) quit
+    : 
+
+Sometimes the CLI works well, and sometimes it doesn't. Sorry about that. It's always safe to fallback to using iPython in the terminal.

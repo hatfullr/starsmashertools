@@ -96,11 +96,15 @@ prefs = {
         'flux' : {
             'FluxFinder' : {
                 # Image
+                'length_scale' : 1.,
                 'resolution' : [400, 400],
+                'extent' : None,
+                'extent_limits' : None,
                 'theta' : 0, # Viewing angle (polar)
                 'phi' : 0,   # Viewing angle (azimuthal)
                 'fluffy' : False,
                 'rays' : True,
+                'weighted_averages' : [],
 
                 # Limits
                 # Flux contributions are not considered beyond this optical
@@ -108,6 +112,7 @@ prefs = {
                 'tau_s' : 20.,
                 # Particles with tau < tau_skip are ignored entirely.
                 'tau_skip' : 1.e-5,
+                'flux_limit_min' : None,
                 
                 # Dust
                 # Give a value in cm^2/g, or None to turn off artificial
@@ -123,8 +128,6 @@ prefs = {
                 'lmax' : 3000, # nm, stand for 1000K, no resolving below
                 'dl_il' : 3.,
                 'dl' : 10, # nm resolution of boxes
-                'nbox' : 10,
-                'nboxh' : 5,
                 'l_range' : [10, 3000],
                 'factor1' : 1.191045e-05, # for Plank function integrations
                 'factor2' : 1.438728e+00,

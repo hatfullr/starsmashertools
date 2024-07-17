@@ -170,7 +170,7 @@ class _BaseKernel(object):
         r"""
         Calculate the scaled value of the kernel function :math:`W(x,h)h^3` at a
         given distance ``x`` and smoothing length ``h``\. If the function is
-        integrated, returns :math:`h^2 \\int W(x,h) dx` instead.
+        integrated, returns :math:`h^2 \int W(x,h) dx` instead.
         
         Parameters
         ----------
@@ -282,11 +282,11 @@ class CubicSplineKernel(_BaseKernel, object):
     .. math::
         :nowrap:
 
-        W(x,h) = \\frac{1}{\\pi h^3} \\begin{cases}
-            1 - \\frac{3}{2}q^2 + \\frac{3}{4}q^3 & \\text{if\\ }0\\leq \\frac{x}{h} \\leq 1 \\
-            \\frac{1}{4}(2 - q)^3 & \\text{if\\ } 1\\leq \\frac{x}{h} \\leq 2 \\
-            0 & \\text{otherwise}
-        \\end{cases}
+        W(x,h) = \frac{1}{\pi h^3} \begin{cases}
+            1 - \frac{3}{2}q^2 + \frac{3}{4}q^3 & \text{if\ }0\leq \frac{x}{h} \leq 1 \
+            \frac{1}{4}(2 - q)^3 & \text{if\ } 1\leq \frac{x}{h} \leq 2 \
+            0 & \text{otherwise}
+        \end{cases}
 
     Where :math:`q = x/2h`\. The general case can be written for any compact
     support :math:`C`\.
@@ -294,11 +294,11 @@ class CubicSplineKernel(_BaseKernel, object):
     .. math::
         :nowrap:
     
-        W(x,h) = \\frac{1}{\\pi h^3} \\begin{cases}
-            6 q^2 (q - 1) + 1 & \\text{if\\ }0\\leq q \\leq \\frac{1}{2} \\
-            2(1 - q)^3 & \\text{if\\ } 0.5\\leq q \\leq 1 \\
-            0 & \\text{otherwise}
-        \\end{cases}
+        W(x,h) = \frac{1}{\pi h^3} \begin{cases}
+            6 q^2 (q - 1) + 1 & \text{if\ }0\leq q \leq \frac{1}{2} \
+            2(1 - q)^3 & \text{if\ } 0.5\leq q \leq 1 \
+            0 & \text{otherwise}
+        \end{cases}
 
     where now :math:`q = x / (Ch)`\.
     """

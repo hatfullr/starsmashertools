@@ -4,9 +4,10 @@ from starsmashertools.preferences import Pref
 import math
 import numpy as np
 import starsmashertools.lib.output
+import starsmashertools.lib.units
+from starsmashertools.lib.units import constants
 from starsmashertools.helpers.apidecorator import api
 import starsmashertools.helpers.argumentenforcer
-from starsmashertools.lib.units import constants
 import starsmashertools.helpers.nesteddict
 import copy
 import warnings
@@ -27,40 +28,52 @@ except ImportError:
 
 @starsmashertools.preferences.use
 class FluxFinder(object):
+    r"""
+    This class is used to calculate flux images for StarSmasher simulations in
+    Hatfull et al. (2024) that use radiative cooling.
+        
+    Attributes
+    ----------
+    result : :class:`~.FluxResult`
+        Contains information about the images, spectrum, and more. It is filled
+        with values only after calling :meth:`~.get`\.
+    """
+    
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def __init__(
             self,
             output : starsmashertools.lib.output.Output,
-            weighted_averages : list | tuple = [],
-
-            units : dict | type(None) = None,
-
+            
             # Image
-            resolution : list | tuple = Pref('resolution', (400, 400)),
-            extent : list | tuple | type(None) = None,
-            extent_limits : list | tuple | type(None) = None,
-            theta : int | float = Pref('theta', 0.),
-            phi : int | float = Pref('phi', 0.),
+            length_scale : float | int = Pref('length_scale', 1.),
+            resolution : list | tuple | np.ndarray = Pref('resolution', (400, 400)),
+            extent : list | tuple | np.ndarray | type(None) = Pref('extent', None),
+            extent_limits : list | tuple | np.ndarray | type(None) = Pref('extent_limits', None),
+            theta : float | int = Pref('theta', 0.),
+            phi : float | int = Pref('phi', 0.),
             fluffy : bool = Pref('fluffy', False),
             rays : bool = Pref('rays', True),
+            weighted_averages : list | tuple = Pref('weighted_averages', []),
+
+            # Limits
             tau_s : float | int = Pref('tau_s', 20.),
             tau_skip : float | int = Pref('tau_skip', 1.e-5),
+            flux_limit_min : float | int | type(None) = Pref('flux_limit_min', None),
+
+            # Dust
             dust_opacity : float | int | type(None) = Pref('dust_opacity', 1),
             dust_Trange : list | tuple | type(None) = Pref('dust_Trange', (100, 1000)),
-            flux_limit_min : int | float | type(None) = None,
 
             # Spectrum
             spectrum_size : int = Pref('spectrum_size', 1000),
-            lmax : int | float = Pref('lmax', 3000),
-            dl_il : int | float = Pref('dl_il', 3.),
-            dl : int | float = Pref('dl', 10),
-            nbox : int = Pref('nbox', 10),
-            nboxh : int = Pref('nboxh', 5),
+            lmax : float | int = Pref('lmax', 3000),
+            dl_il : float | int = Pref('dl_il', 3.),
+            dl : float | int = Pref('dl', 10),
             l_range : list | tuple = Pref('l_range', (10, 3000)),
-            factor1 : int | float = Pref('factor1', 1.191045e-05),
-            factor2 : int | float = Pref('factor2', 1.438728e+00),
-            filters : dict = Pref('filters', {}),
+            factor1 : float | int = Pref('factor1', 1.191045e-05),
+            factor2 : float | int = Pref('factor2', 1.438728e+00),
+            filters : dict = Pref('filters', {'V':[500,600], 'R':[590,730], 'I':[720,880]}),
 
             # Debugging
             verbose : bool = False,
@@ -70,6 +83,127 @@ class FluxFinder(object):
             test_particle : bool = False,
             ic : int = -1,
     ):
+        r"""
+        Parameters
+        ----------
+        output : :class:`~.lib.output.Output`
+            The StarSmasher output file to process. It must have all of the 
+            following keys:
+
+            * ``ntot``\: Total number of particles.
+            * ``t``\: Simulation time.
+            * ``x``\: Particle x positions.
+            * ``y``\: Particle y positions.
+            * ``z``\: Particle z positions.
+            * ``am``\: Particle masses.
+            * ``hp``\: Particle smoothing lengths. It is assumed that the kernel function used in the simulation had compact support 2h. 
+            * ``rho``\: Particle densities.
+            * ``u``\: Particle specific internal energies.
+            * ``temperatures``\: Particle temperature.
+            * ``popacity``\: Particle opacity.
+            * ``dEemergdt``\: :math:`dE_\mathrm{emerg}/dt` as in Equations (27) or (36)
+            * ``dEdiffdt``\: :math:`dE_\mathrm{diff}/dt` as in Equations (27) or (36)
+
+        Other Parameters
+        ----------------
+        length_scale : float, int, default = ``Pref('length_scale', None)``
+            The domain of the images will be in units of centimeters, divided by
+            ``length_scale``\.
+
+        resolution : list, tuple, :class:`numpy.ndarray`\, default = ``Pref('resolution', (400, 400))``
+            The resolution of the images.
+
+        extent : list, tuple, :class:`numpy.ndarray`\, default = ``Pref('extent', None)``
+            The physical domain of the image as ``[xmin,xmax,ymin,ymax]``. If 
+            `None`\, the domain will be set automatically to fit all particles.
+        
+        extent_limits : list, tuple, :class:`numpy.ndarray`\, default = ``Pref('extent_limits', None)``
+            If ``extent=None``\, the automatically determined extent will be
+            limited to extend no further than the values given in this array, of
+            content ``[xmin,xmax,ymin,ymax]``\. Any of the values can be 
+            `None`\, in which case the corresponding extent will fit to the edge
+            of the particles as normal.
+
+        theta : float, int, default = ``Pref('theta', 0.)``
+            The azimuthal viewing angle, equivalent to :math:`90^\circ-i`\, 
+            where :math:`i` is the inclination angle from the orbital plane. 
+            Sets ``xangle`` in :meth:`~.lib.output.Output.rotate`\.
+
+        phi : float, int, default = ``Pref('phi', 0.)``
+            The polar viewing angle. Sets ``zangle`` in 
+            :meth:`~.lib.output.Output.rotate`\.
+
+        fluffy : bool, default = ``Pref('fluffy', False)``
+            Images are usually generated by considering the particles as members
+            of the "dense" cooling regime in Hatfull et al. (2024). However, you
+            can have them considered inthe "fluffy" cooling regime instead by
+            setting ``fluffy=True``\. Doing so is not recommended.
+
+        rays : bool, default = ``Pref('rays', True)``
+            If ``True``\, the number of cooling rays by which a particle has 
+            undergone cooling is dynamically determined, and the flux values of
+            the particles are adjusted accordingly.
+
+        weighted_averages : list, tuple, default = []
+            Compute images of flux-weighted averages. The elements in this list
+            can either be str or an iterable array with the same length as the
+            number of particles. Strings are used as keys to obtain arrays from
+            the output file. The results are stored in 
+            ``('image', 'weighted_averages')`` in the :class:`~.FluxResult` and
+            corresponds with quantity :math:`H_\mathrm{cell}`\. Thus, to get the
+            value of :math:`\langle H_\mathrm{rad}\rangle`\, as in Equation 
+            (45), you must multiply by ``('image', 'flux')``\, get the sum, and
+            then divide that quantity by ``('image', 'flux_tot')``\.
+
+        tau_s : float, int, default = ``Pref('tau_s', 20.)``
+            For each individual image ray, when :math:`\tau_\mathrm{ray}` 
+            exceeds this value, no further flux contributions from particles 
+            deeper into the fluid are considered.
+        
+        tau_skip : float, int, default = ``Pref('tau_skip', 1.e-5)``
+            Particles with optical depth less than this value are ignored.
+
+        flux_limit_min : float, int, None, default = ``Pref('flux_limit_min', None)``
+            Particles with flux values less than this will be ignored. If 
+            `None`\, then no particles will be ignored based on their flux 
+            values.
+
+        dust_opacity : float, int, None, default = ``Pref('dust_opacity', 1.)``
+            The artificial dust opacity :math:`\kappa_\mathrm{dust}` in units of
+            :math:`\mathrm{cm}^2\,\mathrm{g}^{-1}`\. If `None` then artificial
+            dust will not be used.
+
+        dust_Trange : list, tuple, None, default = ``Pref('dust_Trange', (100, 1000))``
+            The temperature range within which particles will be assigned 
+            opacities equal to ``dust_opacity``\.
+
+        spectrum_size : int, default = ``Pref('spectrum_size', 1000)``
+            The length of the array of bins for the spectrum.
+        
+        lmax : float, int, default = ``Pref('lmax', 3000)``
+            In part sets the value of ``il_max`` in the spectrum, where 
+            ``il_max = math.flooat(lmax / dl_il)``\.
+        
+        dl_il : float, int, defualt = ``Pref('dl_il', 3.)``
+            In part sets the value of ``il_max`` in the spectrum, where 
+            ``il_max = math.flooat(lmax / dl_il)``\.
+        
+        dl : float, int, default = ``Pref('dl', 10)``
+            The size of the spectrum bins.
+
+        l_range : list, tuple, default = ``Pref('l_range', (10, 3000))``
+            The range of the spectrum.
+
+        factor1 : float, int, default = ``Pref('factor1', 1.191045e-05)``
+            A numerical factor used in the spectrum.
+
+        factor2 : float, int, default = ``Pref('factor2', 1.438728e+00)``
+            A numerical factor used in the spectrum.
+        
+        filters : dict, default = ``Pref('filters', {'V':[500,600], 'R':[590,730], 'I':[720,880]})``
+            Optical filter ranges in nanometers for the spectrum.
+        """
+        
         _kwargs = locals()
         _kwargs.pop('self')
         _kwargs.pop('output')
@@ -77,15 +211,22 @@ class FluxFinder(object):
         self.output = copy.deepcopy(output)
         del output
 
-        if self.output.simulation['ncooling'] not in [2, 3]:
-            raise NotImplementedError("FluxFinder can only be used on simulations which have input parameter 'ncooling' 2 or 3, not %d" % self.output.simulation['ncooling'])
-
-        if units is None:
-            units = {
-                'length' : self.output.simulation.units.length,
-            }
-        self.units = units
+        # Check that the output file has all the required information
+        keys = list(self.output.keys())
+        missing_keys = []
+        for key in ['ntot', 't', 'x', 'y', 'z', 'am', 'hp', 'rho', 'u', 'temperatures', 'popacity', 'dEemergdt', 'dEdiffdt']:
+            if key in keys: continue
+            missing_keys += [key]
+        if 'uraddot' not in keys:
+            if 'uraddotcool' not in keys and 'uraddotheat' not in keys:
+                missing_keys += ['uraddot OR (uraddotcool and uraddotheat)']
         
+        if missing_keys:
+            raise KeyError("Output file '%s' is missing required keys: %s" % (str(self.output), str(missing_keys)))
+
+        self.units = self.output.simulation.units
+        
+        self.length_scale = length_scale
         self.resolution = resolution
         self.extent = extent
         self.extent_limits = extent_limits
@@ -99,9 +240,6 @@ class FluxFinder(object):
         self.dust_Trange = dust_Trange
         self.flux_limit_min = flux_limit_min
         
-        self.nbox = nbox
-        self.nboxh = nboxh
-        
         self.verbose = verbose
         self.test_ray = test_ray
         self.itr = itr
@@ -112,7 +250,6 @@ class FluxFinder(object):
         # Set the viewing angle
         self.output.rotate(xangle = theta, zangle = phi)
         
-        self._tau = self.output['tau']
         self._rloc = np.full(self.output['ntot'], np.nan)
         
         self.spectrum = FluxFinder.Spectrum(
@@ -120,8 +257,6 @@ class FluxFinder(object):
             lmax,
             dl_il,
             dl,
-            nbox,
-            nboxh,
             l_range,
             factor1,
             factor2,
@@ -168,7 +303,12 @@ class FluxFinder(object):
         self._init_grid()
         self._init_particles()
 
+    @api
     def get(self):
+        """
+        Initialize values and process the images. Fills the ``result`` attribute
+        with values.
+        """
         import starsmashertools.lib.units
         
         self.initialize()
@@ -194,8 +334,7 @@ class FluxFinder(object):
         flux_tot = starsmashertools.lib.units.Unit(flux_tot, 'g/s*s*s')
         
         # Finish the ltot calculations
-        length = self.units.get('length', 1.)
-        cell_area = self.dx * self.dy * length**2
+        cell_area = self.dx * self.dy * self.units['x'] * self.units['y']
         ltot = 4 * cell_area * flux_tot
         
         self.spectrum.finalize()
@@ -214,7 +353,7 @@ class FluxFinder(object):
         self.result['spectrum','teff_min'] = self.spectrum.teff_min
         self.result['spectrum','teff_max'] = self.spectrum.teff_max
 
-        del area_br, surf_t, flux_tot, teff_aver, length, cell_area
+        del area_br, surf_t, flux_tot, teff_aver, cell_area
         del ltot, ltot_spectrum, l_spectrum
         gc.collect()
         
@@ -226,21 +365,24 @@ class FluxFinder(object):
         sigma_const = float(constants['sigmaSB'])
         a_const = float(constants['a'])
 
-        units = self.output.simulation.units
-
-        kappa = self.output['popacity'] * float(units['popacity'])
+        kappa = self.output['popacity'] * float(self.units['popacity'])
         if self.dust_opacity is not None:
             kappa = self._apply_dust(kappa)
 
-        # No heating
-        uraddotcool = self.output['uraddot'] * float(units['uraddot'])
-
-        # Heating
-        if self.output.simulation['ncooling'] == 3:
-            uraddotcool = self.output['uraddotcool'] * float(units['uraddotcool'])
+        # If the code version has 'uraddotheat' then it was written with heating
+        # considered. 
+        if 'uraddotheat' in self.output.keys():
+            if (self.output['uraddotheat'] == 0).all(): # No heating
+                uraddotcool = self.output['uraddot'] * float(self.units['uraddot'])
+            else: # Heating
+                uraddotcool = self.output['uraddotcool'] * float(self.units['uraddotcool'])
+        else:
+            # Otherwise, it's an earlier version of the code where only uraddot
+            # was considered and there was no heating
+            uraddotcool = self.output['uraddot'] * float(self.units['uraddot'])
         
-        uraddot_emerg = self.output['dEemergdt'] * float(units['dEemergdt'])
-        uraddot_diff = self.output['dEdiffdt'] * float(units['dEdiffdt'])
+        uraddot_emerg = self.output['dEemergdt'] * float(self.units['dEemergdt'])
+        uraddot_diff = self.output['dEdiffdt'] * float(self.units['dEdiffdt'])
         
         self._flux = np.zeros(self.output['ntot'], dtype = float)
         self._teff = np.zeros(self.output['ntot'], dtype = float)
@@ -256,20 +398,22 @@ class FluxFinder(object):
 
         self._rloc[cores] = 0
 
-        m = self.output['am'] * float(units['am'])
-        rho = copy.deepcopy(self.output['rho']) * float(units['rho'])
+        m = self.output['am'] * float(self.units['am'])
+        rho = copy.deepcopy(self.output['rho']) * float(self.units['rho'])
+
+        self._tau = np.zeros(output['ntot'])
         
         i = idx & ~cores
         # if uraddot_emerg[i] < uraddot_diff[i] and do_fluffy == 1:
         if self.fluffy and i.any():
-            self._rloc[i] = 2.*self.output['hp'][i] * float(units['hp'])
+            self._rloc[i] = 2.*self.output['hp'][i] * float(self.units['hp'])
             rho[i]=m[i]/pow(self._rloc[i],3.)
             self._tau[i]=rho[i]*kappa[i]*self._rloc[i]*4./3.
             flux_em[i] = uraddot_emerg[i]*0.25/(np.pi*self._rloc[i]**2)
             self._flux[i]=flux_em[i]
             flux_rad[i] = flux_em[i]
 
-        temp = self.output['temperatures'] * float(self.output.simulation.units['temperatures'])
+        temp = self.output['temperatures'] * float(self.units['temperatures'])
         i = ~idx & ~cores
         # else:
         if not self.fluffy or i.any():
@@ -319,7 +463,7 @@ class FluxFinder(object):
         if i.any():
             self._teff[i] = temp[i]
 
-        self._rloc /= float(self.units.get('length', 1.))
+        self._rloc /= self.length_scale
         
         self.images['flux'].particle_array = self._flux
 
@@ -334,21 +478,19 @@ class FluxFinder(object):
         self.result['particles','kappa'] = kappa
         self.result['particles','flux'] = self._flux
 
-        del c_speed, sigma_const, a_const, units, kappa, uraddotcool
+        del c_speed, sigma_const, a_const, kappa, uraddotcool
         del uraddot_emerg, uraddot_diff, flux_rad, flux_em, idx
         del cores, m, rho, i, temp
         gc.collect()
 
     def _init_grid(self):
         if self.extent is None:
-            units = self.output.simulation.units
-            
             # Get particle quantities in CGS
-            x = self.output['x'] * float(units['x'])
-            y = self.output['y'] * float(units['y'])
-            m = self.output['am'] * float(units['am'])
-            rho = self.output['rho'] * float(units['rho'])
-            h = self.output['hp'] * float(units['hp'])
+            x = self.output['x'] * float(self.units['x'])
+            y = self.output['y'] * float(self.units['y'])
+            m = self.output['am'] * float(self.units['am'])
+            rho = self.output['rho'] * float(self.units['rho'])
+            h = self.output['hp'] * float(self.units['hp'])
 
             delta = 2 * h
             if not self.fluffy:
@@ -357,11 +499,10 @@ class FluxFinder(object):
                     delta[~cores] = (0.75*m[~cores]/(np.pi*rho[~cores]))**0.33333
                 del cores
 
-            length = float(self.units.get('length', 1.))
-            xmin = np.amin(x - delta) / length
-            xmax = np.amax(x + delta) / length
-            ymin = np.amin(y - delta) / length
-            ymax = np.amax(y + delta) / length
+            xmin = np.amin(x - delta) / self.length_scale
+            xmax = np.amax(x + delta) / self.length_scale
+            ymin = np.amin(y - delta) / self.length_scale
+            ymax = np.amax(y + delta) / self.length_scale
 
             max_coord=max(abs(xmin),abs(xmax), abs(ymin), abs(ymax))
             xmax=max_coord
@@ -370,7 +511,7 @@ class FluxFinder(object):
             xmin=-max_coord
             self.extent = [xmin, xmax, ymin, ymax]
             if self.verbose: print("domain  max: %12.5f" %  max_coord)
-            del units, x, y, m, rho, h, max_coord, length, delta
+            del x, y, m, rho, h, max_coord, delta
         else:
             xmin, xmax, ymin, ymax = self.extent
 
@@ -398,15 +539,16 @@ class FluxFinder(object):
         del xmin, xmax, ymin, ymax
         gc.collect()
 
+    @api
     def find_dust(
             self,
             T : list | tuple | np.ndarray | type(None) = None,
             kappa : list | tuple | np.ndarray | type(None) = None,
     ):
         if T is None:
-            T = self.output['temperatures'] * float(self.output.simulation.units['temperatures'])
+            T = self.output['temperatures'] * float(self.units['temperatures'])
         if kappa is None:
-            kappa = self.output['popacity'] * float(self.output.simulation.units['popacity'])
+            kappa = self.output['popacity'] * float(self.units['popacity'])
         T = np.asarray(T)
         kappa = np.asarray(kappa)
         
@@ -430,12 +572,9 @@ class FluxFinder(object):
     def _process_images(self):
         xmin, xmax, ymin, ymax = self.extent
         
-        units = self.output.simulation.units
-        length = float(self.units.get('length', 1.))
-        
-        x = self.output['x'] * float(units['x']) / length
-        y = self.output['y'] * float(units['y']) / length
-        z = self.output['z'] * float(units['z']) / length
+        x = self.output['x'] * float(units['x']) / self.length_scale
+        y = self.output['y'] * float(units['y']) / self.length_scale
+        z = self.output['z'] * float(units['z']) / self.length_scale
 
         flux_from_contributors = np.zeros(self.output['ntot'], dtype = float)
 
@@ -673,7 +812,7 @@ class FluxFinder(object):
         self.result['image','ray_n'] = ray_n
         self.result['image','weighted_averages'] = [image.array for key, image in self.images.items() if 'weightedaverage' in key]
 
-        del xmin,xmax,ymin,ymax,units,length,x,y,z,flux_from_contributors
+        del xmin,xmax,ymin,ymax,units,x,y,z,flux_from_contributors
         del shape,ray_id,ray_n,surf_d,surf_id,grid_indices,ijloc_arr
         del rloc,ijminmax_arr,mask,mask1,dtype,array,tau_min,mask2
         del zipped,idx,contributors
@@ -684,20 +823,22 @@ class FluxFinder(object):
 
 
     class Spectrum(object):
+        @api
         def __init__(
                 self,
                 spectrum_size,
                 lmax,
                 dl_il,
                 dl,
-                nbox,
-                nboxh,
                 l_range,
                 factor1,
                 factor2,
                 filters,
                 ntot,
         ):
+            """
+            Holds spectrum information.
+            """
             self.dl = dl
             self.filters = filters
             self.factor1 = factor1
@@ -804,11 +945,15 @@ class FluxFinder(object):
             
 
     class Image(object):
+        @api
         def __init__(
                 self,
                 resolution : list | tuple | np.ndarray,
                 particle_array : list | tuple | np.ndarray | type(None) = None,
         ):
+            """
+            A class wrapper for individual images.
+            """
             self.resolution = resolution
             self.particle_array = np.asarray(particle_array)
             self.array = np.zeros(np.asarray(resolution) + 1)

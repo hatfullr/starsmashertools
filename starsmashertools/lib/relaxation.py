@@ -11,6 +11,9 @@ import numpy as np
 import copy
 
 class Relaxation(starsmashertools.lib.simulation.Simulation, object):
+    """
+    A StarSmasher stellar relaxation, characterized by ``nrelax=1``\.
+    """
     def __init__(self, *args, **kwargs):
         super(Relaxation, self).__init__(*args, **kwargs)
         self._isPolytrope = None
@@ -29,6 +32,10 @@ class Relaxation(starsmashertools.lib.simulation.Simulation, object):
 
     @api
     def get_profilefile(self):
+        """
+        Returns the path to the stellar profile from which this relaxation was
+        created, as given by the value of ``profilefile`` in the sph.input file.
+        """
         return starsmashertools.helpers.path.join(self.directory, self['profilefile'])
 
     @property
@@ -101,7 +108,7 @@ class Relaxation(starsmashertools.lib.simulation.Simulation, object):
     def get_final_extents(self, cli : bool = False):
         """
         Returns the results of :meth:`~.lib.output.Output.get_extents` with
-        keyword ``radial = True``\.
+        keyword ``radial = True`` for the final output file in this simulation.
         """
         output = self.get_output(-1)
         extents = output.get_extents(radial = True)
@@ -205,8 +212,11 @@ class Relaxation(starsmashertools.lib.simulation.Simulation, object):
     
 
     class Profile(dict, object):
+        r"""
+        A stellar profile from which a relaxation originated.
+        """
         @api
-        def __init__(self, path, readonly=True):
+        def __init__(self, path : str, readonly : bool = True):
             self.path = path
             self.readonly = readonly
             self._initialized = False

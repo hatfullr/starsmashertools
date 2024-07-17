@@ -34,7 +34,6 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
             self._src = starsmashertools.helpers.path.get_src(self.directory, throw_error=True)
         return self._src
 
-    @api
     def __getitem__(self, item, **kwargs):
         if item not in list(self.keys()) and not self._initialized: self.initialize()
         return super(Input, self).__getitem__(item, **kwargs)

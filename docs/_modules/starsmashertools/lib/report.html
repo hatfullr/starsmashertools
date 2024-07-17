@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>starsmashertools.lib.report &mdash; starsmashertools 14.12.0 documentation</title>
+  <title>starsmashertools.lib.report &mdash; starsmashertools</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=19f00094" />
 
@@ -45,28 +45,15 @@
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../index.html">Home</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../gettingstarted.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../index.html">Getting Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../cliprograms.html">CLI Programs</a></li>
 </ul>
+<p class="caption" role="heading"><span class="caption-text">API Documentation</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.helpers.file.html">starsmashertools.helpers.file</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.archive.html">starsmashertools.lib.archive</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.binary.html">starsmashertools.lib.binary</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.dynamical.html">starsmashertools.lib.dynamical</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.energyfile.html">starsmashertools.lib.energyfile</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.flux.html">starsmashertools.lib.flux</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.input.html">starsmashertools.lib.input</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.logfile.html">starsmashertools.lib.logfile</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.output.html">starsmashertools.lib.output</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.ray.html">starsmashertools.lib.ray</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.relaxation.html">starsmashertools.lib.relaxation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.report.html">starsmashertools.lib.report</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.simulation.html">starsmashertools.lib.simulation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.units.html">starsmashertools.lib.units</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.math.html">starsmashertools.math</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.mpl.artists.html">starsmashertools.mpl.artists</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.mpl.figure.html">starsmashertools.mpl.figure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../starsmashertools.helpers.html">helpers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../starsmashertools.lib.html">lib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../starsmashertools.math.html">math</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../starsmashertools.mpl.html">mpl</a></li>
 </ul>
 
         </div>
@@ -108,7 +95,7 @@
 <span class="kn">import</span> <span class="nn">inspect</span>
 
 <div class="viewcode-block" id="Report">
-<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.report.html#starsmashertools.lib.report.Report">[docs]</a>
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.report.html#starsmashertools.lib.report.Report">[docs]</a>
 <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">preferences</span><span class="o">.</span><span class="n">use</span>
 <span class="k">class</span> <span class="nc">Report</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -116,7 +103,7 @@
 <span class="sd">    provided text formatting.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 <div class="viewcode-block" id="Report.__init__">
-<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.report.html#starsmashertools.lib.report.Report.__init__">[docs]</a>
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.report.html#starsmashertools.lib.report.Report.__init__">[docs]</a>
     <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
@@ -332,7 +319,7 @@
                 <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span> <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
     
 <div class="viewcode-block" id="Report.set_row">
-<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.report.html#starsmashertools.lib.report.Report.set_row">[docs]</a>
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.report.html#starsmashertools.lib.report.Report.set_row">[docs]</a>
     <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="nf">set_row</span><span class="p">(</span>
@@ -354,7 +341,7 @@
 
     
 <div class="viewcode-block" id="Report.add_row">
-<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.report.html#starsmashertools.lib.report.Report.add_row">[docs]</a>
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.report.html#starsmashertools.lib.report.Report.add_row">[docs]</a>
     <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="nf">add_row</span><span class="p">(</span>
@@ -369,7 +356,7 @@
 
 
 <div class="viewcode-block" id="Report.remove_row">
-<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.report.html#starsmashertools.lib.report.Report.remove_row">[docs]</a>
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.report.html#starsmashertools.lib.report.Report.remove_row">[docs]</a>
     <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="nf">remove_row</span><span class="p">(</span>
@@ -381,7 +368,7 @@
 
 
 <div class="viewcode-block" id="Report.set_column">
-<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.report.html#starsmashertools.lib.report.Report.set_column">[docs]</a>
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.report.html#starsmashertools.lib.report.Report.set_column">[docs]</a>
     <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="nf">set_column</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">header_string</span> <span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
@@ -398,7 +385,7 @@
 
     
 <div class="viewcode-block" id="Report.add_column">
-<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.report.html#starsmashertools.lib.report.Report.add_column">[docs]</a>
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.report.html#starsmashertools.lib.report.Report.add_column">[docs]</a>
     <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="nf">add_column</span><span class="p">(</span>
@@ -424,7 +411,7 @@
 
 
 <div class="viewcode-block" id="Report.remove_column">
-<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.report.html#starsmashertools.lib.report.Report.remove_column">[docs]</a>
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.report.html#starsmashertools.lib.report.Report.remove_column">[docs]</a>
     <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="nf">remove_column</span><span class="p">(</span>
@@ -443,7 +430,7 @@
 
         
 <div class="viewcode-block" id="Report.save">
-<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.report.html#starsmashertools.lib.report.Report.save">[docs]</a>
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.report.html#starsmashertools.lib.report.Report.save">[docs]</a>
     <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="nf">save</span><span class="p">(</span>
@@ -466,7 +453,7 @@
 
 
 <div class="viewcode-block" id="Report.load">
-<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.report.html#starsmashertools.lib.report.Report.load">[docs]</a>
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.report.html#starsmashertools.lib.report.Report.load">[docs]</a>
     <span class="nd">@staticmethod</span>
     <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
     <span class="nd">@api</span>
@@ -510,7 +497,13 @@
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>  
+
+  <style>
+         .wy-nav-content { max-width: none; }
+  </style>
+
+
 
 </body>
 </html>

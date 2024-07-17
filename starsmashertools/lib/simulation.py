@@ -27,12 +27,58 @@ except ImportError:
 
 @starsmashertools.preferences.use
 class Simulation(object):
+    """
+    The base class for handling StarSmasher simulations.
+
+    Attributes
+    ----------
+    compressed : bool
+        ``True`` if the simulation was compressed using :meth:`~.compress`\,
+        ``False`` otherwise.
+
+    directory : str
+        The simulation directory.
+    
+    input : :class:`~.input.Input`
+        The simulation inputs as read from the ``sph.input`` file in the 
+        simulation directory.
+
+    isBinary : bool
+        ``True`` if the simulation is a :class:`~.binary.Binary`\, ``False``
+        otherwise.
+
+    isDynamical : bool
+        ``True`` if the simulation is a :class:`~.dynamical.Dynamical`\, 
+        ``False`` otherwise.
+
+    isRelaxation : bool
+        ``True`` if the simulation is a :class:`~.relaxation.Relaxation`\, 
+        ``False`` otherwise.
+
+    joined_simulations : list
+        The simulations which have been joined to this one, such that queries
+        for the output files from this simulation may include output files from
+        the joined simulations.
+
+    teos : :class:`~.table.TEOS`
+        If the simulation used a tabulated equation of state (TEOS), it can be
+        accessed using this class property.
+    
+    units : :class:`~.units.Units`
+        The units which the simulation used at runtime.
+    """
     ############################################################################
     # private attributes
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def __init__(self, directory : str):
+        """
+        Parameters
+        ----------
+        directory : str
+            The simulation directory.
+        """
         import starsmashertools.lib.input
         import starsmashertools.lib.output
         import starsmashertools.helpers.path
@@ -70,7 +116,7 @@ class Simulation(object):
 
     def __reduce__(self): # For pickling
         return (self.__class__, (self.directory,))
-    
+
     @property
     def joined_simulations(self):
         import starsmashertools.helpers.path
@@ -129,6 +175,13 @@ class Simulation(object):
     
     @api
     def __eq__(self, other):
+        """
+        Returns
+        -------
+        bool
+            ``True`` if the given object is a :class:`~.Simulation` and has
+            the same ``directory``\. Otherwise, ``False``\.
+        """
         # Check if the basenames are the same, so that e.g. pdc.json
         # files can work on different file systems
         import starsmashertools.helpers.path
@@ -137,7 +190,11 @@ class Simulation(object):
         return starsmashertools.helpers.path.samefile(self.directory, other.directory)
 
     @api
-    def __getitem__(self, key): return self.input[key]
+    def __getitem__(self, key):
+        """
+        Obtain a key value from :attr:`~.input`\.
+        """
+        return self.input[key]
 
     @api
     def __contains__(self, item):

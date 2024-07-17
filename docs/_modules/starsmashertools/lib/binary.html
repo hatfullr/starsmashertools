@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>starsmashertools.lib.binary &mdash; starsmashertools 14.12.0 documentation</title>
+  <title>starsmashertools.lib.binary &mdash; starsmashertools</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=19f00094" />
 
@@ -45,28 +45,15 @@
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../index.html">Home</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../gettingstarted.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../index.html">Getting Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../cliprograms.html">CLI Programs</a></li>
 </ul>
+<p class="caption" role="heading"><span class="caption-text">API Documentation</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.helpers.file.html">starsmashertools.helpers.file</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.archive.html">starsmashertools.lib.archive</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.binary.html">starsmashertools.lib.binary</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.dynamical.html">starsmashertools.lib.dynamical</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.energyfile.html">starsmashertools.lib.energyfile</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.flux.html">starsmashertools.lib.flux</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.input.html">starsmashertools.lib.input</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.logfile.html">starsmashertools.lib.logfile</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.output.html">starsmashertools.lib.output</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.ray.html">starsmashertools.lib.ray</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.relaxation.html">starsmashertools.lib.relaxation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.report.html">starsmashertools.lib.report</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.simulation.html">starsmashertools.lib.simulation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.units.html">starsmashertools.lib.units</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.math.html">starsmashertools.math</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.mpl.artists.html">starsmashertools.mpl.artists</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.mpl.figure.html">starsmashertools.mpl.figure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../starsmashertools.helpers.html">helpers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../starsmashertools.lib.html">lib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../starsmashertools.math.html">math</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../starsmashertools.mpl.html">mpl</a></li>
 </ul>
 
         </div>
@@ -104,7 +91,7 @@
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
 <div class="viewcode-block" id="Binary">
-<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary">[docs]</a>
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary">[docs]</a>
 <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">preferences</span><span class="o">.</span><span class="n">use</span>
 <span class="k">class</span> <span class="nc">Binary</span><span class="p">(</span><span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">Simulation</span><span class="p">,</span> <span class="nb">object</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
@@ -115,7 +102,7 @@
     <span class="c1"># Returns the particles in the output file which correspond</span>
     <span class="c1"># to the primary star (usually the donor)</span>
 <div class="viewcode-block" id="Binary.get_primary">
-<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.get_primary">[docs]</a>
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.get_primary">[docs]</a>
     <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="nf">get_primary</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span> <span class="p">:</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">Output</span><span class="p">):</span>
@@ -126,7 +113,7 @@
 
 
 <div class="viewcode-block" id="Binary.get_secondary">
-<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.get_secondary">[docs]</a>
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.get_secondary">[docs]</a>
     <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="nf">get_secondary</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span> <span class="p">:</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">Output</span><span class="p">):</span>
@@ -137,7 +124,7 @@
 
 
 <div class="viewcode-block" id="Binary.get_n1">
-<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.get_n1">[docs]</a>
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.get_n1">[docs]</a>
     <span class="nd">@api</span>
     <span class="nd">@cli</span><span class="p">(</span><span class="s1">&#39;starsmashertools&#39;</span><span class="p">)</span>
     <span class="nd">@clioptions</span><span class="p">(</span><span class="n">display_name</span> <span class="o">=</span> <span class="s1">&#39;Primary star number of particles&#39;</span><span class="p">)</span>
@@ -147,7 +134,7 @@
 
 
 <div class="viewcode-block" id="Binary.get_n2">
-<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.get_n2">[docs]</a>
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.get_n2">[docs]</a>
     <span class="nd">@api</span>
     <span class="nd">@cli</span><span class="p">(</span><span class="s1">&#39;starsmashertools&#39;</span><span class="p">)</span>
     <span class="nd">@clioptions</span><span class="p">(</span><span class="n">display_name</span> <span class="o">=</span> <span class="s1">&#39;Secondary star number of particles&#39;</span><span class="p">)</span>
@@ -192,7 +179,7 @@
 
     <span class="c1"># Returns True if the primary is a point mass</span>
 <div class="viewcode-block" id="Binary.isPrimaryPointMass">
-<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.isPrimaryPointMass">[docs]</a>
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.isPrimaryPointMass">[docs]</a>
     <span class="nd">@api</span>
     <span class="nd">@cli</span><span class="p">(</span><span class="s1">&#39;starsmashertools&#39;</span><span class="p">)</span>
     <span class="nd">@clioptions</span><span class="p">(</span><span class="n">display_name</span> <span class="o">=</span> <span class="s1">&#39;Show if the primary star is a point mass&#39;</span><span class="p">)</span>
@@ -201,7 +188,7 @@
     
     <span class="c1"># Returns True if the secondary is a point mass</span>
 <div class="viewcode-block" id="Binary.isSecondaryPointMass">
-<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.isSecondaryPointMass">[docs]</a>
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.isSecondaryPointMass">[docs]</a>
     <span class="nd">@api</span>
     <span class="nd">@cli</span><span class="p">(</span><span class="s1">&#39;starsmashertools&#39;</span><span class="p">)</span>
     <span class="nd">@clioptions</span><span class="p">(</span><span class="n">display_name</span> <span class="o">=</span> <span class="s1">&#39;Show if the secondary star is a point mass&#39;</span><span class="p">)</span>
@@ -209,14 +196,14 @@
 
 
 <div class="viewcode-block" id="Binary.get_start1u">
-<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.get_start1u">[docs]</a>
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.get_start1u">[docs]</a>
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="nf">get_start1u</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="kn">import</span> <span class="nn">starsmashertools.helpers.path</span>
         <span class="k">return</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">directory</span><span class="p">,</span> <span class="s2">&quot;sph.start1u&quot;</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Binary.get_start2u">
-<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.get_start2u">[docs]</a>
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.get_start2u">[docs]</a>
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="nf">get_start2u</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="kn">import</span> <span class="nn">starsmashertools.helpers.path</span>
@@ -246,13 +233,13 @@
         <span class="k">return</span> <span class="n">children</span>
 
 <div class="viewcode-block" id="Binary.get_primary_IDs">
-<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.get_primary_IDs">[docs]</a>
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.get_primary_IDs">[docs]</a>
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="nf">get_primary_IDs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_n1</span><span class="p">())</span></div>
 
 
 <div class="viewcode-block" id="Binary.get_secondary_IDs">
-<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.get_secondary_IDs">[docs]</a>
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.get_secondary_IDs">[docs]</a>
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="nf">get_secondary_IDs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">n1</span><span class="p">,</span> <span class="n">n2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_n1</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_n2</span><span class="p">()</span>
@@ -262,7 +249,7 @@
 
     <span class="c1"># Get the centers of mass of both stars</span>
 <div class="viewcode-block" id="Binary.get_COMs">
-<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.get_COMs">[docs]</a>
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.get_COMs">[docs]</a>
     <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="nf">get_COMs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span> <span class="p">:</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">Output</span> <span class="o">|</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">OutputIterator</span><span class="p">):</span>
@@ -318,7 +305,7 @@
 
 
 <div class="viewcode-block" id="Binary.get_separation">
-<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.get_separation">[docs]</a>
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.get_separation">[docs]</a>
     <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="nf">get_separation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span> <span class="p">:</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">Output</span> <span class="o">|</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">OutputIterator</span><span class="p">):</span>
@@ -336,7 +323,7 @@
 
 
 <div class="viewcode-block" id="Binary.get_period">
-<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.get_period">[docs]</a>
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.get_period">[docs]</a>
     <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="nf">get_period</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span> <span class="p">:</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">Output</span> <span class="o">|</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">OutputIterator</span><span class="p">):</span>
@@ -370,7 +357,7 @@
     <span class="c1"># Obtain the Roche lobe filling fraction fRLOF for the given output</span>
     <span class="c1"># object. If None, then finds fRLOF for all the output files.</span>
 <div class="viewcode-block" id="Binary.get_fRLOF">
-<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.get_fRLOF">[docs]</a>
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.get_fRLOF">[docs]</a>
     <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="nf">get_fRLOF</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span> <span class="p">:</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">Output</span> <span class="o">|</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">OutputIterator</span><span class="p">):</span>
@@ -412,7 +399,7 @@
 
 
 <div class="viewcode-block" id="Binary.get_RLOF">
-<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.get_RLOF">[docs]</a>
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.get_RLOF">[docs]</a>
     <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
     <span class="nd">@api</span>
     <span class="nd">@cli</span><span class="p">(</span><span class="s1">&#39;starsmashertools&#39;</span><span class="p">)</span>
@@ -593,7 +580,7 @@
         
         
 <div class="viewcode-block" id="Binary.get_primary_mass">
-<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.get_primary_mass">[docs]</a>
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.get_primary_mass">[docs]</a>
     <span class="nd">@api</span>
     <span class="nd">@cli</span><span class="p">(</span><span class="s1">&#39;starsmashertools&#39;</span><span class="p">)</span>
     <span class="nd">@clioptions</span><span class="p">(</span><span class="n">display_name</span> <span class="o">=</span> <span class="s1">&#39;Mass of primary star&#39;</span><span class="p">)</span>
@@ -634,7 +621,7 @@
 
 
 <div class="viewcode-block" id="Binary.get_secondary_mass">
-<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.get_secondary_mass">[docs]</a>
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.get_secondary_mass">[docs]</a>
     <span class="nd">@api</span>
     <span class="nd">@cli</span><span class="p">(</span><span class="s1">&#39;starsmashertools&#39;</span><span class="p">)</span>
     <span class="nd">@clioptions</span><span class="p">(</span><span class="n">display_name</span> <span class="o">=</span> <span class="s1">&#39;Mass of secondary star&#39;</span><span class="p">)</span>
@@ -676,7 +663,7 @@
 
 
 <div class="viewcode-block" id="Binary.get_primary_core_mass">
-<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.get_primary_core_mass">[docs]</a>
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.get_primary_core_mass">[docs]</a>
     <span class="nd">@api</span>
     <span class="nd">@cli</span><span class="p">(</span><span class="s1">&#39;starsmashertools&#39;</span><span class="p">)</span>
     <span class="nd">@clioptions</span><span class="p">(</span><span class="n">display_name</span> <span class="o">=</span> <span class="s1">&#39;Mass of primary star core particle&#39;</span><span class="p">)</span>
@@ -733,7 +720,7 @@
 
     
 <div class="viewcode-block" id="Binary.get_secondary_core_mass">
-<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.get_secondary_core_mass">[docs]</a>
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.binary.html#starsmashertools.lib.binary.Binary.get_secondary_core_mass">[docs]</a>
     <span class="nd">@api</span>
     <span class="nd">@cli</span><span class="p">(</span><span class="s1">&#39;starsmashertools&#39;</span><span class="p">)</span>
     <span class="nd">@clioptions</span><span class="p">(</span><span class="n">display_name</span> <span class="o">=</span> <span class="s1">&#39;Mass of secondary core particle&#39;</span><span class="p">)</span>
@@ -808,7 +795,13 @@
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>  
+
+  <style>
+         .wy-nav-content { max-width: none; }
+  </style>
+
+
 
 </body>
 </html>

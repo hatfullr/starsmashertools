@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>starsmashertools.lib.dynamical &mdash; starsmashertools 14.12.0 documentation</title>
+  <title>starsmashertools.lib.dynamical &mdash; starsmashertools</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=19f00094" />
 
@@ -45,28 +45,15 @@
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../index.html">Home</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../gettingstarted.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../index.html">Getting Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../cliprograms.html">CLI Programs</a></li>
 </ul>
+<p class="caption" role="heading"><span class="caption-text">API Documentation</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.helpers.file.html">starsmashertools.helpers.file</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.archive.html">starsmashertools.lib.archive</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.binary.html">starsmashertools.lib.binary</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.dynamical.html">starsmashertools.lib.dynamical</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.energyfile.html">starsmashertools.lib.energyfile</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.flux.html">starsmashertools.lib.flux</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.input.html">starsmashertools.lib.input</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.logfile.html">starsmashertools.lib.logfile</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.output.html">starsmashertools.lib.output</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.ray.html">starsmashertools.lib.ray</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.relaxation.html">starsmashertools.lib.relaxation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.report.html">starsmashertools.lib.report</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.simulation.html">starsmashertools.lib.simulation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.lib.units.html">starsmashertools.lib.units</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.math.html">starsmashertools.math</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.mpl.artists.html">starsmashertools.mpl.artists</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../_autosummary/starsmashertools.mpl.figure.html">starsmashertools.mpl.figure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../starsmashertools.helpers.html">helpers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../starsmashertools.lib.html">lib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../starsmashertools.math.html">math</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../starsmashertools.mpl.html">mpl</a></li>
 </ul>
 
         </div>
@@ -103,7 +90,7 @@
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
 <div class="viewcode-block" id="Dynamical">
-<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.dynamical.html#starsmashertools.lib.dynamical.Dynamical">[docs]</a>
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.dynamical.html#starsmashertools.lib.dynamical.Dynamical">[docs]</a>
 <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">preferences</span><span class="o">.</span><span class="n">use</span>
 <span class="k">class</span> <span class="nc">Dynamical</span><span class="p">(</span><span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">Simulation</span><span class="p">,</span> <span class="nb">object</span><span class="p">):</span>
     <span class="k">def</span> <span class="nf">_get_children</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
@@ -126,7 +113,7 @@
         <span class="k">return</span> <span class="kc">None</span>
     
 <div class="viewcode-block" id="Dynamical.get_relaxations">
-<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.dynamical.html#starsmashertools.lib.dynamical.Dynamical.get_relaxations">[docs]</a>
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.dynamical.html#starsmashertools.lib.dynamical.Dynamical.get_relaxations">[docs]</a>
     <span class="nd">@api</span>
     <span class="nd">@cli</span><span class="p">(</span><span class="s1">&#39;starsmashertools&#39;</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">get_relaxations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cli</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
@@ -136,7 +123,7 @@
 
     
 <div class="viewcode-block" id="Dynamical.get_binary">
-<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.dynamical.html#starsmashertools.lib.dynamical.Dynamical.get_binary">[docs]</a>
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.dynamical.html#starsmashertools.lib.dynamical.Dynamical.get_binary">[docs]</a>
     <span class="nd">@api</span>
     <span class="nd">@cli</span><span class="p">(</span><span class="s1">&#39;starsmashertools&#39;</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">get_binary</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cli</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
@@ -150,7 +137,7 @@
 
     
 <div class="viewcode-block" id="Dynamical.get_plunge_time">
-<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.dynamical.html#starsmashertools.lib.dynamical.Dynamical.get_plunge_time">[docs]</a>
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.dynamical.html#starsmashertools.lib.dynamical.Dynamical.get_plunge_time">[docs]</a>
     <span class="nd">@archived</span>
     <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
     <span class="nd">@api</span>
@@ -161,7 +148,7 @@
             <span class="n">threshold</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="o">=</span> <span class="n">Pref</span><span class="p">(</span><span class="s1">&#39;get_plunge_time.threshold&#39;</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">),</span>
             <span class="n">cli</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Obtain the plunge-in time for a dynamical simulation which originated</span>
 <span class="sd">        from a binary simulation. The plunge time here is defined as the time at</span>
 <span class="sd">        which some amount of mass from the secondary star has entered a distance</span>
@@ -281,7 +268,7 @@
 
     <span class="c1">#@starsmashertools.helpers.argumentenforcer.enforcetypes</span>
 <div class="viewcode-block" id="Dynamical.get_orbital_energy">
-<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.dynamical.html#starsmashertools.lib.dynamical.Dynamical.get_orbital_energy">[docs]</a>
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.dynamical.html#starsmashertools.lib.dynamical.Dynamical.get_orbital_energy">[docs]</a>
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="nf">get_orbital_energy</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span>
@@ -290,51 +277,52 @@
             <span class="n">filter_unbound</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
             <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Obtain the sum of the orbital energy of each particle about some origin,</span>
 <span class="sd">        where origin (0, 0, 0) is the center of mass. Two metrics are returned:</span>
-<span class="sd">        the orbital energy in the phi hat direction and the theta hat direction,</span>
-<span class="sd">        where phi is the azimuthal angle and theta is the polar angle. The</span>
-<span class="sd">        orbital energy of a single particle is its kinetic energy in some given</span>
-<span class="sd">        direction :math:`mv^2/2`.</span>
+<span class="sd">        the orbital energy in the :math:`\hat{\phi}` direction and the </span>
+<span class="sd">        :math:`\hat{\theta}` direction, where :math:`\phi` is the azimuthal </span>
+<span class="sd">        angle and :math:`\theta` is the polar angle. The orbital energy of a </span>
+<span class="sd">        single particle is its kinetic energy in some given direction </span>
+<span class="sd">        :math:`mv^2/2`.</span>
 
 <span class="sd">        We obtain the velocities by first writing the velocity in spherical</span>
 <span class="sd">        coordinates</span>
 
 <span class="sd">        .. math::</span>
 
-<span class="sd">            \\vec{v} = v_r\\hat{r} + r\\dot{\\theta}\\hat{\\theta} + \\dot{\\phi}r\\sin\\phi\\hat{\\phi}</span>
+<span class="sd">            \vec{v} = v_r\hat{r} + r\dot{\theta}\hat{\theta} + \dot{\phi}r\sin\phi\hat{\phi}</span>
 
 <span class="sd">        In this way, the velocity components are </span>
-<span class="sd">        :math:`v_\\theta = r\\dot{\\theta}` and </span>
-<span class="sd">        :math:`v_\\phi = \\dot{\\phi}r\\sin\\phi`\. To find the angular </span>
-<span class="sd">        velocities :math:`\\dot{\\theta}` and :math:`\\dot{\\phi}`\, we use </span>
-<span class="sd">        their spherical coordinate relations :math:`\\cos\\theta = z/r` and </span>
-<span class="sd">        :math:`\\tan\\phi = y/x`\. Differentiating each with respect to time </span>
+<span class="sd">        :math:`v_\theta = r\dot{\theta}` and </span>
+<span class="sd">        :math:`v_\phi = \dot{\phi}r\sin\phi`\. To find the angular </span>
+<span class="sd">        velocities :math:`\dot{\theta}` and :math:`\dot{\phi}`\, we use their </span>
+<span class="sd">        spherical coordinate relations :math:`\cos\theta = z/r` and </span>
+<span class="sd">        :math:`\tan\phi = y/x`\. Differentiating each with respect to time </span>
 <span class="sd">        yields</span>
 
 <span class="sd">        .. math::</span>
 
-<span class="sd">            \\dot{\\theta} = \\frac{r&#39;}{r^2} \\left( \\frac{zx v_x + zy v_y}{r&#39;^2} - v_z\\right)</span>
+<span class="sd">            \dot{\theta} = \frac{r^\prime}{r^2} \left( \frac{zx v_x + zy v_y}{{r^\prime}^2} - v_z\right)</span>
 
-<span class="sd">        where :math:`r&#39; = (x^2 + y^2)^{1/2}`\, and </span>
-<span class="sd">        :math:`\\dot{\\phi} = (x v_y - y v_x) / r&#39;^2`\. Therefore,</span>
+<span class="sd">        where :math:`r^\prime = (x^2 + y^2)^{1/2}`\, and </span>
+<span class="sd">        :math:`\dot{\phi} = (x v_y - y v_x) / {r^\prime}^2`\. Therefore,</span>
 <span class="sd">        </span>
 <span class="sd">        .. math::</span>
 <span class="sd">        </span>
-<span class="sd">            \\begin{align}</span>
-<span class="sd">                v_\\theta &amp;= \\frac{y}{r} \\left[ \\frac{zx v_x + zy v_y}{r&#39;^2} - v_z \\right]\\\\</span>
-<span class="sd">                v_\\phi &amp;= \\frac{r}{r&#39;^2} (x v_y - y v_x)</span>
-<span class="sd">            \\end{align}</span>
+<span class="sd">            \begin{align}</span>
+<span class="sd">                v_\theta &amp;= \frac{y}{r} \left[ \frac{zx v_x + zy v_y}{{r^\prime}^2} - v_z \right]\\</span>
+<span class="sd">                v_\phi &amp;= \frac{r}{{r^\prime}^2} (x v_y - y v_x)</span>
+<span class="sd">            \end{align}</span>
 
 <span class="sd">        The corresponding orbital energies of a particle are:</span>
 <span class="sd">        </span>
 <span class="sd">        .. math::</span>
 <span class="sd">        </span>
-<span class="sd">            \\begin{align}</span>
-<span class="sd">                E_{orb,i,\\theta} &amp;= \\frac{1}{2} m_i v_{\\theta,i}^2\\\\</span>
-<span class="sd">                E_{orb,i,\\phi} &amp;= \\frac{1}{2} m_i v_{\\phi,i}^2</span>
-<span class="sd">            \\end{align}</span>
+<span class="sd">            \begin{align}</span>
+<span class="sd">                E_{\mathrm{orb},i,\theta} &amp;= \frac{1}{2} m_i v_{\theta,i}^2\\</span>
+<span class="sd">                E_{\mathrm{orb},i,\phi} &amp;= \frac{1}{2} m_i v_{\phi,i}^2</span>
+<span class="sd">            \end{align}</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -357,12 +345,12 @@
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        list</span>
-<span class="sd">            The total orbital energy :math:`E_{orb,\\theta}` summed over every </span>
+<span class="sd">            The total orbital energy :math:`E_{orb,\theta}` summed over every </span>
 <span class="sd">            particle. If ``filter_unbound`` is `True` then an output that has no</span>
 <span class="sd">            bound particles has a value of 0.</span>
 
 <span class="sd">        list</span>
-<span class="sd">            The total orbital energy :math:`E_{orb,\\phi}` summed over every </span>
+<span class="sd">            The total orbital energy :math:`E_{orb,\phi}` summed over every </span>
 <span class="sd">            particle. If ``filter_unbound`` is `True` then an output that has no</span>
 <span class="sd">            bound particles has a value of 0.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -403,7 +391,7 @@
 
 
 <div class="viewcode-block" id="Dynamical.get_period">
-<a class="viewcode-back" href="../../../_autosummary/starsmashertools.lib.dynamical.html#starsmashertools.lib.dynamical.Dynamical.get_period">[docs]</a>
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.dynamical.html#starsmashertools.lib.dynamical.Dynamical.get_period">[docs]</a>
     <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="nf">get_period</span><span class="p">(</span>
@@ -411,7 +399,7 @@
             <span class="n">output</span> <span class="p">:</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">Output</span> <span class="o">|</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">OutputIterator</span><span class="p">,</span>
             <span class="n">threshold</span> <span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">Pref</span><span class="p">(</span><span class="s1">&#39;threshold&#39;</span><span class="p">,</span> <span class="mf">0.01</span><span class="p">),</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Obtain the orbital period, if there exists an orbit in the given output</span>
 <span class="sd">        file(s). The orbit period is calculated relative to both the primary and</span>
 <span class="sd">        secondary stars, using :meth:`~.lib.binary.Binary.get_primary_IDs` and </span>
@@ -555,7 +543,13 @@
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>  
+
+  <style>
+         .wy-nav-content { max-width: none; }
+  </style>
+
+
 
 </body>
 </html>
