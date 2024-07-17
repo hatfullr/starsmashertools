@@ -231,7 +231,7 @@ class EffGravPot(object):
     .. math::
         :nowrap:
 
-        \\varphi = -\\frac{GM_1}{r_1} - \\frac{GM_2}{r_2} - \\frac{1}{2}\\omega^2r_\\mathrm{com}^2
+        \varphi = -\frac{GM_1}{r_1} - \frac{GM_2}{r_2} - \frac{1}{2}\omega^2r_\mathrm{com}^2
 
     in which :math:`G` is the gravitational constant, :math:`M_1` and 
     :math:`M_2` are the masses of stars 1 and 2, :math:`r_1` and :math:`r_2` are
