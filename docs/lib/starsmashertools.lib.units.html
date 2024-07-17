@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>starsmashertools.lib.units &mdash; starsmashertools</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../_static/documentation_options.js?v=61ccec80"></script>
+        <script src="../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="math" href="../starsmashertools.math.html" />
+    <link rel="prev" title="starsmashertools.lib.table" href="starsmashertools.lib.table.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            starsmashertools
+          </a>
+              <div class="version">
+                14.12.0
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../index.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cliprograms.html">CLI Programs</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Documentation</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../starsmashertools.helpers.html">helpers</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../starsmashertools.lib.html">lib</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="starsmashertools.lib.archive.html">archive</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starsmashertools.lib.binary.html">binary</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starsmashertools.lib.dynamical.html">dynamical</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starsmashertools.lib.energyfile.html">energyfile</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starsmashertools.lib.flux.html">flux</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starsmashertools.lib.input.html">input</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starsmashertools.lib.kernels.html">kernels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starsmashertools.lib.logfile.html">logfile</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starsmashertools.lib.output.html">output</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starsmashertools.lib.ray.html">ray</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starsmashertools.lib.relaxation.html">relaxation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starsmashertools.lib.report.html">report</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starsmashertools.lib.simulation.html">simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starsmashertools.lib.table.html">table</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">units</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.units.Unit"><code class="docutils literal notranslate"><span class="pre">Unit</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.units.Unit.__abs__"><code class="docutils literal notranslate"><span class="pre">Unit.__abs__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.units.Unit.__add__"><code class="docutils literal notranslate"><span class="pre">Unit.__add__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.units.Unit.__ceil__"><code class="docutils literal notranslate"><span class="pre">Unit.__ceil__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.units.Unit.__eq__"><code class="docutils literal notranslate"><span class="pre">Unit.__eq__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.units.Unit.__float__"><code class="docutils literal notranslate"><span class="pre">Unit.__float__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.units.Unit.__floor__"><code class="docutils literal notranslate"><span class="pre">Unit.__floor__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.units.Unit.__floordiv__"><code class="docutils literal notranslate"><span class="pre">Unit.__floordiv__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.units.Unit.__ge__"><code class="docutils literal notranslate"><span class="pre">Unit.__ge__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.units.Unit.__gt__"><code class="docutils literal notranslate"><span class="pre">Unit.__gt__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.units.Unit.__index__"><code class="docutils literal notranslate"><span class="pre">Unit.__index__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.units.Unit.__init__"><code class="docutils literal notranslate"><span class="pre">Unit.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.units.Unit.__int__"><code class="docutils literal notranslate"><span class="pre">Unit.__int__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.units.Unit.__le__"><code class="docutils literal notranslate"><span class="pre">Unit.__le__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.units.Unit.__lt__"><code class="docutils literal notranslate"><span class="pre">Unit.__lt__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.units.Unit.__mod__"><code class="docutils literal notranslate"><span class="pre">Unit.__mod__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.units.Unit.__mul__"><code class="docutils literal notranslate"><span class="pre">Unit.__mul__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.units.Unit.__neg__"><code class="docutils literal notranslate"><span class="pre">Unit.__neg__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.units.Unit.__pos__"><code class="docutils literal notranslate"><span class="pre">Unit.__pos__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.units.Unit.__pow__"><code class="docutils literal notranslate"><span class="pre">Unit.__pow__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.units.Unit.__radd__"><code class="docutils literal notranslate"><span class="pre">Unit.__radd__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.units.Unit.__rfloordiv__"><code class="docutils literal notranslate"><span class="pre">Unit.__rfloordiv__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.units.Unit.__rmod__"><code class="docutils literal notranslate"><span class="pre">Unit.__rmod__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.units.Unit.__rmul__"><code class="docutils literal notranslate"><span class="pre">Unit.__rmul__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.units.Unit.__round__"><code class="docutils literal notranslate"><span class="pre">Unit.__round__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.units.Unit.__rsub__"><code class="docutils literal notranslate"><span class="pre">Unit.__rsub__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.units.Unit.__rtruediv__"><code class="docutils literal notranslate"><span class="pre">Unit.__rtruediv__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.units.Unit.__sub__"><code class="docutils literal notranslate"><span class="pre">Unit.__sub__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.units.Unit.__truediv__"><code class="docutils literal notranslate"><span class="pre">Unit.__truediv__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.units.Unit.__trunc__"><code class="docutils literal notranslate"><span class="pre">Unit.__trunc__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.units.Unit.auto"><code class="docutils literal notranslate"><span class="pre">Unit.auto()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.units.Unit.convert"><code class="docutils literal notranslate"><span class="pre">Unit.convert()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.units.Unit.get_base"><code class="docutils literal notranslate"><span class="pre">Unit.get_base()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.units.Unit.get_conversion_factor"><code class="docutils literal notranslate"><span class="pre">Unit.get_conversion_factor()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.units.Units"><code class="docutils literal notranslate"><span class="pre">Units</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.units.Units.__init__"><code class="docutils literal notranslate"><span class="pre">Units.__init__()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../starsmashertools.math.html">math</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../starsmashertools.mpl.html">mpl</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">starsmashertools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../starsmashertools.lib.html">lib</a></li>
+      <li class="breadcrumb-item active">starsmashertools.lib.units</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/lib/starsmashertools.lib.units.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-starsmashertools.lib.units">
+<span id="starsmashertools-lib-units"></span><h1>starsmashertools.lib.units<a class="headerlink" href="#module-starsmashertools.lib.units" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="starsmashertools.lib.units.Unit">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Unit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">['cm',</span> <span class="pre">'g',</span> <span class="pre">'s',</span> <span class="pre">'K']</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/units.html#Unit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.units.Unit" title="Link to this definition"></a></dt>
+<dd><p>To use string formatters with a Unit, you can either specify the usual
+formatting as integer or float types, i.e., <code class="docutils literal notranslate"><span class="pre">'{:5.3f}'</span></code>, or you can
+specify a formatter for both the value and the label, i.e. <code class="docutils literal notranslate"><span class="pre">'{:5.3f</span> <span class="pre">6s}'</span></code>
+(see examples below). Any whitespace between the value and label formatters
+is discarded during processing.</p>
+<p class="rubric">Example</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">starsmashertools.lib.units</span>
+<span class="n">u</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">Unit</span><span class="p">(</span><span class="mf">1.234567</span><span class="p">,</span> <span class="s1">&#39;day&#39;</span><span class="p">)</span>
+
+<span class="c1"># Values only:</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{:f}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">u</span><span class="p">))</span>
+<span class="c1"># &#39;1.234567&#39;</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{:10f}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">u</span><span class="p">))</span>
+<span class="c1"># &#39;  1.234567&#39;</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{:10.2f}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">u</span><span class="p">))</span>
+<span class="c1"># &#39;      1.23&#39;</span>
+
+<span class="c1"># Values and labels</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;{:fs}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">u</span><span class="p">))</span>
+<span class="c1"># &#39;1.234567day&#39;</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;{:f4s}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">u</span><span class="p">))</span>
+<span class="c1"># &#39;1.234567day &#39;</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;{:f 4s}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">u</span><span class="p">))</span>
+<span class="c1"># &#39;1.234567day &#39;</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{:f&gt;4s}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">u</span><span class="p">))</span>
+<span class="c1"># &#39;1.234567 day&#39;</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;{:f &gt;4s}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">u</span><span class="p">))</span>
+<span class="c1"># &#39;1.234567 day&#39;</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;{:7.3f &gt;4s}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">u</span><span class="p">))</span>
+<span class="c1"># &#39;  1.235 day&#39;</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.units.Unit.__abs__">
+<span class="sig-name descname"><span class="pre">__abs__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/units.html#Unit.__abs__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.units.Unit.__abs__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.units.Unit.__add__">
+<span class="sig-name descname"><span class="pre">__add__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/units.html#Unit.__add__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.units.Unit.__add__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.units.Unit.__ceil__">
+<span class="sig-name descname"><span class="pre">__ceil__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/units.html#Unit.__ceil__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.units.Unit.__ceil__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.units.Unit.__eq__">
+<span class="sig-name descname"><span class="pre">__eq__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/units.html#Unit.__eq__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.units.Unit.__eq__" title="Link to this definition"></a></dt>
+<dd><p>Return self==value.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.units.Unit.__float__">
+<span class="sig-name descname"><span class="pre">__float__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/units.html#Unit.__float__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.units.Unit.__float__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.units.Unit.__floor__">
+<span class="sig-name descname"><span class="pre">__floor__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/units.html#Unit.__floor__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.units.Unit.__floor__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.units.Unit.__floordiv__">
+<span class="sig-name descname"><span class="pre">__floordiv__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/units.html#Unit.__floordiv__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.units.Unit.__floordiv__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.units.Unit.__ge__">
+<span class="sig-name descname"><span class="pre">__ge__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/units.html#Unit.__ge__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.units.Unit.__ge__" title="Link to this definition"></a></dt>
+<dd><p>Return self&gt;=value.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.units.Unit.__gt__">
+<span class="sig-name descname"><span class="pre">__gt__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/units.html#Unit.__gt__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.units.Unit.__gt__" title="Link to this definition"></a></dt>
+<dd><p>Return self&gt;value.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.units.Unit.__index__">
+<span class="sig-name descname"><span class="pre">__index__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/units.html#Unit.__index__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.units.Unit.__index__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.units.Unit.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">['cm',</span> <span class="pre">'g',</span> <span class="pre">'s',</span> <span class="pre">'K']</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/units.html#Unit.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.units.Unit.__init__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.units.Unit.__int__">
+<span class="sig-name descname"><span class="pre">__int__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/units.html#Unit.__int__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.units.Unit.__int__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.units.Unit.__le__">
+<span class="sig-name descname"><span class="pre">__le__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/units.html#Unit.__le__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.units.Unit.__le__" title="Link to this definition"></a></dt>
+<dd><p>Return self&lt;=value.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.units.Unit.__lt__">
+<span class="sig-name descname"><span class="pre">__lt__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/units.html#Unit.__lt__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.units.Unit.__lt__" title="Link to this definition"></a></dt>
+<dd><p>Return self&lt;value.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.units.Unit.__mod__">
+<span class="sig-name descname"><span class="pre">__mod__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/units.html#Unit.__mod__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.units.Unit.__mod__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.units.Unit.__mul__">
+<span class="sig-name descname"><span class="pre">__mul__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/units.html#Unit.__mul__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.units.Unit.__mul__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.units.Unit.__neg__">
+<span class="sig-name descname"><span class="pre">__neg__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/units.html#Unit.__neg__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.units.Unit.__neg__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.units.Unit.__pos__">
+<span class="sig-name descname"><span class="pre">__pos__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/units.html#Unit.__pos__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.units.Unit.__pos__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.units.Unit.__pow__">
+<span class="sig-name descname"><span class="pre">__pow__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/units.html#Unit.__pow__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.units.Unit.__pow__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.units.Unit.__radd__">
+<span class="sig-name descname"><span class="pre">__radd__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/units.html#Unit.__radd__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.units.Unit.__radd__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.units.Unit.__rfloordiv__">
+<span class="sig-name descname"><span class="pre">__rfloordiv__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/units.html#Unit.__rfloordiv__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.units.Unit.__rfloordiv__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.units.Unit.__rmod__">
+<span class="sig-name descname"><span class="pre">__rmod__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/units.html#Unit.__rmod__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.units.Unit.__rmod__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.units.Unit.__rmul__">
+<span class="sig-name descname"><span class="pre">__rmul__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/units.html#Unit.__rmul__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.units.Unit.__rmul__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.units.Unit.__round__">
+<span class="sig-name descname"><span class="pre">__round__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/units.html#Unit.__round__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.units.Unit.__round__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.units.Unit.__rsub__">
+<span class="sig-name descname"><span class="pre">__rsub__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/units.html#Unit.__rsub__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.units.Unit.__rsub__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.units.Unit.__rtruediv__">
+<span class="sig-name descname"><span class="pre">__rtruediv__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/units.html#Unit.__rtruediv__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.units.Unit.__rtruediv__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.units.Unit.__sub__">
+<span class="sig-name descname"><span class="pre">__sub__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/units.html#Unit.__sub__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.units.Unit.__sub__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.units.Unit.__truediv__">
+<span class="sig-name descname"><span class="pre">__truediv__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/units.html#Unit.__truediv__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.units.Unit.__truediv__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.units.Unit.__trunc__">
+<span class="sig-name descname"><span class="pre">__trunc__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/units.html#Unit.__trunc__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.units.Unit.__trunc__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.units.Unit.auto">
+<span class="sig-name descname"><span class="pre">auto</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conversions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/units.html#Unit.auto"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.units.Unit.auto" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.units.Unit.convert">
+<span class="sig-name descname"><span class="pre">convert</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><span class="pre">list</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.12)"><span class="pre">tuple</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/units.html#Unit.convert"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.units.Unit.convert" title="Link to this definition"></a></dt>
+<dd><p>Return a copy of this <a class="reference internal" href="#starsmashertools.lib.units.Unit" title="starsmashertools.lib.units.Unit"><code class="xref py py-class docutils literal notranslate"><span class="pre">Unit</span></code></a> converted to a new unit.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>new</strong> (str, <code class="xref py py-class docutils literal notranslate"><span class="pre">Label</span></code>, <a class="reference internal" href="#starsmashertools.lib.units.Unit" title="starsmashertools.lib.units.Unit"><code class="xref py py-class docutils literal notranslate"><span class="pre">Unit</span></code></a>, None, default = None) – If a <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a> is given it will be converted to a
+<code class="xref py py-class docutils literal notranslate"><span class="pre">Label</span></code>. If a <a class="reference internal" href="#starsmashertools.lib.units.Unit" title="starsmashertools.lib.units.Unit"><code class="xref py py-class docutils literal notranslate"><span class="pre">Unit</span></code></a> is given, it must have
+the same dimensions as this Unit. If <cite>None</cite>, you must specify
+keyword <code class="docutils literal notranslate"><span class="pre">to</span></code> (see below).</p></li>
+<li><p><strong>to</strong> (list, tuple, <a class="reference internal" href="#starsmashertools.lib.units.Units" title="starsmashertools.lib.units.Units"><code class="xref py py-class docutils literal notranslate"><span class="pre">Units</span></code></a>, None, default = None) – An iterable of <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a> unit labels. For each given string,
+the <code class="xref py py-class docutils literal notranslate"><span class="pre">Label</span></code> is searched for matches. Then, each match
+is converted to the base units (cgs) before being converted into the
+unit of the given string. If <cite>None</cite>, you must specify keyword
+<code class="docutils literal notranslate"><span class="pre">new</span></code> (see above).</p></li>
+<li><p><strong>**kwargs</strong> – Keywords arguments are passed directly to
+<a class="reference internal" href="#starsmashertools.lib.units.Unit.get_conversion_factor" title="starsmashertools.lib.units.Unit.get_conversion_factor"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_conversion_factor()</span></code></a>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The newly converted unit.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#starsmashertools.lib.units.Unit" title="starsmashertools.lib.units.Unit"><code class="xref py py-class docutils literal notranslate"><span class="pre">Unit</span></code></a></p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<p>This example converts 1 cm/s to 1 km/hr:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">unit</span> <span class="o">=</span> <span class="n">Unit</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;cm/s&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">unit</span><span class="o">.</span><span class="n">convert</span><span class="p">(</span><span class="s1">&#39;km/hr&#39;</span><span class="p">)</span>
+<span class="go">Unit(0.036, km/hr)</span>
+</pre></div>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#starsmashertools.lib.units.Unit.get_conversion_factor" title="starsmashertools.lib.units.Unit.get_conversion_factor"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_conversion_factor()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.units.Unit.get_base">
+<span class="sig-name descname"><span class="pre">get_base</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">conversions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/units.html#Unit.get_base"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.units.Unit.get_base" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.units.Unit.get_conversion_factor">
+<span class="sig-name descname"><span class="pre">get_conversion_factor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_label</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conversions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/units.html#Unit.get_conversion_factor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.units.Unit.get_conversion_factor" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="starsmashertools.lib.units.Units">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Units</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">simulation</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/units.html#Units"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.units.Units" title="Link to this definition"></a></dt>
+<dd><p>This class represents the units which a <a class="reference internal" href="starsmashertools.lib.simulation.html#starsmashertools.lib.simulation.Simulation" title="starsmashertools.lib.simulation.Simulation"><code class="xref py py-class docutils literal notranslate"><span class="pre">Simulation</span></code></a>
+uses, as set in the StarSmasher code.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.units.Units.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">simulation</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/units.html#Units.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.units.Units.__init__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="starsmashertools.lib.table.html" class="btn btn-neutral float-left" title="starsmashertools.lib.table" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../starsmashertools.math.html" class="btn btn-neutral float-right" title="math" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Roger Hatfull.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>  
+
+  <style>
+         .wy-nav-content { max-width: none; }
+  </style>
+
+
+
+</body>
+</html>

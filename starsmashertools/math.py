@@ -229,25 +229,26 @@ class EffGravPot(object):
     :math:`m` experiences a force :math:`F=-m\nabla\varphi`\, where
 
     .. math::
-        :nowrap:
 
-        \varphi = -\frac{GM_1}{r_1} - \frac{GM_2}{r_2} - \frac{1}{2}\omega^2r_\mathrm{com}^2
+        \varphi(\vec{r}) = -\frac{GM_1}{r_1} - \frac{GM_2}{r_2} - \frac{1}{2}\omega^2r_\mathrm{com}^2
 
     in which :math:`G` is the gravitational constant, :math:`M_1` and 
-    :math:`M_2` are the masses of stars 1 and 2, :math:`r_1` and :math:`r_2` are
-    the distances of the fluid packet from stars 1 and 2, :math:`\omega` is the
-    oribtal frequency, and :math:`r_\mathrm{com}` is the distance of the fluid
-    packet from the center of mass.
-
-    However, our case is not that of point masses. We can instead use
+    :math:`M_2` are the masses of stars 1 and 2, :math:`r_1=|\vec{r}-\vec{r}_1|`
+    and :math:`r_2=|\vec{r}-\vec{r}_2|` are the distances of the fluid packet 
+    from stars 1 and 2, :math:`\omega` is the oribtal frequency, and 
+    :math:`r_\mathrm{com}=|\vec{r}-\vec{r}_\mathrm{com}|` is the distance of the
+    fluid packet from the center of mass.
+    
+    To obtain :math:`\varphi(\vec{r})` without assuming the stars are point 
+    masses, specify ``as_point_masses = False`` in  :meth:`~.__init__`\. Here,
 
     .. math::
-        :nowrap:
+    
+        \varphi(\vec{r}) = -\sum_i^N\frac{Gm_i}{r_i} - \frac{1}{2}\omega^2r_\mathrm{com}^2
 
-        \varphi(\vec{r}) = -\sum_i^{N_1} \frac{Gm_i}{|\vec{r}-\vec{r}_i|} -\sum_i^{N_2}\frac{Gm_i}{|\vec{r}-\vec{r}_i|} - \frac{1}{2}\omega^2|\vec{r}-\vec{r}_\mathrm{com}|^2 = -\sum_i^N\frac{Gm_i}{|\vec{r}-\vec{r}_i|} - \frac{1}{2}\omega^2|\vec{r}-\vec{r}_\mathrm{com}|^2
-
-    where :math:`i` represents the SPH particle index. Specify keyword
-    ``as_point_masses = False`` in :meth:`~.__init__` to use this version.
+    where :math:`i` represents the SPH particle index and 
+    :math:`r_i=|\vec{r}-\vec{r}_i|` is the distance between :math:`\vec{r}` and
+    particle :math:`i`\. This method is significantly slower.
     """
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes

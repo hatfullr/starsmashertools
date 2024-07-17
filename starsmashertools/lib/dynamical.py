@@ -55,7 +55,7 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
             threshold : int | float | type(None) = Pref('get_plunge_time.threshold', 0.05),
             cli : bool = False,
     ):
-        """
+        r"""
         Obtain the plunge-in time for a dynamical simulation which originated
         from a binary simulation. The plunge time here is defined as the time at
         which some amount of mass from the secondary star has entered a distance
@@ -181,51 +181,52 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
             filter_unbound : bool = True,
             **kwargs
     ):
-        """
+        r"""
         Obtain the sum of the orbital energy of each particle about some origin,
         where origin (0, 0, 0) is the center of mass. Two metrics are returned:
-        the orbital energy in the phi hat direction and the theta hat direction,
-        where phi is the azimuthal angle and theta is the polar angle. The
-        orbital energy of a single particle is its kinetic energy in some given
-        direction :math:`mv^2/2`.
+        the orbital energy in the :math:`\hat{\phi}` direction and the 
+        :math:`\hat{\theta}` direction, where :math:`\phi` is the azimuthal 
+        angle and :math:`\theta` is the polar angle. The orbital energy of a 
+        single particle is its kinetic energy in some given direction 
+        :math:`mv^2/2`.
 
         We obtain the velocities by first writing the velocity in spherical
         coordinates
 
         .. math::
 
-            \\vec{v} = v_r\\hat{r} + r\\dot{\\theta}\\hat{\\theta} + \\dot{\\phi}r\\sin\\phi\\hat{\\phi}
+            \vec{v} = v_r\hat{r} + r\dot{\theta}\hat{\theta} + \dot{\phi}r\sin\phi\hat{\phi}
 
         In this way, the velocity components are 
-        :math:`v_\\theta = r\\dot{\\theta}` and 
-        :math:`v_\\phi = \\dot{\\phi}r\\sin\\phi`\. To find the angular 
-        velocities :math:`\\dot{\\theta}` and :math:`\\dot{\\phi}`\, we use 
-        their spherical coordinate relations :math:`\\cos\\theta = z/r` and 
-        :math:`\\tan\\phi = y/x`\. Differentiating each with respect to time 
+        :math:`v_\theta = r\dot{\theta}` and 
+        :math:`v_\phi = \dot{\phi}r\sin\phi`\. To find the angular 
+        velocities :math:`\dot{\theta}` and :math:`\dot{\phi}`\, we use their 
+        spherical coordinate relations :math:`\cos\theta = z/r` and 
+        :math:`\tan\phi = y/x`\. Differentiating each with respect to time 
         yields
 
         .. math::
 
-            \\dot{\\theta} = \\frac{r'}{r^2} \\left( \\frac{zx v_x + zy v_y}{r'^2} - v_z\\right)
+            \dot{\theta} = \frac{r^\prime}{r^2} \left( \frac{zx v_x + zy v_y}{{r^\prime}^2} - v_z\right)
 
-        where :math:`r' = (x^2 + y^2)^{1/2}`\, and 
-        :math:`\\dot{\\phi} = (x v_y - y v_x) / r'^2`\. Therefore,
+        where :math:`r^\prime = (x^2 + y^2)^{1/2}`\, and 
+        :math:`\dot{\phi} = (x v_y - y v_x) / {r^\prime}^2`\. Therefore,
         
         .. math::
         
-            \\begin{align}
-                v_\\theta &= \\frac{y}{r} \\left[ \\frac{zx v_x + zy v_y}{r'^2} - v_z \\right]\\\\
-                v_\\phi &= \\frac{r}{r'^2} (x v_y - y v_x)
-            \\end{align}
+            \begin{align}
+                v_\theta &= \frac{y}{r} \left[ \frac{zx v_x + zy v_y}{{r^\prime}^2} - v_z \right]\\
+                v_\phi &= \frac{r}{{r^\prime}^2} (x v_y - y v_x)
+            \end{align}
 
         The corresponding orbital energies of a particle are:
         
         .. math::
         
-            \\begin{align}
-                E_{orb,i,\\theta} &= \\frac{1}{2} m_i v_{\\theta,i}^2\\\\
-                E_{orb,i,\\phi} &= \\frac{1}{2} m_i v_{\\phi,i}^2
-            \\end{align}
+            \begin{align}
+                E_{\mathrm{orb},i,\theta} &= \frac{1}{2} m_i v_{\theta,i}^2\\
+                E_{\mathrm{orb},i,\phi} &= \frac{1}{2} m_i v_{\phi,i}^2
+            \end{align}
 
         Parameters
         ----------
@@ -248,12 +249,12 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
         Returns
         -------
         list
-            The total orbital energy :math:`E_{orb,\\theta}` summed over every 
+            The total orbital energy :math:`E_{orb,\theta}` summed over every 
             particle. If ``filter_unbound`` is `True` then an output that has no
             bound particles has a value of 0.
 
         list
-            The total orbital energy :math:`E_{orb,\\phi}` summed over every 
+            The total orbital energy :math:`E_{orb,\phi}` summed over every 
             particle. If ``filter_unbound`` is `True` then an output that has no
             bound particles has a value of 0.
         """
@@ -299,7 +300,7 @@ class Dynamical(starsmashertools.lib.simulation.Simulation, object):
             output : starsmashertools.lib.output.Output | starsmashertools.lib.output.OutputIterator,
             threshold : float = Pref('threshold', 0.01),
     ):
-        """
+        r"""
         Obtain the orbital period, if there exists an orbit in the given output
         file(s). The orbit period is calculated relative to both the primary and
         secondary stars, using :meth:`~.lib.binary.Binary.get_primary_IDs` and 

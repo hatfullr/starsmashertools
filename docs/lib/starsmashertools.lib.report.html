@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>starsmashertools.lib.report &mdash; starsmashertools</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../_static/documentation_options.js?v=61ccec80"></script>
+        <script src="../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="starsmashertools.lib.simulation" href="starsmashertools.lib.simulation.html" />
+    <link rel="prev" title="starsmashertools.lib.relaxation" href="starsmashertools.lib.relaxation.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            starsmashertools
+          </a>
+              <div class="version">
+                14.12.0
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../index.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cliprograms.html">CLI Programs</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Documentation</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../starsmashertools.helpers.html">helpers</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../starsmashertools.lib.html">lib</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="starsmashertools.lib.archive.html">archive</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starsmashertools.lib.binary.html">binary</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starsmashertools.lib.dynamical.html">dynamical</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starsmashertools.lib.energyfile.html">energyfile</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starsmashertools.lib.flux.html">flux</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starsmashertools.lib.input.html">input</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starsmashertools.lib.kernels.html">kernels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starsmashertools.lib.logfile.html">logfile</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starsmashertools.lib.output.html">output</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starsmashertools.lib.ray.html">ray</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starsmashertools.lib.relaxation.html">relaxation</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">report</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.report.Report"><code class="docutils literal notranslate"><span class="pre">Report</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.report.Report.__init__"><code class="docutils literal notranslate"><span class="pre">Report.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.report.Report.add_column"><code class="docutils literal notranslate"><span class="pre">Report.add_column()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.report.Report.add_row"><code class="docutils literal notranslate"><span class="pre">Report.add_row()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.report.Report.load"><code class="docutils literal notranslate"><span class="pre">Report.load()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.report.Report.remove_column"><code class="docutils literal notranslate"><span class="pre">Report.remove_column()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.report.Report.remove_row"><code class="docutils literal notranslate"><span class="pre">Report.remove_row()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.report.Report.save"><code class="docutils literal notranslate"><span class="pre">Report.save()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.report.Report.set_column"><code class="docutils literal notranslate"><span class="pre">Report.set_column()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.report.Report.set_row"><code class="docutils literal notranslate"><span class="pre">Report.set_row()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="starsmashertools.lib.simulation.html">simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starsmashertools.lib.table.html">table</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starsmashertools.lib.units.html">units</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../starsmashertools.math.html">math</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../starsmashertools.mpl.html">mpl</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">starsmashertools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../starsmashertools.lib.html">lib</a></li>
+      <li class="breadcrumb-item active">starsmashertools.lib.report</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/lib/starsmashertools.lib.report.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-starsmashertools.lib.report">
+<span id="starsmashertools-lib-report"></span><h1>starsmashertools.lib.report<a class="headerlink" href="#module-starsmashertools.lib.report" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="starsmashertools.lib.report.Report">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Report</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">simulations:</span> <span class="pre">list</span> <span class="pre">|</span> <span class="pre">tuple,</span> <span class="pre">columns:</span> <span class="pre">list</span> <span class="pre">|</span> <span class="pre">tuple</span> <span class="pre">=</span> <span class="pre">[{'args':</span> <span class="pre">(&lt;function</span> <span class="pre">&lt;lambda&gt;&gt;,),</span> <span class="pre">'kwargs':</span> <span class="pre">{'formatter':</span> <span class="pre">'{:20}',</span> <span class="pre">'header':</span> <span class="pre">'name',</span> <span class="pre">'header_formatter':</span> <span class="pre">'{:&lt;20}',</span> <span class="pre">'shorten':</span> <span class="pre">{'args':</span> <span class="pre">(20,),</span> <span class="pre">'kwargs':</span> <span class="pre">{'where':</span> <span class="pre">'center'}}}},</span> <span class="pre">{'args':</span> <span class="pre">(&lt;function</span> <span class="pre">&lt;lambda&gt;&gt;,),</span> <span class="pre">'kwargs':</span> <span class="pre">{'formatter':</span> <span class="pre">'{:10g</span> <span class="pre">&gt;4s}',</span> <span class="pre">'header':</span> <span class="pre">'start',</span> <span class="pre">'header_formatter':</span> <span class="pre">'{:&gt;14s}'}},</span> <span class="pre">{'args':</span> <span class="pre">(&lt;function</span> <span class="pre">&lt;lambda&gt;&gt;,),</span> <span class="pre">'kwargs':</span> <span class="pre">{'formatter':</span> <span class="pre">'{:10g</span> <span class="pre">&gt;4s}',</span> <span class="pre">'header':</span> <span class="pre">'current',</span> <span class="pre">'header_formatter':</span> <span class="pre">'{:&gt;14s}'}},</span> <span class="pre">{'args':</span> <span class="pre">(&lt;function</span> <span class="pre">&lt;lambda&gt;&gt;,),</span> <span class="pre">'kwargs':</span> <span class="pre">{'formatter':</span> <span class="pre">'{:10g</span> <span class="pre">&gt;4s}',</span> <span class="pre">'header':</span> <span class="pre">'stop',</span> <span class="pre">'header_formatter':</span> <span class="pre">'{:&gt;14s}'}}],</span> <span class="pre">column_separator:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'</span>&#160; <span class="pre">'</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/report.html#Report"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.report.Report" title="Link to this definition"></a></dt>
+<dd><p>Given Simulations, generate a report which shows their properties in
+provided text formatting.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.report.Report.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">simulations:</span> <span class="pre">list</span> <span class="pre">|</span> <span class="pre">tuple,</span> <span class="pre">columns:</span> <span class="pre">list</span> <span class="pre">|</span> <span class="pre">tuple</span> <span class="pre">=</span> <span class="pre">[{'args':</span> <span class="pre">(&lt;function</span> <span class="pre">&lt;lambda&gt;&gt;,),</span> <span class="pre">'kwargs':</span> <span class="pre">{'formatter':</span> <span class="pre">'{:20}',</span> <span class="pre">'header':</span> <span class="pre">'name',</span> <span class="pre">'header_formatter':</span> <span class="pre">'{:&lt;20}',</span> <span class="pre">'shorten':</span> <span class="pre">{'args':</span> <span class="pre">(20,),</span> <span class="pre">'kwargs':</span> <span class="pre">{'where':</span> <span class="pre">'center'}}}},</span> <span class="pre">{'args':</span> <span class="pre">(&lt;function</span> <span class="pre">&lt;lambda&gt;&gt;,),</span> <span class="pre">'kwargs':</span> <span class="pre">{'formatter':</span> <span class="pre">'{:10g</span> <span class="pre">&gt;4s}',</span> <span class="pre">'header':</span> <span class="pre">'start',</span> <span class="pre">'header_formatter':</span> <span class="pre">'{:&gt;14s}'}},</span> <span class="pre">{'args':</span> <span class="pre">(&lt;function</span> <span class="pre">&lt;lambda&gt;&gt;,),</span> <span class="pre">'kwargs':</span> <span class="pre">{'formatter':</span> <span class="pre">'{:10g</span> <span class="pre">&gt;4s}',</span> <span class="pre">'header':</span> <span class="pre">'current',</span> <span class="pre">'header_formatter':</span> <span class="pre">'{:&gt;14s}'}},</span> <span class="pre">{'args':</span> <span class="pre">(&lt;function</span> <span class="pre">&lt;lambda&gt;&gt;,),</span> <span class="pre">'kwargs':</span> <span class="pre">{'formatter':</span> <span class="pre">'{:10g</span> <span class="pre">&gt;4s}',</span> <span class="pre">'header':</span> <span class="pre">'stop',</span> <span class="pre">'header_formatter':</span> <span class="pre">'{:&gt;14s}'}}],</span> <span class="pre">column_separator:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'</span>&#160; <span class="pre">'</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/report.html#Report.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.report.Report.__init__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.report.Report.add_column">
+<span class="sig-name descname"><span class="pre">add_column</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.12)"><span class="pre">Callable</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">header</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">formatter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'{}'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">header_formatter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'{}'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shorten</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.12)"><span class="pre">dict</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/report.html#Report.add_column"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.report.Report.add_column" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.report.Report.add_row">
+<span class="sig-name descname"><span class="pre">add_row</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">simulation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="starsmashertools.lib.simulation.html#starsmashertools.lib.simulation.Simulation" title="starsmashertools.lib.simulation.Simulation"><span class="pre">Simulation</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/report.html#Report.add_row"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.report.Report.add_row" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.report.Report.load">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/report.html#Report.load"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.report.Report.load" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.report.Report.remove_column">
+<span class="sig-name descname"><span class="pre">remove_column</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.12)"><span class="pre">Callable</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/report.html#Report.remove_column"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.report.Report.remove_column" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.report.Report.remove_row">
+<span class="sig-name descname"><span class="pre">remove_row</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">simulation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="starsmashertools.lib.simulation.html#starsmashertools.lib.simulation.Simulation" title="starsmashertools.lib.simulation.Simulation"><span class="pre">Simulation</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/report.html#Report.remove_row"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.report.Report.remove_row" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.report.Report.save">
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/report.html#Report.save"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.report.Report.save" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.report.Report.set_column">
+<span class="sig-name descname"><span class="pre">set_column</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">header_string</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/report.html#Report.set_column"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.report.Report.set_column" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.report.Report.set_row">
+<span class="sig-name descname"><span class="pre">set_row</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">simulation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="starsmashertools.lib.simulation.html#starsmashertools.lib.simulation.Simulation" title="starsmashertools.lib.simulation.Simulation"><span class="pre">Simulation</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/report.html#Report.set_row"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.report.Report.set_row" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="starsmashertools.lib.relaxation.html" class="btn btn-neutral float-left" title="starsmashertools.lib.relaxation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="starsmashertools.lib.simulation.html" class="btn btn-neutral float-right" title="starsmashertools.lib.simulation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Roger Hatfull.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>  
+
+  <style>
+         .wy-nav-content { max-width: none; }
+  </style>
+
+
+
+</body>
+</html>

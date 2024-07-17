@@ -1,36 +1,20 @@
 
-starsmashertools
-================
+.. include:: gettingstarted.rst
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
+   :hidden:
 
-   Home <self>
-   gettingstarted
+   Getting Started <self>
    cliprograms
 
-*****************
-API documentation
-*****************
 
-.. autosummary::
-   :toctree: _autosummary
+.. toctree::
+   :caption: API Documentation
+   :hidden:
    
-   starsmashertools.helpers.file
-   starsmashertools.lib.archive
-   starsmashertools.lib.binary
-   starsmashertools.lib.dynamical
-   starsmashertools.lib.energyfile
-   starsmashertools.lib.flux
-   starsmashertools.lib.input
-   starsmashertools.lib.logfile
-   starsmashertools.lib.output
-   starsmashertools.lib.ray
-   starsmashertools.lib.relaxation
-   starsmashertools.lib.report
-   starsmashertools.lib.simulation
-   starsmashertools.lib.units
+   starsmashertools.helpers
+   starsmashertools.lib
    starsmashertools.math
-   starsmashertools.mpl.artists
-   starsmashertools.mpl.figure
+   starsmashertools.mpl
 

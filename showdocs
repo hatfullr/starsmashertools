@@ -1,0 +1,87 @@
+#!/usr/bin/env python3 
+import subprocess
+import os
+import starsmashertools
+import sys
+import argparse
+
+sphinx_dir = os.path.join(
+    starsmashertools.SOURCE_DIRECTORY,
+    'sphinx',
+)
+
+class CleanupError(Exception, object): pass
+class CompilationError(Exception, object): pass
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        prog = 'showdocs',
+        description = 'Show the starsmashertools documentation and optionally compile the documentation.',
+    )
+
+    group = parser.add_mutually_exclusive_group(required = False)
+    group.add_argument(
+        '-c',
+        '--compile',
+        action = 'store_true',
+        help = 'Compile the docs without destroying existing files. Use option --compile-clean to compile the code from scratch.',
+    )
+    group.add_argument(
+        '-C',
+        '--compile-clean',
+        action = 'store_true',
+        help = "Compile the docs from scratch, destroying any existing compilation files. Next time you update starsmashertools by 'git pull' you may need to first run 'git restore .' to undo these changes.",
+    )
+    
+    return parser.parse_args()
+
+def show():
+    os.chdir(sphinx_dir)
+    return subprocess.run(
+        ['make', 'show'],
+        check = True,
+        text = True,
+        stdout = subprocess.PIPE,
+        stderr = subprocess.STDOUT,
+    )
+
+
+def compile():
+    print("Compiling '%s'" % sphinx_dir)
+    os.chdir(sphinx_dir)
+    try:
+        p = subprocess.run(
+            ['make', 'html'],
+            check = True,
+            text = True,
+            stdout = subprocess.PIPE,
+            stderr = subprocess.STDOUT,
+        )
+        if not 'build succeeded' in p.stdout:
+            raise CompilationError(p.stdout)
+    except subprocess.CalledProcessError as e:
+        raise CompilationError(e.output)
+    return p
+    
+
+def clean():
+    print("Cleaning '%s'" % sphinx_dir)
+    os.chdir(sphinx_dir)
+    try:
+        return subprocess.run(
+            ['make', 'clean'],
+            check = True,
+            text = True,
+            stdout = subprocess.PIPE,
+            stderr = subprocess.STDOUT,
+        )
+    except subprocess.CalledProcessError as e:
+        raise CleanupError('(%s) %s' % (str(e.returncode), str(e.output)))
+
+if __name__ == '__main__':
+    args = parse_args()
+
+    if args.compile_clean: clean()
+    if args.compile_clean or args.compile: compile()
+
+    show()

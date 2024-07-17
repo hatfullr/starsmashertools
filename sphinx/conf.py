@@ -61,7 +61,10 @@ pygments_style = 'sphinx'
 html_theme = "sphinx_rtd_theme"
 #html_theme = 'alabaster'
 
+html_title = 'starsmashertools'
+
 html_static_path = ['_static']
+
 
 def remove_python_comments(content):
     import re

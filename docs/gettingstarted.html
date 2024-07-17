@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Getting Started &mdash; starsmashertools 14.12.0 documentation</title>
+  <title>Getting Started &mdash; starsmashertools</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
 
@@ -20,9 +20,7 @@
         <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="CLI Programs" href="cliprograms.html" />
-    <link rel="prev" title="starsmashertools" href="index.html" /> 
+    <link rel="search" title="Search" href="search.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -47,35 +45,16 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="index.html">Home</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Getting Started</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#installation">Installation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#simulation-directories">Simulation Directories</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#using-the-cli">Using the CLI</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#using-the-api">Using the API</a></li>
-</ul>
-</li>
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Getting Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="cliprograms.html">CLI Programs</a></li>
 </ul>
+<p class="caption" role="heading"><span class="caption-text">API Documentation</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="_autosummary/starsmashertools.helpers.file.html">starsmashertools.helpers.file</a></li>
-<li class="toctree-l1"><a class="reference internal" href="_autosummary/starsmashertools.lib.archive.html">starsmashertools.lib.archive</a></li>
-<li class="toctree-l1"><a class="reference internal" href="_autosummary/starsmashertools.lib.binary.html">starsmashertools.lib.binary</a></li>
-<li class="toctree-l1"><a class="reference internal" href="_autosummary/starsmashertools.lib.dynamical.html">starsmashertools.lib.dynamical</a></li>
-<li class="toctree-l1"><a class="reference internal" href="_autosummary/starsmashertools.lib.energyfile.html">starsmashertools.lib.energyfile</a></li>
-<li class="toctree-l1"><a class="reference internal" href="_autosummary/starsmashertools.lib.flux.html">starsmashertools.lib.flux</a></li>
-<li class="toctree-l1"><a class="reference internal" href="_autosummary/starsmashertools.lib.input.html">starsmashertools.lib.input</a></li>
-<li class="toctree-l1"><a class="reference internal" href="_autosummary/starsmashertools.lib.logfile.html">starsmashertools.lib.logfile</a></li>
-<li class="toctree-l1"><a class="reference internal" href="_autosummary/starsmashertools.lib.output.html">starsmashertools.lib.output</a></li>
-<li class="toctree-l1"><a class="reference internal" href="_autosummary/starsmashertools.lib.ray.html">starsmashertools.lib.ray</a></li>
-<li class="toctree-l1"><a class="reference internal" href="_autosummary/starsmashertools.lib.relaxation.html">starsmashertools.lib.relaxation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="_autosummary/starsmashertools.lib.report.html">starsmashertools.lib.report</a></li>
-<li class="toctree-l1"><a class="reference internal" href="_autosummary/starsmashertools.lib.simulation.html">starsmashertools.lib.simulation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="_autosummary/starsmashertools.lib.units.html">starsmashertools.lib.units</a></li>
-<li class="toctree-l1"><a class="reference internal" href="_autosummary/starsmashertools.math.html">starsmashertools.math</a></li>
-<li class="toctree-l1"><a class="reference internal" href="_autosummary/starsmashertools.mpl.artists.html">starsmashertools.mpl.artists</a></li>
-<li class="toctree-l1"><a class="reference internal" href="_autosummary/starsmashertools.mpl.figure.html">starsmashertools.mpl.figure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="starsmashertools.helpers.html">helpers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="starsmashertools.lib.html">lib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="starsmashertools.math.html">math</a></li>
+<li class="toctree-l1"><a class="reference internal" href="starsmashertools.mpl.html">mpl</a></li>
 </ul>
 
         </div>
@@ -115,14 +94,14 @@
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">./install</span>
 </pre></div>
 </div>
-<p>If you don’t have an internet connection (how did you get here?) you can use the offline installer:</p>
+<p>If you don’t have an internet connection, you can try the offline installer:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">./install_offline</span>
 </pre></div>
 </div>
 </section>
 <section id="simulation-directories">
 <h2>Simulation Directories<a class="headerlink" href="#simulation-directories" title="Link to this heading"></a></h2>
-<p>To use <cite>starsmashertools</cite>, your <cite>StarSmasher</cite> simulations must be structured at a bare minimum in the following way:</p>
+<p>To use <code class="docutils literal notranslate"><span class="pre">starsmashertools</span></code>, your <code class="docutils literal notranslate"><span class="pre">StarSmasher</span></code> simulations must be structured at a bare minimum in the following way:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">|--</span> <span class="n">simulation</span><span class="o">-</span><span class="n">directory</span>
 <span class="o">|</span>   <span class="o">|--</span> <span class="n">sph</span><span class="o">.</span><span class="n">input</span>
 <span class="o">|</span>   <span class="o">|--</span> <span class="n">src</span>
@@ -131,7 +110,7 @@
 <span class="o">|</span>       <span class="o">|--</span> <span class="n">starsmasher</span><span class="o">.</span><span class="n">h</span>
 </pre></div>
 </div>
-<p>Other files may also be required depending on if the simulation is a stellar relaxation (<cite>nrelax=1</cite>), a binary scanning run (<cite>nrelax=2</cite> or <cite>nrelax=3</cite>), or a dynamical calculation (<cite>nrelax=0</cite>). Here is an example directory structure of a generic <cite>StarSmasher</cite> simulation that has been run and produced 5 output files:</p>
+<p>Other files may also be required depending on if the simulation is a stellar relaxation (<code class="docutils literal notranslate"><span class="pre">nrelax=1</span></code>), a binary scanning run (<code class="docutils literal notranslate"><span class="pre">nrelax=2</span></code> or <code class="docutils literal notranslate"><span class="pre">nrelax=3</span></code>), or a dynamical calculation (<code class="docutils literal notranslate"><span class="pre">nrelax=0</span></code>). Here is an example directory structure of a generic <code class="docutils literal notranslate"><span class="pre">StarSmasher</span></code> simulation that has been run and produced 5 output files:</p>
 <div class="literal-block-wrapper docutils container" id="id2">
 <div class="code-block-caption"><span class="caption-text">Simulation directory structure</span><a class="headerlink" href="#id2" title="Link to this code"></a></div>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">|--</span> <span class="n">simulation</span><span class="o">-</span><span class="n">directory</span>
@@ -154,98 +133,69 @@
 </div>
 </div>
 </section>
-<section id="using-the-cli">
-<h2>Using the CLI<a class="headerlink" href="#using-the-cli" title="Link to this heading"></a></h2>
-<p>The Command Line Interface (CLI) programs included with <cite>starsmashertools</cite> make analyzing <cite>StarSmasher</cite> simulation a breeze. Inside the simulation directory we run the following command:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">starsmashertools</span>
+<section id="using-the-api">
+<h2>Using the API<a class="headerlink" href="#using-the-api" title="Link to this heading"></a></h2>
+<p>Here is an example run from a simulation directory, which happens to be a dynamical simulation:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">starsmashertools</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">simulation</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">get_simulation</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">simulation</span>
+<span class="go">&lt;starsmashertools.lib.dynamical.Dynamical object at 0x7f4744a9e740&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">simulation</span><span class="p">[</span><span class="s1">&#39;nrelax&#39;</span><span class="p">]</span>
+<span class="go">0</span>
 </pre></div>
 </div>
-<p>This will launch a CLI application which might look something like this:</p>
+<p>Let’s inspect the simulation’s output files:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">simulation</span><span class="o">.</span><span class="n">get_output</span><span class="p">()</span>
+<span class="go">[Output(&#39;out0000.sph&#39;), Output(&#39;out0001.sph&#39;), Output(&#39;out0002.sph&#39;), Output(&#39;out0003.sph&#39;), Output(&#39;out0004.sph&#39;)]</span>
+</pre></div>
+</div>
+<p>An <a class="reference internal" href="lib/starsmashertools.lib.output.html#starsmashertools.lib.output.Output" title="starsmashertools.lib.output.Output"><code class="xref py py-class docutils literal notranslate"><span class="pre">Output</span></code></a> object functions like a <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a> except information is read from the files only after the first <a class="reference internal" href="lib/starsmashertools.lib.output.html#starsmashertools.lib.output.Output.__getitem__" title="starsmashertools.lib.output.Output.__getitem__"><code class="xref py py-meth docutils literal notranslate"><span class="pre">__getitem__()</span></code></a> request, after which the dictionary is filled.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">first</span> <span class="o">=</span> <span class="n">simulation</span><span class="o">.</span><span class="n">get_output</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">first</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">]</span>
+<span class="go">array([ 1.00787165e-17, -3.23741675e+00, -3.23741667e+00, ...,</span>
+<span class="go">     3.30216492e+00,  3.30216494e+00,  3.30216505e+00])</span>
+</pre></div>
+</div>
+<p>Header information from the output files is also available, as well as special additional cached data which can be edited and ammended in your preferences file <code class="docutils literal notranslate"><span class="pre">starsmashertools/data/user/preferences.py</span></code>. If you do not have a preferences file yet, copy the one from <code class="docutils literal notranslate"><span class="pre">starsmashertools/data/defaults/preferences.py</span></code>.</p>
+<p>If your use case involves long calculations, you can defer the reading of output files to a separate process to speed up your code:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">simulation</span><span class="o">.</span><span class="n">get_output_iterator</span><span class="p">()</span>
+<span class="go">OutputIterator(&#39;out0000.sph&#39; ... &#39;out0004.sph&#39;)</span>
+</pre></div>
+</div>
+<p>See the <a class="reference internal" href="lib/starsmashertools.lib.output.html#starsmashertools.lib.output.OutputIterator" title="starsmashertools.lib.output.OutputIterator"><code class="xref py py-class docutils literal notranslate"><span class="pre">OutputIterator</span></code></a> and <a class="reference internal" href="lib/starsmashertools.lib.output.html#starsmashertools.lib.output.Output" title="starsmashertools.lib.output.Output"><code class="xref py py-class docutils literal notranslate"><span class="pre">Output</span></code></a> classes for more details.</p>
+</section>
+<section id="using-the-cli">
+<h2>Using the CLI<a class="headerlink" href="#using-the-cli" title="Link to this heading"></a></h2>
+<p>There are some Command Line Interface (CLI) programs included with <code class="docutils literal notranslate"><span class="pre">starsmashertools</span></code>. Inside a simulation directory, run the <code class="docutils literal notranslate"><span class="pre">starsmashertools</span></code> command, which will launch a CLI application that looks like:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go"> Main Menu</span>
 
-<span class="go"> Directory = .../simulation-directory</span>
+<span class="go"> Directory = [snipped]</span>
 
 <span class="go"> Choose an option</span>
-<span class="go">      0) get_children</span>
-<span class="go">      1) get_n</span>
-<span class="go">      2) get_final_radius</span>
+<span class="go">      0) Set children (set_children)</span>
+<span class="go">      1) Show children (get_children)</span>
+<span class="go">      2) Show output files (get_output)</span>
+<span class="go">      3) Plot energies (plot_energy)</span>
+<span class="go">      4) Plot animation (plot_animation)</span>
+<span class="go">      5) Concatenate simulations (join)</span>
+<span class="go">      6) Detach concatenated simulations (split)</span>
+<span class="go">      7) Show concatenated simulations (show_joined_simulations)</span>
+<span class="go">      8) get_relaxations</span>
+<span class="go">      9) get_binary</span>
+<span class="go">     10) get_plunge_time</span>
 
 <span class="go">q) quit</span>
 <span class="go">:</span>
 </pre></div>
 </div>
-</section>
-<section id="using-the-api">
-<h2>Using the API<a class="headerlink" href="#using-the-api" title="Link to this heading"></a></h2>
-<p>For more granular control you can use <cite>starsmashertools</cite> as a module in any Python3 script:</p>
-<div class="literal-block-wrapper docutils container" id="id3">
-<div class="code-block-caption"><span class="caption-text">Example API usage to get a list containing Output objects</span><a class="headerlink" href="#id3" title="Link to this code"></a></div>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">starsmashertools</span>
-<span class="n">simulation</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">get_simulation</span><span class="p">(</span><span class="s1">&#39;simulation-directory&#39;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">simulation</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">simulation</span><span class="p">[</span><span class="s1">&#39;nrelax&#39;</span><span class="p">])</span>
-</pre></div>
-</div>
-</div>
-<div class="literal-block-wrapper docutils container" id="id4">
-<div class="code-block-caption"><span class="caption-text">Console output</span><a class="headerlink" href="#id4" title="Link to this code"></a></div>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">&lt;starsmashertools.lib.dynamical.Dynamical object at 0x7f4744a9e740&gt;</span>
-<span class="go">0</span>
-</pre></div>
-</div>
-</div>
-<p>Here <cite>starsmashertools</cite> has automatically detected the simulation as a dynamical calculation, and we can see that the <cite>nrelax</cite> input variable is <cite>0</cite> as expected. Inspecting the simulation outputs is simple:</p>
-<div class="literal-block-wrapper docutils container" id="id5">
-<div class="code-block-caption"><span class="caption-text">Simulation outputs</span><a class="headerlink" href="#id5" title="Link to this code"></a></div>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">simulation</span><span class="o">.</span><span class="n">get_output</span><span class="p">())</span>
-</pre></div>
-</div>
-</div>
-<div class="literal-block-wrapper docutils container" id="id6">
-<div class="code-block-caption"><span class="caption-text">Console output</span><a class="headerlink" href="#id6" title="Link to this code"></a></div>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">[Output(&#39;out0000.sph&#39;), Output(&#39;out0001.sph&#39;), Output(&#39;out0002.sph&#39;), Output(&#39;out0003.sph&#39;), Output(&#39;out0004.sph&#39;)]</span>
-</pre></div>
-</div>
-</div>
-<p>The output files in the simulation directory are stored as <a class="reference internal" href="_autosummary/starsmashertools.lib.output.html#starsmashertools.lib.output.Output" title="starsmashertools.lib.output.Output"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Output()</span></code></a> objects, which function like Python dictionaries except their values cannot be modified and information is read from the files only after the first <cite>__getitem__</cite> request, such as <cite>output[‘x’]</cite> to get the particle x positions:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">first</span> <span class="o">=</span> <span class="n">simulation</span><span class="o">.</span><span class="n">get_output</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">first</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">])</span>
-</pre></div>
-</div>
-<div class="literal-block-wrapper docutils container" id="id7">
-<div class="code-block-caption"><span class="caption-text">Console output</span><a class="headerlink" href="#id7" title="Link to this code"></a></div>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">array([ 1.00787165e-17, -3.23741675e+00, -3.23741667e+00, ...,</span>
-<span class="go">     3.30216492e+00,  3.30216494e+00,  3.30216505e+00])</span>
-</pre></div>
-</div>
-</div>
-<p>Header information from the output files is also available, as well as special additional cached data which can be edited and ammended in the <cite>starsmashertools.preferences</cite> file located in <cite>starsmashertools/starsmashertools/preferences.py</cite> under <cite>‘Output’</cite> in <cite>‘cache’</cite>. A list of available keys can be found using the <cite>keys()</cite> method on an <a class="reference internal" href="_autosummary/starsmashertools.lib.output.html#starsmashertools.lib.output.Output" title="starsmashertools.lib.output.Output"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Output()</span></code></a> object.</p>
-<p>For accelerated file reading when dealing with many output files we suggest you use an <a class="reference internal" href="_autosummary/starsmashertools.lib.output.html#starsmashertools.lib.output.OutputIterator" title="starsmashertools.lib.output.OutputIterator"><code class="xref py py-meth docutils literal notranslate"><span class="pre">OutputIterator()</span></code></a>:</p>
-<div class="literal-block-wrapper docutils container" id="id8">
-<div class="code-block-caption"><span class="caption-text">Example API usage to get an OutputIterator</span><a class="headerlink" href="#id8" title="Link to this code"></a></div>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">starsmashertools</span>
-<span class="n">simulation</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">get_simulation</span><span class="p">(</span><span class="s1">&#39;simulation-directory&#39;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">simulation</span><span class="o">.</span><span class="n">get_output_iterator</span><span class="p">())</span>
-</pre></div>
-</div>
-</div>
-<div class="literal-block-wrapper docutils container" id="id9">
-<div class="code-block-caption"><span class="caption-text">Console output</span><a class="headerlink" href="#id9" title="Link to this code"></a></div>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">OutputIterator(&#39;out0000.sph&#39; ... &#39;out0004.sph&#39;)</span>
-</pre></div>
-</div>
-</div>
-<p>An OutputIterator “reads ahead” asynchronously to prepare output objects in the background while your code runs, which can be helpful for speeding up slow analysis tasks. See the <a class="reference internal" href="_autosummary/starsmashertools.lib.output.html#starsmashertools.lib.output.OutputIterator" title="starsmashertools.lib.output.OutputIterator"><code class="xref py py-meth docutils literal notranslate"><span class="pre">OutputIterator()</span></code></a> and <a class="reference internal" href="_autosummary/starsmashertools.lib.output.html#starsmashertools.lib.output.Output" title="starsmashertools.lib.output.Output"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Output()</span></code></a> classes for more details.</p>
+<p>Sometimes the CLI works well, and sometimes it doesn’t. Sorry about that. It’s always safe to fallback to using iPython in the terminal.</p>
 </section>
 </section>
 
 
            </div>
           </div>
-          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="index.html" class="btn btn-neutral float-left" title="starsmashertools" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="cliprograms.html" class="btn btn-neutral float-right" title="CLI Programs" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
-    </div>
+          <footer>
 
   <hr/>
 
@@ -267,7 +217,13 @@
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>  
+
+  <style>
+         .wy-nav-content { max-width: none; }
+  </style>
+
+
 
 </body>
 </html>

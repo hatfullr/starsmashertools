@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>starsmashertools.lib.binary &mdash; starsmashertools</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../_static/documentation_options.js?v=61ccec80"></script>
+        <script src="../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="starsmashertools.lib.dynamical" href="starsmashertools.lib.dynamical.html" />
+    <link rel="prev" title="starsmashertools.lib.archive" href="starsmashertools.lib.archive.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            starsmashertools
+          </a>
+              <div class="version">
+                14.12.0
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../index.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cliprograms.html">CLI Programs</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Documentation</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../starsmashertools.helpers.html">helpers</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../starsmashertools.lib.html">lib</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="starsmashertools.lib.archive.html">archive</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">binary</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.binary.Binary"><code class="docutils literal notranslate"><span class="pre">Binary</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.binary.Binary.get_COMs"><code class="docutils literal notranslate"><span class="pre">Binary.get_COMs()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.binary.Binary.get_RLOF"><code class="docutils literal notranslate"><span class="pre">Binary.get_RLOF()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.binary.Binary.get_fRLOF"><code class="docutils literal notranslate"><span class="pre">Binary.get_fRLOF()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.binary.Binary.get_n1"><code class="docutils literal notranslate"><span class="pre">Binary.get_n1()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.binary.Binary.get_n2"><code class="docutils literal notranslate"><span class="pre">Binary.get_n2()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.binary.Binary.get_period"><code class="docutils literal notranslate"><span class="pre">Binary.get_period()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.binary.Binary.get_primary"><code class="docutils literal notranslate"><span class="pre">Binary.get_primary()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.binary.Binary.get_primary_IDs"><code class="docutils literal notranslate"><span class="pre">Binary.get_primary_IDs()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.binary.Binary.get_primary_core_mass"><code class="docutils literal notranslate"><span class="pre">Binary.get_primary_core_mass()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.binary.Binary.get_primary_mass"><code class="docutils literal notranslate"><span class="pre">Binary.get_primary_mass()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.binary.Binary.get_secondary"><code class="docutils literal notranslate"><span class="pre">Binary.get_secondary()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.binary.Binary.get_secondary_IDs"><code class="docutils literal notranslate"><span class="pre">Binary.get_secondary_IDs()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.binary.Binary.get_secondary_core_mass"><code class="docutils literal notranslate"><span class="pre">Binary.get_secondary_core_mass()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.binary.Binary.get_secondary_mass"><code class="docutils literal notranslate"><span class="pre">Binary.get_secondary_mass()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.binary.Binary.get_separation"><code class="docutils literal notranslate"><span class="pre">Binary.get_separation()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.binary.Binary.get_start1u"><code class="docutils literal notranslate"><span class="pre">Binary.get_start1u()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.binary.Binary.get_start2u"><code class="docutils literal notranslate"><span class="pre">Binary.get_start2u()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.binary.Binary.isPrimaryPointMass"><code class="docutils literal notranslate"><span class="pre">Binary.isPrimaryPointMass()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.binary.Binary.isSecondaryPointMass"><code class="docutils literal notranslate"><span class="pre">Binary.isSecondaryPointMass()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="starsmashertools.lib.dynamical.html">dynamical</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starsmashertools.lib.energyfile.html">energyfile</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starsmashertools.lib.flux.html">flux</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starsmashertools.lib.input.html">input</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starsmashertools.lib.kernels.html">kernels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starsmashertools.lib.logfile.html">logfile</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starsmashertools.lib.output.html">output</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starsmashertools.lib.ray.html">ray</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starsmashertools.lib.relaxation.html">relaxation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starsmashertools.lib.report.html">report</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starsmashertools.lib.simulation.html">simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starsmashertools.lib.table.html">table</a></li>
+<li class="toctree-l2"><a class="reference internal" href="starsmashertools.lib.units.html">units</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../starsmashertools.math.html">math</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../starsmashertools.mpl.html">mpl</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">starsmashertools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../starsmashertools.lib.html">lib</a></li>
+      <li class="breadcrumb-item active">starsmashertools.lib.binary</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/lib/starsmashertools.lib.binary.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-starsmashertools.lib.binary">
+<span id="starsmashertools-lib-binary"></span><h1>starsmashertools.lib.binary<a class="headerlink" href="#module-starsmashertools.lib.binary" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="starsmashertools.lib.binary.Binary">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Binary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/binary.html#Binary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.binary.Binary" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>directory</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a>) – The simulation directory.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.binary.Binary.get_COMs">
+<span class="sig-name descname"><span class="pre">get_COMs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="starsmashertools.lib.output.html#starsmashertools.lib.output.Output" title="starsmashertools.lib.output.Output"><span class="pre">Output</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="starsmashertools.lib.output.html#starsmashertools.lib.output.OutputIterator" title="starsmashertools.lib.output.OutputIterator"><span class="pre">OutputIterator</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/binary.html#Binary.get_COMs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.binary.Binary.get_COMs" title="Link to this definition"></a></dt>
+<dd><p>Obtain the center of mass of both stars in the simulation for the given
+outputs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>output</strong> (<a class="reference internal" href="starsmashertools.lib.output.html#starsmashertools.lib.output.Output" title="starsmashertools.lib.output.Output"><code class="xref py py-class docutils literal notranslate"><span class="pre">Output</span></code></a>, <a class="reference internal" href="starsmashertools.lib.output.html#starsmashertools.lib.output.OutputIterator" title="starsmashertools.lib.output.OutputIterator"><code class="xref py py-class docutils literal notranslate"><span class="pre">OutputIterator</span></code></a>) – The output or outputs for which to get the center of mass of each of
+the two stars.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Two NumPy arrays of shape <code class="docutils literal notranslate"><span class="pre">(3,)</span></code> containing the <code class="docutils literal notranslate"><span class="pre">(x,</span> <span class="pre">y,</span> <span class="pre">z)</span></code>
+center of mass positions of the primary and secondary stars
+respectively.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></a>, <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.binary.Binary.get_RLOF">
+<span class="sig-name descname"><span class="pre">get_RLOF</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">which</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'primary'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><span class="pre">float</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">CLI_output_window</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">6</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/binary.html#Binary.get_RLOF"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.binary.Binary.get_RLOF" title="Link to this definition"></a></dt>
+<dd><p>Obtain the output file that corresponds with the time of Roche lobe
+overflow (RLOF). RLOF is detected using <a class="reference internal" href="#starsmashertools.lib.binary.Binary.get_fRLOF" title="starsmashertools.lib.binary.Binary.get_fRLOF"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_fRLOF()</span></code></a> to obtain
+the fraction of the Roche lobe that is filled fRLOF in the output files.
+The output files are searched to locate the one whose fRLOF value is
+closest to <code class="docutils literal notranslate"><span class="pre">threshold</span></code> and the file just before that one is returned.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>which</strong> (str, default = <code class="docutils literal notranslate"><span class="pre">'primary'</span></code>) – The star(s) for which to find the RLOF condition. Must be one of the
+following: <code class="docutils literal notranslate"><span class="pre">'primary'</span></code>, <code class="docutils literal notranslate"><span class="pre">'secondary'</span></code>, or <code class="docutils literal notranslate"><span class="pre">'both'</span></code>. If
+<code class="docutils literal notranslate"><span class="pre">'primary'</span></code> or <code class="docutils literal notranslate"><span class="pre">'secondary'</span></code>, a single
+<a class="reference internal" href="starsmashertools.lib.output.html#starsmashertools.lib.output.Output" title="starsmashertools.lib.output.Output"><code class="xref py py-class docutils literal notranslate"><span class="pre">Output</span></code></a> object is returned, and if <code class="docutils literal notranslate"><span class="pre">'both'</span></code>
+then two are returned, which are the primary and secondary stars’
+RLOF times repsectively.</p></li>
+<li><p><strong>threshold</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><em>float</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><em>int</em></a><em>,  </em><em>default = 1.</em>) – The threshold for detecting Roche lobe overflow. This value is
+compared with fRLOF from <a class="reference internal" href="#starsmashertools.lib.binary.Binary.get_fRLOF" title="starsmashertools.lib.binary.Binary.get_fRLOF"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_fRLOF()</span></code></a>.</p></li>
+<li><p><strong>CLI_output_window</strong> (int, default = <code class="docutils literal notranslate"><span class="pre">Pref('get_RLOF.CLI</span> <span class="pre">output</span> <span class="pre">window',</span> <span class="pre">6)</span></code>) – How many output files to show in the CLI. Only applies when running
+starsmashertools in CLI mode.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><a class="reference internal" href="starsmashertools.lib.output.html#starsmashertools.lib.output.Output" title="starsmashertools.lib.output.Output"><code class="xref py py-class docutils literal notranslate"><span class="pre">Output</span></code></a> or None if <code class="docutils literal notranslate"><span class="pre">which</span> <span class="pre">=</span> <span class="pre">'primary'</span></code> or <code class="docutils literal notranslate"><span class="pre">which</span> <span class="pre">=</span> <span class="pre">'secondary'</span></code> – The output file corresponding to the time of Roche lobe overflow for
+the star specified by <code class="docutils literal notranslate"><span class="pre">which</span></code>. If the star has only a single
+particle, returns <cite>None</cite>.</p></li>
+<li><p>list of length 2 if <code class="docutils literal notranslate"><span class="pre">which</span> <span class="pre">=</span> <span class="pre">'both'</span></code> – Each element in the list is either a <a class="reference internal" href="starsmashertools.lib.output.html#starsmashertools.lib.output.Output" title="starsmashertools.lib.output.Output"><code class="xref py py-class docutils literal notranslate"><span class="pre">Output</span></code></a> or
+<cite>None</cite>. The first element is for the primary star and the second
+element is for the secondary star.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#starsmashertools.lib.binary.Binary.get_fRLOF" title="starsmashertools.lib.binary.Binary.get_fRLOF"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_fRLOF()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.binary.Binary.get_fRLOF">
+<span class="sig-name descname"><span class="pre">get_fRLOF</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="starsmashertools.lib.output.html#starsmashertools.lib.output.Output" title="starsmashertools.lib.output.Output"><span class="pre">Output</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="starsmashertools.lib.output.html#starsmashertools.lib.output.OutputIterator" title="starsmashertools.lib.output.OutputIterator"><span class="pre">OutputIterator</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/binary.html#Binary.get_fRLOF"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.binary.Binary.get_fRLOF" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.binary.Binary.get_n1">
+<span class="sig-name descname"><span class="pre">get_n1</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/binary.html#Binary.get_n1"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.binary.Binary.get_n1" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.binary.Binary.get_n2">
+<span class="sig-name descname"><span class="pre">get_n2</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/binary.html#Binary.get_n2"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.binary.Binary.get_n2" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.binary.Binary.get_period">
+<span class="sig-name descname"><span class="pre">get_period</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="starsmashertools.lib.output.html#starsmashertools.lib.output.Output" title="starsmashertools.lib.output.Output"><span class="pre">Output</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="starsmashertools.lib.output.html#starsmashertools.lib.output.OutputIterator" title="starsmashertools.lib.output.OutputIterator"><span class="pre">OutputIterator</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/binary.html#Binary.get_period"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.binary.Binary.get_period" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.binary.Binary.get_primary">
+<span class="sig-name descname"><span class="pre">get_primary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="starsmashertools.lib.output.html#starsmashertools.lib.output.Output" title="starsmashertools.lib.output.Output"><span class="pre">Output</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/binary.html#Binary.get_primary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.binary.Binary.get_primary" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.binary.Binary.get_primary_IDs">
+<span class="sig-name descname"><span class="pre">get_primary_IDs</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/binary.html#Binary.get_primary_IDs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.binary.Binary.get_primary_IDs" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.binary.Binary.get_primary_core_mass">
+<span class="sig-name descname"><span class="pre">get_primary_core_mass</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/binary.html#Binary.get_primary_core_mass"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.binary.Binary.get_primary_core_mass" title="Link to this definition"></a></dt>
+<dd><p>Return the mass of the core particle in the primary (usually the donor)
+star, if it has a core particle. The log files are checked first, which
+is usually faster than checking the outputs. If something goes wrong
+with checking the log files, the first output file is checked instead,
+using <a class="reference internal" href="starsmashertools.lib.output.html#starsmashertools.lib.output.Output.get_core_particles" title="starsmashertools.lib.output.Output.get_core_particles"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_core_particles()</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The mass of the core particle in the primary (usually the donor)
+star. If there is no core particle, returns <cite>None</cite>.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>float or <cite>None</cite></p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#starsmashertools.lib.binary.Binary.get_secondary_core_mass" title="starsmashertools.lib.binary.Binary.get_secondary_core_mass"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_secondary_core_mass()</span></code></a>, <a class="reference internal" href="starsmashertools.lib.output.html#starsmashertools.lib.output.Output.get_core_particles" title="starsmashertools.lib.output.Output.get_core_particles"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_core_particles()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.binary.Binary.get_primary_mass">
+<span class="sig-name descname"><span class="pre">get_primary_mass</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/binary.html#Binary.get_primary_mass"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.binary.Binary.get_primary_mass" title="Link to this definition"></a></dt>
+<dd><p>Return the mass of the primary star (usually the donor). First the log
+files are searched, and if no log files are found then the first output
+file is checked. If there are no output files then the sph.start1u file
+is checked, and if it doesn’t exist then an error is raised.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The mass of the primary (usually the donor) star.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)">float</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.binary.Binary.get_secondary">
+<span class="sig-name descname"><span class="pre">get_secondary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="starsmashertools.lib.output.html#starsmashertools.lib.output.Output" title="starsmashertools.lib.output.Output"><span class="pre">Output</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/binary.html#Binary.get_secondary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.binary.Binary.get_secondary" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.binary.Binary.get_secondary_IDs">
+<span class="sig-name descname"><span class="pre">get_secondary_IDs</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/binary.html#Binary.get_secondary_IDs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.binary.Binary.get_secondary_IDs" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.binary.Binary.get_secondary_core_mass">
+<span class="sig-name descname"><span class="pre">get_secondary_core_mass</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/binary.html#Binary.get_secondary_core_mass"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.binary.Binary.get_secondary_core_mass" title="Link to this definition"></a></dt>
+<dd><p>Return the mass of the core particle in the secondary (usually the
+companion) star, if it has a core particle. The log files are checked
+first, which is usually faster than checking the outputs. If something
+goes wrong with checking the log files, the first output file is checked
+instead, using <code class="xref py py-func docutils literal notranslate"><span class="pre">get_core_particles()</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The mass of the core particle in the secondary (usually the
+companion) star. If there is no core particle, returns <cite>None</cite>.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>float or <cite>None</cite></p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><code class="xref py py-func docutils literal notranslate"><span class="pre">get_primary_core_mass()</span></code>, <code class="xref py py-func docutils literal notranslate"><span class="pre">get_core_particles()</span></code></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.binary.Binary.get_secondary_mass">
+<span class="sig-name descname"><span class="pre">get_secondary_mass</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/binary.html#Binary.get_secondary_mass"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.binary.Binary.get_secondary_mass" title="Link to this definition"></a></dt>
+<dd><p>Return the mass of the secondary star (usually the accretor). First the
+log files are searched, and if no log files are found then the first
+output file is checked. If there are no output files then the
+sph.start2u file is checked, and if it doesn’t exist then an error is
+raised.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The mass of the secondary (usually the accretor) star.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)">float</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.binary.Binary.get_separation">
+<span class="sig-name descname"><span class="pre">get_separation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="starsmashertools.lib.output.html#starsmashertools.lib.output.Output" title="starsmashertools.lib.output.Output"><span class="pre">Output</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="starsmashertools.lib.output.html#starsmashertools.lib.output.OutputIterator" title="starsmashertools.lib.output.OutputIterator"><span class="pre">OutputIterator</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/binary.html#Binary.get_separation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.binary.Binary.get_separation" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.binary.Binary.get_start1u">
+<span class="sig-name descname"><span class="pre">get_start1u</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/binary.html#Binary.get_start1u"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.binary.Binary.get_start1u" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.binary.Binary.get_start2u">
+<span class="sig-name descname"><span class="pre">get_start2u</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/binary.html#Binary.get_start2u"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.binary.Binary.get_start2u" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.binary.Binary.isPrimaryPointMass">
+<span class="sig-name descname"><span class="pre">isPrimaryPointMass</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/binary.html#Binary.isPrimaryPointMass"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.binary.Binary.isPrimaryPointMass" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.binary.Binary.isSecondaryPointMass">
+<span class="sig-name descname"><span class="pre">isSecondaryPointMass</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/binary.html#Binary.isSecondaryPointMass"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.binary.Binary.isSecondaryPointMass" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="starsmashertools.lib.archive.html" class="btn btn-neutral float-left" title="starsmashertools.lib.archive" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="starsmashertools.lib.dynamical.html" class="btn btn-neutral float-right" title="starsmashertools.lib.dynamical" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Roger Hatfull.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>  
+
+  <style>
+         .wy-nav-content { max-width: none; }
+  </style>
+
+
+
+</body>
+</html>
