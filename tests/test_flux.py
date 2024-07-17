@@ -131,6 +131,7 @@ class TestFlux(basetest.BaseTest):
         extent = [xmin, xmax, ymin, ymax]
 
         kwargs = {
+            'length_scale' : float(self.simulation.units.length),
             'resolution' : (n_res - 1, n_res - 1),
             'extent' : extent,
             'theta' : theta,
@@ -145,8 +146,6 @@ class TestFlux(basetest.BaseTest):
             'lmax' : 3000, # Constant (lmax)
             'dl_il' : 3., # Constant
             'dl' : 10, # Constant (dl)
-            'nbox' : 10, # Constant (nbox)
-            'nboxh' : 5, # Constant (nboxh)
             'l_range' : (10, 3000), # Constant (l_min, l_max)
             'factor1' : 1.191045e-05, # Constant (factor1)
             'factor2' : 1.438728e+00, # Constant (factor2)
@@ -162,7 +161,7 @@ class TestFlux(basetest.BaseTest):
             'output' : output.path,
             'kwargs' : kwargs,
             'simulation' : self.simulation.directory,
-            'units' : {'length' : self.simulation.units.length},
+            'units' : self.simulation.units,
             'time' : time,
             'image' : {
                 'flux' : surf_br,

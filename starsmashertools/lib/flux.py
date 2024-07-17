@@ -401,7 +401,7 @@ class FluxFinder(object):
         m = self.output['am'] * float(self.units['am'])
         rho = copy.deepcopy(self.output['rho']) * float(self.units['rho'])
 
-        self._tau = np.zeros(output['ntot'])
+        self._tau = np.zeros(self.output['ntot'])
         
         i = idx & ~cores
         # if uraddot_emerg[i] < uraddot_diff[i] and do_fluffy == 1:
@@ -572,9 +572,9 @@ class FluxFinder(object):
     def _process_images(self):
         xmin, xmax, ymin, ymax = self.extent
         
-        x = self.output['x'] * float(units['x']) / self.length_scale
-        y = self.output['y'] * float(units['y']) / self.length_scale
-        z = self.output['z'] * float(units['z']) / self.length_scale
+        x = self.output['x'] * float(self.units['x']) / self.length_scale
+        y = self.output['y'] * float(self.units['y']) / self.length_scale
+        z = self.output['z'] * float(self.units['z']) / self.length_scale
 
         flux_from_contributors = np.zeros(self.output['ntot'], dtype = float)
 
@@ -812,7 +812,7 @@ class FluxFinder(object):
         self.result['image','ray_n'] = ray_n
         self.result['image','weighted_averages'] = [image.array for key, image in self.images.items() if 'weightedaverage' in key]
 
-        del xmin,xmax,ymin,ymax,units,x,y,z,flux_from_contributors
+        del xmin,xmax,ymin,ymax,x,y,z,flux_from_contributors
         del shape,ray_id,ray_n,surf_d,surf_id,grid_indices,ijloc_arr
         del rloc,ijminmax_arr,mask,mask1,dtype,array,tau_min,mask2
         del zipped,idx,contributors
