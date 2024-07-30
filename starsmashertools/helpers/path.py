@@ -174,6 +174,25 @@ def listdir(directory):
         raise NotImplementedError
     return os.listdir(directory)
 
+def find_files(
+        directory,
+        recursive : bool = True,
+        include_symlinks : bool = True,
+):
+    if starsmashertools.helpers.ssh.isRemote(directory):
+        raise NotImplementedError
+    def get(path):
+        with scandir(path) as it:
+            for entry in it:
+                if not include_symlinks and (entry.is_symlink() or entry.is_junction()):
+                    continue
+                if entry.is_dir():
+                    if recursive: yield from get(realpath(entry.path))
+                    continue
+                # Must be a file
+                yield realpath(entry.path)
+    return get(realpath(directory))
+
 def remove(path):
     if starsmashertools.helpers.ssh.isRemote(path):
         raise NotImplementedError

@@ -92,6 +92,10 @@
 <span class="kn">import</span> <span class="nn">itertools</span>
 <span class="kn">import</span> <span class="nn">time</span>
 <span class="kn">import</span> <span class="nn">mmap</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">itertools</span>
+<span class="kn">import</span> <span class="nn">struct</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
 
 <span class="k">try</span><span class="p">:</span>
     <span class="kn">import</span> <span class="nn">matplotlib.axes</span>
@@ -1052,50 +1056,42 @@
         <span class="n">header_stride</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">_stride</span><span class="p">[</span><span class="s1">&#39;header&#39;</span><span class="p">]</span>
         <span class="n">header_dtype</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">_dtype</span><span class="p">[</span><span class="s1">&#39;header&#39;</span><span class="p">]</span>
         
-        <span class="n">EOL_size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">_EOL_size</span>
-        <span class="n">data_stride</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">_stride</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">EOL_size</span>
+        <span class="n">data_stride</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">_stride</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span>
         <span class="n">dtype</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">_dtype</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span>
 
         <span class="n">sort_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">particle_IDs</span><span class="p">)</span>
         <span class="n">IDs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">particle_IDs</span><span class="p">)[</span><span class="n">sort_indices</span><span class="p">]</span>
-        <span class="n">positions</span> <span class="o">=</span> <span class="p">[</span><span class="n">header_stride</span> <span class="o">+</span> <span class="n">EOL_size</span> <span class="o">+</span> <span class="n">data_stride</span> <span class="o">*</span> <span class="n">ID</span> <span class="k">for</span> <span class="n">ID</span> <span class="ow">in</span> <span class="n">IDs</span><span class="p">]</span>
+        <span class="c1"># Each 4 is a Fortran record marker</span>
+        <span class="n">positions</span> <span class="o">=</span> <span class="p">[</span><span class="mi">4</span> <span class="o">+</span> <span class="n">header_stride</span> <span class="o">+</span> <span class="mi">4</span> <span class="o">+</span> <span class="mi">4</span> <span class="o">+</span> <span class="p">(</span><span class="n">data_stride</span> <span class="o">+</span> <span class="mi">4</span><span class="o">+</span><span class="mi">4</span><span class="p">)</span> <span class="o">*</span> <span class="n">ID</span> <span class="k">for</span> <span class="n">ID</span> <span class="ow">in</span> <span class="n">IDs</span><span class="p">]</span>
+
+        <span class="c1"># Calling Reader.read also ensures that the proper Fortran write</span>
+        <span class="c1"># statements have been located ahead of time</span>
+        <span class="n">header</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">read</span><span class="p">(</span>
+            <span class="n">filename</span><span class="p">,</span>
+            <span class="n">return_headers</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="n">return_data</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
         
-        <span class="n">_buffer</span> <span class="o">=</span> <span class="nb">bytearray</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">IDs</span><span class="p">)</span> <span class="o">*</span> <span class="n">data_stride</span><span class="p">)</span>
         <span class="k">with</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">open</span><span class="p">(</span>
                 <span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">,</span> <span class="n">lock</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">verbose</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
             <span class="n">buffer</span> <span class="o">=</span> <span class="n">mmap</span><span class="o">.</span><span class="n">mmap</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">fileno</span><span class="p">(),</span><span class="mi">0</span><span class="p">,</span><span class="n">access</span><span class="o">=</span><span class="n">mmap</span><span class="o">.</span><span class="n">ACCESS_READ</span><span class="p">)</span>
-        <span class="c1"># Grab the headers so we can record the times</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">header</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">_read</span><span class="p">(</span>
-                <span class="n">buffer</span><span class="o">=</span><span class="n">buffer</span><span class="p">,</span>
-                <span class="n">shape</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-                <span class="n">dtype</span><span class="o">=</span><span class="n">header_dtype</span><span class="p">,</span>
-                <span class="n">offset</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
-                <span class="n">strides</span><span class="o">=</span><span class="n">header_stride</span><span class="p">,</span>
-            <span class="p">)</span>
-        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">Reader</span><span class="o">.</span><span class="n">CorruptedFileError</span><span class="p">(</span><span class="s2">&quot;This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories. </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">filename</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
         
+        <span class="n">_buffer</span> <span class="o">=</span> <span class="nb">bytearray</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">IDs</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">data_stride</span> <span class="o">+</span> <span class="mi">4</span><span class="o">+</span><span class="mi">4</span><span class="p">))</span>
         <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">ID</span><span class="p">,</span> <span class="n">position</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">IDs</span><span class="p">,</span> <span class="n">positions</span><span class="p">)):</span>
-            <span class="n">pos</span> <span class="o">=</span> <span class="n">i</span> <span class="o">*</span> <span class="n">data_stride</span>
+            <span class="n">pos</span> <span class="o">=</span> <span class="n">i</span> <span class="o">*</span> <span class="p">(</span><span class="n">data_stride</span><span class="o">+</span><span class="mi">4</span><span class="o">+</span><span class="mi">4</span><span class="p">)</span>
             <span class="n">_buffer</span><span class="p">[</span><span class="n">pos</span> <span class="p">:</span> <span class="n">pos</span> <span class="o">+</span> <span class="n">data_stride</span><span class="p">]</span> <span class="o">=</span> <span class="n">buffer</span><span class="p">[</span><span class="n">position</span> <span class="p">:</span> <span class="n">position</span> <span class="o">+</span> <span class="n">data_stride</span><span class="p">]</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">_read</span><span class="p">(</span>
-                <span class="n">buffer</span><span class="o">=</span><span class="n">_buffer</span><span class="p">,</span>
-                <span class="n">shape</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">particle_IDs</span><span class="p">),</span>
-                <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
-                <span class="n">offset</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
-                <span class="n">strides</span><span class="o">=</span><span class="n">data_stride</span><span class="p">,</span>
-            <span class="p">)[</span><span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">sort_indices</span><span class="p">)]</span>
-        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">Reader</span><span class="o">.</span><span class="n">CorruptedFileError</span><span class="p">(</span><span class="s2">&quot;This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories. </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">filename</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
-        
-        <span class="n">data</span> <span class="o">=</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span><span class="n">d</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">names</span><span class="p">}</span>
-        <span class="n">data</span><span class="p">[</span><span class="s1">&#39;t&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">header</span><span class="p">[</span><span class="s1">&#39;t&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">data</span><span class="p">[</span><span class="s1">&#39;ID&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">particle_IDs</span>
-        <span class="n">data</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">readonlydict</span><span class="o">.</span><span class="n">ReadOnlyDict</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">data</span></div>
+        <span class="n">d</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">(</span>
+            <span class="n">buffer</span><span class="o">=</span><span class="n">_buffer</span><span class="p">,</span>
+            <span class="n">shape</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">particle_IDs</span><span class="p">),</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
+            <span class="n">strides</span><span class="o">=</span><span class="n">data_stride</span> <span class="o">+</span> <span class="mi">4</span> <span class="o">+</span> <span class="mi">4</span><span class="p">,</span>
+        <span class="p">)[</span><span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">sort_indices</span><span class="p">)]</span>
+        <span class="k">return</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">readonlydict</span><span class="o">.</span><span class="n">ReadOnlyDict</span><span class="p">(</span>
+            <span class="p">{</span><span class="n">name</span><span class="p">:</span><span class="n">d</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">names</span><span class="p">}</span> <span class="o">|</span> \
+            <span class="p">{</span><span class="s1">&#39;t&#39;</span><span class="p">:</span> <span class="n">header</span><span class="p">[</span><span class="s1">&#39;t&#39;</span><span class="p">],</span> <span class="s1">&#39;ID&#39;</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">particle_IDs</span><span class="p">}</span>
+        <span class="p">)</span></div>
+
 
                 
                 
@@ -1139,361 +1135,307 @@
 
 
 
-
+<div class="viewcode-block" id="Reader">
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.output.html#starsmashertools.lib.output.Reader">[docs]</a>
+<span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">preferences</span><span class="o">.</span><span class="n">use</span>
 <span class="k">class</span> <span class="nc">Reader</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-    <span class="n">formats</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s1">&#39;integer&#39;</span> <span class="p">:</span> <span class="s1">&#39;i4&#39;</span><span class="p">,</span>
-        <span class="s1">&#39;real*8&#39;</span>  <span class="p">:</span> <span class="s1">&#39;f8&#39;</span><span class="p">,</span>
-        <span class="s1">&#39;real&#39;</span>    <span class="p">:</span> <span class="s1">&#39;f4&#39;</span><span class="p">,</span>
-    <span class="p">}</span>
-
-    <span class="n">EOL</span> <span class="o">=</span> <span class="s1">&#39;f8&#39;</span>
-    
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">simulation</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">simulation</span><span class="p">,</span>
+    <span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">simulation</span> <span class="o">=</span> <span class="n">simulation</span>
-        <span class="n">header_format</span><span class="p">,</span> <span class="n">header_names</span><span class="p">,</span> <span class="n">data_format</span><span class="p">,</span> <span class="n">data_names</span> <span class="o">=</span> <span class="n">Reader</span><span class="o">.</span><span class="n">get_output_format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">simulation</span><span class="p">)</span>
-        
-        <span class="bp">self</span><span class="o">.</span><span class="n">_dtype</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s1">&#39;data&#39;</span> <span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">([(</span><span class="n">name</span><span class="p">,</span> <span class="n">fmt</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">fmt</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">data_names</span><span class="p">,</span> <span class="n">data_format</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">))]),</span>
-            <span class="s1">&#39;header&#39;</span> <span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">([(</span><span class="n">name</span><span class="p">,</span> <span class="n">fmt</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">fmt</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">header_names</span><span class="p">,</span> <span class="n">header_format</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">))]),</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_endian</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dtype</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stride</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_formats</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;header&#39;</span> <span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;format&#39;</span> <span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="s1">&#39;variables&#39;</span> <span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="s1">&#39;data&#39;</span> <span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;format&#39;</span> <span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="s1">&#39;variables&#39;</span> <span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="p">},</span>
         <span class="p">}</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">_stride</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s1">&#39;header&#39;</span> <span class="p">:</span> <span class="nb">sum</span><span class="p">([</span><span class="n">header_format</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">num</span><span class="p">))</span><span class="o">*</span><span class="n">num</span> <span class="k">for</span> <span class="n">num</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">8</span><span class="p">]]),</span>
-            <span class="s1">&#39;data&#39;</span> <span class="p">:</span> <span class="nb">sum</span><span class="p">([</span><span class="n">data_format</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">num</span><span class="p">))</span><span class="o">*</span><span class="n">num</span> <span class="k">for</span> <span class="n">num</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">8</span><span class="p">]]),</span>
-        <span class="p">}</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">_EOL_size</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">([</span><span class="n">Reader</span><span class="o">.</span><span class="n">EOL</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">num</span><span class="p">))</span><span class="o">*</span><span class="n">num</span> <span class="k">for</span> <span class="n">num</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">8</span><span class="p">]])</span>
-
+    <span class="k">def</span> <span class="nf">get_endian</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_endian</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;header&#39;</span><span class="p">,</span><span class="s1">&#39;data&#39;</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_formats</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="s1">&#39;format&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="k">continue</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_formats</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="s1">&#39;format&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;&lt;&#39;</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_endian</span> <span class="o">=</span> <span class="s1">&#39;little&#39;</span>
+                    <span class="k">break</span>
+                <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_formats</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="s1">&#39;format&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;&gt;&#39;</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_endian</span> <span class="o">=</span> <span class="s1">&#39;big&#39;</span>
+                    <span class="k">break</span>
+            <span class="k">else</span><span class="p">:</span> <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_endian</span>
+    
     <span class="k">def</span> <span class="nf">read_from_header</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span> <span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">filename</span> <span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
         <span class="kn">import</span> <span class="nn">starsmashertools.helpers.file</span>
-        <span class="n">names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dtype</span><span class="p">[</span><span class="s1">&#39;header&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">names</span>
+        
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_formats</span><span class="p">[</span><span class="s1">&#39;header&#39;</span><span class="p">][</span><span class="s1">&#39;variables&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">update_format</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        
+        <span class="n">variables</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_formats</span><span class="p">[</span><span class="s1">&#39;header&#39;</span><span class="p">][</span><span class="s1">&#39;variables&#39;</span><span class="p">]</span>
+        <span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="n">v</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">variables</span><span class="p">]</span>
         <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">names</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s2">&quot;No key &#39;</span><span class="si">%s</span><span class="s2">&#39; in the dtypes&quot;</span> <span class="o">%</span> <span class="n">key</span><span class="p">)</span>
-
-        <span class="n">index</span> <span class="o">=</span> <span class="n">names</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
-        <span class="n">size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dtype</span><span class="p">[</span><span class="s1">&#39;header&#39;</span><span class="p">][</span><span class="n">index</span><span class="p">]</span><span class="o">.</span><span class="n">itemsize</span>
-        <span class="n">others</span> <span class="o">=</span> <span class="n">names</span><span class="p">[:</span><span class="n">index</span><span class="p">]</span>
-        <span class="n">location</span> <span class="o">=</span> <span class="mi">4</span> <span class="o">+</span> <span class="nb">sum</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">_dtype</span><span class="p">[</span><span class="s1">&#39;header&#39;</span><span class="p">][</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">itemsize</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">others</span><span class="p">])</span>
+        <span class="n">variable</span> <span class="o">=</span> <span class="n">variables</span><span class="p">[</span><span class="n">names</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">key</span><span class="p">)]</span>
         
         <span class="k">with</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">open</span><span class="p">(</span>
                 <span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">,</span> <span class="n">lock</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">verbose</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-            <span class="n">f</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="n">location</span><span class="p">)</span>
-            <span class="n">content</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">size</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_read</span><span class="p">(</span>
-            <span class="n">buffer</span> <span class="o">=</span> <span class="n">content</span><span class="p">,</span>
-            <span class="n">shape</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
-            <span class="n">dtype</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dtype</span><span class="p">[</span><span class="s1">&#39;header&#39;</span><span class="p">][</span><span class="n">key</span><span class="p">],</span>
-            <span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
-            <span class="n">strides</span> <span class="o">=</span> <span class="n">size</span><span class="p">,</span>
-        <span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-        
-    <span class="k">def</span> <span class="nf">_read</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="n">ret</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">ret</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">names</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">ret</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">names</span><span class="p">:</span>
-                <span class="n">finite</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">ret</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">finite</span><span class="p">):</span> <span class="k">continue</span>
-                <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">ret</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="n">finite</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mf">1e100</span><span class="p">):</span>
-                    <span class="k">raise</span> <span class="n">Reader</span><span class="o">.</span><span class="n">UnexpectedFileFormatError</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">finite</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">finite</span><span class="p">):</span>
-                <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">ret</span><span class="p">[</span><span class="n">finite</span><span class="p">])</span> <span class="o">&lt;</span> <span class="mf">1e-100</span> <span class="ow">or</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">ret</span><span class="p">[</span><span class="n">finite</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mf">1e100</span><span class="p">:</span>
-                    <span class="k">raise</span> <span class="n">Reader</span><span class="o">.</span><span class="n">UnexpectedFileFormatError</span>
-        <span class="k">return</span> <span class="n">ret</span>
-
-    <span class="k">def</span> <span class="nf">_read_header</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">buffer</span><span class="p">):</span>
-        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.readonlydict</span>
-        
-        <span class="n">header</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_read</span><span class="p">(</span>
-            <span class="n">buffer</span><span class="o">=</span><span class="n">buffer</span><span class="p">,</span>
-            <span class="n">shape</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-            <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_dtype</span><span class="p">[</span><span class="s1">&#39;header&#39;</span><span class="p">],</span>
-            <span class="n">offset</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
-            <span class="n">strides</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_stride</span><span class="p">[</span><span class="s1">&#39;header&#39;</span><span class="p">],</span>
-        <span class="p">)</span>
-        
-        <span class="n">new_header</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">header</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">names</span><span class="p">:</span>
-            <span class="n">new_header</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">header</span><span class="p">[</span><span class="n">name</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">header</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">readonlydict</span><span class="o">.</span><span class="n">ReadOnlyDict</span><span class="p">(</span><span class="n">new_header</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">header</span>
-
-    <span class="k">def</span> <span class="nf">_read_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">buffer</span><span class="p">,</span> <span class="n">ntot</span><span class="p">):</span>
-        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.readonlydict</span>
-        <span class="c1"># There are &#39;ntot&#39; particles to read</span>
-        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_read</span><span class="p">(</span>
-            <span class="n">buffer</span><span class="o">=</span><span class="n">buffer</span><span class="p">,</span>
-            <span class="n">shape</span><span class="o">=</span><span class="n">ntot</span><span class="p">,</span>
-            <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_dtype</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">],</span>
-            <span class="n">offset</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_stride</span><span class="p">[</span><span class="s1">&#39;header&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_EOL_size</span> <span class="o">+</span> <span class="mi">4</span><span class="p">,</span>
-            <span class="n">strides</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_stride</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_EOL_size</span><span class="p">,</span>
-        <span class="p">)</span>
-        
-        <span class="c1"># Now organize the data into Pythonic structures</span>
-        <span class="n">new_data</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">names</span><span class="p">:</span>
-            <span class="n">new_data</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
-        <span class="c1"># Always include an &#39;ID&#39; key</span>
-        <span class="n">new_data</span><span class="p">[</span><span class="s1">&#39;ID&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">ntot</span><span class="p">,</span> <span class="n">dtype</span> <span class="o">=</span> <span class="nb">int</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">readonlydict</span><span class="o">.</span><span class="n">ReadOnlyDict</span><span class="p">(</span><span class="n">new_data</span><span class="p">)</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">4</span> <span class="o">+</span> <span class="nb">sum</span><span class="p">([</span><span class="n">v</span><span class="o">.</span><span class="n">size</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">variables</span><span class="p">[:</span><span class="n">names</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">key</span><span class="p">)]]))</span>
+            <span class="k">return</span> <span class="n">variable</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">variable</span><span class="o">.</span><span class="n">size</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_endian</span><span class="p">())</span>
 
     <span class="k">def</span> <span class="nf">read</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span>
-            <span class="n">filename</span><span class="p">,</span>
-            <span class="n">return_headers</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-            <span class="n">return_data</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-            <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">filename</span> <span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="n">return_headers</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="n">return_data</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="n">verbose</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="kn">import</span> <span class="nn">starsmashertools.helpers.file</span>
         <span class="kn">import</span> <span class="nn">starsmashertools.helpers.path</span>
         
         <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
-        
+
         <span class="k">if</span> <span class="kc">True</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="n">return_headers</span><span class="p">,</span> <span class="n">return_data</span><span class="p">]:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;One of &#39;return_headers&#39; or &#39;return_data&#39; must be True&quot;</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="kc">None</span> <span class="ow">in</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_dtype</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stride</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">update_format</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        
+        <span class="n">endian</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_endian</span><span class="p">()</span>
+        
         <span class="k">try</span><span class="p">:</span>
             <span class="k">with</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">open</span><span class="p">(</span>
                     <span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">,</span> <span class="n">lock</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">verbose</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
             <span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-                <span class="c1"># We always need to check ntot at beginning and end of file</span>
-                <span class="n">f</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span> <span class="c1"># Garbage in front (Fortran issue?)</span>
-                <span class="n">ntot_buffer</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span>
+                <span class="c1"># Check how many rows of data the file has</span>
+                <span class="c1"># The last thing written to the file must always be variable</span>
+                <span class="c1"># &quot;ntot&quot;</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="o">-</span><span class="mi">4</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+                <span class="n">recl</span> <span class="o">=</span> <span class="nb">int</span><span class="o">.</span><span class="n">from_bytes</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">4</span><span class="p">),</span> <span class="n">byteorder</span> <span class="o">=</span> <span class="n">endian</span><span class="p">)</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="mi">4</span> <span class="o">+</span> <span class="n">recl</span><span class="p">),</span> <span class="mi">2</span><span class="p">)</span>
+                <span class="n">size</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">tell</span><span class="p">()</span> <span class="o">-</span> <span class="mi">4</span>
+                <span class="n">ntot</span> <span class="o">=</span> <span class="nb">int</span><span class="o">.</span><span class="n">from_bytes</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">recl</span><span class="p">),</span> <span class="n">byteorder</span> <span class="o">=</span> <span class="n">endian</span><span class="p">)</span>
+                <span class="n">nlines</span> <span class="o">=</span> <span class="p">(</span><span class="n">size</span> <span class="o">-</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_stride</span><span class="p">[</span><span class="s1">&#39;header&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">8</span><span class="p">))</span> <span class="o">//</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_stride</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">8</span><span class="p">)</span>
+                <span class="c1"># Compare the number of lines to the written number of particles</span>
+                <span class="c1"># at the end of the file. This number must always be written as</span>
+                <span class="c1"># a regular Fortran integer</span>
+                <span class="k">if</span> <span class="n">nlines</span> <span class="o">!=</span> <span class="n">ntot</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">Reader</span><span class="o">.</span><span class="n">CorruptedFileError</span><span class="p">(</span><span class="s2">&quot;nlines != ntot (</span><span class="si">%d</span><span class="s2"> != </span><span class="si">%d</span><span class="s2">). This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories: &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">nlines</span><span class="p">,</span> <span class="n">ntot</span><span class="p">,</span> <span class="n">filename</span><span class="p">))</span>
 
+                <span class="k">if</span> <span class="n">return_headers</span><span class="p">:</span>
+                    <span class="n">f</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+                    <span class="n">header</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">(</span>
+                        <span class="n">buffer</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_stride</span><span class="p">[</span><span class="s1">&#39;header&#39;</span><span class="p">]),</span>
+                        <span class="n">shape</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+                        <span class="n">dtype</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dtype</span><span class="p">[</span><span class="s1">&#39;header&#39;</span><span class="p">],</span>
+                        <span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="c1"># start-of-record</span>
+                        <span class="n">strides</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stride</span><span class="p">[</span><span class="s1">&#39;header&#39;</span><span class="p">],</span>
+                    <span class="p">)</span>
+                
+                
                 <span class="k">if</span> <span class="n">return_data</span><span class="p">:</span>
-                    <span class="c1"># This speeds up reading significantly when reading data,</span>
-                    <span class="c1"># but it&#39;s about 2x slower when reading the header only.</span>
-                    <span class="n">buffer</span> <span class="o">=</span> <span class="n">mmap</span><span class="o">.</span><span class="n">mmap</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">fileno</span><span class="p">(),</span> <span class="mi">0</span><span class="p">,</span> <span class="n">access</span><span class="o">=</span><span class="n">mmap</span><span class="o">.</span><span class="n">ACCESS_READ</span><span class="p">)</span>
-                <span class="k">else</span><span class="p">:</span> <span class="c1"># Return header only</span>
-                    <span class="n">f</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-                    <span class="n">buffer</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_stride</span><span class="p">[</span><span class="s1">&#39;header&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">4</span><span class="p">)</span>
+                    <span class="c1"># Go past the header&#39;s trailing record marker, to the start</span>
+                    <span class="c1"># of the first data row&#39;s record marker</span>
+                    <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">(</span>
+                        <span class="c1"># mmap speeds up reading significantly, but is about 2x</span>
+                        <span class="c1"># slower when reading only the header.</span>
+                        <span class="n">buffer</span> <span class="o">=</span> <span class="n">mmap</span><span class="o">.</span><span class="n">mmap</span><span class="p">(</span>
+                            <span class="n">f</span><span class="o">.</span><span class="n">fileno</span><span class="p">(),</span> <span class="mi">0</span><span class="p">,</span> <span class="n">access</span><span class="o">=</span><span class="n">mmap</span><span class="o">.</span><span class="n">ACCESS_READ</span><span class="p">,</span>
+                        <span class="p">),</span>
+                        <span class="n">shape</span> <span class="o">=</span> <span class="n">ntot</span><span class="p">,</span>
+                        <span class="n">dtype</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dtype</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">],</span>
+                        <span class="c1"># Start at the beginning of the first record, beyond the</span>
+                        <span class="c1"># record marker for the first line of data.</span>
+                        <span class="n">offset</span> <span class="o">=</span> <span class="mi">4</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stride</span><span class="p">[</span><span class="s1">&#39;header&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">4</span> <span class="o">+</span> <span class="mi">4</span><span class="p">,</span>
+                        <span class="c1"># Skip the record markers at the end of each row, and at</span>
+                        <span class="c1"># the beginning of each next row.</span>
+                        <span class="n">strides</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stride</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">4</span> <span class="o">+</span> <span class="mi">4</span><span class="p">,</span>
+                    <span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">Reader</span><span class="o">.</span><span class="n">CorruptedFileError</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="n">Reader</span><span class="o">.</span><span class="n">CorruptedFileError</span><span class="p">(</span><span class="s2">&quot;This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories: &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="n">filename</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+            <span class="k">raise</span>
 
-                <span class="n">f</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="o">-</span><span class="mi">8</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span> <span class="c1"># Go to 8th byte before the end</span>
-                <span class="n">ntot_check_buffer</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span> <span class="c1"># Specifying 8 here goes faster</span>
-            
-            <span class="n">ntot</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_read</span><span class="p">(</span>
-                <span class="n">buffer</span> <span class="o">=</span> <span class="n">ntot_buffer</span><span class="p">,</span>
-                <span class="n">shape</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
-                <span class="n">dtype</span> <span class="o">=</span> <span class="s1">&#39;&lt;i4&#39;</span><span class="p">,</span>
-                <span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
-                <span class="n">strides</span> <span class="o">=</span> <span class="mi">8</span><span class="p">,</span>
-            <span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-            
-            <span class="n">ntot_check</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_read</span><span class="p">(</span>
-                <span class="n">buffer</span> <span class="o">=</span> <span class="n">ntot_check_buffer</span><span class="p">,</span>
-                <span class="n">shape</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
-                <span class="n">dtype</span> <span class="o">=</span> <span class="s1">&#39;&lt;i4&#39;</span><span class="p">,</span>
-                <span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
-                <span class="n">strides</span> <span class="o">=</span> <span class="mi">8</span><span class="p">,</span>
-            <span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">Reader</span><span class="o">.</span><span class="n">CorruptedFileError</span><span class="p">(</span><span class="s2">&quot;This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories: &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="n">filename</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+        <span class="c1"># Convert to read-only dictionaries</span>
+        <span class="k">if</span> <span class="n">return_headers</span><span class="p">:</span>
+            <span class="n">header</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">readonlydict</span><span class="o">.</span><span class="n">ReadOnlyDict</span><span class="p">(</span>
+                <span class="p">{</span><span class="n">name</span><span class="p">:</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">header</span><span class="p">[</span><span class="n">name</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">header</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">names</span><span class="p">}</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">return_data</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">readonlydict</span><span class="o">.</span><span class="n">ReadOnlyDict</span><span class="p">(</span>
+                <span class="p">{</span><span class="n">name</span><span class="p">:</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">name</span><span class="p">])</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">names</span><span class="p">}</span> <span class="o">|</span> \
+                <span class="p">{</span><span class="s1">&#39;ID&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">ntot</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)}</span> <span class="c1"># Always include an &#39;ID&#39; key</span>
+            <span class="p">)</span>
         
-        <span class="k">if</span> <span class="n">ntot</span> <span class="o">!=</span> <span class="n">ntot_check</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">Reader</span><span class="o">.</span><span class="n">CorruptedFileError</span><span class="p">(</span><span class="s2">&quot;ntot != ntot_check. This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories: &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="n">filename</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">return_headers</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">return_data</span><span class="p">:</span> <span class="k">return</span> <span class="n">header</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">return_headers</span> <span class="ow">and</span> <span class="n">return_data</span><span class="p">:</span> <span class="k">return</span> <span class="n">data</span>
+        <span class="k">if</span> <span class="n">return_headers</span> <span class="ow">and</span> <span class="n">return_data</span><span class="p">:</span> <span class="k">return</span> <span class="n">header</span><span class="p">,</span> <span class="n">data</span>
         
-        <span class="k">try</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">return_headers</span><span class="p">:</span>
-                <span class="n">header</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_read_header</span><span class="p">(</span><span class="n">buffer</span><span class="p">)</span>
-            
-            <span class="k">if</span> <span class="n">return_headers</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">return_data</span><span class="p">:</span> <span class="k">return</span> <span class="n">header</span>
-            <span class="c1"># return_data == True here</span>
-            <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_read_data</span><span class="p">(</span><span class="n">buffer</span><span class="p">,</span> <span class="n">ntot</span><span class="p">)</span>
-            
-            <span class="k">if</span> <span class="n">return_headers</span><span class="p">:</span> <span class="k">return</span> <span class="n">data</span><span class="p">,</span> <span class="n">header</span>
-            <span class="k">else</span><span class="p">:</span> <span class="k">return</span> <span class="n">data</span> <span class="c1"># If return_headers == False</span>
-        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">Reader</span><span class="o">.</span><span class="n">CorruptedFileError</span><span class="p">(</span><span class="s2">&quot;This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories: &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="n">filename</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+    
+<div class="viewcode-block" id="Reader.set_write_statements">
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.output.html#starsmashertools.lib.output.Reader.set_write_statements">[docs]</a>
+    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="nf">set_write_statements</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">header</span> <span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">data</span> <span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Manually set the header and data write statements from the StarSmasher</span>
+<span class="sd">        Fortran source code. This is helpful in case there are multiple write</span>
+<span class="sd">        statements of the same formatting and you want to distinguish which of</span>
+<span class="sd">        them actually gets used in the simulation.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        header : str, None, default = None</span>
+<span class="sd">            The Fortran write statement used to create the headers. If `None`\,</span>
+<span class="sd">            this parameter is ignored.</span>
+
+<span class="sd">        data : str, None, default = None</span>
+<span class="sd">            The Fortran write statement used to create the data rows. If </span>
+<span class="sd">            `None`\, this parameter is ignored.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.fortran</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.path</span>
+
+        <span class="n">src</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">get_src</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">directory</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">src</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">Reader</span><span class="o">.</span><span class="n">SourceDirectoryNotFoundError</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">simulation</span><span class="p">)</span>
+
+        <span class="n">ws_vars</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">write_statements</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">find_files</span><span class="p">(</span><span class="n">src</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">statement</span><span class="p">,</span> <span class="n">variables</span> <span class="ow">in</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">fortran</span><span class="o">.</span><span class="n">FortranFile</span><span class="p">(</span>
+                    <span class="n">path</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">get_write_statements</span><span class="p">():</span>
+                <span class="n">ws_vars</span> <span class="o">+=</span> <span class="p">[</span><span class="n">variables</span><span class="p">]</span>
+                <span class="n">write_statements</span> <span class="o">+=</span> <span class="p">[</span><span class="n">statement</span><span class="p">]</span>
         
-    <span class="c1"># This method returns instructions on how to read the data files</span>
-    <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">get_output_format</span><span class="p">(</span><span class="n">simulation</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">s</span><span class="p">,</span><span class="n">d</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">([</span><span class="s1">&#39;header&#39;</span><span class="p">,</span><span class="s1">&#39;data&#39;</span><span class="p">],</span> <span class="p">[</span><span class="n">header</span><span class="p">,</span> <span class="n">data</span><span class="p">]):</span>
+            <span class="k">if</span> <span class="n">d</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="k">continue</span>
+            <span class="n">statement</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">fortran</span><span class="o">.</span><span class="n">is_stripped</span><span class="p">(</span><span class="n">d</span><span class="p">):</span>
+                <span class="n">statement</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">fortran</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="n">statement</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">statement</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">write_statements</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Failed to find an identical write statement in the StarSmasher source code as:</span><span class="se">\n</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">statement</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_formats</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="s1">&#39;variables&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ws_vars</span><span class="p">[</span><span class="n">write_statements</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">statement</span><span class="p">)]</span></div>
+
+    
+    
+    <span class="k">def</span> <span class="nf">update_format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span> <span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Search the StarSmasher source directory for all fortran &quot;write&quot; </span>
+<span class="sd">        statements and check to see if each write statement fits the formatting</span>
+<span class="sd">        of the out*.sph file. Raises an exception when more than one valid </span>
+<span class="sd">        format is located.</span>
+
+<span class="sd">        Note that strings are not permitted in the output files.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="kn">import</span> <span class="nn">starsmashertools.helpers.path</span>
         <span class="kn">import</span> <span class="nn">starsmashertools.helpers.file</span>
-        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.string</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.fortran</span>
         
-        <span class="c1"># Expected data types</span>
-        <span class="n">data_types</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;integer&#39;</span><span class="p">,</span> <span class="s1">&#39;real&#39;</span><span class="p">,</span> <span class="s1">&#39;logical&#39;</span><span class="p">,</span> <span class="s1">&#39;character&#39;</span><span class="p">)</span>
-        
-        <span class="n">src</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">get_src</span><span class="p">(</span><span class="n">simulation</span><span class="o">.</span><span class="n">directory</span><span class="p">)</span>
-
+        <span class="n">src</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">get_src</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">directory</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">src</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">Reader</span><span class="o">.</span><span class="n">SourceDirectoryNotFoundError</span><span class="p">(</span><span class="n">simulation</span><span class="p">)</span>
-        
-        <span class="c1"># Find the output.f file</span>
-        <span class="n">writerfile</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="s2">&quot;output.f&quot;</span><span class="p">)</span>
-        
-        <span class="n">listening</span> <span class="o">=</span> <span class="kc">False</span>
-        
-        <span class="c1"># Read the output.f file</span>
-        <span class="n">subroutine_text</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+            <span class="k">raise</span> <span class="n">Reader</span><span class="o">.</span><span class="n">SourceDirectoryNotFoundError</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">simulation</span><span class="p">)</span>
+
+        <span class="c1"># Figure out the length of the header and body. No need to lock the file</span>
+        <span class="c1"># because starsmashertools never edits StarSmasher outputs.</span>
+        <span class="n">endian</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_endian</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">endian</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">endian</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">fortran</span><span class="o">.</span><span class="n">get_endian_from_file</span><span class="p">(</span>
+                <span class="n">filename</span><span class="p">,</span>
+            <span class="p">)</span>
         <span class="k">with</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">open</span><span class="p">(</span>
-                <span class="n">writerfile</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">lock</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">verbose</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                <span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">,</span> <span class="n">lock</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">verbose</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
-                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">line</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">fortran_comment_characters</span><span class="p">:</span>
-                    <span class="k">continue</span>
-                <span class="k">if</span> <span class="s1">&#39;!&#39;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span> <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="p">[:</span><span class="n">line</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s1">&#39;!&#39;</span><span class="p">)]</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
-                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> <span class="k">continue</span>
+            <span class="n">recl</span> <span class="o">=</span> <span class="nb">int</span><span class="o">.</span><span class="n">from_bytes</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">4</span><span class="p">),</span> <span class="n">byteorder</span> <span class="o">=</span> <span class="n">endian</span><span class="p">)</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">header</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">recl</span> <span class="o">+</span> <span class="mi">8</span><span class="p">)</span>
+            <span class="n">start</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">tell</span><span class="p">()</span>
+            <span class="n">recl</span> <span class="o">=</span> <span class="nb">int</span><span class="o">.</span><span class="n">from_bytes</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">4</span><span class="p">),</span> <span class="n">byteorder</span> <span class="o">=</span> <span class="n">endian</span><span class="p">)</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="n">start</span><span class="p">)</span>
+            <span class="n">dataline</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">recl</span> <span class="o">+</span> <span class="mi">8</span><span class="p">)</span>
 
-                <span class="n">ls</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
-
-                <span class="k">if</span> <span class="n">ls</span> <span class="o">==</span> <span class="s1">&#39;subroutine dump(iu)&#39;</span><span class="p">:</span>
-                    <span class="n">listening</span> <span class="o">=</span> <span class="kc">True</span>
-
-                <span class="k">if</span> <span class="n">listening</span><span class="p">:</span>
-                    <span class="n">subroutine_text</span> <span class="o">+=</span> <span class="n">line</span>
-                    <span class="k">if</span> <span class="n">ls</span> <span class="o">==</span> <span class="s1">&#39;end&#39;</span><span class="p">:</span> <span class="k">break</span>
-
-        <span class="c1"># Use the subroutine text to get the variable names and their types</span>
-        <span class="n">vtypes</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">subroutine_text</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">):</span>
-            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">fortran_comment_characters</span><span class="p">):</span>
-                <span class="k">continue</span>
-            <span class="k">if</span> <span class="s1">&#39;!&#39;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span> <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="p">[:</span><span class="n">line</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s1">&#39;!&#39;</span><span class="p">)]</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
-            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> <span class="k">continue</span>
-            
-            <span class="n">ls</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
-            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ls</span><span class="p">)</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="s1">&#39;include&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">ls</span><span class="p">[:</span><span class="nb">len</span><span class="p">(</span><span class="s1">&#39;include&#39;</span><span class="p">)]</span> <span class="o">==</span> <span class="s1">&#39;include&#39;</span><span class="p">:</span>
-                <span class="c1"># On &#39;include&#39; lines, we find the file that is being included</span>
-                <span class="n">dname</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">writerfile</span><span class="p">)</span>
-                <span class="n">fname</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dname</span><span class="p">,</span> <span class="n">ls</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;include&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;&#39;&quot;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
-                <span class="k">with</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">open</span><span class="p">(</span>
-                        <span class="n">fname</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">lock</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">verbose</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-                <span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-                    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">string</span><span class="o">.</span><span class="n">get_fortran_variable_types</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">(),</span> <span class="n">data_types</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-                        <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">vtypes</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span> <span class="n">vtypes</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span>
-                        <span class="k">else</span><span class="p">:</span> <span class="n">vtypes</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">+=</span> <span class="n">val</span>
+        <span class="c1"># Now we know the header contents and the contents of the first line of</span>
+        <span class="c1"># data in the file. We try to locate the write statement that was</span>
+        <span class="c1"># responsible for writing the header and each row of data. Note that it</span>
+        <span class="c1"># is possible for there for be more than one valid write statement, but</span>
+        <span class="c1"># we are not doing a full translation of the fortran code into python,</span>
+        <span class="c1"># so we can&#39;t know which one is correct.</span>
+        <span class="k">if</span> <span class="kc">None</span> <span class="ow">in</span> <span class="p">[</span><span class="n">s</span><span class="p">[</span><span class="s1">&#39;variables&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_formats</span><span class="o">.</span><span class="n">values</span><span class="p">()]:</span>
+            <span class="n">ws_vars</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">write_statements</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">find_files</span><span class="p">(</span><span class="n">src</span><span class="p">):</span>
+                <span class="n">f</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">fortran</span><span class="o">.</span><span class="n">FortranFile</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">statement</span><span class="p">,</span> <span class="n">variables</span> <span class="ow">in</span> <span class="n">f</span><span class="o">.</span><span class="n">get_write_statements</span><span class="p">():</span>
+                    <span class="n">ws_vars</span> <span class="o">+=</span> <span class="p">[</span><span class="n">variables</span><span class="p">]</span>
+                    <span class="n">write_statements</span> <span class="o">+=</span> <span class="p">[</span><span class="n">statement</span><span class="p">]</span>
         
-        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">string</span><span class="o">.</span><span class="n">get_fortran_variable_types</span><span class="p">(</span><span class="n">subroutine_text</span><span class="p">,</span> <span class="n">data_types</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">vtypes</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span> <span class="n">vtypes</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span>
-            <span class="k">else</span><span class="p">:</span> <span class="n">vtypes</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">+=</span> <span class="n">val</span>
-
+        <span class="k">for</span> <span class="n">s</span><span class="p">,</span><span class="n">byte_data</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">([</span><span class="s1">&#39;header&#39;</span><span class="p">,</span><span class="s1">&#39;data&#39;</span><span class="p">],[</span><span class="n">header</span><span class="p">,</span><span class="n">dataline</span><span class="p">]):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_formats</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="s1">&#39;variables&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span> <span class="k">continue</span>
+            <span class="n">indices</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">variables</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ws_vars</span><span class="p">):</span>
+                <span class="n">attempt</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">fortran</span><span class="o">.</span><span class="n">get_numpy_format</span><span class="p">(</span>
+                    <span class="n">byte_data</span><span class="p">,</span> <span class="n">variables</span><span class="p">,</span> <span class="n">endian</span> <span class="o">=</span> <span class="n">endian</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="n">attempt</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span> <span class="n">indices</span> <span class="o">+=</span> <span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">indices</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Found no possible write statements in the StarSmasher source code that correspond with </span><span class="si">%s</span><span class="s2"> information in file &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">s</span><span class="p">,</span><span class="n">filename</span><span class="p">))</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">indices</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">p1</span> <span class="o">=</span> <span class="s2">&quot;Found more than one possible write statements in the StarSmasher source code that correspond with </span><span class="si">%s</span><span class="s2"> information in file &#39;</span><span class="si">%s</span><span class="s2">&#39;. Please choose one of the following write statements and manually set it for this reader, using </span><span class="se">\&quot;</span><span class="s2">simulation.reader.set_write_statements(</span><span class="si">%s</span><span class="s2"> = ...)</span><span class="se">\&quot;</span><span class="s2">:&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">s</span><span class="p">,</span><span class="n">filename</span><span class="p">,</span><span class="n">s</span><span class="p">)</span>
+                <span class="n">p1</span> <span class="o">+=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">write_statements</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">indices</span><span class="p">])</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="n">p1</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_write_statements</span><span class="p">(</span><span class="o">**</span><span class="p">{</span><span class="n">s</span><span class="p">:</span><span class="n">write_statements</span><span class="p">[</span><span class="n">indices</span><span class="p">[</span><span class="mi">0</span><span class="p">]]})</span>
         
-        <span class="c1"># We have all the variables and their types now, so let&#39;s check which variables</span>
-        <span class="c1"># are written to the output file header</span>
-        <span class="n">header_names</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="n">listening</span> <span class="o">=</span> <span class="kc">False</span>
-        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">subroutine_text</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">):</span>
-            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">line</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">fortran_comment_characters</span><span class="p">:</span>
-                <span class="k">continue</span>
-            <span class="k">if</span> <span class="s1">&#39;!&#39;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span> <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="p">[:</span><span class="n">line</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s1">&#39;!&#39;</span><span class="p">)]</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
-            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> <span class="k">continue</span>
-            
-            <span class="n">ls</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
-            <span class="k">if</span> <span class="s1">&#39;write(iu)&#39;</span> <span class="ow">in</span> <span class="n">ls</span><span class="p">:</span>
-                <span class="n">ls</span> <span class="o">=</span> <span class="n">ls</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="s1">&#39;write(iu)&#39;</span><span class="p">):]</span>
-                <span class="k">if</span> <span class="n">ls</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;,&#39;</span><span class="p">:</span> <span class="n">ls</span> <span class="o">=</span> <span class="n">ls</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-                <span class="n">header_names</span> <span class="o">+=</span> <span class="n">ls</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)</span>
-                <span class="n">listening</span> <span class="o">=</span> <span class="kc">True</span>
-                <span class="k">continue</span>
-
-            <span class="k">if</span> <span class="n">listening</span><span class="p">:</span>
-                <span class="c1"># When it isn&#39;t a line continuation, we stop</span>
-                <span class="c1"># https://gcc.gnu.org/onlinedocs/gcc-3.4.6/g77/Continuation-Line.html</span>
-                <span class="n">isContinuation</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39; &#39;</span><span class="p">,</span> <span class="s1">&#39;0&#39;</span><span class="p">]</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="n">isContinuation</span><span class="p">:</span> <span class="k">break</span>
-                <span class="n">l</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="mi">6</span><span class="p">:]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
-                <span class="k">if</span> <span class="n">l</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;,&#39;</span><span class="p">:</span> <span class="n">l</span> <span class="o">=</span> <span class="n">l</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-                <span class="n">header_names</span> <span class="o">+=</span> <span class="n">l</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)</span>
-
+        <span class="k">for</span> <span class="n">s</span><span class="p">,</span><span class="n">byte_data</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">([</span><span class="s1">&#39;header&#39;</span><span class="p">,</span><span class="s1">&#39;data&#39;</span><span class="p">],[</span><span class="n">header</span><span class="p">,</span><span class="n">dataline</span><span class="p">]):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_formats</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="s1">&#39;format&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">fortran</span><span class="o">.</span><span class="n">get_numpy_format</span><span class="p">(</span>
+                <span class="n">byte_data</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_formats</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="s1">&#39;variables&#39;</span><span class="p">],</span>
+                <span class="n">endian</span> <span class="o">=</span> <span class="n">endian</span><span class="p">,</span>
+            <span class="p">)</span>
         
-        <span class="c1"># We know what the header is now, so we get the data types associated with it</span>
-        <span class="n">header_formats</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">OrderedDict</span><span class="p">()</span>
-        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">header_names</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">_type</span><span class="p">,</span> <span class="n">names</span> <span class="ow">in</span> <span class="n">vtypes</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-                <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names</span><span class="p">:</span>
-                    <span class="k">if</span> <span class="n">_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">Reader</span><span class="o">.</span><span class="n">formats</span><span class="p">:</span>
-                        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Fortran type &#39;</span><span class="si">%s</span><span class="s2">&#39; is not included in Reader.formats in output.py but is found in &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">_type</span><span class="p">,</span> <span class="n">writerfile</span><span class="p">))</span>
-                    <span class="n">header_formats</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">Reader</span><span class="o">.</span><span class="n">formats</span><span class="p">[</span><span class="n">_type</span><span class="p">]</span>
-                    <span class="k">break</span>
+        
+        <span class="n">header_fmt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_formats</span><span class="p">[</span><span class="s1">&#39;header&#39;</span><span class="p">][</span><span class="s1">&#39;format&#39;</span><span class="p">]</span>
+        <span class="n">data_fmt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_formats</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">][</span><span class="s1">&#39;format&#39;</span><span class="p">]</span>
+        <span class="n">header_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">v</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_formats</span><span class="p">[</span><span class="s1">&#39;header&#39;</span><span class="p">][</span><span class="s1">&#39;variables&#39;</span><span class="p">]]</span>
+        <span class="n">data_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">v</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_formats</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">][</span><span class="s1">&#39;variables&#39;</span><span class="p">]]</span>
 
-
-        <span class="c1"># To save us from actually interpreting the Fortran code, we make</span>
-        <span class="c1"># assumptions about the format of output.f.</span>
-        <span class="k">if</span> <span class="s1">&#39;if(ncooling.eq.0)&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">subroutine_text</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Unexpected format in &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="n">writerfile</span><span class="p">)</span>
-
-        <span class="n">data_names</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="n">listening1</span> <span class="o">=</span> <span class="kc">False</span>
-        <span class="n">listening2</span> <span class="o">=</span> <span class="kc">False</span>
-        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">subroutine_text</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">):</span>
-            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">line</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">fortran_comment_characters</span><span class="p">:</span> <span class="k">continue</span>
-            <span class="k">if</span> <span class="s1">&#39;!&#39;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span> <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="p">[:</span><span class="n">line</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s1">&#39;!&#39;</span><span class="p">)]</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
-            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> <span class="k">continue</span>
-            
-            <span class="n">ls</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">listening1</span><span class="p">:</span>
-                <span class="k">if</span> <span class="s1">&#39;if(ncooling.eq.&#39;</span> <span class="ow">in</span> <span class="n">ls</span><span class="p">:</span>
-                    <span class="n">idx</span> <span class="o">=</span> <span class="n">ls</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s1">&#39;if(ncooling.eq.&#39;</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="s1">&#39;if(ncooling.eq.&#39;</span><span class="p">)</span>
-                    <span class="k">if</span> <span class="n">simulation</span><span class="p">[</span><span class="s1">&#39;ncooling&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="nb">int</span><span class="p">(</span><span class="n">ls</span><span class="p">[</span><span class="n">idx</span><span class="p">]):</span>
-                        <span class="n">listening1</span> <span class="o">=</span> <span class="kc">True</span>
-                        <span class="k">continue</span>
-            <span class="k">elif</span> <span class="ow">not</span> <span class="n">listening2</span><span class="p">:</span>
-                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ls</span><span class="p">)</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="s1">&#39;write(iu)&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">ls</span><span class="p">[:</span><span class="nb">len</span><span class="p">(</span><span class="s1">&#39;write(iu)&#39;</span><span class="p">)]</span> <span class="o">==</span> <span class="s1">&#39;write(iu)&#39;</span><span class="p">:</span>
-                    <span class="n">listening2</span> <span class="o">=</span> <span class="kc">True</span>
-                    <span class="n">l</span> <span class="o">=</span> <span class="n">ls</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="s1">&#39;write(iu)&#39;</span><span class="p">):]</span>
-                    <span class="k">if</span> <span class="n">l</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;,&#39;</span><span class="p">:</span> <span class="n">l</span> <span class="o">=</span> <span class="n">l</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-                    <span class="n">data_names</span> <span class="o">=</span> <span class="n">l</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="c1"># Each line should be either a line continuation or a comment line, otherwise stop</span>
-                <span class="c1"># https://gcc.gnu.org/onlinedocs/gcc-3.4.6/g77/Continuation-Line.html</span>
-                <span class="n">isContinuation</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39; &#39;</span><span class="p">,</span> <span class="s1">&#39;0&#39;</span><span class="p">]</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="n">isContinuation</span><span class="p">:</span> <span class="k">break</span>
-                
-                <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="mi">6</span><span class="p">:]</span>
-                <span class="n">ls</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
-                <span class="k">if</span> <span class="n">ls</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;,&#39;</span><span class="p">:</span> <span class="n">ls</span> <span class="o">=</span> <span class="n">ls</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-                <span class="n">data_names</span> <span class="o">+=</span> <span class="n">ls</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)</span>
-
-        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">data_names</span><span class="p">):</span>
-            <span class="k">if</span> <span class="s1">&#39;(&#39;</span> <span class="ow">in</span> <span class="n">name</span><span class="p">:</span>
-                <span class="n">data_names</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">name</span><span class="p">[:</span><span class="n">name</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s1">&#39;(&#39;</span><span class="p">)]</span> 
-
-
-        <span class="c1"># With all the data names known, we obtain their types</span>
-        <span class="n">data_formats</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">OrderedDict</span><span class="p">()</span>
-        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">data_names</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">_type</span><span class="p">,</span> <span class="n">names</span> <span class="ow">in</span> <span class="n">vtypes</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-                <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names</span><span class="p">:</span>
-                    <span class="k">if</span> <span class="n">_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">Reader</span><span class="o">.</span><span class="n">formats</span><span class="p">:</span>
-                        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Fortran type &#39;</span><span class="si">%s</span><span class="s2">&#39; is not included in Reader.formats in output.py but is found in &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">_type</span><span class="p">,</span> <span class="n">writerfile</span><span class="p">))</span>
-                    <span class="n">data_formats</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">Reader</span><span class="o">.</span><span class="n">formats</span><span class="p">[</span><span class="n">_type</span><span class="p">]</span>
-                    <span class="k">break</span>
-
-        <span class="n">header_format</span> <span class="o">=</span> <span class="s1">&#39;&lt;&#39;</span> <span class="o">+</span> <span class="s1">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">header_formats</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
-        <span class="n">header_names</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">header_formats</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
-        <span class="n">data_format</span> <span class="o">=</span> <span class="s1">&#39;&lt;&#39;</span> <span class="o">+</span> <span class="s1">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">data_formats</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
-        <span class="n">data_names</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">data_formats</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
-        <span class="k">return</span> <span class="n">header_format</span><span class="p">,</span> <span class="n">header_names</span><span class="p">,</span> <span class="n">data_format</span><span class="p">,</span> <span class="n">data_names</span>
-
-
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dtype</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">key</span><span class="p">:</span><span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">([</span>
+                <span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="n">f</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span><span class="n">f</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="n">fmt</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">))</span>
+            <span class="p">])</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span><span class="n">names</span><span class="p">,</span><span class="n">fmt</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+                <span class="p">[</span><span class="s1">&#39;header&#39;</span><span class="p">,</span><span class="s1">&#39;data&#39;</span><span class="p">],</span>
+                <span class="p">[</span><span class="n">header_names</span><span class="p">,</span><span class="n">data_names</span><span class="p">],</span>
+                <span class="p">[</span><span class="n">header_fmt</span><span class="p">,</span><span class="n">data_fmt</span><span class="p">],</span>
+            <span class="p">)</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stride</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">key</span><span class="p">:</span><span class="nb">sum</span><span class="p">([</span>
+                <span class="n">v</span><span class="o">.</span><span class="n">size</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_formats</span><span class="p">[</span><span class="n">key</span><span class="p">][</span><span class="s1">&#39;variables&#39;</span><span class="p">]</span>
+            <span class="p">])</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;header&#39;</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span><span class="p">]</span>
+        <span class="p">}</span>
+    
     <span class="k">class</span> <span class="nc">CorruptedFileError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
         <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
             <span class="nb">super</span><span class="p">(</span><span class="n">Reader</span><span class="o">.</span><span class="n">CorruptedFileError</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
-
-    <span class="k">class</span> <span class="nc">UnexpectedFileFormatError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
-        <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
-            <span class="nb">super</span><span class="p">(</span><span class="n">Reader</span><span class="o">.</span><span class="n">UnexpectedFileFormatError</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
 
     <span class="k">class</span> <span class="nc">SourceDirectoryNotFoundError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
         <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">simulation</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">message</span><span class="p">:</span>
                 <span class="n">message</span> <span class="o">=</span> <span class="s2">&quot;Failed to find the code source directory in simulation &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="n">simulation</span><span class="o">.</span><span class="n">directory</span>
-            <span class="nb">super</span><span class="p">(</span><span class="n">Reader</span><span class="o">.</span><span class="n">SourceDirectoryNotFoundError</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+            <span class="nb">super</span><span class="p">(</span><span class="n">Reader</span><span class="o">.</span><span class="n">SourceDirectoryNotFoundError</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">message</span><span class="p">)</span></div>
 
 
-
-
-
-
-
-
-
-
-        
 </pre></div>
 
            </div>

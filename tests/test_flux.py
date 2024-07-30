@@ -203,10 +203,7 @@ class TestFlux(basetest.BaseTest):
         )
         kw = copy.deepcopy(baseline['kwargs'])
         kw.update(kwargs)
-        return starsmashertools.lib.flux.FluxFinder(
-            output,
-            **kw
-        )
+        return starsmashertools.lib.flux.FluxFinder(output, **kw)
     
     def compare(self, baseline_name):
         baseline = self.get_baseline(baseline_name)

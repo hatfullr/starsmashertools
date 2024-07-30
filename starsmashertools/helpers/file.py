@@ -15,8 +15,11 @@ import copy
 import time
 import filecmp
 import mmap
+import io
+import re
 
-fortran_comment_characters = ['c','C','!','*']
+
+fortran_comment_characters = ['c','C','!','*','d','D']
 
 downloaded_files = []
 

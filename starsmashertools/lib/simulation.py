@@ -85,13 +85,13 @@ class Simulation(object):
         import starsmashertools.lib.archive
         
         # Prepare the directory string
-        directory = starsmashertools.helpers.path.realpath(directory.strip())
+        self.directory = starsmashertools.helpers.path.realpath(
+            directory.strip()
+        )
         
         # Validate the directory
-        if not Simulation.valid_directory(directory):
-            raise Simulation.InvalidDirectoryError(directory)
-
-        self.directory = directory
+        if not Simulation.valid_directory(self.directory):
+            raise Simulation.InvalidDirectoryError(self.directory)
 
         super(Simulation, self).__init__()
         

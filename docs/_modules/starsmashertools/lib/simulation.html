@@ -172,13 +172,13 @@
         <span class="kn">import</span> <span class="nn">starsmashertools.lib.archive</span>
         
         <span class="c1"># Prepare the directory string</span>
-        <span class="n">directory</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">realpath</span><span class="p">(</span><span class="n">directory</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">directory</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">realpath</span><span class="p">(</span>
+            <span class="n">directory</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="p">)</span>
         
         <span class="c1"># Validate the directory</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">Simulation</span><span class="o">.</span><span class="n">valid_directory</span><span class="p">(</span><span class="n">directory</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="n">Simulation</span><span class="o">.</span><span class="n">InvalidDirectoryError</span><span class="p">(</span><span class="n">directory</span><span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">directory</span> <span class="o">=</span> <span class="n">directory</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">Simulation</span><span class="o">.</span><span class="n">valid_directory</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">directory</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">Simulation</span><span class="o">.</span><span class="n">InvalidDirectoryError</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">directory</span><span class="p">)</span>
 
         <span class="nb">super</span><span class="p">(</span><span class="n">Simulation</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         

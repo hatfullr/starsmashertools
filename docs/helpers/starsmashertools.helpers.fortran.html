@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>starsmashertools.helpers.fortran &mdash; starsmashertools</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../_static/documentation_options.js?v=61ccec80"></script>
+        <script src="../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="lib" href="../starsmashertools.lib.html" />
+    <link rel="prev" title="starsmashertools.helpers.file" href="starsmashertools.helpers.file.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            starsmashertools
+          </a>
+              <div class="version">
+                14.12.0
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../index.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../cliprograms.html">CLI Programs</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Documentation</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../starsmashertools.helpers.html">helpers</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="starsmashertools.helpers.file.html">file</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">fortran</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.helpers.fortran.FortranFile"><code class="docutils literal notranslate"><span class="pre">FortranFile</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.helpers.fortran.FortranFile.__init__"><code class="docutils literal notranslate"><span class="pre">FortranFile.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.helpers.fortran.FortranFile.get_contents"><code class="docutils literal notranslate"><span class="pre">FortranFile.get_contents()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.helpers.fortran.FortranFile.get_objects"><code class="docutils literal notranslate"><span class="pre">FortranFile.get_objects()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.helpers.fortran.FortranFile.get_write_statements"><code class="docutils literal notranslate"><span class="pre">FortranFile.get_write_statements()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.helpers.fortran.get_endian"><code class="docutils literal notranslate"><span class="pre">get_endian()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.helpers.fortran.get_numpy_format"><code class="docutils literal notranslate"><span class="pre">get_numpy_format()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.helpers.fortran.is_stripped"><code class="docutils literal notranslate"><span class="pre">is_stripped()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.helpers.fortran.parse_write_statement"><code class="docutils literal notranslate"><span class="pre">parse_write_statement()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.helpers.fortran.strip"><code class="docutils literal notranslate"><span class="pre">strip()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../starsmashertools.lib.html">lib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../starsmashertools.math.html">math</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../starsmashertools.mpl.html">mpl</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">starsmashertools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../starsmashertools.helpers.html">helpers</a></li>
+      <li class="breadcrumb-item active">starsmashertools.helpers.fortran</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/helpers/starsmashertools.helpers.fortran.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-starsmashertools.helpers.fortran">
+<span id="starsmashertools-helpers-fortran"></span><h1>starsmashertools.helpers.fortran<a class="headerlink" href="#module-starsmashertools.helpers.fortran" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="starsmashertools.helpers.fortran.FortranFile">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">FortranFile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/helpers/fortran.html#FortranFile"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.helpers.fortran.FortranFile" title="Link to this definition"></a></dt>
+<dd><p>A file containing Fortran source code.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a>) – The path to the Fortran file.</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Sun Fortran is not supported, so tabs in the source code will likely
+cause errors.</p>
+<p>Source code containing semicolons as statement separators is not
+supported.</p>
+<p>Statement functions are not supported and will lead to undefined
+behaviors. Read more about these here:
+<a class="reference external" href="https://docs.oracle.com/cd/E19957-01/805-4939/6j4m0vnb9/index.html">https://docs.oracle.com/cd/E19957-01/805-4939/6j4m0vnb9/index.html</a></p>
+<p>Derived data types are not recognized.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.helpers.fortran.FortranFile.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/helpers/fortran.html#FortranFile.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.helpers.fortran.FortranFile.__init__" title="Link to this definition"></a></dt>
+<dd><p>A file containing Fortran source code.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a>) – The path to the Fortran file.</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Sun Fortran is not supported, so tabs in the source code will likely
+cause errors.</p>
+<p>Source code containing semicolons as statement separators is not
+supported.</p>
+<p>Statement functions are not supported and will lead to undefined
+behaviors. Read more about these here:
+<a class="reference external" href="https://docs.oracle.com/cd/E19957-01/805-4939/6j4m0vnb9/index.html">https://docs.oracle.com/cd/E19957-01/805-4939/6j4m0vnb9/index.html</a></p>
+<p>Derived data types are not recognized.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.helpers.fortran.FortranFile.get_contents">
+<span class="sig-name descname"><span class="pre">get_contents</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stripped</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/helpers/fortran.html#FortranFile.get_contents"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.helpers.fortran.FortranFile.get_contents" title="Link to this definition"></a></dt>
+<dd><p>Get the contents of the file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>stripped</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><em>bool</em></a><em>, </em><em>default = True</em>) – If <cite>False</cite>, the returned contents are unmodified. If <cite>True</cite>, the
+returned contents has comments removed, continuation lines merged,
+columns 1-6 removed, and each line is stripped of leading and
+trailing white space.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>content</strong></p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.helpers.fortran.FortranFile.get_objects">
+<span class="sig-name descname"><span class="pre">get_objects</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/helpers/fortran.html#FortranFile.get_objects"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.helpers.fortran.FortranFile.get_objects" title="Link to this definition"></a></dt>
+<dd><p>Get the functions, subroutines, etc. in the file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>objects</strong> – A list of <code class="xref py py-class docutils literal notranslate"><span class="pre">Object</span></code> instances.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)">list</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.helpers.fortran.FortranFile.get_write_statements">
+<span class="sig-name descname"><span class="pre">get_write_statements</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/helpers/fortran.html#FortranFile.get_write_statements"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.helpers.fortran.FortranFile.get_write_statements" title="Link to this definition"></a></dt>
+<dd><p>Find all lines which involve the <code class="docutils literal notranslate"><span class="pre">write</span></code> Fortran directive and obtain
+the written variables. Write statements which include strings are
+ignored.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Yields<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>write_statement</strong> (<em>str</em>) – The stripped lines which contain write statements.</p></li>
+<li><p><strong>variables</strong> (<em>list</em>) – A list of <code class="xref py py-class docutils literal notranslate"><span class="pre">Variable</span></code> objects involved in the write
+statement, in the order they are written.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="starsmashertools.helpers.fortran.get_endian">
+<span class="sig-name descname"><span class="pre">get_endian</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">record</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.12)"><span class="pre">bytes</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/helpers/fortran.html#get_endian"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.helpers.fortran.get_endian" title="Link to this definition"></a></dt>
+<dd><p>Returns ‘little’ if the given Fortran record is little endian and ‘big’ if
+it is big endian. The endianness is checked by finding the first record
+marker, which is the first 4 bytes of the record, and attempting to convert
+that to an integer. If that length exceeds the actual length of the record,
+an error is raised. Otherwise, the 4 bytes proceeding the record length is
+read. If the two record markers match, then the endianness of the record is
+returned.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>record</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.12)"><em>bytes</em></a>) – The Fortran record to determine the endianness for. It must contain the
+leading and trailing record markers.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>endian</strong> – Either <code class="docutils literal notranslate"><span class="pre">'little'</span></code> or <code class="docutils literal notranslate"><span class="pre">'big'</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)">str</a></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>EndianError</strong> – When the record length is less than 8 bytes, the first 4 bytes of the
+    record do not match the last 4 bytes, or if the endianness was neither
+    little nor big (should never happen).</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><code class="xref py py-func docutils literal notranslate"><span class="pre">get_endian_from_file()</span></code></p>
+</div>
+<p class="rubric">Notes</p>
+<p><a class="reference external" href="https://gcc.gnu.org/onlinedocs/gfortran/File-format-of-unformatted-sequential-files.html">https://gcc.gnu.org/onlinedocs/gfortran/File-format-of-unformatted-sequential-files.html</a></p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="starsmashertools.helpers.fortran.get_numpy_format">
+<span class="sig-name descname"><span class="pre">get_numpy_format</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">record</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.12)"><span class="pre">bytes</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">variables</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><span class="pre">list</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.12)"><span class="pre">tuple</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">endian</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/helpers/fortran.html#get_numpy_format"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.helpers.fortran.get_numpy_format" title="Link to this definition"></a></dt>
+<dd><p>Return a format string that can be used in <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></a> for the
+provided bytes of data that originated from a Fortran file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>record</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.12)"><em>bytes</em></a>) – The bytes to check the variables against.</p></li>
+<li><p><strong>endian</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a><em>, </em><em>None</em><em>, </em><em>default = None</em>) – If the endianness of <code class="docutils literal notranslate"><span class="pre">record</span></code> is known, a <code class="docutils literal notranslate"><span class="pre">'&lt;'</span></code> or <code class="docutils literal notranslate"><span class="pre">'&gt;'</span></code> is
+appended to the start of the string where <code class="docutils literal notranslate"><span class="pre">'&lt;'</span></code> is for little endian
+and <code class="docutils literal notranslate"><span class="pre">'&gt;'</span></code> is for big endian. If the endianness is not known,
+<code class="docutils literal notranslate"><span class="pre">endian</span></code> should be given as <cite>None</cite>, and the endianness will be
+determined using the start-of-record and end-of-record markers provided
+in <code class="docutils literal notranslate"><span class="pre">record</span></code> as written by Fortran. These are 4 byte integers which
+indicate the length of the record.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><p><strong>fmt</strong> – A valid format string that can be used in <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.0)"><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></a> for the
+given <code class="docutils literal notranslate"><span class="pre">record</span></code>. If <cite>None</cite>, then the given <code class="docutils literal notranslate"><span class="pre">record</span></code> is incompatible
+with the given <code class="docutils literal notranslate"><span class="pre">variables</span></code>.</p>
+<p>If any <code class="docutils literal notranslate"><span class="pre">real</span></code> or <code class="docutils literal notranslate"><span class="pre">double</span> <span class="pre">precision</span></code> variables have a value for which
+the magnitude of its exponent exceeds 100, returns <cite>None</cite>. Usually junk
+values take on the form of having unrealistically large or small
+exponents, like +300 or -300. There doesn’t exist any good way to detect
+bad values like this, so we instead just check for exponents that exceed
+100 in magnitude. That is, if the exponent is less than -100 or greater
+than 100, we skip this write statement.</p>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)">str</a>, None</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>EndianError</strong> – If the provided or detected endian is not <code class="docutils literal notranslate"><span class="pre">'little'</span></code> or <code class="docutils literal notranslate"><span class="pre">'big'</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="starsmashertools.helpers.fortran.is_stripped">
+<span class="sig-name descname"><span class="pre">is_stripped</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">string</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/helpers/fortran.html#is_stripped"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.helpers.fortran.is_stripped" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>is_stripped</strong> – <cite>True</cite> if Fortran code in <code class="docutils literal notranslate"><span class="pre">string</span></code> is stripped by <a class="reference internal" href="#starsmashertools.helpers.fortran.strip" title="starsmashertools.helpers.fortran.strip"><code class="xref py py-func docutils literal notranslate"><span class="pre">strip()</span></code></a>, or
+<cite>False</cite> otherwise.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)">bool</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="starsmashertools.helpers.fortran.parse_write_statement">
+<span class="sig-name descname"><span class="pre">parse_write_statement</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">string</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/helpers/fortran.html#parse_write_statement"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.helpers.fortran.parse_write_statement" title="Link to this definition"></a></dt>
+<dd><p>Given a stripped Fortran write statement, return the variable names. If the
+write statement includes a string, returns an empty list.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>names</strong> – The names of each variable in the write statement.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="starsmashertools.helpers.fortran.strip">
+<span class="sig-name descname"><span class="pre">strip</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/helpers/fortran.html#strip"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.helpers.fortran.strip" title="Link to this definition"></a></dt>
+<dd><p>Given the contents of a Fortran file, this method returns the file contents
+in a more consistent format. The Fortran comments are removed, continuation
+lines are merged into single lines, and all non-newline whitespaces are
+removed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>source</strong> (str, <a class="reference external" href="https://docs.python.org/3/library/io.html#io.TextIOBase" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">io.TextIOBase</span></code></a>) – If a <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, it is expected to be a file path. Otherwise, it
+is expected to be an opened file (in text format).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>contents</strong> – The contents of the file without any Fortran comments.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)">str</a></p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Sun Fortran is not supported, so tabs in the source code are not expected
+and will likely cause errors.</p>
+<p>Source code containing semicolons as statement separators is not supported.</p>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="starsmashertools.helpers.file.html" class="btn btn-neutral float-left" title="starsmashertools.helpers.file" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../starsmashertools.lib.html" class="btn btn-neutral float-right" title="lib" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Roger Hatfull.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>  
+
+  <style>
+         .wy-nav-content { max-width: none; }
+  </style>
+
+
+
+</body>
+</html>

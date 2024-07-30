@@ -286,7 +286,7 @@ prefs = {
                 'max buffer size' : 100,
             }, # 'OutputIterator'
         }, # 'output'
-
+        
         'report' : {
             'Report' : {
                 'columns' : [
@@ -369,7 +369,6 @@ prefs = {
                 'src identifiers' : [
                     'starsmasher.h',
                     'init.f',
-                    'output.f',
                 ],
 
                 # The name of the file which is used to restart a simulation
