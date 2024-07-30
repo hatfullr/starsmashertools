@@ -225,7 +225,11 @@ class OutputPlot(object):
                 artist.set_visible(is_valid)
                 
                 legend = artist.axes.get_legend()
-                for handle, text in zip(legend.legendHandles, legend.get_texts()):
+                try:
+                    handles = legend.legendHandles
+                except AttributeError: # Matplotlib 3.7+
+                    handles = legend.legend_handles
+                for handle, text in zip(handles, legend.get_texts()):
                     if text.get_text() == artist.get_label():
                         handle.set_visible(is_valid)
                         if not is_valid: text.set_text("")

@@ -28,8 +28,12 @@ def make_legend(axes : matplotlib.axes._axes.Axes):
     markersize = legend_kwargs.pop('markersize', None)
     legend = axes.legend(**legend_kwargs)
     if markersize is not None:
-        for handle in legend.legendHandles:
-            handle.set_sizes([markersize])
+        try:
+            for handle in legend.legendHandles:
+                handle.set_sizes([markersize])
+        except AttributeError:
+            # Matplotlib 3.7+ apparently doesn't work like this anymore
+            pass
 
 @starsmashertools.helpers.argumentenforcer.enforcetypes
 def colorbar(
