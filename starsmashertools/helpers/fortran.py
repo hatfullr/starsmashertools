@@ -490,7 +490,7 @@ class FortranFile(object):
                     obj.body,
                     flags = re.M,
             ):
-                yield statement, [variables[name] for name in parse_write_statement(statement)]
+                yield statement, [variables[name] for name in parse_write_statement(statement) if name in variables]
         
 
 class Variable(object):
