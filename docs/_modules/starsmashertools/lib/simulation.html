@@ -481,12 +481,12 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="kn">import</span> <span class="nn">starsmashertools.helpers.fortran</span>
         <span class="kn">import</span> <span class="nn">starsmashertools.helpers.path</span>
-        <span class="kn">import</span> <span class="nn">starsmashertools.lib.output</span>
-
+        
         <span class="n">src</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">get_src</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">directory</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">src</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">Simulation</span><span class="o">.</span><span class="n">InvalidDirectoryError</span><span class="p">(</span><span class="s2">&quot;No source directory found in simulation directory &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">directory</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">find_files</span><span class="p">(</span><span class="n">src</span><span class="p">):</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="kc">None</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="n">ret</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">fortran</span><span class="o">.</span><span class="n">FortranFile</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
             <span class="k">except</span> <span class="ne">UnicodeDecodeError</span><span class="p">:</span>
@@ -495,6 +495,7 @@
                 <span class="c1"># present, such as those that come from building the source</span>
                 <span class="c1"># code.</span>
                 <span class="k">pass</span>
+            <span class="k">if</span> <span class="n">ret</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="k">continue</span>
             <span class="k">yield</span> <span class="n">ret</span></div>
 
     

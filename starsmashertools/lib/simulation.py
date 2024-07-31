@@ -370,12 +370,12 @@ class Simulation(object):
         """
         import starsmashertools.helpers.fortran
         import starsmashertools.helpers.path
-        import starsmashertools.lib.output
-
+        
         src = starsmashertools.helpers.path.get_src(self.directory)
         if src is None:
             raise Simulation.InvalidDirectoryError("No source directory found in simulation directory '%s'" % self.directory)
         for path in starsmashertools.helpers.path.find_files(src):
+            ret = None
             try:
                 ret = starsmashertools.helpers.fortran.FortranFile(path)
             except UnicodeDecodeError:
@@ -384,6 +384,7 @@ class Simulation(object):
                 # present, such as those that come from building the source
                 # code.
                 pass
+            if ret is None: continue
             yield ret
     
     @api
