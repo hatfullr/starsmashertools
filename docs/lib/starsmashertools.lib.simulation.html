@@ -101,6 +101,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_outputfiles"><code class="docutils literal notranslate"><span class="pre">Simulation.get_outputfiles()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_search_directory"><code class="docutils literal notranslate"><span class="pre">Simulation.get_search_directory()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_size"><code class="docutils literal notranslate"><span class="pre">Simulation.get_size()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_source_files"><code class="docutils literal notranslate"><span class="pre">Simulation.get_source_files()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_start_file"><code class="docutils literal notranslate"><span class="pre">Simulation.get_start_file()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_start_time"><code class="docutils literal notranslate"><span class="pre">Simulation.get_start_time()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_stop_time"><code class="docutils literal notranslate"><span class="pre">Simulation.get_stop_time()</span></code></a></li>
@@ -748,6 +749,18 @@ simulations.</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)">int</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.simulation.Simulation.get_source_files">
+<span class="sig-name descname"><span class="pre">get_source_files</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/simulation.html#Simulation.get_source_files"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.simulation.Simulation.get_source_files" title="Link to this definition"></a></dt>
+<dd><p>Obtain the files in the simulation directory that correspond with the
+<cite>StarSmasher</cite> source Fortran code.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Yields<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>file</strong> (<a class="reference internal" href="../helpers/starsmashertools.helpers.fortran.html#starsmashertools.helpers.fortran.FortranFile" title="starsmashertools.helpers.fortran.FortranFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">FortranFile</span></code></a>) – The Fortran file from <cite>StarSmasher</cite>'s source code.</p>
 </dd>
 </dl>
 </dd></dl>

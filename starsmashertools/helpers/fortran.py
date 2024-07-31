@@ -446,12 +446,11 @@ class FortranFile(object):
     @api
     def get_objects(self):
         r"""
-        Get the functions, subroutines, etc. in the file.
+        Get the functions and subroutines in the file.
 
-        Returns
-        -------
-        objects : list 
-            A list of :class:`~.Object` instances.
+        Yields
+        ------
+        object : :class:`~.Object`
         """
         object_content = None
 
@@ -474,7 +473,7 @@ class FortranFile(object):
         
         Yields
         ------
-        write_statement : str
+        statement : str
             The stripped lines which contain write statements.
 
         variables : list
@@ -483,14 +482,14 @@ class FortranFile(object):
         """
         for obj in self.get_objects():
             variables = {var.name:var for var in obj.variables}
-            for match in re.findall(
+            for statement in re.findall(
                     # https://regex101.com/r/yiqSre/4
                     # Excludes any strings in the write statements
                     r"[wW][rR][iI][tT][eE] *\([^\)]+\) *[^\"'\n]*$",
                     obj.body,
                     flags = re.M,
             ):
-                yield match, [variables[name] for name in parse_write_statement(match)]
+                yield statement, [variables[name] for name in parse_write_statement(statement)]
         
 
 class Variable(object):

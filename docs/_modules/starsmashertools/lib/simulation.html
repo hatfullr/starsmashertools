@@ -465,6 +465,37 @@
         <span class="n">search_directory</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">preferences</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;search directory&#39;</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">realpath</span><span class="p">(</span><span class="n">search_directory</span><span class="p">)</span></div>
 
+
+<div class="viewcode-block" id="Simulation.get_source_files">
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.simulation.html#starsmashertools.lib.simulation.Simulation.get_source_files">[docs]</a>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="nf">get_source_files</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Obtain the files in the simulation directory that correspond with the</span>
+<span class="sd">        `StarSmasher` source Fortran code.</span>
+
+<span class="sd">        Yields</span>
+<span class="sd">        ------</span>
+<span class="sd">        file : :class:`~.helpers.fortran.FortranFile`</span>
+<span class="sd">            The Fortran file from `StarSmasher`\&#39;s source code.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.fortran</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.path</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.lib.output</span>
+
+        <span class="n">src</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">get_src</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">directory</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">src</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">Simulation</span><span class="o">.</span><span class="n">InvalidDirectoryError</span><span class="p">(</span><span class="s2">&quot;No source directory found in simulation directory &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">directory</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">find_files</span><span class="p">(</span><span class="n">src</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">fortran</span><span class="o">.</span><span class="n">FortranFile</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">UnicodeDecodeError</span><span class="p">:</span>
+                <span class="c1"># We don&#39;t expect for there to be any files that aren&#39;t in utf-8</span>
+                <span class="c1"># encoding, so this error suggests that a binary file is</span>
+                <span class="c1"># present, such as those that come from building the source</span>
+                <span class="c1"># code.</span>
+                <span class="k">pass</span></div>
+
     
 <div class="viewcode-block" id="Simulation.get_compressed_properties">
 <a class="viewcode-back" href="../../../lib/starsmashertools.lib.simulation.html#starsmashertools.lib.simulation.Simulation.get_compressed_properties">[docs]</a>

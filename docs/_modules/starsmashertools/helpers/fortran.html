@@ -554,12 +554,11 @@
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="nf">get_objects</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Get the functions, subroutines, etc. in the file.</span>
+<span class="sd">        Get the functions and subroutines in the file.</span>
 
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        objects : list </span>
-<span class="sd">            A list of :class:`~.Object` instances.</span>
+<span class="sd">        Yields</span>
+<span class="sd">        ------</span>
+<span class="sd">        object : :class:`~.Object`</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">object_content</span> <span class="o">=</span> <span class="kc">None</span>
 
@@ -585,7 +584,7 @@
 <span class="sd">        </span>
 <span class="sd">        Yields</span>
 <span class="sd">        ------</span>
-<span class="sd">        write_statement : str</span>
+<span class="sd">        statement : str</span>
 <span class="sd">            The stripped lines which contain write statements.</span>
 
 <span class="sd">        variables : list</span>
@@ -594,14 +593,14 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_objects</span><span class="p">():</span>
             <span class="n">variables</span> <span class="o">=</span> <span class="p">{</span><span class="n">var</span><span class="o">.</span><span class="n">name</span><span class="p">:</span><span class="n">var</span> <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="n">variables</span><span class="p">}</span>
-            <span class="k">for</span> <span class="n">match</span> <span class="ow">in</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span>
+            <span class="k">for</span> <span class="n">statement</span> <span class="ow">in</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span>
                     <span class="c1"># https://regex101.com/r/yiqSre/4</span>
                     <span class="c1"># Excludes any strings in the write statements</span>
                     <span class="sa">r</span><span class="s2">&quot;[wW][rR][iI][tT][eE] *\([^\)]+\) *[^</span><span class="se">\&quot;</span><span class="s2">&#39;\n]*$&quot;</span><span class="p">,</span>
                     <span class="n">obj</span><span class="o">.</span><span class="n">body</span><span class="p">,</span>
                     <span class="n">flags</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">M</span><span class="p">,</span>
             <span class="p">):</span>
-                <span class="k">yield</span> <span class="n">match</span><span class="p">,</span> <span class="p">[</span><span class="n">variables</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">parse_write_statement</span><span class="p">(</span><span class="n">match</span><span class="p">)]</span></div>
+                <span class="k">yield</span> <span class="n">statement</span><span class="p">,</span> <span class="p">[</span><span class="n">variables</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">parse_write_statement</span><span class="p">(</span><span class="n">statement</span><span class="p">)]</span></div>
 </div>
 
         

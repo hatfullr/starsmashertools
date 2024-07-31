@@ -92,6 +92,7 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.output.Reader"><code class="docutils literal notranslate"><span class="pre">Reader</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.output.Reader.get_starsmasher_write_statements"><code class="docutils literal notranslate"><span class="pre">Reader.get_starsmasher_write_statements()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.output.Reader.set_write_statements"><code class="docutils literal notranslate"><span class="pre">Reader.set_write_statements()</span></code></a></li>
 </ul>
 </li>
@@ -489,6 +490,23 @@ an “as needed” basis in serial.</p></li>
 <dt class="sig sig-object py" id="starsmashertools.lib.output.Reader">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Reader</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">simulation</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/output.html#Reader"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.output.Reader" title="Link to this definition"></a></dt>
 <dd><dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.output.Reader.get_starsmasher_write_statements">
+<span class="sig-name descname"><span class="pre">get_starsmasher_write_statements</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/output.html#Reader.get_starsmasher_write_statements"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.output.Reader.get_starsmasher_write_statements" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><ul class="simple">
+<li><p><strong>statement</strong> (<em>list</em>) – The lines of Fortran code that contains the “write” Fortran
+directive from the <cite>StarSmasher</cite> source code.</p></li>
+<li><p><strong>variables</strong> (<em>list</em>) – Each element is a list of <code class="xref py py-class docutils literal notranslate"><span class="pre">Variable</span></code>
+objects corresponding with the variables that are involved with each
+write statement.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="starsmashertools.lib.output.Reader.set_write_statements">
 <span class="sig-name descname"><span class="pre">set_write_statements</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">header</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/output.html#Reader.set_write_statements"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.output.Reader.set_write_statements" title="Link to this definition"></a></dt>
 <dd><p>Manually set the header and data write statements from the StarSmasher

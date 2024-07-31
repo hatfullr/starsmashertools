@@ -1132,7 +1132,28 @@ class Reader(object):
         if return_headers and not return_data: return header
         if not return_headers and return_data: return data
         if return_headers and return_data: return header, data
+    
+    @api
+    def get_starsmasher_write_statements(self):
+        r"""
+        Returns
+        -------
+        statement : list
+            The lines of Fortran code that contains the "write" Fortran 
+            directive from the `StarSmasher` source code.
         
+        variables : list
+            Each element is a list of :class:`~.helpers.fortran.Variable` 
+            objects corresponding with the variables that are involved with each
+            write statement.
+        """
+        statements = []
+        variables = []
+        for fortran_file in self.simulation.get_source_files():
+            for statement, varis in fortran_file.get_write_statements():
+                statements += [statement]
+                variables += [varis]
+        return statements, variables
     
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
@@ -1157,29 +1178,8 @@ class Reader(object):
             The Fortran write statement used to create the data rows. If 
             `None`\, this parameter is ignored.
         """
-        import starsmashertools.helpers.fortran
-        import starsmashertools.helpers.path
-
-        src = starsmashertools.helpers.path.get_src(self.simulation.directory)
-        if src is None:
-            raise Reader.SourceDirectoryNotFoundError(self.simulation)
-
-        ws_vars = []
-        write_statements = []
-        for path in starsmashertools.helpers.path.find_files(src):
-            try:
-                for statement, variables in starsmashertools.helpers.fortran.FortranFile(
-                        path
-                ).get_write_statements():
-                    ws_vars += [variables]
-                    write_statements += [statement]
-            except UnicodeDecodeError:
-                # We don't expect for there to be any files that aren't in utf-8
-                # encoding, so this error suggests that a binary file is
-                # present, such as those that come from building the source
-                # code.
-                continue
         
+        write_statements, ws_vars = self.get_starsmasher_write_statements()
         for s,d in zip(['header','data'], [header, data]):
             if d is None: continue
             statement = copy.deepcopy(d)
@@ -1199,14 +1199,9 @@ class Reader(object):
 
         Note that strings are not permitted in the output files.
         """
-        import starsmashertools.helpers.path
         import starsmashertools.helpers.file
         import starsmashertools.helpers.fortran
         
-        src = starsmashertools.helpers.path.get_src(self.simulation.directory)
-        if src is None:
-            raise Reader.SourceDirectoryNotFoundError(self.simulation)
-
         # Figure out the length of the header and body. No need to lock the file
         # because starsmashertools never edits StarSmasher outputs.
         endian = self.get_endian()
@@ -1232,13 +1227,7 @@ class Reader(object):
         # we are not doing a full translation of the fortran code into python,
         # so we can't know which one is correct.
         if None in [s['variables'] for s in self._formats.values()]:
-            ws_vars = []
-            write_statements = []
-            for path in starsmashertools.helpers.path.find_files(src):
-                f = starsmashertools.helpers.fortran.FortranFile(path)
-                for statement, variables in f.get_write_statements():
-                    ws_vars += [variables]
-                    write_statements += [statement]
+            write_statements, ws_vars = self.get_starsmasher_write_statements()
         
         for s,byte_data in zip(['header','data'],[header,dataline]):
             if self._formats[s]['variables'] is not None: continue

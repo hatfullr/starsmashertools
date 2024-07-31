@@ -1277,7 +1277,31 @@
         <span class="k">if</span> <span class="n">return_headers</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">return_data</span><span class="p">:</span> <span class="k">return</span> <span class="n">header</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">return_headers</span> <span class="ow">and</span> <span class="n">return_data</span><span class="p">:</span> <span class="k">return</span> <span class="n">data</span>
         <span class="k">if</span> <span class="n">return_headers</span> <span class="ow">and</span> <span class="n">return_data</span><span class="p">:</span> <span class="k">return</span> <span class="n">header</span><span class="p">,</span> <span class="n">data</span>
-        
+    
+<div class="viewcode-block" id="Reader.get_starsmasher_write_statements">
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.output.html#starsmashertools.lib.output.Reader.get_starsmasher_write_statements">[docs]</a>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="nf">get_starsmasher_write_statements</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        statement : list</span>
+<span class="sd">            The lines of Fortran code that contains the &quot;write&quot; Fortran </span>
+<span class="sd">            directive from the `StarSmasher` source code.</span>
+<span class="sd">        </span>
+<span class="sd">        variables : list</span>
+<span class="sd">            Each element is a list of :class:`~.helpers.fortran.Variable` </span>
+<span class="sd">            objects corresponding with the variables that are involved with each</span>
+<span class="sd">            write statement.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">statements</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">variables</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">fortran_file</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">get_source_files</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">statement</span><span class="p">,</span> <span class="n">varis</span> <span class="ow">in</span> <span class="n">fortran_file</span><span class="o">.</span><span class="n">get_write_statements</span><span class="p">():</span>
+                <span class="n">statements</span> <span class="o">+=</span> <span class="p">[</span><span class="n">statement</span><span class="p">]</span>
+                <span class="n">variables</span> <span class="o">+=</span> <span class="p">[</span><span class="n">varis</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">statements</span><span class="p">,</span> <span class="n">variables</span></div>
+
     
 <div class="viewcode-block" id="Reader.set_write_statements">
 <a class="viewcode-back" href="../../../lib/starsmashertools.lib.output.html#starsmashertools.lib.output.Reader.set_write_statements">[docs]</a>
@@ -1304,29 +1328,8 @@
 <span class="sd">            The Fortran write statement used to create the data rows. If </span>
 <span class="sd">            `None`\, this parameter is ignored.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.fortran</span>
-        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.path</span>
-
-        <span class="n">src</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">get_src</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">directory</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">src</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">Reader</span><span class="o">.</span><span class="n">SourceDirectoryNotFoundError</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">simulation</span><span class="p">)</span>
-
-        <span class="n">ws_vars</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="n">write_statements</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">find_files</span><span class="p">(</span><span class="n">src</span><span class="p">):</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="k">for</span> <span class="n">statement</span><span class="p">,</span> <span class="n">variables</span> <span class="ow">in</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">fortran</span><span class="o">.</span><span class="n">FortranFile</span><span class="p">(</span>
-                        <span class="n">path</span>
-                <span class="p">)</span><span class="o">.</span><span class="n">get_write_statements</span><span class="p">():</span>
-                    <span class="n">ws_vars</span> <span class="o">+=</span> <span class="p">[</span><span class="n">variables</span><span class="p">]</span>
-                    <span class="n">write_statements</span> <span class="o">+=</span> <span class="p">[</span><span class="n">statement</span><span class="p">]</span>
-            <span class="k">except</span> <span class="ne">UnicodeDecodeError</span><span class="p">:</span>
-                <span class="c1"># We don&#39;t expect for there to be any files that aren&#39;t in utf-8</span>
-                <span class="c1"># encoding, so this error suggests that a binary file is</span>
-                <span class="c1"># present, such as those that come from building the source</span>
-                <span class="c1"># code.</span>
-                <span class="k">continue</span>
         
+        <span class="n">write_statements</span><span class="p">,</span> <span class="n">ws_vars</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_starsmasher_write_statements</span><span class="p">()</span>
         <span class="k">for</span> <span class="n">s</span><span class="p">,</span><span class="n">d</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">([</span><span class="s1">&#39;header&#39;</span><span class="p">,</span><span class="s1">&#39;data&#39;</span><span class="p">],</span> <span class="p">[</span><span class="n">header</span><span class="p">,</span> <span class="n">data</span><span class="p">]):</span>
             <span class="k">if</span> <span class="n">d</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="k">continue</span>
             <span class="n">statement</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
@@ -1347,14 +1350,9 @@
 
 <span class="sd">        Note that strings are not permitted in the output files.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.path</span>
         <span class="kn">import</span> <span class="nn">starsmashertools.helpers.file</span>
         <span class="kn">import</span> <span class="nn">starsmashertools.helpers.fortran</span>
         
-        <span class="n">src</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">get_src</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">directory</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">src</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">Reader</span><span class="o">.</span><span class="n">SourceDirectoryNotFoundError</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">simulation</span><span class="p">)</span>
-
         <span class="c1"># Figure out the length of the header and body. No need to lock the file</span>
         <span class="c1"># because starsmashertools never edits StarSmasher outputs.</span>
         <span class="n">endian</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_endian</span><span class="p">()</span>
@@ -1380,13 +1378,7 @@
         <span class="c1"># we are not doing a full translation of the fortran code into python,</span>
         <span class="c1"># so we can&#39;t know which one is correct.</span>
         <span class="k">if</span> <span class="kc">None</span> <span class="ow">in</span> <span class="p">[</span><span class="n">s</span><span class="p">[</span><span class="s1">&#39;variables&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_formats</span><span class="o">.</span><span class="n">values</span><span class="p">()]:</span>
-            <span class="n">ws_vars</span> <span class="o">=</span> <span class="p">[]</span>
-            <span class="n">write_statements</span> <span class="o">=</span> <span class="p">[]</span>
-            <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">find_files</span><span class="p">(</span><span class="n">src</span><span class="p">):</span>
-                <span class="n">f</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">fortran</span><span class="o">.</span><span class="n">FortranFile</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
-                <span class="k">for</span> <span class="n">statement</span><span class="p">,</span> <span class="n">variables</span> <span class="ow">in</span> <span class="n">f</span><span class="o">.</span><span class="n">get_write_statements</span><span class="p">():</span>
-                    <span class="n">ws_vars</span> <span class="o">+=</span> <span class="p">[</span><span class="n">variables</span><span class="p">]</span>
-                    <span class="n">write_statements</span> <span class="o">+=</span> <span class="p">[</span><span class="n">statement</span><span class="p">]</span>
+            <span class="n">write_statements</span><span class="p">,</span> <span class="n">ws_vars</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_starsmasher_write_statements</span><span class="p">()</span>
         
         <span class="k">for</span> <span class="n">s</span><span class="p">,</span><span class="n">byte_data</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">([</span><span class="s1">&#39;header&#39;</span><span class="p">,</span><span class="s1">&#39;data&#39;</span><span class="p">],[</span><span class="n">header</span><span class="p">,</span><span class="n">dataline</span><span class="p">]):</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_formats</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="s1">&#39;variables&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span> <span class="k">continue</span>
