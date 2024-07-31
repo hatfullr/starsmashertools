@@ -415,6 +415,7 @@ class FortranFile(object):
         """
         self.path = path
         self._content = None
+        self.get_contents()
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api

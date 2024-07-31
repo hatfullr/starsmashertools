@@ -377,13 +377,14 @@ class Simulation(object):
             raise Simulation.InvalidDirectoryError("No source directory found in simulation directory '%s'" % self.directory)
         for path in starsmashertools.helpers.path.find_files(src):
             try:
-                yield starsmashertools.helpers.fortran.FortranFile(path)
+                ret = starsmashertools.helpers.fortran.FortranFile(path)
             except UnicodeDecodeError:
                 # We don't expect for there to be any files that aren't in utf-8
                 # encoding, so this error suggests that a binary file is
                 # present, such as those that come from building the source
                 # code.
                 pass
+            yield ret
     
     @api
     def get_compressed_properties(self):
