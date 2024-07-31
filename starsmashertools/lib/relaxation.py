@@ -11,7 +11,7 @@ import numpy as np
 import copy
 
 class Relaxation(starsmashertools.lib.simulation.Simulation, object):
-    """
+    r"""
     A StarSmasher stellar relaxation, characterized by ``nrelax=1``\.
     """
     def __init__(self, *args, **kwargs):
@@ -32,7 +32,7 @@ class Relaxation(starsmashertools.lib.simulation.Simulation, object):
 
     @api
     def get_profilefile(self):
-        """
+        r"""
         Returns the path to the stellar profile from which this relaxation was
         created, as given by the value of ``profilefile`` in the sph.input file.
         """
@@ -106,7 +106,7 @@ class Relaxation(starsmashertools.lib.simulation.Simulation, object):
     @cli('starsmashertools')
     @clioptions(display_name = 'Bounding box at end of time integration')
     def get_final_extents(self, cli : bool = False):
-        """
+        r"""
         Returns the results of :meth:`~.lib.output.Output.get_extents` with
         keyword ``radial = True`` for the final output file in this simulation.
         """
@@ -130,7 +130,7 @@ class Relaxation(starsmashertools.lib.simulation.Simulation, object):
             mass_coordinate : int | float | type(None) = None,
             cli : bool = False,
     ):
-        """
+        r"""
         Returns the binding energy of the star's envelope 
         :math:`E_\\mathrm{SPH}` at some specified mass coordinate :math:`m(r)`\,
         as defined in equation (12) of Hatfull et al. (2021).

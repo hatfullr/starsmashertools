@@ -136,7 +136,7 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def get_COMs(self, output : starsmashertools.lib.output.Output | starsmashertools.lib.output.OutputIterator):
-        """
+        r"""
         Obtain the center of mass of both stars in the simulation for the given
         outputs.
 
@@ -282,7 +282,7 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
             CLI_output_window : int = Pref('get_RLOF.CLI output window', 6),
             cli : bool = False,
     ):
-        """
+        r"""
         Obtain the output file that corresponds with the time of Roche lobe
         overflow (RLOF). RLOF is detected using :meth:`~.get_fRLOF` to obtain 
         the fraction of the Roche lobe that is filled fRLOF in the output files.
@@ -453,7 +453,7 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
     @cli('starsmashertools')
     @clioptions(display_name = 'Mass of primary star')
     def get_primary_mass(self, cli : bool = False):
-        """
+        r"""
         Return the mass of the primary star (usually the donor). First the log
         files are searched, and if no log files are found then the first output
         file is checked. If there are no output files then the sph.start1u file
@@ -491,7 +491,7 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
     @cli('starsmashertools')
     @clioptions(display_name = 'Mass of secondary star')
     def get_secondary_mass(self, cli : bool = False):
-        """
+        r"""
         Return the mass of the secondary star (usually the accretor). First the
         log files are searched, and if no log files are found then the first
         output file is checked. If there are no output files then the
@@ -530,7 +530,7 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
     @cli('starsmashertools')
     @clioptions(display_name = 'Mass of primary star core particle')
     def get_primary_core_mass(self, cli : bool = False):
-        """
+        r"""
         Return the mass of the core particle in the primary (usually the donor)
         star, if it has a core particle. The log files are checked first, which
         is usually faster than checking the outputs. If something goes wrong 
@@ -584,7 +584,7 @@ class Binary(starsmashertools.lib.simulation.Simulation, object):
     @cli('starsmashertools')
     @clioptions(display_name = 'Mass of secondary core particle')
     def get_secondary_core_mass(self, cli : bool = False):
-        """
+        r"""
         Return the mass of the core particle in the secondary (usually the
         companion) star, if it has a core particle. The log files are checked 
         first, which is usually faster than checking the outputs. If something 

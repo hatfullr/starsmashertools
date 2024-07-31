@@ -104,7 +104,7 @@ class ColoredPlot(matplotlib.collections.LineCollection, object):
 
 
 class OutputPlot(object):
-    """
+    r"""
     A class which represents the data contained in a 
     :class:`~starsmashertools.lib.output.Output` for plotting.
     """
@@ -255,7 +255,7 @@ class OutputPlot(object):
 
 @starsmashertools.preferences.use
 class FluxPlot(object):
-    """
+    r"""
     A class for easily performing Matplotlib plotting operations on a 
     :class:`~.lib.flux.FluxResult`\.
     """
@@ -273,7 +273,7 @@ class FluxPlot(object):
     
     @api
     def remove(self):
-        """
+        r"""
         Remove all artists this object is responsible for from its axes.
         """
         artists = [
@@ -299,7 +299,7 @@ class FluxPlot(object):
             extent : list | tuple | np.ndarray | type(None) = None,
             **kwargs
     ):
-        """
+        r"""
         Plot a quantity on a Matplotlib :class:`matplotlib.axes.Axes`\.
         
         Parameters
@@ -354,7 +354,7 @@ class FluxPlot(object):
             IDs : list | tuple | np.ndarray,
             **kwargs
     ):
-        """
+        r"""
         There must be an image plotted with :meth:`~.imshow` first.
 
         Parameters
@@ -498,7 +498,7 @@ class FluxPlot(object):
             IDs : list | tuple | np.ndarray,
             **kwargs
     ):
-        """
+        r"""
         There must be an image plotted with :meth:`~.imshow` first.
 
         Parameters

@@ -1,4 +1,4 @@
-"""
+r"""
 This is where code preferences are managed.
 """
 import inspect, functools
@@ -39,7 +39,7 @@ class NoDefaultPreference(object): pass
 # An object which can be used in function argument annotations for specifying
 # that whatever value is in the preferences should be used.
 class Pref(object):
-    """
+    r"""
     This class can be used in function argument annotations for specifying
     that the preferences should be used. You must give the name of the 
     preference.
@@ -93,7 +93,7 @@ class Pref(object):
         self.default = default
 
 def _fix_function(_obj, preferences = None):
-    """ Replace any Pref objects found in the default values with values from
+    r""" Replace any Pref objects found in the default values with values from
     the preferences files. """
 
     if _execution_in_source: return
@@ -112,7 +112,7 @@ def _fix_function(_obj, preferences = None):
                 _obj.__kwdefaults__[key] = preferences.get(val.name)
         
 def use(_obj):
-    """ A class decorator. Put this decorator on a class to allow obtaining
+    r""" A class decorator. Put this decorator on a class to allow obtaining
     preferences anywhere inside that class. This allows for 
     ``self.preferences`` to work. This also works on functions. """
     
@@ -135,7 +135,7 @@ class PreferenceNotFoundError(Exception, object): pass
 class PreferenceExcludedError(Exception, object): pass
 
 class Preferences(object):
-    """
+    r"""
     An object to handle user and default preferences with respect to a given
     class that was decorated by :meth:`~.use`\.
 
@@ -347,7 +347,7 @@ class Preferences(object):
                 raise
     
     def get_user(self, identifier : str):
-        """
+        r"""
         Traverse the ``user`` :py:class:`dict` for the given identifier.
         
         Raises a :class:`~.PreferenceMissingError` if no the identifier is not
@@ -374,7 +374,7 @@ class Preferences(object):
         return self._traverse(self.user, identifier)
     
     def get_default(self, identifier : str):
-        """
+        r"""
         Traverse the ``default`` :py:class:`dict` for the given identifier.
         
         Raises a :class:`~.PreferenceMissingError` if no preference is found.
@@ -396,7 +396,7 @@ class Preferences(object):
         return self._traverse(self.default, identifier)
     
     def get(self, identifier : str):
-        """
+        r"""
         Obtain the preference given by ``identifier``\, either in the user's 
         preferences or in the default preferences.
 
@@ -426,7 +426,7 @@ class Preferences(object):
 
     @staticmethod
     def get_static(identifier : str):
-        """
+        r"""
         Search the preferences for the given full identifier, which must appear
         as, e.g., ``starsmashertools.lib.simulation.Simulation``\, where the
         ``Simulation`` class in module ``starsmashertools.lib.simulation`` has

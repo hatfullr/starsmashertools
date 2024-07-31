@@ -305,7 +305,7 @@ class FluxFinder(object):
 
     @api
     def get(self):
-        """
+        r"""
         Initialize values and process the images. Fills the ``result`` attribute
         with values.
         """
@@ -836,7 +836,7 @@ class FluxFinder(object):
                 filters,
                 ntot,
         ):
-            """
+            r"""
             Holds spectrum information.
             """
             self.dl = dl
@@ -951,7 +951,7 @@ class FluxFinder(object):
                 resolution : list | tuple | np.ndarray,
                 particle_array : list | tuple | np.ndarray | type(None) = None,
         ):
-            """
+            r"""
             A class wrapper for individual images.
             """
             self.resolution = resolution
@@ -994,7 +994,7 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
             filename : str = Pref('save.filename'),
             allowed : dict | starsmashertools.helpers.nesteddict.NestedDict = Pref('save.allowed'),
     ):
-        """
+        r"""
         Save the results to disk as a compressed binary file.
         
         Other Parameters
@@ -1037,7 +1037,7 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
             filename : str,
             allowed : dict | starsmashertools.helpers.nesteddict.NestedDict | type(None) = None,
     ):
-        """
+        r"""
         Load results from disk which were saved by :meth:`~.save`\.
 
         Parameters
@@ -1084,7 +1084,7 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
                 log10 : bool = False,
                 **kwargs
         ):
-            """
+            r"""
             Creates a new :class:`~.mpl.artists.FluxPlot` and calls its 
             :meth:`~.mpl.artists.FluxPlot.imshow` method on the given Matplotlib
             :class:`matplotlib.axes.Axes`\.
@@ -1168,7 +1168,7 @@ class FluxResult(starsmashertools.helpers.nesteddict.NestedDict, object):
 
 @starsmashertools.preferences.use
 class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
-    """
+    r"""
     A container for multiple :class:`~.FluxResult` objects. Permits for multiple
     :class:`~.FluxResult` objects to be saved in a single file, which can be 
     convenient when working with many :class:`~.FluxResult` objects.
@@ -1181,7 +1181,7 @@ class FluxResults(starsmashertools.helpers.nesteddict.NestedDict, object):
             allowed : dict | starsmashertools.helpers.nesteddict.NestedDict = Pref('allowed'),
             **kwargs
     ):
-        """
+        r"""
         Constructor.
         
         Parameters

@@ -216,7 +216,7 @@ def find_all_indices(
         string : str,
         substring : str,
 ):
-    """
+    r"""
     Return a list of indices for all occurrances of a substring.
 
     Parameters

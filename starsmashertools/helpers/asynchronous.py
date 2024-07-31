@@ -28,7 +28,7 @@ class Process(multiprocessing.Process, object):
         
         
 class ParallelFunction(object):
-    """
+    r"""
     This object can be used as a shortcut for writing parallel processes. You
     supply a target function which will be run on many individual processes.
     """
@@ -43,7 +43,7 @@ class ParallelFunction(object):
             progress_message : "starsmashertools.helpers.string.ProgressMessage | type(None)" = None,
             **kw
     ):
-        """
+        r"""
         Initializer. If there are no available processes (because too many have
         already been spawned), whenever processes become available we create 
         processes up to a number ``nprocs``\, which must be smaller than
@@ -208,7 +208,7 @@ class ParallelFunction(object):
             args : list | tuple = (),
             kwargs : dict = {},
     ):
-        """
+        r"""
         A convenience function for executing the given method at regular
         intervals while waiting for :meth:`~.get_output` to finish. This must be
         called prior to calling :meth:`~.get_output`\.
@@ -241,7 +241,7 @@ class ParallelFunction(object):
         sys.exit(1)
 
     def get_output(self, sort : bool = True):
-        """
+        r"""
         Obtain all outputs and identifiers of the target function specified in 
         :meth:`~.__init__`\. Blocks until all processes have finished. If you
         want the results to be sorted then this will return a list of results.
@@ -392,7 +392,7 @@ class ParallelFunction(object):
 
 
 class ParallelIterator(ParallelFunction, object):
-    """
+    r"""
     Perhaps a more simple concept than in :class:`~.ParallelFunction`\. This
     class spawns processes and then works as an iterator. You feed it with a
     function and the arguments and keywords you want it to process. When you
@@ -481,7 +481,7 @@ class ParallelIterator(ParallelFunction, object):
         
             
 class Ticker(threading.Thread):
-    """
+    r"""
     A helpful class that performs some action on time intervals.
     """
     def __init__(

@@ -96,7 +96,7 @@ def get_classes():
 
 
 def _register_axes(classes : list = []):
-    """ Register all our defined Axes classes with Matplotlib. See 
+    r""" Register all our defined Axes classes with Matplotlib. See 
     https://stackoverflow.com/a/48593767 """
     import matplotlib.axes
     import matplotlib.projections
@@ -117,7 +117,7 @@ def subplots(
         subplot_kw : dict | type(None) = None,
         **kwargs
 ):
-    """
+    r"""
     Similar to :func:`matplotlib.pyplot.subplots`\, except allows for the 
     use of custom :class:`matplotlib.figure.Figure` and 
     :class:`matplotlib.axes.Axes` classes.

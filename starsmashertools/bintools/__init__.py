@@ -43,7 +43,7 @@ class ANSI:
 
     @staticmethod
     def get_all():
-        """
+        r"""
         Return a list of all ANSI characters.
         """
         arr = []

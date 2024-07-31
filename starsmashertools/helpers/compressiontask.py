@@ -44,7 +44,7 @@ class CompressionTask(object):
     @staticmethod
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     def get_compressed_properties(filename : str):
-        """
+        r"""
         Get a dictionary of properties on the files contained in the compressed
         archive.
 
@@ -101,7 +101,7 @@ class CompressionTask(object):
     @staticmethod
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     def isCompressedFile(filename : str):
-        """
+        r"""
         Check if the given filename was compressed by :meth:`~.compress`\.
 
         Parameters
@@ -151,7 +151,7 @@ class CompressionTask(object):
             zfile : zipfile.ZipFile,
             files : list | tuple,
     ):
-        """
+        r"""
         Create the compression file identifier and add it to the given ZipFile.
         Delete the original file afterwards.
         """
@@ -211,7 +211,7 @@ class CompressionTask(object):
             verbose : typing.Callable | bool = True,
             nprocs : int = 0,
     ):
-        """
+        r"""
         Create a compressed zip archive of this CompressionTask's files,
         preserving file creation times.
         
@@ -285,7 +285,7 @@ class CompressionTask(object):
             delete_after : bool = True,
             verbose : typing.Callable | bool = True,
     ):
-        """
+        r"""
         Perform compression in serial mode.
 
         Parameters
@@ -365,7 +365,7 @@ class CompressionTask(object):
             filename : str,
             **kwargs
     ):
-        """
+        r"""
         Perform compression in parallel mode. The list of files is divvied up
         among processes, who each do :meth:`~.compress_serial`\. When all processes
         are finished each zip file is added to the final main zip file.
@@ -434,7 +434,7 @@ class CompressionTask(object):
             delete : bool = True,
             verbose : typing.Callable | bool = False,
     ):
-        """
+        r"""
         Decompress a file created by :meth:`~.compress`\.
 
         Parameters

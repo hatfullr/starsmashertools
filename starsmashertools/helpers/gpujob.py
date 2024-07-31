@@ -15,7 +15,7 @@ try:
 
     @starsmashertools.preferences.use
     class GPUJob(object):
-        """
+        r"""
         A base class for utilizing the GPU.
         """
         def __new__(cls, *args, **kwargs):
@@ -124,7 +124,7 @@ try:
                 self,
                 output : starsmashertools.lib.output.Output,
         ):
-            """
+            r"""
             Given a `~.Output` object, calculate the gravitational potential
             energies of each particle.
             """

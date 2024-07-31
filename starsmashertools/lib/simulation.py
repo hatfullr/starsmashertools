@@ -27,7 +27,7 @@ except ImportError:
 
 @starsmashertools.preferences.use
 class Simulation(object):
-    """
+    r"""
     The base class for handling StarSmasher simulations.
 
     Attributes
@@ -73,7 +73,7 @@ class Simulation(object):
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def __init__(self, directory : str):
-        """
+        r"""
         Parameters
         ----------
         directory : str
@@ -175,7 +175,7 @@ class Simulation(object):
     
     @api
     def __eq__(self, other):
-        """
+        r"""
         Returns
         -------
         bool
@@ -191,7 +191,7 @@ class Simulation(object):
 
     @api
     def __getitem__(self, key):
-        """
+        r"""
         Obtain a key value from :attr:`~.input`\.
         """
         return self.input[key]

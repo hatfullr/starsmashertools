@@ -253,7 +253,7 @@
     <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="nf">get_COMs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span> <span class="p">:</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">Output</span> <span class="o">|</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">OutputIterator</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Obtain the center of mass of both stars in the simulation for the given</span>
 <span class="sd">        outputs.</span>
 
@@ -411,7 +411,7 @@
             <span class="n">CLI_output_window</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Pref</span><span class="p">(</span><span class="s1">&#39;get_RLOF.CLI output window&#39;</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span>
             <span class="n">cli</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Obtain the output file that corresponds with the time of Roche lobe</span>
 <span class="sd">        overflow (RLOF). RLOF is detected using :meth:`~.get_fRLOF` to obtain </span>
 <span class="sd">        the fraction of the Roche lobe that is filled fRLOF in the output files.</span>
@@ -585,7 +585,7 @@
     <span class="nd">@cli</span><span class="p">(</span><span class="s1">&#39;starsmashertools&#39;</span><span class="p">)</span>
     <span class="nd">@clioptions</span><span class="p">(</span><span class="n">display_name</span> <span class="o">=</span> <span class="s1">&#39;Mass of primary star&#39;</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">get_primary_mass</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cli</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return the mass of the primary star (usually the donor). First the log</span>
 <span class="sd">        files are searched, and if no log files are found then the first output</span>
 <span class="sd">        file is checked. If there are no output files then the sph.start1u file</span>
@@ -626,7 +626,7 @@
     <span class="nd">@cli</span><span class="p">(</span><span class="s1">&#39;starsmashertools&#39;</span><span class="p">)</span>
     <span class="nd">@clioptions</span><span class="p">(</span><span class="n">display_name</span> <span class="o">=</span> <span class="s1">&#39;Mass of secondary star&#39;</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">get_secondary_mass</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cli</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return the mass of the secondary star (usually the accretor). First the</span>
 <span class="sd">        log files are searched, and if no log files are found then the first</span>
 <span class="sd">        output file is checked. If there are no output files then the</span>
@@ -668,7 +668,7 @@
     <span class="nd">@cli</span><span class="p">(</span><span class="s1">&#39;starsmashertools&#39;</span><span class="p">)</span>
     <span class="nd">@clioptions</span><span class="p">(</span><span class="n">display_name</span> <span class="o">=</span> <span class="s1">&#39;Mass of primary star core particle&#39;</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">get_primary_core_mass</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cli</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return the mass of the core particle in the primary (usually the donor)</span>
 <span class="sd">        star, if it has a core particle. The log files are checked first, which</span>
 <span class="sd">        is usually faster than checking the outputs. If something goes wrong </span>
@@ -725,7 +725,7 @@
     <span class="nd">@cli</span><span class="p">(</span><span class="s1">&#39;starsmashertools&#39;</span><span class="p">)</span>
     <span class="nd">@clioptions</span><span class="p">(</span><span class="n">display_name</span> <span class="o">=</span> <span class="s1">&#39;Mass of secondary core particle&#39;</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">get_secondary_core_mass</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cli</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return the mass of the core particle in the secondary (usually the</span>
 <span class="sd">        companion) star, if it has a core particle. The log files are checked </span>
 <span class="sd">        first, which is usually faster than checking the outputs. If something </span>

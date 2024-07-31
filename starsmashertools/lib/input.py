@@ -6,7 +6,7 @@ import starsmashertools.helpers.readonlydict
 
 @starsmashertools.preferences.use
 class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
-    """
+    r"""
     This class holds information about inputs that are sent to a ``StarSmasher``
     simulation. It is a dictionary whose keys are ``StarSmasher`` code variable
     names and the values are the actual values that those variables have in
@@ -26,7 +26,7 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
 
     @property
     def src(self):
-        """
+        r"""
         The ``StarSmasher`` source directory.
         """
         import starsmashertools.helpers.path
@@ -43,7 +43,7 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
             self,
             filename : str = Pref('src init filename', 'init.f'),
     ):
-        """
+        r"""
         Obtain the ``'init.f'`` file that ``StarSmasher`` uses to initialize the
         simulation.
         
@@ -153,7 +153,7 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
             self,
             init_file : str | type(None) = None
     ):
-        """
+        r"""
         Open up the ``init.f`` file to figure out what it reads as the input 
         file. We search for the "namelist" block in the variable declarations of
         init.f and then search the simulation directory's files for one whose
@@ -296,7 +296,7 @@ class Input(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
 
     @api
     def initialize(self):
-        """
+        r"""
         Read the ``StarSmasher`` input file and the ``'init.f'`` file to 
         determine the value of each ``StarSmasher`` input variable. Fills this 
         object with keys and values.

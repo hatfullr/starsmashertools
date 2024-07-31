@@ -30,7 +30,7 @@ def update_archive_version(
         new_path : str | type(None) = None,
         verbose : bool = False,
 ):
-    """
+    r"""
     Convert old-style :class:`~.Archive` files to new-style files. This 
     function does nothing if the given :class:`~.Archive` is already in the
     latest format.
@@ -196,7 +196,7 @@ class ArchiveValue(object):
             origin : str | type(None) = None,
             mtime : int | float | type(None) = None,
     ):
-        """
+        r"""
         ArchiveValue constructor.
 
         Parameters
@@ -254,7 +254,7 @@ class ArchiveValue(object):
     
     @staticmethod
     def deserialize(identifier, obj):
-        """
+        r"""
         Return a :class:`~.ArchiveValue` object from the given json object.
         """
         import starsmashertools.helpers.jsonfile
@@ -267,7 +267,7 @@ class ArchiveValue(object):
 
 
 class ArchiveItems(object):
-    """ An iterator to help with reading an Archive. """
+    r""" An iterator to help with reading an Archive. """
     def __init__(self, *args, verbose : bool = False):
         self.verbose = verbose
         self._file = None
@@ -344,7 +344,7 @@ def REPLACE_OLD(
         old_value : ArchiveValue,
         new_value : ArchiveValue,
 ):
-    """
+    r"""
     A function that decides whether or not to replace an old value. The old
     value is replaced if its file modification time is less than the new
     value's. This function can be registered as a replacement checker in an
@@ -378,7 +378,7 @@ def REPLACE_NEQ(
 
 @starsmashertools.preferences.use
 class Archive(object):
-    """
+    r"""
     An Archive object stores :class:`ArchiveValue`\s in a single file for quick 
     access. Note that :class:`ArchiveValue` can only store data that is JSON
     serializable. This typically includes only standard types str, bool, float,
@@ -442,7 +442,7 @@ class Archive(object):
             max_buffer_size : int = Pref('max buffer size', int(1e5)),
             thread_safe : bool = False,
     ):
-        """
+        r"""
         Constructor for :class:`~.Archive`\.
 
         Parameters
@@ -590,9 +590,9 @@ class Archive(object):
     
     @contextlib.contextmanager
     def nosave(self):
-        """ A context manager for temporarily disabling auto save. Entering this
-        context will first save the Archive. Then, saving is disabled until the
-        context is exited, even if auto save is enabled. Upon exiting, the 
+        r""" A context manager for temporarily disabling auto save. Entering
+        this context will first save the Archive. Then, saving is disabled until
+        the context is exited, even if auto save is enabled. Upon exiting, the 
         buffers are cleared. """
         import copy
 
@@ -621,7 +621,7 @@ class Archive(object):
             message : str | type(None) = None,
             progress_max : int = 0,
     ):
-        """ Used for opening the Archive for file manipulation. """
+        r""" Used for opening the Archive for file manipulation. """
         import starsmashertools.helpers.string
         import starsmashertools.helpers.file
 
@@ -635,7 +635,7 @@ class Archive(object):
         
     @api
     def __contains__(self, key : str | ArchiveValue):
-        """ If an :class:`~.ArchiveValue` is specified, calls 
+        r""" If an :class:`~.ArchiveValue` is specified, calls 
         :meth:`~.values`\, which reads the entire Archive file and can be 
         quite I/O intensive. Use sparingly. Otherwise, if a str is given then
         the string is checked against the keys, which is faster. """
@@ -644,7 +644,7 @@ class Archive(object):
 
     @api
     def __delitem__(self, key):
-        """ Remove the given key from the Archive. If auto save is enabled, the
+        r""" Remove the given key from the Archive. If auto save is enabled, the
         Archive file will be modified. """
 
         if key not in self.keys(): raise KeyError(key)
@@ -661,7 +661,7 @@ class Archive(object):
         self._auto_save()
 
     def _get_keys_from_file(self):
-        """ Return a list of keys as read from the file on the system. """
+        r""" Return a list of keys as read from the file on the system. """
         import starsmashertools.helpers.path
         # If the file doesn't exist yet, then it has no keys!
         if not starsmashertools.helpers.path.exists(self.filename): return []
@@ -678,7 +678,7 @@ class Archive(object):
         
     @api
     def keys(self):
-        """ Return a list of Archive identifiers from the file. """
+        r""" Return a list of Archive identifiers from the file. """
         import starsmashertools.helpers.path
         import copy
 
@@ -702,13 +702,13 @@ class Archive(object):
 
     @api
     def items(self):
-        """ Return all keys and values in the Archive. This is I/O intensive, 
+        r""" Return all keys and values in the Archive. This is I/O intensive, 
         so use it sparingly. """
         return ArchiveItems(self, verbose = self.verbose)
     
     @api
     def values(self):
-        """ Return all the values in the Archive. This reads the entire Archive
+        r""" Return all the values in the Archive. This reads the entire Archive
         file, so use it sparingly. """
         return [value for key, value in self.items()]
     
@@ -716,7 +716,7 @@ class Archive(object):
     @cli('ssarchive')
     @clioptions(display_name = "Remove all values", confirm = "Are you sure? This will remove all contents and delete the archive file.")
     def clear(self, cli : bool = False):
-        """ Clears all contents from the archive and deletes the file if auto
+        r""" Clears all contents from the archive and deletes the file if auto
         save is enabled. """
         # We can allow the 'remove' buffer to go over max_buffer_size here,
         # because we kinda have to.
@@ -737,7 +737,7 @@ class Archive(object):
             key,
             value : ArchiveValue,
     ):
-        """ Similar to :py:meth:`dict.__setitem__` except the archive file is
+        r""" Similar to :py:meth:`dict.__setitem__` except the archive file is
         modified if auto save is enabled. Also the replacement flag functions
         specified in :meth:`~.__init__` are checked. If all the functions 
         return `True` then the value is overwritten. Otherwise, nothing 
@@ -843,7 +843,7 @@ class Archive(object):
             self,
             verbose : bool | type(None) = None,
     ):
-        """
+        r"""
         Update the archive file with the current data.
 
         Parameters
@@ -937,7 +937,7 @@ class Archive(object):
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def add(self, *args, **kwargs):
-        """
+        r"""
         Create a new :class:`ArchiveValue` and add it to the archive. If there
         already exists a :class:`ArchiveValue` with the same ``identifier`` in 
         the archive, then if the origin file is different we overwrite the old
@@ -960,7 +960,7 @@ class Archive(object):
     @cli('ssarchive')
     @clioptions(display_name = 'Set/add a value')
     def set(self, *args, **kwargs):
-        """
+        r"""
         A simple alias for :meth:`~.add`\.
 
         See Also
@@ -976,7 +976,7 @@ class Archive(object):
             keys : str | list | tuple,
             deserialize : bool = True,
     ):
-        """
+        r"""
         Obtain the key or keys given. This is useful for if you want to retrieve
         many values from the archive without opening and closing the file each
         time. Raises a :class:`KeyError` if any of the keys weren't found.
@@ -1056,7 +1056,7 @@ class Archive(object):
     @cli('ssarchive')
     @clioptions(display_name = 'Remove a key')
     def remove(self, key : str, cli : bool = False):
-        """
+        r"""
         Remove an identifier from the Archive. Calls :meth:`~.save` if auto
         save is enabled.
 
@@ -1070,7 +1070,7 @@ class Archive(object):
     
     @api
     def combine(self, other):
-        """
+        r"""
         Merge the contents of ``other`` with this :class:`~.Archive`\, according
         to this :class:`~.Archive`\'s replacement flags.
 
@@ -1143,7 +1143,7 @@ class Archive(object):
         ])
     
     def _deserialize(self, keys : list, values : list):
-        """ Deserialize many :class:`~.ArchiveValue` objects efficiently. Uses
+        r""" Deserialize many :class:`~.ArchiveValue` objects efficiently. Uses
         parallel processing to speed things up. """
         import starsmashertools.helpers.asynchronous
         import starsmashertools.helpers.string
@@ -1185,7 +1185,7 @@ class Archive(object):
         else: yield from func()
 
     def find_old_values(self):
-        """
+        r"""
         Using :attr:`~.replacement_flags`\, locate the 
         :class:`~.ArchiveValue` objects whose origins have a newer modification
         time than that which is currently saved in the :class:`~.Archive`\. This
@@ -1214,7 +1214,7 @@ class Archive(object):
 
 @starsmashertools.preferences.use
 class SimulationArchive(Archive, object):
-    """
+    r"""
     When working with data from a :class:`~.lib.simulation.Simulation`\, it is
     common to want to save results of calculations in a way that is easily
     retrievable again in the future, such as getting the sum of total energies
@@ -1236,7 +1236,7 @@ class SimulationArchive(Archive, object):
     
     @api
     def __init__(self, simulation):
-        """
+        r"""
         Constructor for a :class:`SimulationArchive`\. Note that a
         :class:`~.SimulationArchive` is not directly loaded or saved. This
         rather happens automatically as archived values are accessed/modified.

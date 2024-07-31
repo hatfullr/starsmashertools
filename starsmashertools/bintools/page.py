@@ -244,7 +244,7 @@ class Page(object):
         self.cli.navigate(page)
 
     def add_listener(self, name : str, function, args=(), kwargs={}):
-        """
+        r"""
         name = the name of a function belonging to this class
         """
         if name not in self.events.keys(): self.events[name] = []
@@ -266,7 +266,7 @@ class Page(object):
         
 
 class PageEvent(object):
-    """
+    r"""
     This is for processing events triggered by pages
     """
     def __init__(self, function, args, kwargs):
@@ -341,7 +341,7 @@ class List(Page, object):
 
 
 class ArgumentPage(Page, object):
-    """ Used to gather arguments for FunctionPage """
+    r""" Used to gather arguments for FunctionPage """
     def __init__(self, *args, argument = None, **kwargs):
         self.argument = argument
         super(ArgumentPage, self).__init__(*args, **kwargs)
@@ -389,7 +389,7 @@ class ArgumentPage(Page, object):
         return False
 
 class FunctionPage(List, object):
-    """ A manager for setting function inputs. """
+    r""" A manager for setting function inputs. """
 
     exposed_programs = None
 
@@ -647,7 +647,7 @@ class FunctionPage(List, object):
 
         
 class ConfirmationPage(List, object):
-    """
+    r"""
     Ask the user for confirmation of something (yes/no question)
     """
     def __init__(
@@ -804,7 +804,7 @@ class SimulationControlsPage(List, object):
 
 
 class Table(Page, object):
-    """Display a table of data in the terminal. The content given as input must
+    r"""Display a table of data in the terminal. The content given as input must
     be either a list of columns or a callable function that takes no inputs and
     returns a list of columns. Columns themselves should be lists, such that the
     content appears as, e.g. ``[[0,1],[0,1],[2,3]]``\, which would give a table
@@ -968,7 +968,7 @@ class Table(Page, object):
 
 
 class MultiPage(Page, object):
-    """
+    r"""
     Splits the content of a single page into multiple pages with navigation.
     This is useful for a Page which contains too much information to fit on the
     screen.
@@ -1276,7 +1276,7 @@ class MultiPage(Page, object):
         )
 
     def search(self, phrase):
-        """
+        r"""
         Scan all contents to find the given all instances of the given phrase.
         """
         import re

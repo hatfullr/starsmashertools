@@ -91,7 +91,7 @@
 <span class="kn">import</span> <span class="nn">starsmashertools.lib.flux</span>
 
 <span class="k">def</span> <span class="nf">update_style_sheet_directories</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot; Locate the style sheets listed in the preferences. &quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot; Locate the style sheets listed in the preferences. &quot;&quot;&quot;</span>
     <span class="kn">import</span> <span class="nn">starsmashertools</span>
     <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 
@@ -109,7 +109,7 @@
 
 <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">preferences</span><span class="o">.</span><span class="n">use</span>
 <span class="k">class</span> <span class="nc">Figure</span><span class="p">(</span><span class="n">matplotlib</span><span class="o">.</span><span class="n">figure</span><span class="o">.</span><span class="n">Figure</span><span class="p">,</span> <span class="nb">object</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Used internally to create Matplotlib figures. This normalizes the process</span>
 <span class="sd">    for creating figures to ensure consistency.</span>
 
@@ -129,7 +129,7 @@
             <span class="n">debug</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
             <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Initializer. Review the Matplotlib documentation for </span>
 <span class="sd">        :meth:`matplotlib.pyplot.subplots` for details which are not documented </span>
 <span class="sd">        here.</span>
@@ -223,8 +223,8 @@
         <span class="nb">super</span><span class="p">(</span><span class="n">Figure</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">draw</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
     
     <span class="k">def</span> <span class="nf">show</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot; Display the figure without blocking the code execution if the CLI is</span>
-<span class="sd">        being used. &quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot; Display the figure without blocking the code execution if the CLI </span>
+<span class="sd">        is being used. &quot;&quot;&quot;</span>
         <span class="kn">import</span> <span class="nn">starsmashertools.bintools.cli</span>
         <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
         
@@ -394,7 +394,7 @@
             <span class="n">artist_type</span> <span class="p">:</span> <span class="nb">type</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="o">=</span> <span class="n">matplotlib</span><span class="o">.</span><span class="n">artist</span><span class="o">.</span><span class="n">Artist</span><span class="p">,</span>
             <span class="n">artist</span> <span class="p">:</span> <span class="n">matplotlib</span><span class="o">.</span><span class="n">artist</span><span class="o">.</span><span class="n">Artist</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot; Obtain all artists of the given type. If the given type is `None`\, </span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot; Obtain all artists of the given type. If the given type is `None`\, </span>
 <span class="sd">        this returns all artists in the figure. The search begins at the given</span>
 <span class="sd">        artist. If the given artist is None, all artists are searched. &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">artist</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="n">artist</span> <span class="o">=</span> <span class="bp">self</span>
@@ -417,7 +417,7 @@
 <a class="viewcode-back" href="../../../mpl/starsmashertools.mpl.figure.html#starsmashertools.mpl.figure.FluxFigure">[docs]</a>
 <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">preferences</span><span class="o">.</span><span class="n">use</span>
 <span class="k">class</span> <span class="nc">FluxFigure</span><span class="p">(</span><span class="n">Figure</span><span class="p">,</span> <span class="nb">object</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Show any number of :class:`~.lib.flux.FluxResult`\s on a Figure. The figure</span>
 <span class="sd">    appears as a collection of images, where each row represents one </span>
 <span class="sd">    :class:`~.lib.flux.FluxResult`\. The number of columns in each row is </span>
@@ -436,7 +436,7 @@
             <span class="n">values</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">=</span> <span class="n">Pref</span><span class="p">(</span><span class="s1">&#39;values&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;flux&#39;</span><span class="p">]),</span>
             <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        *args</span>
@@ -472,7 +472,7 @@
             <span class="n">sharey</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
             <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This function is called by :meth:`~.mpl.subplots` to create the axes on</span>
 <span class="sd">        the figure.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -489,7 +489,7 @@
             <span class="bp">self</span><span class="p">,</span>
             <span class="n">result</span> <span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">flux</span><span class="o">.</span><span class="n">FluxResult</span><span class="p">,</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Add a :class:`~.lib.flux.FluxResult` to the figure.</span>
 
 <span class="sd">        Parameters</span>
@@ -515,7 +515,7 @@
             <span class="n">flux_kw</span> <span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">=</span> <span class="p">{},</span>
             <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot; Create the actual plot. &quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot; Create the actual plot. &quot;&quot;&quot;</span>
         
         <span class="n">nrows</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_toplot</span><span class="p">)</span>
         <span class="n">ncols</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_values</span><span class="p">)</span>

@@ -5,7 +5,7 @@ import starsmashertools.math
 import inspect
 import sys
 
-""" For integrating the kernel functions:
+r""" For integrating the kernel functions:
 Imagine you are looking at a particle's kernel. Trace a
 path through the kernel perpendicular to your line of
 sight, like so:

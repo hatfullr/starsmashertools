@@ -3,7 +3,7 @@ from starsmashertools.helpers.apidecorator import api
 import starsmashertools.helpers.argumentenforcer
 
 class Ray(object):
-    """
+    r"""
     A ray consists of a 3D position and a 3D direction.
     """
     @starsmashertools.helpers.argumentenforcer.enforcetypes
@@ -13,7 +13,7 @@ class Ray(object):
             position : list | tuple | np.ndarray,
             direction : list | tuple | np.ndarray,
     ):
-        """
+        r"""
         Parameters
         ----------
         position : list, tuple, :class:`numpy.ndarray`
@@ -46,7 +46,7 @@ class Ray(object):
 
     @api
     def cast(self, *args, **kwargs):
-        """
+        r"""
         Cast this ray through a given set of hard spheres, each with positions
         ``x``\, ``y``\, and ``z`` and radii ``r``\.
 
@@ -74,7 +74,7 @@ class Ray(object):
 
 
 class RayCast(object):
-    """
+    r"""
     An object for holding information about a ray cast operation, where the cast
     is done through a given collection of hard spheres.
     """
@@ -138,6 +138,6 @@ class RayCast(object):
     
 
     def __bool__(self):
-        """ Returns `True` if the :attr:`points` array has values. Otherwise, 
+        r""" Returns `True` if the :attr:`points` array has values. Otherwise, 
         returns `False`\. """
         return len(self.points) > 0

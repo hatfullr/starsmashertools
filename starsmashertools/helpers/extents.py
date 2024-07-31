@@ -16,7 +16,7 @@ class NegativeValueError(ValueError, object):
         super(NegativeValueError, self).__init__(message, *args, **kwargs)
 
 class Extents(object):
-    """
+    r"""
     Contains information of a bounding box volume.
     """
     
@@ -44,99 +44,99 @@ class Extents(object):
 
     @property
     def xmin(self):
-        """ Get the minimum bound on the x-axis. """
+        r""" Get the minimum bound on the x-axis. """
         return self._xmin
     @property
     def xmax(self):
-        """ Get the maximum bound on the x-axis. """
+        r""" Get the maximum bound on the x-axis. """
         return self._xmax
     @property
     def ymin(self):
-        """ Get the minimum bound on the y-axis. """
+        r""" Get the minimum bound on the y-axis. """
         return self._ymin
     @property
     def ymax(self):
-        """ Get the maximum bound on the y-axis. """
+        r""" Get the maximum bound on the y-axis. """
         return self._ymax
     @property
     def zmin(self):
-        """ Get the minimum bound on the z-axis. """
+        r""" Get the minimum bound on the z-axis. """
         return self._zmin
     @property
     def zmax(self):
-        """ Get the maximum bound on the z-axis. """
+        r""" Get the maximum bound on the z-axis. """
         return self._zmax
         
     @property
     def width(self):
-        """ Get the size on the x-axis. """
+        r""" Get the size on the x-axis. """
         return self.xmax - self.xmin
     
     @property
     def breadth(self):
-        """ Get the size on the y-axis. """
+        r""" Get the size on the y-axis. """
         return self.ymax - self.ymin
     
     @property
     def height(self):
-        """ Get the size on the z-axis. """
+        r""" Get the size on the z-axis. """
         return self.zmax - self.zmin
 
     @property
     def volume(self):
-        """ Get the volume of the bounding box. If any limit is infinite then
+        r""" Get the volume of the bounding box. If any limit is infinite then
         the volume will be infinite. """
         return self.width * self.breadth * self.height
 
     @property
     def min(self):
-        """ Get the point (xmin, ymin, zmin) as a NumPy array. """
+        r""" Get the point (xmin, ymin, zmin) as a NumPy array. """
         return np.array([self.xmin, self.ymin, self.zmin])
     
     @property
     def max(self):
-        """ Get the point (xmax, ymax, zmax) as a NumPy array. """
+        r""" Get the point (xmax, ymax, zmax) as a NumPy array. """
         return np.array([self.xmax, self.ymax, self.zmax])
 
     @property
     def xy(self):
-        """ Return the xy bounds as [xmin, xmax, ymin, ymax]. """
+        r""" Return the xy bounds as [xmin, xmax, ymin, ymax]. """
         return np.array([self.xmin, self.xmax, self.ymin, self.ymax])
 
     @property
     def yx(self):
-        """ Return the yx bounds as [ymin, ymax, xmin, xmax]. """
+        r""" Return the yx bounds as [ymin, ymax, xmin, xmax]. """
         return np.array([self.ymin, self.ymax, self.xmin, self.xmax])
 
     @property
     def xz(self):
-        """ Return the xz bounds as [xmin, xmax, zmin, zmax]. """
+        r""" Return the xz bounds as [xmin, xmax, zmin, zmax]. """
         return np.array([self.xmin, self.xmax, self.zmin, self.zmax])
 
     @property
     def zx(self):
-        """ Return the zx bounds as [zmin, zmax, xmin, xmax]. """
+        r""" Return the zx bounds as [zmin, zmax, xmin, xmax]. """
         return np.array([self.zmin, self.zmax, self.xmin, self.xmax])
 
     @property
     def yz(self):
-        """ Return the yz bounds as [ymin, ymax, zmin, zmax]. """
+        r""" Return the yz bounds as [ymin, ymax, zmin, zmax]. """
         return np.array([self.ymin, self.ymax, self.zmin, self.zmax])
 
     @property
     def zy(self):
-        """ Return the zy bounds as [zmin, zmax, ymin, ymax]. """
+        r""" Return the zy bounds as [zmin, zmax, ymin, ymax]. """
         return np.array([self.zmin, self.zmax, self.ymin, self.ymax])
     
     @property
     def center(self):
-        """ Get the center position of the bounding volume. """
+        r""" Get the center position of the bounding volume. """
         return 0.5 * (self.min + self.max)
 
     @property
     def radius(self):
-        """ Get the maximum distance from the center to the edge of the bounding
-        volume. """
+        r""" Get the maximum distance from the center to the edge of the 
+        bounding volume. """
         
         xcenter, ycenter, zcenter = self.center
         return max(
@@ -154,7 +154,7 @@ class Extents(object):
     
     @xmin.setter
     def xmin(self, value):
-        """ Set the minimum bound on the x-axis. """
+        r""" Set the minimum bound on the x-axis. """
         starsmashertools.helpers.argumentenforcer.enforcetypes({
             'value' : [starsmashertools.lib.units.Unit, int, np.integer, float, np.float_],
         })
@@ -162,7 +162,7 @@ class Extents(object):
         self._check_bad_values()
     @xmax.setter
     def xmax(self, value):
-        """ Set the maximum bound on the x-axis. """
+        r""" Set the maximum bound on the x-axis. """
         starsmashertools.helpers.argumentenforcer.enforcetypes({
             'value' : [starsmashertools.lib.units.Unit, int, np.integer, float, np.float_],
         })
@@ -171,7 +171,7 @@ class Extents(object):
 
     @ymin.setter
     def ymin(self, value):
-        """ Set the minimum bound on the y-axis. """
+        r""" Set the minimum bound on the y-axis. """
         starsmashertools.helpers.argumentenforcer.enforcetypes({
             'value' : [starsmashertools.lib.units.Unit, int, np.integer, float, np.float_],
         })
@@ -179,7 +179,7 @@ class Extents(object):
         self._check_bad_values()
     @ymax.setter
     def ymax(self, value):
-        """ Set the maximum bound on the y-axis. """
+        r""" Set the maximum bound on the y-axis. """
         starsmashertools.helpers.argumentenforcer.enforcetypes({
             'value' : [starsmashertools.lib.units.Unit, int, np.integer, float, np.float_],
         })
@@ -188,7 +188,7 @@ class Extents(object):
 
     @zmin.setter
     def zmin(self, value):
-        """ Set the minimum bound on the z-axis. """
+        r""" Set the minimum bound on the z-axis. """
         starsmashertools.helpers.argumentenforcer.enforcetypes({
             'value' : [starsmashertools.lib.units.Unit, int, np.integer, float, np.float_],
         })
@@ -196,7 +196,7 @@ class Extents(object):
         self._check_bad_values()
     @zmax.setter
     def zmax(self, value):
-        """ Set the maximum bound on the z-axis. """
+        r""" Set the maximum bound on the z-axis. """
         starsmashertools.helpers.argumentenforcer.enforcetypes({
             'value' : [starsmashertools.lib.units.Unit, int, np.integer, float, np.float_],
         })
@@ -206,7 +206,7 @@ class Extents(object):
         
     @width.setter
     def width(self, value):
-        """ Set the size on the x-axis. The limits are expanded/shrunken around
+        r""" Set the size on the x-axis. The limits are expanded/shrunken around
         the center point. """
         starsmashertools.helpers.argumentenforcer.enforcetypes({
             'value' : [starsmashertools.lib.units.Unit, int, np.integer, float, np.float_],
@@ -224,7 +224,7 @@ class Extents(object):
 
     @breadth.setter
     def breadth(self, value):
-        """ Set the size on the y-axis. The limits are expanded/shrunken around
+        r""" Set the size on the y-axis. The limits are expanded/shrunken around
         the center point. """
         starsmashertools.helpers.argumentenforcer.enforcetypes({
             'value' : [starsmashertools.lib.units.Unit, int, np.integer, float, np.float_],
@@ -242,7 +242,7 @@ class Extents(object):
 
     @height.setter
     def height(self, value):
-        """ Set the size on the z-axis. The limits are expanded/shrunken around
+        r""" Set the size on the z-axis. The limits are expanded/shrunken around
         the center point. """
         starsmashertools.helpers.argumentenforcer.enforcetypes({
             'value' : [starsmashertools.lib.units.Unit, int, np.integer, float, np.float_],
@@ -260,8 +260,8 @@ class Extents(object):
 
     @volume.setter
     def volume(self, value):
-        """ Set the volume of the bounding box by expanding/shrinking the volume
-        proportionally in all dimensions around the center. """
+        r""" Set the volume of the bounding box by expanding/shrinking the 
+        volume proportionally in all dimensions around the center. """
 
         starsmashertools.helpers.argumentenforcer.enforcetypes({
             'value' : [starsmashertools.lib.units.Unit, int, np.integer, float, np.float_],
@@ -275,7 +275,7 @@ class Extents(object):
         
     @min.setter
     def min(self, value):
-        """ Set the minimum point (xmin, ymin, zmin). """
+        r""" Set the minimum point (xmin, ymin, zmin). """
         starsmashertools.helpers.argumentenforcer.enforcetypes({
             'value' : array_types,
         })
@@ -287,7 +287,7 @@ class Extents(object):
 
     @max.setter
     def max(self, value):
-        """ Set the maximum point (xmax, ymax, zmax). """
+        r""" Set the maximum point (xmax, ymax, zmax). """
         starsmashertools.helpers.argumentenforcer.enforcetypes({
             'value' : array_types,
         })
@@ -299,7 +299,7 @@ class Extents(object):
         
     @xy.setter
     def xy(self, value):
-        """ Return the xy bounds as [xmin, xmax, ymin, ymax]. """
+        r""" Return the xy bounds as [xmin, xmax, ymin, ymax]. """
         starsmashertools.helpers.argumentenforcer.enforcetypes({
             'value' : array_types,
         })
@@ -308,7 +308,7 @@ class Extents(object):
 
     @yx.setter
     def yx(self, value):
-        """ Return the yx bounds as [ymin, ymax, xmin, xmax]. """
+        r""" Return the yx bounds as [ymin, ymax, xmin, xmax]. """
         starsmashertools.helpers.argumentenforcer.enforcetypes({
             'value' : array_types,
         })
@@ -317,7 +317,7 @@ class Extents(object):
 
     @xz.setter
     def xz(self, value):
-        """ Return the xz bounds as [xmin, xmax, zmin, zmax]. """
+        r""" Return the xz bounds as [xmin, xmax, zmin, zmax]. """
         starsmashertools.helpers.argumentenforcer.enforcetypes({
             'value' : array_types,
         })
@@ -326,7 +326,7 @@ class Extents(object):
 
     @zx.setter
     def zx(self, value):
-        """ Return the zx bounds as [zmin, zmax, xmin, xmax]. """
+        r""" Return the zx bounds as [zmin, zmax, xmin, xmax]. """
         starsmashertools.helpers.argumentenforcer.enforcetypes({
             'value' : array_types,
         })
@@ -335,7 +335,7 @@ class Extents(object):
 
     @yz.setter
     def yz(self, value):
-        """ Return the yz bounds as [ymin, ymax, zmin, zmax]. """
+        r""" Return the yz bounds as [ymin, ymax, zmin, zmax]. """
         starsmashertools.helpers.argumentenforcer.enforcetypes({
             'value' : array_types,
         })
@@ -344,7 +344,7 @@ class Extents(object):
 
     @zy.setter
     def zy(self, value):
-        """ Return the zy bounds as [zmin, zmax, ymin, ymax]. """
+        r""" Return the zy bounds as [zmin, zmax, ymin, ymax]. """
         starsmashertools.helpers.argumentenforcer.enforcetypes({
             'value' : array_types,
         })
@@ -354,7 +354,7 @@ class Extents(object):
 
     @center.setter
     def center(self, value):
-        """ Set the center position. """
+        r""" Set the center position. """
         starsmashertools.helpers.argumentenforcer.enforcetypes({
             'value' : array_types,
         })
@@ -397,7 +397,7 @@ class Extents(object):
 
 
 class RadialExtents(Extents, object):
-    """
+    r"""
     This type of Extents works only with an :class:`~.lib.output.Output` object.
     """
     def __init__(
@@ -447,6 +447,6 @@ class RadialExtents(Extents, object):
 
     @property
     def radius(self):
-        """ Get the maximum of r + 2*h where r is the radial position of the 
+        r""" Get the maximum of r + 2*h where r is the radial position of the 
         particles and h is their smoothing lengths."""
         return np.amax(self.output['r'] + 2 * self.output['hp']) * float(self.output.simulation.units.length)

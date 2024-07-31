@@ -28,7 +28,7 @@ def get_all_labels():
 
 @starsmashertools.preferences.use
 class Unit(object):
-    """
+    r"""
     To use string formatters with a Unit, you can either specify the usual
     formatting as integer or float types, i.e., ``'{:5.3f}'``\, or you can
     specify a formatter for both the value and the label, i.e. ``'{:5.3f 6s}'``
@@ -216,7 +216,7 @@ class Unit(object):
             to : list | tuple | type(None) = None,
             **kwargs
     ):
-        """
+        r"""
         Return a copy of this :class:`~.Unit` converted to a new unit.
         
         Other Parameters
@@ -644,7 +644,7 @@ class Unit(object):
             return ''
 
         def get_base_string(self):
-            """ Return this label's string with all units converted down to the
+            r""" Return this label's string with all units converted down to the
             base units. """
             if Unit.get_conversions() is None: return self.long
 
@@ -672,7 +672,7 @@ class Unit(object):
             return ret
         
         def is_compatible(self, other):
-            """
+            r"""
             Returns `True` if this Label can be safely converted to the other
             Label.
             """
@@ -863,7 +863,7 @@ class Unit(object):
         
 @starsmashertools.preferences.use
 class Units(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
-    """
+    r"""
     This class represents the units which a :class:`~.lib.simulation.Simulation`
     uses, as set in the StarSmasher code.
     """

@@ -1,4 +1,4 @@
-"""
+r"""
 Custom tkinter widgets are defined here.
 """
 import tkinter

@@ -155,7 +155,7 @@ class CLI(object):
 
     @staticmethod
     def prepare_string(string):
-        """
+        r"""
         Before calling writestr, the string should be prepared first by wrapping
         text for printing in the terminal.
         """
@@ -187,7 +187,7 @@ class CLI(object):
 
     @staticmethod
     def writestr(text, _codes=[]):
-        """
+        r"""
         We parse out the styles for proper writing
         """
         import time
@@ -296,7 +296,7 @@ class CLI(object):
         return self._add_page(starsmashertools.bintools.page.Table(self, inputtypes, columns, **kwargs))
 
     def navigate(self, identifier : str | starsmashertools.bintools.page.Page):
-        """
+        r"""
         Go to the given page
         """
         if (isinstance(identifier, starsmashertools.bintools.page.Page) or
@@ -352,7 +352,7 @@ class CLI(object):
 
     @staticmethod
     def scroll(offset, refresh=True):
-        """
+        r"""
         Scroll the content by the offset amount. Positive goes up, negative goes
         down.
         """
@@ -437,7 +437,7 @@ class CLI(object):
 
 
 class HookedCLI(CLI, object):
-    """
+    r"""
     This is a CLI which uses the @cli decorator to expose functions to the user.
     """
 
