@@ -131,7 +131,7 @@ class Output(dict, object):
 
     @api
     def __getitem__(self, item):
-        """
+        r"""
         If the file has not yet been read, read it. Then return the requested
         item.
         """
@@ -305,7 +305,7 @@ class Output(dict, object):
 
     @api
     def get_core_particles(self):
-        """
+        r"""
         Return the IDs of any core particles present in this output file. A core
         particle is identified in ``StarSmasher`` as having the unique property
         of zero specific internal energy. This is because core particles act 
@@ -322,7 +322,7 @@ class Output(dict, object):
 
     @api
     def get_non_core_particles(self):
-        """
+        r"""
         Similar to :meth:`~.get_core_particles`\, but instead returns the IDs of
         the particles which are not identified as being core particles.
         
@@ -345,7 +345,7 @@ class Output(dict, object):
             overwrite : bool = False,
             max_stored : int = Pref('condense.max stored', 10000),
     ):
-        """
+        r"""
         Perform an operation as defined by a string or function using this
         :class:`~.Output` object. The result is saved to the 
         :class:`~.simulation.Simulation` archive for quick access in the
@@ -500,7 +500,7 @@ class Output(dict, object):
             yangle : float | int = 0.,
             zangle : float | int = 0.,
     ):
-        """
+        r"""
         Rotate the particles using an Euler rotation.
 
         An Euler rotation can be understood as follows. Imagine the x, y, and z
@@ -546,7 +546,7 @@ class Output(dict, object):
             radial : bool = False,
             r : list | tuple | np.ndarray | type(None) = None,
     ):
-        """
+        r"""
         Get the x, y, and z bounds of the simulation, where the minima are found
         as ``min(x - 2*h)`` and maxima ``max(x + 2*h)`` for the x-axis and 
         similarly for the y and z axes.
@@ -598,7 +598,7 @@ class Output(dict, object):
             self,
             format_sheet : str = Pref('get_formatted_string.format sheet'),
     ):
-        """
+        r"""
         Convert an output file to a (mostly) human-readable string format. 
         This will only display the values in the header of the output file and 
         it uses one of the format sheets located in the ``format_sheets`` 
@@ -633,7 +633,7 @@ class Output(dict, object):
                 y : str = 'y',
                 **kwargs
         ):
-            """
+            r"""
             Create a scatter plot on the given Matplotlib axes showing the
             particle values.
             
@@ -734,7 +734,7 @@ class Output(dict, object):
 # Asynchronous output file reading
 @starsmashertools.preferences.use
 class OutputIterator(object):
-    """
+    r"""
     An iterator which can be used to iterate through :class:`~.Output` objects
     efficiently.
     """
@@ -749,7 +749,7 @@ class OutputIterator(object):
             asynchronous : bool = True,
             **kwargs,
     ):
-        """
+        r"""
         Constructor.
         
         Parameters
@@ -888,7 +888,7 @@ class OutputIterator(object):
 
 
 class ParticleIterator(OutputIterator, object):
-    """
+    r"""
     Similar to an :class:`~.OutputIterator`, but instead of iterating through 
     all the particles in each Output file, we iterate through a list of
     particles instead.
@@ -1167,11 +1167,18 @@ class Reader(object):
         ws_vars = []
         write_statements = []
         for path in starsmashertools.helpers.path.find_files(src):
-            for statement, variables in starsmashertools.helpers.fortran.FortranFile(
-                    path
-            ).get_write_statements():
-                ws_vars += [variables]
-                write_statements += [statement]
+            try:
+                for statement, variables in starsmashertools.helpers.fortran.FortranFile(
+                        path
+                ).get_write_statements():
+                    ws_vars += [variables]
+                    write_statements += [statement]
+            except UnicodeDecodeError:
+                # We don't expect for there to be any files that aren't in utf-8
+                # encoding, so this error suggests that a binary file is
+                # present, such as those that come from building the source
+                # code.
+                continue
         
         for s,d in zip(['header','data'], [header, data]):
             if d is None: continue

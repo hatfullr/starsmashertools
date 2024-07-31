@@ -221,7 +221,7 @@
 <a class="viewcode-back" href="../../../lib/starsmashertools.lib.output.html#starsmashertools.lib.output.Output.__getitem__">[docs]</a>
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        If the file has not yet been read, read it. Then return the requested</span>
 <span class="sd">        item.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -419,7 +419,7 @@
 <a class="viewcode-back" href="../../../lib/starsmashertools.lib.output.html#starsmashertools.lib.output.Output.get_core_particles">[docs]</a>
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="nf">get_core_particles</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return the IDs of any core particles present in this output file. A core</span>
 <span class="sd">        particle is identified in ``StarSmasher`` as having the unique property</span>
 <span class="sd">        of zero specific internal energy. This is because core particles act </span>
@@ -439,7 +439,7 @@
 <a class="viewcode-back" href="../../../lib/starsmashertools.lib.output.html#starsmashertools.lib.output.Output.get_non_core_particles">[docs]</a>
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="nf">get_non_core_particles</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Similar to :meth:`~.get_core_particles`\, but instead returns the IDs of</span>
 <span class="sd">        the particles which are not identified as being core particles.</span>
 <span class="sd">        </span>
@@ -465,7 +465,7 @@
             <span class="n">overwrite</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
             <span class="n">max_stored</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Pref</span><span class="p">(</span><span class="s1">&#39;condense.max stored&#39;</span><span class="p">,</span> <span class="mi">10000</span><span class="p">),</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Perform an operation as defined by a string or function using this</span>
 <span class="sd">        :class:`~.Output` object. The result is saved to the </span>
 <span class="sd">        :class:`~.simulation.Simulation` archive for quick access in the</span>
@@ -623,7 +623,7 @@
             <span class="n">yangle</span> <span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">=</span> <span class="mf">0.</span><span class="p">,</span>
             <span class="n">zangle</span> <span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">=</span> <span class="mf">0.</span><span class="p">,</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Rotate the particles using an Euler rotation.</span>
 
 <span class="sd">        An Euler rotation can be understood as follows. Imagine the x, y, and z</span>
@@ -672,7 +672,7 @@
             <span class="n">radial</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
             <span class="n">r</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Get the x, y, and z bounds of the simulation, where the minima are found</span>
 <span class="sd">        as ``min(x - 2*h)`` and maxima ``max(x + 2*h)`` for the x-axis and </span>
 <span class="sd">        similarly for the y and z axes.</span>
@@ -727,7 +727,7 @@
             <span class="bp">self</span><span class="p">,</span>
             <span class="n">format_sheet</span> <span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Pref</span><span class="p">(</span><span class="s1">&#39;get_formatted_string.format sheet&#39;</span><span class="p">),</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Convert an output file to a (mostly) human-readable string format. </span>
 <span class="sd">        This will only display the values in the header of the output file and </span>
 <span class="sd">        it uses one of the format sheets located in the ``format_sheets`` </span>
@@ -763,7 +763,7 @@
                 <span class="n">y</span> <span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;y&#39;</span><span class="p">,</span>
                 <span class="o">**</span><span class="n">kwargs</span>
         <span class="p">):</span>
-<span class="w">            </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">            </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            Create a scatter plot on the given Matplotlib axes showing the</span>
 <span class="sd">            particle values.</span>
 <span class="sd">            </span>
@@ -867,7 +867,7 @@
 <a class="viewcode-back" href="../../../lib/starsmashertools.lib.output.html#starsmashertools.lib.output.OutputIterator">[docs]</a>
 <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">preferences</span><span class="o">.</span><span class="n">use</span>
 <span class="k">class</span> <span class="nc">OutputIterator</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    An iterator which can be used to iterate through :class:`~.Output` objects</span>
 <span class="sd">    efficiently.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -884,7 +884,7 @@
             <span class="n">asynchronous</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
             <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Constructor.</span>
 <span class="sd">        </span>
 <span class="sd">        Parameters</span>
@@ -1027,7 +1027,7 @@
 <div class="viewcode-block" id="ParticleIterator">
 <a class="viewcode-back" href="../../../lib/starsmashertools.lib.output.html#starsmashertools.lib.output.ParticleIterator">[docs]</a>
 <span class="k">class</span> <span class="nc">ParticleIterator</span><span class="p">(</span><span class="n">OutputIterator</span><span class="p">,</span> <span class="nb">object</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Similar to an :class:`~.OutputIterator`, but instead of iterating through </span>
 <span class="sd">    all the particles in each Output file, we iterate through a list of</span>
 <span class="sd">    particles instead.</span>
@@ -1314,11 +1314,18 @@
         <span class="n">ws_vars</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="n">write_statements</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">find_files</span><span class="p">(</span><span class="n">src</span><span class="p">):</span>
-            <span class="k">for</span> <span class="n">statement</span><span class="p">,</span> <span class="n">variables</span> <span class="ow">in</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">fortran</span><span class="o">.</span><span class="n">FortranFile</span><span class="p">(</span>
-                    <span class="n">path</span>
-            <span class="p">)</span><span class="o">.</span><span class="n">get_write_statements</span><span class="p">():</span>
-                <span class="n">ws_vars</span> <span class="o">+=</span> <span class="p">[</span><span class="n">variables</span><span class="p">]</span>
-                <span class="n">write_statements</span> <span class="o">+=</span> <span class="p">[</span><span class="n">statement</span><span class="p">]</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">statement</span><span class="p">,</span> <span class="n">variables</span> <span class="ow">in</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">fortran</span><span class="o">.</span><span class="n">FortranFile</span><span class="p">(</span>
+                        <span class="n">path</span>
+                <span class="p">)</span><span class="o">.</span><span class="n">get_write_statements</span><span class="p">():</span>
+                    <span class="n">ws_vars</span> <span class="o">+=</span> <span class="p">[</span><span class="n">variables</span><span class="p">]</span>
+                    <span class="n">write_statements</span> <span class="o">+=</span> <span class="p">[</span><span class="n">statement</span><span class="p">]</span>
+            <span class="k">except</span> <span class="ne">UnicodeDecodeError</span><span class="p">:</span>
+                <span class="c1"># We don&#39;t expect for there to be any files that aren&#39;t in utf-8</span>
+                <span class="c1"># encoding, so this error suggests that a binary file is</span>
+                <span class="c1"># present, such as those that come from building the source</span>
+                <span class="c1"># code.</span>
+                <span class="k">continue</span>
         
         <span class="k">for</span> <span class="n">s</span><span class="p">,</span><span class="n">d</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">([</span><span class="s1">&#39;header&#39;</span><span class="p">,</span><span class="s1">&#39;data&#39;</span><span class="p">],</span> <span class="p">[</span><span class="n">header</span><span class="p">,</span> <span class="n">data</span><span class="p">]):</span>
             <span class="k">if</span> <span class="n">d</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="k">continue</span>

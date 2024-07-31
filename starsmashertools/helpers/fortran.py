@@ -440,7 +440,6 @@ class FortranFile(object):
                     self.path, 'r', lock = False, verbose = False,
             ) as f:
                 self._content = f.read()
-        
         if stripped: return strip(self._content)
         return self._content
 
