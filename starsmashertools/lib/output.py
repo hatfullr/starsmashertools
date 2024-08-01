@@ -72,8 +72,7 @@ class Output(dict, object):
 
         self._mask = None
         self._header = None
-        self.data = None
-
+        
         self._original_data = None
 
     @property
@@ -173,7 +172,10 @@ class Output(dict, object):
     # Use this to make sure that the file has been fully read
     def _ensure_read(self):
         if False in self._isRead.values():
-            self.read(return_headers=not self._isRead['header'], return_data=not self._isRead['data'])
+            self.read(
+                header = not self._isRead['header'],
+                data = not self._isRead['data'],
+            )
 
     def _clear_cache(self):
         self._cache = copy.deepcopy(self.preferences.get('cache'))
@@ -182,8 +184,8 @@ class Output(dict, object):
 
     @property
     def header(self):
-        if not self._isRead['header']:
-            self.read(return_headers=True, return_data=False)
+        if self._header is None:
+            self.read(header = True, data = False)
         return self._header
 
     @property
@@ -217,6 +219,13 @@ class Output(dict, object):
     
     @api
     def copy_from(self, output : 'starsmashertools.lib.output.Output'):
+        self._clear_cache()
+        self._path = other._path
+        self.simulation = other.simulation
+        self._header = other._header
+        self._original_data = other._original_data
+        self.mode = other.mode
+        
         self._mask = copy.deepcopy(output._mask)
         
         for key in self._isRead.keys():
@@ -225,41 +234,49 @@ class Output(dict, object):
         for key, val in output.items():
             self[key] = copy.deepcopy(val)
     
-    def read(self, return_headers=True, return_data=True, **kwargs):
-        if self._isRead['header']: return_headers = False
-        if self._isRead['data']: return_data = False
-
-        self._header = None
-        self.data = None
-
-        read_header = return_headers
-        read_data = return_data
-
-        if read_header or read_data:
-            obj = self.simulation.reader.read(
+    def read(self, header = True, data = True, **kwargs):
+        if self._isRead['header']: header = False
+        if self._isRead['data']: data = False
+        
+        if header and self._header is not None:
+            # Remove keys associated with the current header
+            for key in self._header:
+                del self[key]
+            self._header = None
+        if data:
+            # Remove keys associated with the current data
+            for key in self.keys(ensure_read = False):
+                if key not in self: continue
+                if self._header is not None and key in self._header: continue
+                del self[key]
+        
+        if header and data:
+            self._header, data = self.simulation.reader.read(
                 self.path,
-                return_headers=read_header,
-                return_data=read_data,
+                return_headers = header,
+                return_data = data,
                 **kwargs
             )
-
-            if read_header and read_data:
-                self.data, self._header = obj
-            elif not read_header and read_data:
-                self.data = obj
-            elif read_header and not read_data:
-                self._header = obj
-        
-        if self._header is not None:
-            for key, val in self._header.items():
-                self[key] = val
-
-        if self.data is not None:
-            for key, val in self.data.items():
-                self[key] = val
-
-        if read_header: self._isRead['header'] = True
-        if read_data: self._isRead['data'] = True
+            self.update(self._header)
+            self.update(data)
+            for key in ['header','data']: self._isRead[key] = True
+        elif not header and data:
+            self.update(self.simulation.reader.read(
+                self.path,
+                return_headers = header,
+                return_data = data,
+                **kwargs
+            ))
+            self._isRead['data'] = True
+        elif header and not data:
+            self._header = self.simulation.reader.read(
+                self.path,
+                return_headers = header,
+                return_data = data,
+                **kwargs
+            )
+            self.update(self._header)
+            self._isRead['header'] = True
     
     @api
     def from_cache(self, key : str):
@@ -1093,7 +1110,6 @@ class Reader(object):
                         offset = 0, # start-of-record
                         strides = self._stride['header'],
                     )
-                
                 
                 if return_data:
                     # Go past the header's trailing record marker, to the start
