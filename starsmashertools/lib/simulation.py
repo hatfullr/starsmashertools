@@ -378,11 +378,7 @@ class Simulation(object):
             ret = None
             try:
                 ret = starsmashertools.helpers.fortran.FortranFile(path)
-            except UnicodeDecodeError:
-                # We don't expect for there to be any files that aren't in utf-8
-                # encoding, so this error suggests that a binary file is
-                # present, such as those that come from building the source
-                # code.
+            except starsmashertools.helpers.fortran.FortranFile.FileExtensionError:
                 pass
             if ret is None: continue
             yield ret

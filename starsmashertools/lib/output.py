@@ -1149,11 +1149,13 @@ class Reader(object):
         """
         statements = []
         variables = []
+        files = []
         for fortran_file in self.simulation.get_source_files():
             for statement, varis in fortran_file.get_write_statements():
                 statements += [statement]
                 variables += [varis]
-        return statements, variables
+                files += [fortran_file]
+        return statements, variables, files
     
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
@@ -1179,7 +1181,7 @@ class Reader(object):
             `None`\, this parameter is ignored.
         """
         
-        write_statements, ws_vars = self.get_starsmasher_write_statements()
+        write_statements, ws_vars, _ = self.get_starsmasher_write_statements()
         for s,d in zip(['header','data'], [header, data]):
             if d is None: continue
             statement = copy.deepcopy(d)
@@ -1227,7 +1229,7 @@ class Reader(object):
         # we are not doing a full translation of the fortran code into python,
         # so we can't know which one is correct.
         if None in [s['variables'] for s in self._formats.values()]:
-            write_statements, ws_vars = self.get_starsmasher_write_statements()
+            write_statements, ws_vars, files = self.get_starsmasher_write_statements()
         
         for s,byte_data in zip(['header','data'],[header,dataline]):
             if self._formats[s]['variables'] is not None: continue
@@ -1241,7 +1243,8 @@ class Reader(object):
                 raise Exception("Found no possible write statements in the StarSmasher source code that correspond with %s information in file '%s'" % (s,filename))
             if len(indices) > 1:
                 p1 = "Found more than one possible write statements in the StarSmasher source code that correspond with %s information in file '%s'. Please choose one of the following write statements and manually set it for this reader, using \"simulation.reader.set_write_statements(%s = ...)\":" % (s,filename,s)
-                p1 += '\n' + '\n\n'.join([write_statements[i] for i in indices])
+                p1 += '\n\n'
+                p1 += '\n\n'.join([files[i].path + ':\n' + write_statements[i] for i in indices])
                 raise Exception(p1)
             self.set_write_statements(**{s:write_statements[indices[0]]})
         

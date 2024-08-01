@@ -1,3 +1,4 @@
+import starsmashertools.preferences
 import starsmashertools.helpers.argumentenforcer
 from starsmashertools.helpers.apidecorator import api
 import re
@@ -75,6 +76,7 @@ numpy_formats = {
 
 # Some exceptions
 class EndianError(Exception): pass
+class ParsingError(Exception): pass
 
 
 @starsmashertools.helpers.argumentenforcer.enforcetypes
@@ -131,7 +133,7 @@ def get_numpy_format(
     if endian == 'little': fmt = '<' + fmt
     elif endian == 'big': fmt = '>' + fmt
     else: raise EndianError("Unrecognized endian '%s'" % str(endian))
-
+    
     result = np.ndarray(
         buffer = record,
         shape = 1, # Reading a single line
@@ -166,15 +168,58 @@ def parse_write_statement(string : str):
     names : str
         The names of each variable in the write statement.
     """
-    names = re.findall(
-        # https://regex101.com/r/AgF0kt/3
-        r"[a-zA-Z_$][a-zA-Z0-9_$]*(?![\s\w,'\"*]*[\)])",
-        string,
-        flags = re.M,
-    )
-    for name in names.copy():
-        if name.lower() == 'write': names.remove(name)
+
+    rules = [
+        # Find the write statement if it has a Fortran formatting string
+        # https://regex101.com/r/lN3i2u/2
+        re.compile(r"[wW][rR][iI][tT][eE] *\(.*?(?<!\\)([\"']).*?(?<!\\)\1\)"),
+        # If the previous rule wasn't matched, try this one instead
+        # https://regex101.com/r/qo5l2T/1
+        re.compile(r"[wW][rR][iI][tT][eE] *\(.*?\)"),
+    ]
+    write = None
+    for rule in rules:
+        matches = [x.group(0) for x in rule.finditer(string)]
+        if not matches: continue
+        write = matches[0]
+        break
+    if write is None:
+        raise ParsingError("Failed to recognize the 'write' Fortran directive in write statement: '%s'" % string)
+
+    # Throw out the "write" fortran directive and focus only on the variables
+    string = string[string.index(write)+len(write):]
+
+    for c in ['"', "'"]:
+        if c in string:
+            raise ParsingError("Cannot parse a write statement that contains string literals: %s" % string)
+    for c in ['+','-','/','*']:
+        if c in string:
+            raise ParsingError("Cannot parse a write statement that contains math operators +, -, /, or *: '%s'" % string)
+
+    lp, rp = 0, 0
+    name = ''
+    names = []
+    for i, c in enumerate(string):
+        if c == ' ': continue # skip white space
+        elif c == '(':
+            lp += 1
+            continue
+        elif c == ')':
+            rp += 1
+            continue
+        
+        if lp != rp: # In parentheses
+            continue
+        
+        if c == ',': # the variables delimiter
+            if lp == rp: # Not in parentheses
+                names += [name]
+                name = ''
+                continue
+        else: name += c
+    if name: names += [name]
     return names
+
 
 @starsmashertools.helpers.argumentenforcer.enforcetypes
 @api
@@ -268,9 +313,14 @@ def strip(source : str):
             strip_comments(source.split('\n'))
         )
     )
-    # Finally, remove the columns 1-6 entirely and remove whitespace
-    return '\n'.join([line[min(len(line)-1,6):].strip() for line in lines])
-
+    # Remove columns 1-6, check for tabs, and remove white space
+    return re.sub(
+        # https://regex101.com/r/gMkglu/1
+        r'^[ 0-9]{,6}[ \t]*|[ \t]+$',
+        '',
+        '\n'.join(lines),
+        flags = re.M,
+    )
 
 @starsmashertools.helpers.argumentenforcer.enforcetypes
 @api
@@ -386,8 +436,10 @@ def get_endian_from_file(path : str):
             return 'little'
         else: return 'big'
 
-
+@starsmashertools.preferences.use
 class FortranFile(object):
+    class FileExtensionError(Exception): pass
+    
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def __init__(self, path : str):
@@ -413,6 +465,16 @@ class FortranFile(object):
 
         Derived data types are not recognized.
         """
+        import starsmashertools.helpers.string
+        for ext in FortranFile.preferences.get('file extensions'):
+            if path.endswith(ext): break
+        else: raise FortranFile.FileExtensionError("Fortran file does not end with one of the valid extensions (%s): %s. You can set the valid Fortran file extensions in your preferences." % (
+                starsmashertools.helpers.string.list_to_string(
+                    FortranFile.preferences.get('file extensions'),
+                    join = 'or',
+                ),
+                path
+        ))
         self.path = path
         self._content = None
         self.get_contents()
@@ -485,12 +547,24 @@ class FortranFile(object):
             variables = {var.name:var for var in obj.variables}
             for statement in re.findall(
                     # https://regex101.com/r/yiqSre/4
-                    # Excludes any strings in the write statements
-                    r"[wW][rR][iI][tT][eE] *\([^\)]+\) *[^\"'\n]*$",
+                    r"[wW][rR][iI][tT][eE] *\([^\)]+\) *[^\n]*$",
                     obj.body,
                     flags = re.M,
             ):
-                yield statement, [variables[name] for name in parse_write_statement(statement) if name in variables]
+                # Every variable name must be in our list of variables.
+                # Otherwise, the write statement probably contains either string
+                # literals, operators, or function calls, none of which we can
+                # reasonably parse without huge effort.
+                try:
+                    names = parse_write_statement(statement)
+                except ParsingError as e:
+                    if ('contains string literals' in str(e) or
+                        'math operators' in str(e)): continue
+                    raise(e)
+                for name in names:
+                    if name not in variables: break
+                else:
+                    yield statement, [variables[name] for name in names]
         
 
 class Variable(object):

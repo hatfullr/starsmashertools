@@ -81,7 +81,8 @@
            <div itemprop="articleBody">
              
   <h1>Source code for starsmashertools.helpers.fortran</h1><div class="highlight"><pre>
-<span></span><span class="kn">import</span> <span class="nn">starsmashertools.helpers.argumentenforcer</span>
+<span></span><span class="kn">import</span> <span class="nn">starsmashertools.preferences</span>
+<span class="kn">import</span> <span class="nn">starsmashertools.helpers.argumentenforcer</span>
 <span class="kn">from</span> <span class="nn">starsmashertools.helpers.apidecorator</span> <span class="kn">import</span> <span class="n">api</span>
 <span class="kn">import</span> <span class="nn">re</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
@@ -158,6 +159,7 @@
 
 <span class="c1"># Some exceptions</span>
 <span class="k">class</span> <span class="nc">EndianError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span> <span class="k">pass</span>
+<span class="k">class</span> <span class="nc">ParsingError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span> <span class="k">pass</span>
 
 
 <div class="viewcode-block" id="get_numpy_format">
@@ -216,7 +218,7 @@
     <span class="k">if</span> <span class="n">endian</span> <span class="o">==</span> <span class="s1">&#39;little&#39;</span><span class="p">:</span> <span class="n">fmt</span> <span class="o">=</span> <span class="s1">&#39;&lt;&#39;</span> <span class="o">+</span> <span class="n">fmt</span>
     <span class="k">elif</span> <span class="n">endian</span> <span class="o">==</span> <span class="s1">&#39;big&#39;</span><span class="p">:</span> <span class="n">fmt</span> <span class="o">=</span> <span class="s1">&#39;&gt;&#39;</span> <span class="o">+</span> <span class="n">fmt</span>
     <span class="k">else</span><span class="p">:</span> <span class="k">raise</span> <span class="n">EndianError</span><span class="p">(</span><span class="s2">&quot;Unrecognized endian &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="n">endian</span><span class="p">))</span>
-
+    
     <span class="n">result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">(</span>
         <span class="n">buffer</span> <span class="o">=</span> <span class="n">record</span><span class="p">,</span>
         <span class="n">shape</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="c1"># Reading a single line</span>
@@ -254,15 +256,58 @@
 <span class="sd">    names : str</span>
 <span class="sd">        The names of each variable in the write statement.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">names</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span>
-        <span class="c1"># https://regex101.com/r/AgF0kt/3</span>
-        <span class="sa">r</span><span class="s2">&quot;[a-zA-Z_$][a-zA-Z0-9_$]*(?![\s\w,&#39;</span><span class="se">\&quot;</span><span class="s2">*]*[\)])&quot;</span><span class="p">,</span>
-        <span class="n">string</span><span class="p">,</span>
-        <span class="n">flags</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">M</span><span class="p">,</span>
-    <span class="p">)</span>
-    <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names</span><span class="o">.</span><span class="n">copy</span><span class="p">():</span>
-        <span class="k">if</span> <span class="n">name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;write&#39;</span><span class="p">:</span> <span class="n">names</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+
+    <span class="n">rules</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="c1"># Find the write statement if it has a Fortran formatting string</span>
+        <span class="c1"># https://regex101.com/r/lN3i2u/2</span>
+        <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;[wW][rR][iI][tT][eE] *\(.*?(?&lt;!</span><span class="se">\\</span><span class="s2">)([</span><span class="se">\&quot;</span><span class="s2">&#39;]).*?(?&lt;!</span><span class="se">\\</span><span class="s2">)\1\)&quot;</span><span class="p">),</span>
+        <span class="c1"># If the previous rule wasn&#39;t matched, try this one instead</span>
+        <span class="c1"># https://regex101.com/r/qo5l2T/1</span>
+        <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;[wW][rR][iI][tT][eE] *\(.*?\)&quot;</span><span class="p">),</span>
+    <span class="p">]</span>
+    <span class="n">write</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">for</span> <span class="n">rule</span> <span class="ow">in</span> <span class="n">rules</span><span class="p">:</span>
+        <span class="n">matches</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">rule</span><span class="o">.</span><span class="n">finditer</span><span class="p">(</span><span class="n">string</span><span class="p">)]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">matches</span><span class="p">:</span> <span class="k">continue</span>
+        <span class="n">write</span> <span class="o">=</span> <span class="n">matches</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">break</span>
+    <span class="k">if</span> <span class="n">write</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">ParsingError</span><span class="p">(</span><span class="s2">&quot;Failed to recognize the &#39;write&#39; Fortran directive in write statement: &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="n">string</span><span class="p">)</span>
+
+    <span class="c1"># Throw out the &quot;write&quot; fortran directive and focus only on the variables</span>
+    <span class="n">string</span> <span class="o">=</span> <span class="n">string</span><span class="p">[</span><span class="n">string</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">write</span><span class="p">)</span><span class="o">+</span><span class="nb">len</span><span class="p">(</span><span class="n">write</span><span class="p">):]</span>
+
+    <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;&quot;&#39;</span><span class="p">,</span> <span class="s2">&quot;&#39;&quot;</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">string</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ParsingError</span><span class="p">(</span><span class="s2">&quot;Cannot parse a write statement that contains string literals: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">string</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;+&#39;</span><span class="p">,</span><span class="s1">&#39;-&#39;</span><span class="p">,</span><span class="s1">&#39;/&#39;</span><span class="p">,</span><span class="s1">&#39;*&#39;</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">string</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ParsingError</span><span class="p">(</span><span class="s2">&quot;Cannot parse a write statement that contains math operators +, -, /, or *: &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="n">string</span><span class="p">)</span>
+
+    <span class="n">lp</span><span class="p">,</span> <span class="n">rp</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+    <span class="n">names</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">string</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">c</span> <span class="o">==</span> <span class="s1">&#39; &#39;</span><span class="p">:</span> <span class="k">continue</span> <span class="c1"># skip white space</span>
+        <span class="k">elif</span> <span class="n">c</span> <span class="o">==</span> <span class="s1">&#39;(&#39;</span><span class="p">:</span>
+            <span class="n">lp</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">continue</span>
+        <span class="k">elif</span> <span class="n">c</span> <span class="o">==</span> <span class="s1">&#39;)&#39;</span><span class="p">:</span>
+            <span class="n">rp</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">continue</span>
+        
+        <span class="k">if</span> <span class="n">lp</span> <span class="o">!=</span> <span class="n">rp</span><span class="p">:</span> <span class="c1"># In parentheses</span>
+            <span class="k">continue</span>
+        
+        <span class="k">if</span> <span class="n">c</span> <span class="o">==</span> <span class="s1">&#39;,&#39;</span><span class="p">:</span> <span class="c1"># the variables delimiter</span>
+            <span class="k">if</span> <span class="n">lp</span> <span class="o">==</span> <span class="n">rp</span><span class="p">:</span> <span class="c1"># Not in parentheses</span>
+                <span class="n">names</span> <span class="o">+=</span> <span class="p">[</span><span class="n">name</span><span class="p">]</span>
+                <span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+                <span class="k">continue</span>
+        <span class="k">else</span><span class="p">:</span> <span class="n">name</span> <span class="o">+=</span> <span class="n">c</span>
+    <span class="k">if</span> <span class="n">name</span><span class="p">:</span> <span class="n">names</span> <span class="o">+=</span> <span class="p">[</span><span class="n">name</span><span class="p">]</span>
     <span class="k">return</span> <span class="n">names</span></div>
+
 
 
 <div class="viewcode-block" id="strip">
@@ -359,9 +404,14 @@
             <span class="n">strip_comments</span><span class="p">(</span><span class="n">source</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">))</span>
         <span class="p">)</span>
     <span class="p">)</span>
-    <span class="c1"># Finally, remove the columns 1-6 entirely and remove whitespace</span>
-    <span class="k">return</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">line</span><span class="p">[</span><span class="nb">min</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">line</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">6</span><span class="p">):]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">])</span></div>
-
+    <span class="c1"># Remove columns 1-6, check for tabs, and remove white space</span>
+    <span class="k">return</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span>
+        <span class="c1"># https://regex101.com/r/gMkglu/1</span>
+        <span class="sa">r</span><span class="s1">&#39;^[ 0-9]{,6}[ \t]*|[ \t]+$&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">),</span>
+        <span class="n">flags</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">M</span><span class="p">,</span>
+    <span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="is_stripped">
@@ -484,10 +534,12 @@
             <span class="k">return</span> <span class="s1">&#39;little&#39;</span>
         <span class="k">else</span><span class="p">:</span> <span class="k">return</span> <span class="s1">&#39;big&#39;</span>
 
-
 <div class="viewcode-block" id="FortranFile">
 <a class="viewcode-back" href="../../../helpers/starsmashertools.helpers.fortran.html#starsmashertools.helpers.fortran.FortranFile">[docs]</a>
+<span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">preferences</span><span class="o">.</span><span class="n">use</span>
 <span class="k">class</span> <span class="nc">FortranFile</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">class</span> <span class="nc">FileExtensionError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span> <span class="k">pass</span>
+    
 <div class="viewcode-block" id="FortranFile.__init__">
 <a class="viewcode-back" href="../../../helpers/starsmashertools.helpers.fortran.html#starsmashertools.helpers.fortran.FortranFile.__init__">[docs]</a>
     <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
@@ -515,6 +567,16 @@
 
 <span class="sd">        Derived data types are not recognized.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.string</span>
+        <span class="k">for</span> <span class="n">ext</span> <span class="ow">in</span> <span class="n">FortranFile</span><span class="o">.</span><span class="n">preferences</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;file extensions&#39;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">path</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="n">ext</span><span class="p">):</span> <span class="k">break</span>
+        <span class="k">else</span><span class="p">:</span> <span class="k">raise</span> <span class="n">FortranFile</span><span class="o">.</span><span class="n">FileExtensionError</span><span class="p">(</span><span class="s2">&quot;Fortran file does not end with one of the valid extensions (</span><span class="si">%s</span><span class="s2">): </span><span class="si">%s</span><span class="s2">. You can set the valid Fortran file extensions in your preferences.&quot;</span> <span class="o">%</span> <span class="p">(</span>
+                <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">string</span><span class="o">.</span><span class="n">list_to_string</span><span class="p">(</span>
+                    <span class="n">FortranFile</span><span class="o">.</span><span class="n">preferences</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;file extensions&#39;</span><span class="p">),</span>
+                    <span class="n">join</span> <span class="o">=</span> <span class="s1">&#39;or&#39;</span><span class="p">,</span>
+                <span class="p">),</span>
+                <span class="n">path</span>
+        <span class="p">))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">path</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_content</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">get_contents</span><span class="p">()</span></div>
@@ -596,12 +658,24 @@
             <span class="n">variables</span> <span class="o">=</span> <span class="p">{</span><span class="n">var</span><span class="o">.</span><span class="n">name</span><span class="p">:</span><span class="n">var</span> <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="n">variables</span><span class="p">}</span>
             <span class="k">for</span> <span class="n">statement</span> <span class="ow">in</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span>
                     <span class="c1"># https://regex101.com/r/yiqSre/4</span>
-                    <span class="c1"># Excludes any strings in the write statements</span>
-                    <span class="sa">r</span><span class="s2">&quot;[wW][rR][iI][tT][eE] *\([^\)]+\) *[^</span><span class="se">\&quot;</span><span class="s2">&#39;\n]*$&quot;</span><span class="p">,</span>
+                    <span class="sa">r</span><span class="s2">&quot;[wW][rR][iI][tT][eE] *\([^\)]+\) *[^\n]*$&quot;</span><span class="p">,</span>
                     <span class="n">obj</span><span class="o">.</span><span class="n">body</span><span class="p">,</span>
                     <span class="n">flags</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">M</span><span class="p">,</span>
             <span class="p">):</span>
-                <span class="k">yield</span> <span class="n">statement</span><span class="p">,</span> <span class="p">[</span><span class="n">variables</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">parse_write_statement</span><span class="p">(</span><span class="n">statement</span><span class="p">)</span> <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">variables</span><span class="p">]</span></div>
+                <span class="c1"># Every variable name must be in our list of variables.</span>
+                <span class="c1"># Otherwise, the write statement probably contains either string</span>
+                <span class="c1"># literals, operators, or function calls, none of which we can</span>
+                <span class="c1"># reasonably parse without huge effort.</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">names</span> <span class="o">=</span> <span class="n">parse_write_statement</span><span class="p">(</span><span class="n">statement</span><span class="p">)</span>
+                <span class="k">except</span> <span class="n">ParsingError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="s1">&#39;contains string literals&#39;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="ow">or</span>
+                        <span class="s1">&#39;math operators&#39;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)):</span> <span class="k">continue</span>
+                    <span class="k">raise</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">variables</span><span class="p">:</span> <span class="k">break</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">yield</span> <span class="n">statement</span><span class="p">,</span> <span class="p">[</span><span class="n">variables</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names</span><span class="p">]</span></div>
 </div>
 
         

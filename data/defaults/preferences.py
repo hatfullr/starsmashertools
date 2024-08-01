@@ -25,15 +25,21 @@ prefs = {
     ############################################################################
     
     'helpers' : {
-        'string' : {
-        }, # 'string'
-        
         'file' : {
             'Lock' : {
                 'timeout' : float('inf'), # seconds
             }, # 'Lock'
         }, # 'file'
 
+        'fortran' : {
+            'FortranFile' : {
+                'file extensions' : [
+                    '.f',
+                    '.f90',
+                ],
+            }, # 'FortranFile'
+        }, # 'fortran'
+        
         'gpujob' : {
             'GPUJob' : {
                 'run' : {
@@ -41,6 +47,9 @@ prefs = {
                 },
             },
         }, # 'gpujob'
+        
+        'string' : {
+        }, # 'string'
     }, # 'helpers'
     
     ############################################################################
