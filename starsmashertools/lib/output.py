@@ -220,11 +220,11 @@ class Output(dict, object):
     @api
     def copy_from(self, output : 'starsmashertools.lib.output.Output'):
         self._clear_cache()
-        self._path = other._path
-        self.simulation = other.simulation
-        self._header = other._header
-        self._original_data = other._original_data
-        self.mode = other.mode
+        self._path = output._path
+        self.simulation = output.simulation
+        self._header = output._header
+        self._original_data = output._original_data
+        self.mode = output.mode
         
         self._mask = copy.deepcopy(output._mask)
         
