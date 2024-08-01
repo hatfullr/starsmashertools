@@ -219,6 +219,8 @@ class Output(dict, object):
     
     @api
     def copy_from(self, output : 'starsmashertools.lib.output.Output'):
+        for key in self.keys(ensure_read = False):
+            if key in self: del[key]
         self._clear_cache()
         self._path = copy.deepcopy(output._path)
         self.simulation = output.simulation
@@ -227,9 +229,8 @@ class Output(dict, object):
         self.mode = copy.deepcopy(output.mode)
         
         self._mask = copy.deepcopy(output._mask)
-        
-        for key in self._isRead.keys():
-            self._isRead[key] = True
+
+        self._isRead = copy.deepcopy(output._isRead)
         
         for key, val in output.items():
             self[key] = copy.deepcopy(val)
