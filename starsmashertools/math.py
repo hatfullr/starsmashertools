@@ -4,6 +4,8 @@ from starsmashertools.preferences import Pref
 import numpy as np
 from starsmashertools.helpers.apidecorator import api
 import starsmashertools.helpers.argumentenforcer
+import copy
+import warnings
 
 try:
     import matplotlib.axes
@@ -95,7 +97,7 @@ def rotate(
         yangle : float | int | np.float_ | np.integer = 0,
         zangle : float | int | np.float_ | np.integer = 0,
 ):
-    """
+    r"""
     Rotate the given ``x``\, ``y``\, and ``z`` points using an Euler rotation.
 
     An Euler rotation can be understood as follows. Imagine the x, y, and z axes
@@ -166,7 +168,7 @@ def rotate_spherical(
         theta : float | int | np.float_ | np.integer = 0,
         phi : float | int | np.float_ | np.integer = 0,
 ):
-    """
+    r"""
     Uses :func:`~.rotate` twice to perform a correct spherical coordinates
     rotation.
     
@@ -218,7 +220,6 @@ def rotate_spherical(
 
 
 
-@starsmashertools.preferences.use
 class EffGravPot(object):
     r"""
     A class for working with effective gravitational potentials in an
@@ -251,412 +252,306 @@ class EffGravPot(object):
     particle :math:`i`\. This method is significantly slower.
     """
 
+    class MaxItersExceededError(Exception): pass
+    
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def __init__(
             self,
-            output : starsmashertools.lib.output.Output,
-            as_point_masses : bool = Pref('as_point_masses', True),
-            **kwargs
+            m : list | tuple | np.ndarray,
+            x : list | tuple | np.ndarray,
+            y : list | tuple | np.ndarray,
+            z : list | tuple | np.ndarray,
+            period : int | float = 0.,
+            G : int | float | type(None) = None,
     ):
         r"""
         Class constructor.
 
         Parameters
         ----------
-        output : :class:`~.lib.output.Output`
-            The output file to calculate the gravitational potentials for. If
-            ``as_point_masses = True``\, the particles are separated based on
-            the star they belong to using 
-            :meth:`~.lib.binary.Binary.get_primary_IDs` and 
-            :meth:`~.lib.binary.Binary.get_secondary_IDs`\. If the output
-            belongs to a :class:`~.lib.dynamical.Dynamical` simulation, a search
-            will be done to find its parent binary simulation.
+        m : list, tuple, :class:`numpy.ndarray`
+            Masses of the particles. Must be 1D.
 
-            Particles which are detected as ejecta are not processed.
+        x : list, tuple, :class:`numpy.ndarray`
+            x-positions of the particles. Must be 1D and have the same length as
+            ``m``\.
 
+        y : list, tuple, :class:`numpy.ndarray`
+            y-positions of the particles. Must be 1D and have the same length as
+            ``m``\.
+
+        z : list, tuple, :class:`numpy.ndarray`
+            z-positions of the particles. Must be 1D and have the same length as
+            ``m``\.
+        
         Other Parameters
         ----------------
-        as_point_masses : bool, default = ``Pref('as_point_masses', True)``
-            If `True`\, the center of mass for the particles in the primary and
-            secondary stars are each calculated and used as the point masses in
-            the first equation for :math:`\varphi` above. Otherwise, the
-            calculation proceeds using the second equation.
+        period : int, float, default = 0.
+            The oribtal period of the binary system.
 
+        G : int, float, :class:`~.lib.units.Unit`\, None, default = None
+            The value of the gravitational constant. If `None`\, the value 
+            stored in the constants in :mod:`~.starsmashertools.lib.units` is 
+            used. If a :class:`~.lib.units.Unit` is given, it is converted to a
+            :py:class:`float`\.
         """
-        self._output = None
-        self._as_point_masses = as_point_masses
 
-        self._data = {
-            'com1' : None,
-            'com2' : None,
-            'com' : None,
-            'M1' : None,
-            'M2' : None,
-            'omega2' : None,
-        }
-        self.output = output # Updates the data for the first time
+        if G is None:
+            from starsmashertools.lib.units import constants
+            G = constants['G']
+        self.G = float(G)
 
-    @property
-    def output(self): return self._output
-    
-    @output.setter
-    def output(self, value):
-        if self._output == value: return
-        self._output = value
-        self._update_data()
+        self.m = np.asarray(m)
+        self.xyz = np.column_stack((x,y,z))
+        self.period = period
 
-    @property
-    def as_point_masses(self): return self._as_point_masses
+        self._com = center_of_mass(self.m, x, y, z)
+        
+        self._omega = 2 * np.pi / self.period
 
-    @as_point_masses.setter
-    def as_point_masses(self, value : bool):
-        if self._as_point_masses == value: return
-        if not self._as_point_masses and value:
-            self._update_data()
-        self._as_point_masses = value
-
-    def _update_data(self):
-        import starsmashertools.lib.binary
-        import starsmashertools.lib.dynamical
-        import starsmashertools
-
-        self._data['omega2'] = float((2*np.pi / self._output.simulation.get_period(
-            self._output
-        )))**2
-
-        if isinstance(self._output.simulation, starsmashertools.lib.binary.Binary):
-            self._data['com1'], self._data['com2'] = self._output.simulation.get_COMs(
-                self._output,
-            )
-            self._data['M1'] = self._output.simulation.get_primary_mass()
-            self._data['M2'] = self._output.simulation.get_secondary_mass()
-            
-        elif isinstance(self._output.simulation, starsmashertools.lib.dynamical.Dynamical):
-            binary = self._output.simulation.get_binary()
-            
-            # Get the primary star COM
-            with starsmashertools.mask(
-                    self._output,
-                    ~self._output['unbound'] & np.isin(
-                        self._output['ID'], binary.get_primary_IDs(),
-                        assume_unique = True,
-                    ),
-                    copy = False,
-            ) as masked:
-                self._data['com1'] = center_of_mass(
-                    masked['am'], masked['x'], masked['y'], masked['z'],
-                )
-                self._data['M1'] = np.sum(masked['am'])
-            # Get the secondary star COM
-            with starsmashertools.mask(
-                    self._output,
-                    ~self._output['unbound'] & np.isin(
-                        self._output['ID'], binary.get_secondary_IDs(),
-                        assume_unique = True,
-                    ),
-                    copy = False,
-            ) as masked:
-                self._data['com2'] = center_of_mass(
-                    masked['am'], masked['x'], masked['y'], masked['z'],
-                )
-                self._data['M2'] = np.sum(masked['am'])
-
-            # The rotation frequency can be obtained as v/r where r is the
-            # distance from the center of mass of a body with tangential
-            # velocity v. We obtain the net tangential velocities of both bodies
-            # and check to make sure they agree: they should be almost equal in
-            # magnitude and pointing in opposite directions. Otherwise, there is
-            # probably no orbit.
-            
-        else:
-            raise TypeError("Effective gravitational potential plots are available only for simulations of type Binary or Dynamical, not '%s'" % type(self._output.simulation).__name__)
-
-        # Get the overall COM
-        with starsmashertools.mask(self._output, ~self._output['unbound']) as masked:
-            self._data['com'] = center_of_mass(
-                masked['am'], masked['x'], masked['y'], masked['z'],
-            )
-
-        # convert all to cgs
-        for key in ['com1', 'com2', 'com']:
-            self._data[key] *= float(self._output.simulation.units.length)
-        for key in ['M1', 'M2']:
-            self._data[key] *= float(self._output.simulation.units.mass)
-    
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def get(
             self,
-            x : list | tuple | np.ndarray,
-            y : list | tuple | np.ndarray,
-            as_point_masses : bool | type(None) = None,
+            positions : list | tuple | np.ndarray,
     ):
         r"""
+        Sample the effective gravitational potential :math:`\varphi` field at 
+        the given positions.
+
         Parameters
         ----------
-        x : list, tuple, :class:`numpy.ndarray`
-            The ``x`` positions to get the effective gravitational potential at.
-            Must have the same shape as ``y`` and ``z``\. Values must be in
-            units of cm.
-        
-        y : list, tuple, :class:`numpy.ndarray`
-            The ``y`` positions to get the effective gravitational potential at.
-            Must have the same shape as ``x`` and ``z``\. Values must be in
-            units of cm.
-        
-        z : float, list, tuple, :class:`numpy.ndarray`
-            The ``z`` positions to get the effective gravitational potential at.
-            Must have the same shape as ``x`` and ``y``\. Values must be in
-            units of cm.
-
-        Other Parameters
-        ----------------
-        as_point_masses : bool, None, default = None
-            If `None`\, the value from :meth:`~.__init__` will be used.
+        positions : list, tuple, :class:`numpy.ndarray`
+            The x, y, and z positions to get the effective gravitational 
+            potential at. Must have a shape (n,3).
 
         Returns
         -------
         :class:`numpy.ndarray`
-            The effective gravitational potentials at positions ``(x, y, z)``\,
-            in cgs units.
+            The effective gravitational potential at positions ``(x, y, z)``\. 
+            The result is an array of magnitudes with the same length as ``x``\,
+            ``y``\, and ``z``\.
         """
-        from starsmashertools.lib.units import constants
-        import warnings
+        if not isinstance(positions[0], (list, tuple, np.ndarray)):
+            positions = np.asarray([positions])
+        result = np.full(len(positions), np.nan)
+        rcom2s = np.sum((positions - self._com)**2, axis = -1)
         
-        if as_point_masses is None: as_point_masses = self.as_point_masses
-        
-        G = float(constants['G'])
-        com1 = self._data['com1']
-        com2 = self._data['com2']
-        com = self._data['com']
-        M1 = self._data['M1']
-        M2 = self._data['M2']
-        omega2 = self._data['omega2']
-        
-        xy = np.stack((x, y), axis = -1)
-        result = np.zeros(x.shape)
-        
-        if not as_point_masses:
-            with starsmashertools.mask(
-                    self._output, ~self._output['unbound'], copy = False
-            ) as masked:
-                xyzi = np.column_stack((masked['x'], masked['y'], masked['z']))
-                m = masked['am'] * float(self._output.simulation.units['am'])
-            xyzi *= float(self._output.simulation.units.length)
-            xyi = xyzi[:,:2]
+        for i, pos in enumerate(positions):
+            r = np.sqrt(np.sum((pos - self.xyz)**2, axis = -1))
+            result[i] = -np.sum(self.m / r)
+        return result * self.G - 0.5*self._omega**2*rcom2s
 
-            # Maybe it's fastest to loop over the particles...
-            for i, (_xy, _m) in enumerate(zip(xyi, m)):
-                result -= G*_m/np.sqrt(np.sum((xy - _xy)**2, axis = -1))
-            rcom2 = np.sum((xy - com[:2])**2,axis = -1)
-            result += -0.5*omega2*rcom2
-            return result
-        else:
-            r1 = np.sqrt(np.sum((xy - com1[:2])**2, axis = -1))
-            r2 = np.sqrt(np.sum((xy - com2[:2])**2, axis = -1))
-            rcom2 = np.sum((xy - com[:2])**2, axis = -1)
-            with warnings.catch_warnings():
-                warnings.simplefilter('ignore')
-                return -G*M1/r1 - G*M2/r2 - 0.5*omega2*rcom2
-
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
-    def get_gradient(self, *args, **kwargs):
-        """
-        Get the 3D gradient of the effective gravitational potential.
-
-        Other Parameters
+    def get_gradient(
+            self,
+            positions : list | tuple | np.ndarray,
+    ):
+        r"""
+        Sample the effective gravitational potential gradient 
+        :math:`\nabla\varphi` field at the given positions. This is the same as
+        negative the gravitational acceleration vector, since 
+        :math:`m\vec{g}=\vec{F}=-m\nabla\varphi`\.
+        
+        Parameters
         ----------
-        *args
-            Positional arguments are passed directly to :meth:`~.get`\.
-        
-        **kwargs
-            Keyword arguments are passed directly to :meth:`~.get`\.
-        
+        positions : list, tuple, :class:`numpy.ndarray`
+            The x, y, and z positions to get the effective gravitational 
+            potential gradient at. Must have a shape (n,3).
+
         Returns
         -------
-        :class:`numpy.ndarray`\, :class:`numpy.ndarray`\, :class:`numpy.ndarray`
-            The gradient of the effective gravitational potential in the x, y,
-            and z directions respectively.
-
-        See Also
-        --------
-        :meth:`~.get`
-        :meth:`numpy.gradient`
+        :class:`numpy.ndarray`
+            The gradient of the effective gravitational potential at positions
+            ``(x, y, z)``\. The result is an array of 3-vectors, with the same
+            length as ``x``\, ``y``\, and ``z``\.
         """
-        return np.gradient(self.get(*args, **kwargs))
+        if not isinstance(positions[0], (list, tuple, np.ndarray)):
+            positions = np.asarray([positions])
+        
+        result = np.full((len(positions), 3), np.nan)
+        for i, pos in enumerate(positions):
+            dxyz = pos - self.xyz # destination - origin
+            
+            # distance magnitude squared (row sum)
+            r2 = np.sum(dxyz**2, axis = 1)
+            r = np.sqrt(r2)
 
-
+            # divide each x, y, and z component of the offsets by the magnitude
+            # of that offset
+            directions = dxyz / r[:,None]
+            
+            # \vec{g} (column sum)
+            g = -np.sum(directions * (self.G * self.m / r2)[:, None], axis = 0)
+            
+            # centripetal acceleration here
+            a = -self._omega**2 * (pos - self._com) # destination - origin
+            
+            result[i] = -(g + a)
+        return result
+    
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def get_lagrange(
             self,
-            n : int,
-            resolution : int = 1000,
-            return_potential : bool = False
+            which : list | tuple | np.ndarray = [1,2,3],
+            extent_frac : int | float = 5.,
     ):
-        """
-        Get the n'th Lagrange point
+        r"""
+        Get the n'th Lagrange points.
 
         Parameters
         ----------
-        n : int
-            The Lagrange point to obtain. Must be 1, 2, 3, 4, or 5.
-
-        resolution : int, default = 1000
-            How many positions to search in the parameter space.
-
+        which : list, tuple, :class:`numpy.ndarray`, default = ``[1,2,3]``
+            The Lagrange points to obtain. Currently only :math:`L_1`\, 
+            :math:`L_2`\, and :math:`L_3` are supported. 
+        
         Other Parameters
         ----------------
-        return_potential : bool, default = False
-            If `True`\, also returns the effective gravitational potential
-            corresponding with the Lagrange point.
+        extent_frac : int, float, default = 5.
+            The fraction of the maximum extent to search. The extent is the 
+            distance of the farthest-away particle. We search beyond that 
+            particle by this amount to sample :math:`\varphi`\.
 
         Returns
         -------
         :class:`numpy.ndarray`
-            A NumPy array of shape (3,) with the x, y, and z positions of the 
-            Lagrange point specified by ``n``\.
-
-        float
-            The effective gravitational potential at the Lagrange point if
-            ``return_potential = True``
+            A NumPy array of shape (n,3) with the x, y, and z positions of the 
+            Lagrange points where n is the length of ``which``\.
         """
-        starsmashertools.helpers.argumentenforcer.enforcevalues({
-            'n' : [1, 2, 3, 4, 5],
-        })
-
-        com1 = self._data['com1']
-        com2 = self._data['com2']
-        diff = com2 - com1 # destination - origin
-        distance = np.sqrt(np.dot(diff, diff))
-        direction = diff / distance
+        import warnings
         
-        if n == 1: # L1 is always located between M1 and M2
-            origin = com1 #- 4*distance * direction
-            span = np.linspace(0, distance, resolution)
-            direc = direction
-            #print(positions)
-        elif n == 2: # L2 is always located behind M2
-            # Take a guess that we should search twice the distance behind M2
-            origin = com2
-            span = np.linspace(0, 2*distance, resolution)
-            direc = direction
-        elif n == 3: # L3 is always located behind M1
-            # Take a guess to search twice the distance behind M1
-            origin = com1
-            span = np.linspace(0, 2*distance, resolution)
-            direc = -direction
-        else: raise NotImplementedError # Not sure yet.
+        # Start at the COM, and find the gradient. If it truly is a binary
+        # system, then the COM is always somewhere between the two stars. We
+        # want to check along the line connecting the two stars. To find that
+        # line, we first move radially outward from the COM until we locate two
+        # local minima in \phi and a local maximum in \phi
+        gradcom = self.get_gradient(self._com)[0]
 
-        positions = origin + span[:,None] * direc
-        
-        pot = self.get(positions[:,0], positions[:,1])
+        ret = np.full((len(which), 3), np.nan)
 
-        mpot = np.abs(pot)
-        potmin = np.nanmin(mpot[np.isfinite(mpot)])
-        potmax = np.nanmax(mpot[np.isfinite(mpot)])
-        mpot -= potmin
-        mpot /= potmax - potmin
-        
-        idx = np.isfinite(pot)
-        pot = pot[idx]
-        positions = positions[idx]
+        if any([i in which for i in range(1, 3 + 1)]):
+            # Obtain a bunch of sample points up until the centripetal
+            # acceleration is greater than the gravitational acceleration
+            r2s = np.sum((self.xyz - self._com)**2, axis=1)
 
-        idx = np.nanargmin(mpot)
-        
-        if return_potential: return positions[idx], pot[idx]
-        return positions[idx]
+            # The location of the closest star is in the direction of the
+            # specific net force, |\vec{F}/m| = |\nabla\varphi|.
+            warnings.filterwarnings(action='ignore')
+            direction = gradcom / np.sqrt(np.sum(gradcom**2))
+            warnings.resetwarnings()
 
-    if has_matplotlib:
-        @starsmashertools.helpers.argumentenforcer.enforcetypes
-        @api
-        def get_equipotentials(
-                self,
-                potentials : list | tuple | np.ndarray,
-                extent : list | tuple | np.ndarray | type(None) = None,
-                normalize : bool = True,
-                resolution : list | tuple | type(None) = None,
-        ):
-            """
-            Find the positions of the equipotential contours corresponding with 
-            the given effective gravitational potentials.
+            max_extent = np.sqrt(np.amax(r2s))
+            # search around the area
+            samples = np.linspace(-max_extent, max_extent, 1000)[:,None] * extent_frac * direction
+            phis = self.get(samples)
 
-            Note that this requires Matplotlib.
+            # For debugging:
+            #import matplotlib.pyplot as plt
+            #fig, ax = plt.subplots()
+            #ax.plot(samples[:,0], phis)
+            #plt.show()
+            #quit()
 
-            Parameters
-            ----------
-            potentials : list, tuple, :class:`numpy.ndarray`
-                The effective gravitational potentials for which to find the 
-                contours of effective gravitational equipotentials.
+            # Split the searched area into 3 segments, containing the 3 Lagrange
+            # points. We mark the separated segments by assigning NaN to some
+            # values, and then we split the region on NaNs.
+
+            # Move along the samples to find the places where phi was
+            # increasing, but is now starting to decrease.
+            boundaries = []
+            decreasing = False
+            for i, phi in enumerate(phis[:-1]):
+                if phis[i+1] <= phi:
+                    if decreasing: continue
+                    else: boundaries += [i]
+                    decreasing = True
+                elif phis[i+1] > phi:
+                    decreasing = False
+
+            if len(boundaries) != 3:
+                raise Exception("Failed to split the region into 3 distinct groups: number of boundaries found != 3")
             
-            Other Parameters
-            ----------------
-            extent : list, tuple, :class:`numpy.ndarray`, None, default = None
-                Array of ``[xmin, xmax, ymin, ymax]`` for plotting purposes. If
-                `None`\, defaults to the current ``axes`` limits.
+            idx1 = boundaries[0] + np.argmin(phis[boundaries[0]:boundaries[1]])
+            idx2 = boundaries[1] + np.argmin(phis[boundaries[1]:boundaries[2]])
+            phis[idx1] = np.nan
+            samples[idx1] = np.full(3, np.nan)
+            phis[idx2] = np.nan
+            samples[idx2] = np.full(3, np.nan)
             
-            Returns
-            -------
-            list
-                A list of :class:`numpy.ndarray` objects with the same length as
-                the given ``potentials``\. Each element is an (N,3) array of 
-                positions.
-            """
-            import starsmashertools.mpl.axes
-            import matplotlib.pyplot as plt
+            # https://stackoverflow.com/a/14606271
+            points = []
+            for i in np.ma.clump_unmasked(np.ma.masked_invalid(phis)):
+                s = samples[i]
+                p = phis[i]
 
-            fig = plt.figure(
-                figsize = (8, 8),
-            )
-            ax = fig.add_axes([0, 0, 1, 1])
+                points += [s[np.argmax(p)]]
 
-            potentials = np.asarray(potentials)
+            points = np.asarray(points)
 
-            if extent is None:
-                extent = list(ax.get_xlim()) + list(ax.get_ylim())
-
-            if resolution is None:
-                res = starsmashertools.mpl.axes.get_resolution(ax)
-            else: res = resolution
+            # For debugging:
+            #import matplotlib.pyplot as plt
+            #fig, ax = plt.subplots()
+            #for x,y in zip(points, phis):
+            #    ax.scatter(x[0], y)
+            #plt.show()
+            #quit()
             
-            x =  np.linspace(extent[0], extent[1], res[0])
-            y =  np.linspace(extent[2], extent[3], res[1])
-            x, y = np.meshgrid(x, y)
+            # Thus, the "line" connecting the stars must be parallel to the
+            # direction of the gradient. The first 3 Lagrange points are located
+            # on that line.
 
-            pot = self.get(x, y)
+            # Search in the direction first, then negative the direction next to
+            # obtain all the Lagrange points. We distinguish between them after.
+            # (looking for the 3 maxima on the line)
+            #
+            # In one direction, phi will first decrease until passing through
+            # the COM of one of the stars, where phi = -inf. After, phi will
+            # increase to a maximum and then decrease again forever.
+            #
+            # In the other direction, phi will first increase until a maximum,
+            # then decrease until passing through the COM of the other star,
+            # where phi = inf. Then phi will increase to another maximum, and
+            # thereafter phi decreases again forever.
+            
+            if len(points) != 3:
+                raise Exception("Located a number of Lagrange points != 3:\n" + str(points))
 
-            # Normalizing to enable this to work
-            if normalize:
-                pot = np.abs(pot)
-                idx = np.isfinite(pot)
-                potmin = np.nanmin(pot[idx])
-                potmax = np.nanmax(pot[idx])
-                pot -= potmin
-                pot /= potmax - potmin
-                potentials = np.abs(potentials)
-                potentials -= potmin
-                potentials /= potmax - potmin
-            
-            order = np.argsort(potentials)
-            
-            cs = ax.contour(
-                pot,
-                potentials[order],
-                origin = 'lower',
-                extent = extent,
-                cmap = 'tab10',
-            )
+            center = np.mean(points, axis = 0)
+            extrema = []
+            not_extrema = []
+            for i, point in enumerate(points):
+                to_center = center - point
+                warnings.filterwarnings(action ='ignore')
+                to_center /= np.sqrt(np.sum(to_center**2)) # normalize
+                warnings.resetwarnings()
+                for other in points:
+                    if point is other: continue
+                    diff = other - point # destination - origin
+                    warnings.filterwarnings(action = 'ignore')
+                    direc = diff / np.sqrt(np.sum(diff**2))
+                    warnings.resetwarnings()
+                    # ahat dot bhat = cos(theta)
+                    # if cos(theta) == 1, it's the same direction
+                    # if cos(theta) == -1, it's the opposite direction
+                    if np.dot(direc, to_center) <= 0:
+                        not_extrema += [i]
+                        break
+                else: extrema += [i]
 
-            plt.close(fig)
+            if len(not_extrema) != 1:
+                raise Exception("Expected one non-extrema point")
+
+            # L1 is between L2 and L3
+            ret[0] = points[not_extrema[0]]
             
-            ret = []
-            for s in order:
-                segments = cs.allsegs[s]
-                xy = []
-                for j, s in enumerate(segments):
-                    xy += s.tolist()
-                    xy += [[np.nan, np.nan]]
-                    
-                ret += [np.asarray(xy)]
-            return ret
+            # At the extrema, phi is larger behind the larger mass (L3)
+            idx = np.argsort(self.get(points[extrema]))
+            ret[1] = points[extrema[idx[0]]]
+            ret[2] = points[extrema[idx[1]]]
+
+        # TODO: find Lagrange points 4 and 5
+                
+        return ret
