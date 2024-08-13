@@ -256,12 +256,13 @@
         <span class="p">)</span>
         <span class="k">return</span> <span class="n">possible_results</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span></div>
 
-
+    
 <div class="viewcode-block" id="Unit.get_conversion_factor">
 <a class="viewcode-back" href="../../../lib/starsmashertools.lib.units.html#starsmashertools.lib.units.Unit.get_conversion_factor">[docs]</a>
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="nf">get_conversion_factor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_label</span><span class="p">,</span> <span class="n">conversions</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
-        <span class="c1"># Convert this Unit into a compatible new Unit</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot; Convert this :class:`~.Unit` into a compatible new </span>
+<span class="sd">        :class:`~.Unit` &quot;&quot;&quot;</span>
         <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span><span class="p">({</span>
             <span class="s1">&#39;new_label&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Unit</span><span class="o">.</span><span class="n">Label</span><span class="p">],</span>
         <span class="p">})</span>
@@ -930,7 +931,41 @@
             <span class="p">)</span> <span class="o">+</span> <span class="nb">sorted</span><span class="p">(</span>
                 <span class="p">[</span><span class="n">b</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">right</span> <span class="k">if</span> <span class="n">b</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">base</span><span class="p">],</span>
             <span class="p">)</span>
-        
+
+        <span class="k">def</span> <span class="nf">to_latex</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">join</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;\,&#39;</span><span class="p">):</span>
+<span class="w">            </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot; Return a latex representation. &quot;&quot;&quot;</span>
+            <span class="kn">import</span> <span class="nn">collections</span>
+            <span class="n">left</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">OrderedDict</span><span class="p">()</span>
+            <span class="n">right</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">OrderedDict</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">left</span><span class="p">:</span> <span class="n">left</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="n">left</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">right</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">right</span><span class="p">:</span> <span class="n">right</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="n">right</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="n">replacements</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">OrderedDict</span><span class="p">({</span>
+                <span class="s1">&#39; &#39;</span> <span class="p">:</span> <span class="sa">r</span><span class="s1">&#39;\ &#39;</span><span class="p">,</span>
+                <span class="s1">&#39;_&#39;</span> <span class="p">:</span> <span class="sa">r</span><span class="s1">&#39;\_&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;Rsun&#39;</span> <span class="p">:</span> <span class="s1">&#39;R_\odot&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;Msun&#39;</span> <span class="p">:</span> <span class="s1">&#39;M_\odot&#39;</span><span class="p">,</span>
+            <span class="p">})</span>
+                
+            <span class="n">strings</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">num</span> <span class="ow">in</span> <span class="n">left</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">n</span> <span class="o">=</span> <span class="n">name</span>
+                <span class="k">for</span> <span class="n">replacement</span> <span class="ow">in</span> <span class="n">replacements</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="n">n</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="o">*</span><span class="n">replacement</span><span class="p">)</span>
+                <span class="n">string</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;\mathrm{</span><span class="si">%s</span><span class="s1">}&#39;</span> <span class="o">%</span> <span class="n">n</span>
+                <span class="k">if</span> <span class="n">num</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span> <span class="n">string</span> <span class="o">+=</span> <span class="s1">&#39;^{</span><span class="si">%d</span><span class="s1">}&#39;</span> <span class="o">%</span> <span class="n">num</span>
+                <span class="n">strings</span> <span class="o">+=</span> <span class="p">[</span><span class="n">string</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">num</span> <span class="ow">in</span> <span class="n">right</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">n</span> <span class="o">=</span> <span class="n">name</span>
+                <span class="k">for</span> <span class="n">replacement</span> <span class="ow">in</span> <span class="n">replacements</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="n">n</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="o">*</span><span class="n">replacement</span><span class="p">)</span>
+                <span class="n">strings</span> <span class="o">+=</span> <span class="p">[(</span><span class="sa">r</span><span class="s1">&#39;\mathrm{</span><span class="si">%s</span><span class="s1">}&#39;</span> <span class="o">%</span> <span class="n">n</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="s1">&#39;^{-</span><span class="si">%d</span><span class="s1">}&#39;</span> <span class="o">%</span> <span class="n">num</span><span class="p">)]</span>
+            <span class="k">return</span> <span class="s1">&#39;$</span><span class="si">%s</span><span class="s1">$&#39;</span> <span class="o">%</span> <span class="n">join</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">strings</span><span class="p">)</span>
+                
         <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">short</span>
         <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">long</span>
 
