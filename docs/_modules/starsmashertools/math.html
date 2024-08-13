@@ -87,6 +87,8 @@
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">starsmashertools.helpers.apidecorator</span> <span class="kn">import</span> <span class="n">api</span>
 <span class="kn">import</span> <span class="nn">starsmashertools.helpers.argumentenforcer</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
 
 <span class="k">try</span><span class="p">:</span>
     <span class="kn">import</span> <span class="nn">matplotlib.axes</span>
@@ -321,7 +323,6 @@
 
 <div class="viewcode-block" id="EffGravPot">
 <a class="viewcode-back" href="../../math/starsmashertools.math.html#starsmashertools.math.EffGravPot">[docs]</a>
-<span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">preferences</span><span class="o">.</span><span class="n">use</span>
 <span class="k">class</span> <span class="nc">EffGravPot</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    A class for working with effective gravitational potentials in an</span>
@@ -354,561 +355,321 @@
 <span class="sd">    particle :math:`i`\. This method is significantly slower.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
+    <span class="k">class</span> <span class="nc">MaxItersExceededError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span> <span class="k">pass</span>
+    
 <div class="viewcode-block" id="EffGravPot.__init__">
 <a class="viewcode-back" href="../../math/starsmashertools.math.html#starsmashertools.math.EffGravPot.__init__">[docs]</a>
     <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span>
-            <span class="n">output</span> <span class="p">:</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">Output</span><span class="p">,</span>
-            <span class="n">as_point_masses</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">Pref</span><span class="p">(</span><span class="s1">&#39;as_point_masses&#39;</span><span class="p">,</span> <span class="kc">True</span><span class="p">),</span>
-            <span class="o">**</span><span class="n">kwargs</span>
+            <span class="n">m</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+            <span class="n">x</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+            <span class="n">y</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+            <span class="n">z</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+            <span class="n">period</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.</span><span class="p">,</span>
+            <span class="n">G</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Class constructor.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        output : :class:`~.lib.output.Output`</span>
-<span class="sd">            The output file to calculate the gravitational potentials for. If</span>
-<span class="sd">            ``as_point_masses = True``\, the particles are separated based on</span>
-<span class="sd">            the star they belong to using </span>
-<span class="sd">            :meth:`~.lib.binary.Binary.get_primary_IDs` and </span>
-<span class="sd">            :meth:`~.lib.binary.Binary.get_secondary_IDs`\. If the output</span>
-<span class="sd">            belongs to a :class:`~.lib.dynamical.Dynamical` simulation, a search</span>
-<span class="sd">            will be done to find its parent binary simulation.</span>
+<span class="sd">        m : list, tuple, :class:`numpy.ndarray`</span>
+<span class="sd">            Masses of the particles. Must be 1D.</span>
 
-<span class="sd">            Particles which are detected as ejecta are not processed.</span>
+<span class="sd">        x : list, tuple, :class:`numpy.ndarray`</span>
+<span class="sd">            x-positions of the particles. Must be 1D and have the same length as</span>
+<span class="sd">            ``m``\.</span>
 
+<span class="sd">        y : list, tuple, :class:`numpy.ndarray`</span>
+<span class="sd">            y-positions of the particles. Must be 1D and have the same length as</span>
+<span class="sd">            ``m``\.</span>
+
+<span class="sd">        z : list, tuple, :class:`numpy.ndarray`</span>
+<span class="sd">            z-positions of the particles. Must be 1D and have the same length as</span>
+<span class="sd">            ``m``\.</span>
+<span class="sd">        </span>
 <span class="sd">        Other Parameters</span>
 <span class="sd">        ----------------</span>
-<span class="sd">        as_point_masses : bool, default = ``Pref(&#39;as_point_masses&#39;, True)``</span>
-<span class="sd">            If `True`\, the center of mass for the particles in the primary and</span>
-<span class="sd">            secondary stars are each calculated and used as the point masses in</span>
-<span class="sd">            the first equation for :math:`\varphi` above. Otherwise, the</span>
-<span class="sd">            calculation proceeds using the second equation.</span>
+<span class="sd">        period : int, float, default = 0.</span>
+<span class="sd">            The oribtal period of the binary system.</span>
 
+<span class="sd">        G : int, float, :class:`~.lib.units.Unit`\, None, default = None</span>
+<span class="sd">            The value of the gravitational constant. If `None`\, the value </span>
+<span class="sd">            stored in the constants in :mod:`~.starsmashertools.lib.units` is </span>
+<span class="sd">            used. If a :class:`~.lib.units.Unit` is given, it is converted to a</span>
+<span class="sd">            :py:class:`float`\.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_output</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_as_point_masses</span> <span class="o">=</span> <span class="n">as_point_masses</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s1">&#39;com1&#39;</span> <span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
-            <span class="s1">&#39;com2&#39;</span> <span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
-            <span class="s1">&#39;com&#39;</span> <span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
-            <span class="s1">&#39;M1&#39;</span> <span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
-            <span class="s1">&#39;M2&#39;</span> <span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
-            <span class="s1">&#39;omega2&#39;</span> <span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="p">}</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">output</span> <span class="o">=</span> <span class="n">output</span> <span class="c1"># Updates the data for the first time</span></div>
+        <span class="k">if</span> <span class="n">G</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="kn">from</span> <span class="nn">starsmashertools.lib.units</span> <span class="kn">import</span> <span class="n">constants</span>
+            <span class="n">G</span> <span class="o">=</span> <span class="n">constants</span><span class="p">[</span><span class="s1">&#39;G&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">G</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">G</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">m</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xyz</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">((</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">z</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">period</span> <span class="o">=</span> <span class="n">period</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_com</span> <span class="o">=</span> <span class="n">center_of_mass</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">m</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">_omega</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">period</span></div>
 
 
-    <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">output</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_output</span>
-    
-    <span class="nd">@output</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_output</span> <span class="o">==</span> <span class="n">value</span><span class="p">:</span> <span class="k">return</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_output</span> <span class="o">=</span> <span class="n">value</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_update_data</span><span class="p">()</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">as_point_masses</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_as_point_masses</span>
-
-    <span class="nd">@as_point_masses</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">as_point_masses</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span> <span class="p">:</span> <span class="nb">bool</span><span class="p">):</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_as_point_masses</span> <span class="o">==</span> <span class="n">value</span><span class="p">:</span> <span class="k">return</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_as_point_masses</span> <span class="ow">and</span> <span class="n">value</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_update_data</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_as_point_masses</span> <span class="o">=</span> <span class="n">value</span>
-
-    <span class="k">def</span> <span class="nf">_update_data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="kn">import</span> <span class="nn">starsmashertools.lib.binary</span>
-        <span class="kn">import</span> <span class="nn">starsmashertools.lib.dynamical</span>
-        <span class="kn">import</span> <span class="nn">starsmashertools</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="s1">&#39;omega2&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">((</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">get_period</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_output</span>
-        <span class="p">)))</span><span class="o">**</span><span class="mi">2</span>
-
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="o">.</span><span class="n">simulation</span><span class="p">,</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">binary</span><span class="o">.</span><span class="n">Binary</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="s1">&#39;com1&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="s1">&#39;com2&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">get_COMs</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="p">,</span>
-            <span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="s1">&#39;M1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">get_primary_mass</span><span class="p">()</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="s1">&#39;M2&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">get_secondary_mass</span><span class="p">()</span>
-            
-        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="o">.</span><span class="n">simulation</span><span class="p">,</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">dynamical</span><span class="o">.</span><span class="n">Dynamical</span><span class="p">):</span>
-            <span class="n">binary</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">get_binary</span><span class="p">()</span>
-            
-            <span class="c1"># Get the primary star COM</span>
-            <span class="k">with</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">mask</span><span class="p">(</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="p">,</span>
-                    <span class="o">~</span><span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="p">[</span><span class="s1">&#39;unbound&#39;</span><span class="p">]</span> <span class="o">&amp;</span> <span class="n">np</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="p">[</span><span class="s1">&#39;ID&#39;</span><span class="p">],</span> <span class="n">binary</span><span class="o">.</span><span class="n">get_primary_IDs</span><span class="p">(),</span>
-                        <span class="n">assume_unique</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-                    <span class="p">),</span>
-                    <span class="n">copy</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-            <span class="p">)</span> <span class="k">as</span> <span class="n">masked</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="s1">&#39;com1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">center_of_mass</span><span class="p">(</span>
-                    <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;am&#39;</span><span class="p">],</span> <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">],</span> <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">],</span> <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;z&#39;</span><span class="p">],</span>
-                <span class="p">)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="s1">&#39;M1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">masked</span><span class="p">[</span><span class="s1">&#39;am&#39;</span><span class="p">])</span>
-            <span class="c1"># Get the secondary star COM</span>
-            <span class="k">with</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">mask</span><span class="p">(</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="p">,</span>
-                    <span class="o">~</span><span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="p">[</span><span class="s1">&#39;unbound&#39;</span><span class="p">]</span> <span class="o">&amp;</span> <span class="n">np</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="p">[</span><span class="s1">&#39;ID&#39;</span><span class="p">],</span> <span class="n">binary</span><span class="o">.</span><span class="n">get_secondary_IDs</span><span class="p">(),</span>
-                        <span class="n">assume_unique</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-                    <span class="p">),</span>
-                    <span class="n">copy</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-            <span class="p">)</span> <span class="k">as</span> <span class="n">masked</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="s1">&#39;com2&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">center_of_mass</span><span class="p">(</span>
-                    <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;am&#39;</span><span class="p">],</span> <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">],</span> <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">],</span> <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;z&#39;</span><span class="p">],</span>
-                <span class="p">)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="s1">&#39;M2&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">masked</span><span class="p">[</span><span class="s1">&#39;am&#39;</span><span class="p">])</span>
-
-            <span class="c1"># The rotation frequency can be obtained as v/r where r is the</span>
-            <span class="c1"># distance from the center of mass of a body with tangential</span>
-            <span class="c1"># velocity v. We obtain the net tangential velocities of both bodies</span>
-            <span class="c1"># and check to make sure they agree: they should be almost equal in</span>
-            <span class="c1"># magnitude and pointing in opposite directions. Otherwise, there is</span>
-            <span class="c1"># probably no orbit.</span>
-            
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Effective gravitational potential plots are available only for simulations of type Binary or Dynamical, not &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="o">.</span><span class="n">simulation</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
-
-        <span class="c1"># Get the overall COM</span>
-        <span class="k">with</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">mask</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="p">,</span> <span class="o">~</span><span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="p">[</span><span class="s1">&#39;unbound&#39;</span><span class="p">])</span> <span class="k">as</span> <span class="n">masked</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="s1">&#39;com&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">center_of_mass</span><span class="p">(</span>
-                <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;am&#39;</span><span class="p">],</span> <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">],</span> <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">],</span> <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;z&#39;</span><span class="p">],</span>
-            <span class="p">)</span>
-
-        <span class="c1"># convert all to cgs</span>
-        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;com1&#39;</span><span class="p">,</span> <span class="s1">&#39;com2&#39;</span><span class="p">,</span> <span class="s1">&#39;com&#39;</span><span class="p">]:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">*=</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">length</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;M1&#39;</span><span class="p">,</span> <span class="s1">&#39;M2&#39;</span><span class="p">]:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">*=</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">mass</span><span class="p">)</span>
-    
 <div class="viewcode-block" id="EffGravPot.get">
 <a class="viewcode-back" href="../../math/starsmashertools.math.html#starsmashertools.math.EffGravPot.get">[docs]</a>
     <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="nf">get</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span>
-            <span class="n">x</span> <span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-            <span class="n">y</span> <span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-            <span class="n">z</span> <span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-            <span class="n">as_point_masses</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">positions</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Get the effective gravitational potential :math:`\varphi`\.</span>
+<span class="sd">        Sample the effective gravitational potential :math:`\varphi` field at </span>
+<span class="sd">        the given positions.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        x : float, int, list, tuple, :class:`numpy.ndarray`</span>
-<span class="sd">            The ``x`` positions to get the effective gravitational potential at.</span>
-<span class="sd">            Must have the same shape as ``y`` and ``z``\. Values must be in</span>
-<span class="sd">            units of cm.</span>
-<span class="sd">        </span>
-<span class="sd">        y : float, int, list, tuple, :class:`numpy.ndarray`</span>
-<span class="sd">            The ``y`` positions to get the effective gravitational potential at.</span>
-<span class="sd">            Must have the same shape as ``x`` and ``z``\. Values must be in</span>
-<span class="sd">            units of cm.</span>
-
-<span class="sd">        z : float, int, list, tuple, :class:`numpy.ndarray`</span>
-<span class="sd">            The ``z`` positions to get the effective gravitational potential at.</span>
-<span class="sd">            Must have the same shape as ``x`` and ``y``\. Values must be in</span>
-<span class="sd">            units of cm.</span>
-<span class="sd">        </span>
-<span class="sd">        Other Parameters</span>
-<span class="sd">        ----------------</span>
-<span class="sd">        as_point_masses : bool, None, default = None</span>
-<span class="sd">            If `None`\, the value from :meth:`~.__init__` will be used.</span>
+<span class="sd">        positions : list, tuple, :class:`numpy.ndarray`</span>
+<span class="sd">            The x, y, and z positions to get the effective gravitational </span>
+<span class="sd">            potential at. Must have a shape (n,3).</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        :class:`numpy.ndarray`</span>
-<span class="sd">            The effective gravitational potentials at positions ``(x, y, z)``\,</span>
-<span class="sd">            in cgs units.</span>
+<span class="sd">            The effective gravitational potential at positions ``(x, y, z)``\. </span>
+<span class="sd">            The result is an array of magnitudes with the same length as ``x``\,</span>
+<span class="sd">            ``y``\, and ``z``\.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">starsmashertools.lib.units</span> <span class="kn">import</span> <span class="n">constants</span>
-        <span class="kn">import</span> <span class="nn">warnings</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">positions</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)):</span>
+            <span class="n">positions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="n">positions</span><span class="p">])</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">positions</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+        <span class="n">rcom2s</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">positions</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_com</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
         
-        <span class="k">if</span> <span class="n">as_point_masses</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="n">as_point_masses</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">as_point_masses</span>
-        
-        <span class="n">G</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">constants</span><span class="p">[</span><span class="s1">&#39;G&#39;</span><span class="p">])</span>
-        <span class="n">com1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="s1">&#39;com1&#39;</span><span class="p">]</span>
-        <span class="n">com2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="s1">&#39;com2&#39;</span><span class="p">]</span>
-        <span class="n">com</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="s1">&#39;com&#39;</span><span class="p">]</span>
-        <span class="n">M1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="s1">&#39;M1&#39;</span><span class="p">]</span>
-        <span class="n">M2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="s1">&#39;M2&#39;</span><span class="p">]</span>
-        <span class="n">omega2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="s1">&#39;omega2&#39;</span><span class="p">]</span>
-
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">)):</span> <span class="n">x</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="p">]</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">)):</span> <span class="n">y</span> <span class="o">=</span> <span class="p">[</span><span class="n">y</span><span class="p">]</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">)):</span> <span class="n">z</span> <span class="o">=</span> <span class="p">[</span><span class="n">z</span><span class="p">]</span>
-
-        <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">y</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>
-        
-        <span class="n">xyz</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">((</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">),</span> <span class="n">axis</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
-        
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">as_point_masses</span><span class="p">:</span>
-            <span class="k">with</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">mask</span><span class="p">(</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="p">,</span> <span class="o">~</span><span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="p">[</span><span class="s1">&#39;unbound&#39;</span><span class="p">],</span> <span class="n">copy</span> <span class="o">=</span> <span class="kc">False</span>
-            <span class="p">)</span> <span class="k">as</span> <span class="n">masked</span><span class="p">:</span>
-                <span class="n">xyzi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">((</span><span class="n">masked</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">],</span> <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">],</span> <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;z&#39;</span><span class="p">]))</span>
-                <span class="n">m</span> <span class="o">=</span> <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;am&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">units</span><span class="p">[</span><span class="s1">&#39;am&#39;</span><span class="p">])</span>
-            <span class="n">xyzi</span> <span class="o">*=</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">length</span><span class="p">)</span>
-
-            <span class="c1"># Maybe it&#39;s fastest to loop over the particles...</span>
-            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">_xyz</span><span class="p">,</span> <span class="n">_m</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">xyzi</span><span class="p">,</span> <span class="n">m</span><span class="p">)):</span>
-                <span class="n">result</span> <span class="o">-=</span> <span class="n">G</span><span class="o">*</span><span class="n">_m</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">xyz</span> <span class="o">-</span> <span class="n">_xyz</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span>
-            <span class="n">rcom2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">xyz</span> <span class="o">-</span> <span class="n">com</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-            <span class="n">result</span> <span class="o">+=</span> <span class="o">-</span><span class="mf">0.5</span><span class="o">*</span><span class="n">omega2</span><span class="o">*</span><span class="n">rcom2</span>
-            <span class="k">return</span> <span class="n">result</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">r1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">xyz</span> <span class="o">-</span> <span class="n">com1</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span>
-            <span class="n">r2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">xyz</span> <span class="o">-</span> <span class="n">com2</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span>
-            <span class="n">rcom2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">xyz</span> <span class="o">-</span> <span class="n">com</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-            <span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
-                <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s1">&#39;ignore&#39;</span><span class="p">)</span>
-                <span class="k">return</span> <span class="o">-</span><span class="n">G</span><span class="o">*</span><span class="n">M1</span><span class="o">/</span><span class="n">r1</span> <span class="o">-</span> <span class="n">G</span><span class="o">*</span><span class="n">M2</span><span class="o">/</span><span class="n">r2</span> <span class="o">-</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">omega2</span><span class="o">*</span><span class="n">rcom2</span></div>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">pos</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">positions</span><span class="p">):</span>
+            <span class="n">r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">pos</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">xyz</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+            <span class="n">result</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">m</span> <span class="o">/</span> <span class="n">r</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">G</span> <span class="o">-</span> <span class="mf">0.5</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">_omega</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">rcom2s</span></div>
 
 
 <div class="viewcode-block" id="EffGravPot.get_gradient">
 <a class="viewcode-back" href="../../math/starsmashertools.math.html#starsmashertools.math.EffGravPot.get_gradient">[docs]</a>
+    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="nf">get_gradient</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span>
-            <span class="n">x</span> <span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-            <span class="n">y</span> <span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-            <span class="n">z</span> <span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-            <span class="n">as_point_masses</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">positions</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Get the 3D gradient of effective gravitational potential </span>
-<span class="sd">        :math:`\nabla\varphi`\. Here, when ``as_point_masses=True``\,</span>
-
-<span class="sd">        .. math::</span>
-
-<span class="sd">            \nabla\varphi = \frac{GM_1}{r_1^2} + \frac{GM_2}{r_2^2} - \omega^2 r_\mathrm{com}</span>
-
+<span class="sd">        Sample the effective gravitational potential gradient </span>
+<span class="sd">        :math:`\nabla\varphi` field at the given positions. This is the same as</span>
+<span class="sd">        negative the gravitational acceleration vector, since </span>
+<span class="sd">        :math:`m\vec{g}=\vec{F}=-m\nabla\varphi`\.</span>
 <span class="sd">        </span>
-<span class="sd">        and when ``as_point_masses=False``\,</span>
-
-<span class="sd">        .. math::</span>
-
-<span class="sd">            \nabla\varphi = \sum_i^N \frac{Gm_i}{r_i^2} - \omega^2 r_\mathrm{com}</span>
-<span class="sd">        </span>
-
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        x : float, int, list, tuple, :class:`numpy.ndarray`</span>
-<span class="sd">            The ``x`` positions to get the effective gravitational potential at.</span>
-<span class="sd">            Must have the same shape as ``y`` and ``z``\. Values must be in</span>
-<span class="sd">            units of cm.</span>
-<span class="sd">        </span>
-<span class="sd">        y : float, int, list, tuple, :class:`numpy.ndarray`</span>
-<span class="sd">            The ``y`` positions to get the effective gravitational potential at.</span>
-<span class="sd">            Must have the same shape as ``x`` and ``z``\. Values must be in</span>
-<span class="sd">            units of cm.</span>
-
-<span class="sd">        z : float, int, list, tuple, :class:`numpy.ndarray`</span>
-<span class="sd">            The ``z`` positions to get the effective gravitational potential at.</span>
-<span class="sd">            Must have the same shape as ``x`` and ``y``\. Values must be in</span>
-<span class="sd">            units of cm.</span>
-<span class="sd">        </span>
-<span class="sd">        Other Parameters</span>
-<span class="sd">        ----------------</span>
-<span class="sd">        as_point_masses : bool, None, default = None</span>
-<span class="sd">            If `None`\, the value from :meth:`~.__init__` will be used.</span>
+<span class="sd">        positions : list, tuple, :class:`numpy.ndarray`</span>
+<span class="sd">            The x, y, and z positions to get the effective gravitational </span>
+<span class="sd">            potential gradient at. Must have a shape (n,3).</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        :class:`numpy.ndarray`</span>
-<span class="sd">            The effective gravitational potential gradient at positions </span>
-<span class="sd">            ``(x, y, z)``\, in cgs units.</span>
+<span class="sd">            The gradient of the effective gravitational potential at positions</span>
+<span class="sd">            ``(x, y, z)``\. The result is an array of 3-vectors, with the same</span>
+<span class="sd">            length as ``x``\, ``y``\, and ``z``\.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">starsmashertools.lib.units</span> <span class="kn">import</span> <span class="n">constants</span>
-        <span class="kn">import</span> <span class="nn">warnings</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">positions</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)):</span>
+            <span class="n">positions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="n">positions</span><span class="p">])</span>
         
-        <span class="k">if</span> <span class="n">as_point_masses</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="n">as_point_masses</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">as_point_masses</span>
-        
-        <span class="n">G</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">constants</span><span class="p">[</span><span class="s1">&#39;G&#39;</span><span class="p">])</span>
-        <span class="n">com1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="s1">&#39;com1&#39;</span><span class="p">]</span>
-        <span class="n">com2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="s1">&#39;com2&#39;</span><span class="p">]</span>
-        <span class="n">com</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="s1">&#39;com&#39;</span><span class="p">]</span>
-        <span class="n">M1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="s1">&#39;M1&#39;</span><span class="p">]</span>
-        <span class="n">M2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="s1">&#39;M2&#39;</span><span class="p">]</span>
-        <span class="n">omega2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="s1">&#39;omega2&#39;</span><span class="p">]</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">positions</span><span class="p">),</span> <span class="mi">3</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">pos</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">positions</span><span class="p">):</span>
+            <span class="n">dxyz</span> <span class="o">=</span> <span class="n">pos</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">xyz</span> <span class="c1"># destination - origin</span>
+            
+            <span class="c1"># distance magnitude squared (row sum)</span>
+            <span class="n">r2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dxyz</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">r2</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">)):</span> <span class="n">x</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="p">]</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">)):</span> <span class="n">y</span> <span class="o">=</span> <span class="p">[</span><span class="n">y</span><span class="p">]</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">)):</span> <span class="n">z</span> <span class="o">=</span> <span class="p">[</span><span class="n">z</span><span class="p">]</span>
+            <span class="c1"># divide each x, y, and z component of the offsets by the magnitude</span>
+            <span class="c1"># of that offset</span>
+            <span class="n">directions</span> <span class="o">=</span> <span class="n">dxyz</span> <span class="o">/</span> <span class="n">r</span><span class="p">[:,</span><span class="kc">None</span><span class="p">]</span>
+            
+            <span class="c1"># \vec{g} (column sum)</span>
+            <span class="n">g</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">directions</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">G</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">m</span> <span class="o">/</span> <span class="n">r2</span><span class="p">)[:,</span> <span class="kc">None</span><span class="p">],</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
+            
+            <span class="c1"># centripetal acceleration here</span>
+            <span class="n">a</span> <span class="o">=</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">_omega</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">pos</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_com</span><span class="p">)</span> <span class="c1"># destination - origin</span>
+            
+            <span class="n">result</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="n">g</span> <span class="o">+</span> <span class="n">a</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span></div>
 
-        <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">y</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>
-        
-        <span class="n">xyz</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">((</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">),</span> <span class="n">axis</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
-        
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">as_point_masses</span><span class="p">:</span>
-            <span class="k">with</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">mask</span><span class="p">(</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="p">,</span> <span class="o">~</span><span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="p">[</span><span class="s1">&#39;unbound&#39;</span><span class="p">],</span> <span class="n">copy</span> <span class="o">=</span> <span class="kc">False</span>
-            <span class="p">)</span> <span class="k">as</span> <span class="n">masked</span><span class="p">:</span>
-                <span class="n">xyzi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">((</span><span class="n">masked</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">],</span> <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">],</span> <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;z&#39;</span><span class="p">]))</span>
-                <span class="n">m</span> <span class="o">=</span> <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;am&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">units</span><span class="p">[</span><span class="s1">&#39;am&#39;</span><span class="p">])</span>
-            <span class="n">xyzi</span> <span class="o">*=</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">length</span><span class="p">)</span>
-
-            <span class="c1"># Maybe it&#39;s fastest to loop over the particles...</span>
-            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">_xyz</span><span class="p">,</span> <span class="n">_m</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">xyzi</span><span class="p">,</span> <span class="n">m</span><span class="p">)):</span>
-                <span class="n">result</span> <span class="o">-=</span> <span class="n">G</span><span class="o">*</span><span class="n">_m</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">xyz</span> <span class="o">-</span> <span class="n">_xyz</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-            <span class="n">rcom</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">xyz</span> <span class="o">-</span> <span class="n">com</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span>
-            <span class="n">result</span> <span class="o">+=</span> <span class="o">-</span><span class="mf">0.5</span><span class="o">*</span><span class="n">omega2</span><span class="o">*</span><span class="n">rcom</span>
-            <span class="k">return</span> <span class="n">result</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">r1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">xyz</span> <span class="o">-</span> <span class="n">com1</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-            <span class="n">r2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">xyz</span> <span class="o">-</span> <span class="n">com2</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-            <span class="n">rcom</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">xyz</span> <span class="o">-</span> <span class="n">com</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span>
-            <span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
-                <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s1">&#39;ignore&#39;</span><span class="p">)</span>
-                <span class="k">return</span> <span class="n">G</span><span class="o">*</span><span class="n">M1</span><span class="o">/</span><span class="n">r1</span> <span class="o">+</span> <span class="n">G</span><span class="o">*</span><span class="n">M2</span><span class="o">/</span><span class="n">r2</span> <span class="o">-</span> <span class="n">omega2</span><span class="o">*</span><span class="n">rcom</span></div>
-
-
-
+    
 <div class="viewcode-block" id="EffGravPot.get_lagrange">
 <a class="viewcode-back" href="../../math/starsmashertools.math.html#starsmashertools.math.EffGravPot.get_lagrange">[docs]</a>
     <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="nf">get_lagrange</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span>
-            <span class="n">n</span> <span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-            <span class="n">resolution</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">,</span>
-            <span class="n">return_potential</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="n">which</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">],</span>
+            <span class="n">extent_frac</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">5.</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Get the n&#39;th Lagrange point</span>
+<span class="sd">        Get the n&#39;th Lagrange points.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        n : int</span>
-<span class="sd">            The Lagrange point to obtain. Must be 1, 2, 3, 4, or 5.</span>
-
-<span class="sd">        resolution : int, default = 1000</span>
-<span class="sd">            How many positions to search in the parameter space.</span>
-
+<span class="sd">        which : list, tuple, :class:`numpy.ndarray`, default = ``[1,2,3]``</span>
+<span class="sd">            The Lagrange points to obtain. Currently only :math:`L_1`\, </span>
+<span class="sd">            :math:`L_2`\, and :math:`L_3` are supported. </span>
+<span class="sd">        </span>
 <span class="sd">        Other Parameters</span>
 <span class="sd">        ----------------</span>
-<span class="sd">        return_potential : bool, default = False</span>
-<span class="sd">            If `True`\, also returns the effective gravitational potential</span>
-<span class="sd">            corresponding with the Lagrange point.</span>
+<span class="sd">        extent_frac : int, float, default = 5.</span>
+<span class="sd">            The fraction of the maximum extent to search. The extent is the </span>
+<span class="sd">            distance of the farthest-away particle. We search beyond that </span>
+<span class="sd">            particle by this amount to sample :math:`\varphi`\.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        :class:`numpy.ndarray`</span>
-<span class="sd">            A NumPy array of shape (3,) with the x, y, and z positions of the </span>
-<span class="sd">            Lagrange point specified by ``n``\.</span>
-
-<span class="sd">        float</span>
-<span class="sd">            The effective gravitational potential at the Lagrange point if</span>
-<span class="sd">            ``return_potential = True``</span>
+<span class="sd">            A NumPy array of shape (n,3) with the x, y, and z positions of the </span>
+<span class="sd">            Lagrange points where n is the length of ``which``\.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcevalues</span><span class="p">({</span>
-            <span class="s1">&#39;n&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">],</span>
-        <span class="p">})</span>
-
-        <span class="n">com1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="s1">&#39;com1&#39;</span><span class="p">]</span>
-        <span class="n">com2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="s1">&#39;com2&#39;</span><span class="p">]</span>
-        <span class="n">diff</span> <span class="o">=</span> <span class="n">com2</span> <span class="o">-</span> <span class="n">com1</span> <span class="c1"># destination - origin</span>
-        <span class="n">distance</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">diff</span><span class="p">,</span> <span class="n">diff</span><span class="p">))</span>
-        <span class="n">direction</span> <span class="o">=</span> <span class="n">diff</span> <span class="o">/</span> <span class="n">distance</span>
-        
-        <span class="k">if</span> <span class="n">n</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span> <span class="c1"># L1 is always located between M1 and M2</span>
-            <span class="n">origin</span> <span class="o">=</span> <span class="n">com1</span> <span class="c1">#- 4*distance * direction</span>
-            <span class="n">span</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">distance</span><span class="p">,</span> <span class="n">resolution</span><span class="p">)</span>
-            <span class="n">direc</span> <span class="o">=</span> <span class="n">direction</span>
-            <span class="c1">#print(positions)</span>
-        <span class="k">elif</span> <span class="n">n</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span> <span class="c1"># L2 is always located behind M2</span>
-            <span class="c1"># Take a guess that we should search twice the distance behind M2</span>
-            <span class="n">origin</span> <span class="o">=</span> <span class="n">com2</span>
-            <span class="n">span</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">distance</span><span class="p">,</span> <span class="n">resolution</span><span class="p">)</span>
-            <span class="n">direc</span> <span class="o">=</span> <span class="n">direction</span>
-        <span class="k">elif</span> <span class="n">n</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span> <span class="c1"># L3 is always located behind M1</span>
-            <span class="c1"># Take a guess to search twice the distance behind M1</span>
-            <span class="n">origin</span> <span class="o">=</span> <span class="n">com1</span>
-            <span class="n">span</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">distance</span><span class="p">,</span> <span class="n">resolution</span><span class="p">)</span>
-            <span class="n">direc</span> <span class="o">=</span> <span class="o">-</span><span class="n">direction</span>
-        <span class="k">else</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">NotImplementedError</span> <span class="c1"># Not sure yet.</span>
-
-        <span class="n">positions</span> <span class="o">=</span> <span class="n">origin</span> <span class="o">+</span> <span class="n">span</span><span class="p">[:,</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="n">direc</span>
-        
-        <span class="n">pot</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">positions</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span> <span class="n">positions</span><span class="p">[:,</span><span class="mi">1</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">resolution</span><span class="p">))</span>
-
-        <span class="n">mpot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">pot</span><span class="p">)</span>
-        <span class="n">potmin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmin</span><span class="p">(</span><span class="n">mpot</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">mpot</span><span class="p">)])</span>
-        <span class="n">potmax</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">mpot</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">mpot</span><span class="p">)])</span>
-        <span class="n">mpot</span> <span class="o">-=</span> <span class="n">potmin</span>
-        <span class="n">mpot</span> <span class="o">/=</span> <span class="n">potmax</span> <span class="o">-</span> <span class="n">potmin</span>
-        
-        <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">pot</span><span class="p">)</span>
-        <span class="n">pot</span> <span class="o">=</span> <span class="n">pot</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
-        <span class="n">positions</span> <span class="o">=</span> <span class="n">positions</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
-
-        <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanargmin</span><span class="p">(</span><span class="n">mpot</span><span class="p">)</span>
-        
-        <span class="k">if</span> <span class="n">return_potential</span><span class="p">:</span> <span class="k">return</span> <span class="n">positions</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span> <span class="n">pot</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
-        <span class="k">return</span> <span class="n">positions</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span></div>
-
-
-
-    <span class="k">def</span> <span class="nf">get_equipotentials</span><span class="p">(</span>
-            <span class="bp">self</span><span class="p">,</span>
-            <span class="n">potentials</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-            <span class="n">z</span> <span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">=</span> <span class="mf">0.</span><span class="p">,</span>
-            <span class="n">as_point_masses</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-            <span class="n">resolution</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span>
-    <span class="p">):</span>
-<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        resolution sets the space between points</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">starsmashertools.lib.units</span> <span class="kn">import</span> <span class="n">constants</span>
         <span class="kn">import</span> <span class="nn">warnings</span>
         
-        <span class="k">if</span> <span class="n">as_point_masses</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="n">as_point_masses</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">as_point_masses</span>
-        
-        <span class="n">G</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">constants</span><span class="p">[</span><span class="s1">&#39;G&#39;</span><span class="p">])</span>
-        <span class="n">com1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="s1">&#39;com1&#39;</span><span class="p">]</span>
-        <span class="n">com2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="s1">&#39;com2&#39;</span><span class="p">]</span>
-        <span class="n">com</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="s1">&#39;com&#39;</span><span class="p">]</span>
-        <span class="n">M1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="s1">&#39;M1&#39;</span><span class="p">]</span>
-        <span class="n">M2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="s1">&#39;M2&#39;</span><span class="p">]</span>
-        <span class="n">omega2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="s1">&#39;omega2&#39;</span><span class="p">]</span>
-        
-        <span class="c1"># We know that the effective gravitational potential can never exceed 0.</span>
-        <span class="c1"># Thus, for each </span>
+        <span class="c1"># Start at the COM, and find the gradient. If it truly is a binary</span>
+        <span class="c1"># system, then the COM is always somewhere between the two stars. We</span>
+        <span class="c1"># want to check along the line connecting the two stars. To find that</span>
+        <span class="c1"># line, we first move radially outward from the COM until we locate two</span>
+        <span class="c1"># local minima in \phi and a local maximum in \phi</span>
+        <span class="n">gradcom</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_gradient</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_com</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
 
-        <span class="c1"># First we need to determine the bounds of our problem. Thus, we need to</span>
-        <span class="c1"># locate what is the global maximum potential. The global maxima are</span>
-        <span class="c1"># located at L4 and L5</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">which</span><span class="p">),</span> <span class="mi">3</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
 
-        <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_gradient</span><span class="p">(</span><span class="o">*</span><span class="n">com1</span><span class="p">))</span>
-        <span class="n">quit</span><span class="p">()</span>
-<span class="w">        </span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        # Determine the x,y extents</span>
-<span class="sd">        for potential in potentials:</span>
-<span class="sd">            points = []</span>
-<span class="sd">            x = 0</span>
-<span class="sd">            p = self.get(x, 0, z)</span>
-<span class="sd">            while 2*abs(abs(p - potential)/(potential + p)) &gt; 1.e-5:</span>
-<span class="sd">                grad = self.get_gradient(x, 0, z)</span>
-<span class="sd">                if grad[0]</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">any</span><span class="p">([</span><span class="n">i</span> <span class="ow">in</span> <span class="n">which</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]):</span>
+            <span class="c1"># Obtain a bunch of sample points up until the centripetal</span>
+            <span class="c1"># acceleration is greater than the gravitational acceleration</span>
+            <span class="n">r2s</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">xyz</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_com</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    if has_matplotlib:</span>
-<span class="sd">        @starsmashertools.helpers.argumentenforcer.enforcetypes</span>
-<span class="sd">        @api</span>
-<span class="sd">        def get_equipotentials(</span>
-<span class="sd">                self,</span>
-<span class="sd">                potentials : list | tuple | np.ndarray,</span>
-<span class="sd">                z : float | int = 0.,</span>
-<span class="sd">                extent : list | tuple | np.ndarray | type(None) = None,</span>
-<span class="sd">                normalize : bool = True,</span>
-<span class="sd">                resolution : list | tuple | type(None) = None,</span>
-<span class="sd">        ):</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            Find the positions of the equipotential contours corresponding with </span>
-<span class="sd">            the given effective gravitational potentials.</span>
+            <span class="c1"># The location of the closest star is in the direction of the</span>
+            <span class="c1"># specific net force, |\vec{F}/m| = |\nabla\varphi|.</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="n">action</span><span class="o">=</span><span class="s1">&#39;ignore&#39;</span><span class="p">)</span>
+            <span class="n">direction</span> <span class="o">=</span> <span class="n">gradcom</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">gradcom</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">resetwarnings</span><span class="p">()</span>
 
-<span class="sd">            Note that this requires Matplotlib.</span>
+            <span class="n">max_extent</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">amax</span><span class="p">(</span><span class="n">r2s</span><span class="p">))</span>
+            <span class="c1"># search around the area</span>
+            <span class="n">samples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="n">max_extent</span><span class="p">,</span> <span class="n">max_extent</span><span class="p">,</span> <span class="mi">1000</span><span class="p">)[:,</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="n">extent_frac</span> <span class="o">*</span> <span class="n">direction</span>
+            <span class="n">phis</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">samples</span><span class="p">)</span>
 
-<span class="sd">            Parameters</span>
-<span class="sd">            ----------</span>
-<span class="sd">            potentials : list, tuple, :class:`numpy.ndarray`</span>
-<span class="sd">                The effective gravitational potentials for which to find the </span>
-<span class="sd">                contours of effective gravitational equipotentials.</span>
-<span class="sd">            </span>
-<span class="sd">            Other Parameters</span>
-<span class="sd">            ----------------</span>
-<span class="sd">            z : float, int, default = 0.</span>
-<span class="sd">                The z-position to get the equipotentials at.</span>
+            <span class="c1"># For debugging:</span>
+            <span class="c1">#import matplotlib.pyplot as plt</span>
+            <span class="c1">#fig, ax = plt.subplots()</span>
+            <span class="c1">#ax.plot(samples[:,0], phis)</span>
+            <span class="c1">#plt.show()</span>
+            <span class="c1">#quit()</span>
 
-<span class="sd">            extent : list, tuple, :class:`numpy.ndarray`, None, default = None</span>
-<span class="sd">                Array of ``[xmin, xmax, ymin, ymax]`` for plotting purposes. If</span>
-<span class="sd">                `None`\, defaults to the current ``axes`` limits.</span>
-<span class="sd">            </span>
-<span class="sd">            Returns</span>
-<span class="sd">            -------</span>
-<span class="sd">            list</span>
-<span class="sd">                A list of :class:`numpy.ndarray` objects with the same length as</span>
-<span class="sd">                the given ``potentials``\. Each element is an (N,3) array of </span>
-<span class="sd">                positions.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            import starsmashertools.mpl.axes</span>
-<span class="sd">            import matplotlib.pyplot as plt</span>
-<span class="sd">            </span>
-<span class="sd">            fig = plt.figure(</span>
-<span class="sd">                figsize = (8, 8),</span>
-<span class="sd">            )</span>
-<span class="sd">            ax = fig.add_axes([0, 0, 1, 1])</span>
-<span class="sd">            </span>
-<span class="sd">            potentials = np.asarray(potentials)</span>
-<span class="sd">            </span>
-<span class="sd">            if extent is None:</span>
-<span class="sd">                extent = list(ax.get_xlim()) + list(ax.get_ylim())</span>
-<span class="sd">            </span>
-<span class="sd">            if resolution is None:</span>
-<span class="sd">                res = starsmashertools.mpl.axes.get_resolution(ax)</span>
-<span class="sd">            else: res = resolution</span>
-<span class="sd">            </span>
-<span class="sd">            x =  np.linspace(extent[0], extent[1], res[0])</span>
-<span class="sd">            y =  np.linspace(extent[2], extent[3], res[1])</span>
-<span class="sd">            x, y = np.meshgrid(x, y)</span>
-<span class="sd">            </span>
-<span class="sd">            pot = self.get(x, y, np.full(x.shape, z))</span>
-<span class="sd">            </span>
-<span class="sd">            # Normalizing to enable this to work</span>
-<span class="sd">            if normalize:</span>
-<span class="sd">                pot = np.abs(pot)</span>
-<span class="sd">                idx = np.isfinite(pot)</span>
-<span class="sd">                potmin = np.nanmin(pot[idx])</span>
-<span class="sd">                potmax = np.nanmax(pot[idx])</span>
-<span class="sd">                pot -= potmin</span>
-<span class="sd">                pot /= potmax - potmin</span>
-<span class="sd">                potentials = np.abs(potentials)</span>
-<span class="sd">                potentials -= potmin</span>
-<span class="sd">                potentials /= potmax - potmin</span>
-<span class="sd">            </span>
-<span class="sd">            order = np.argsort(potentials)</span>
-<span class="sd">            </span>
-<span class="sd">            cs = ax.contour(</span>
-<span class="sd">                pot,</span>
-<span class="sd">                potentials[order],</span>
-<span class="sd">                origin = &#39;lower&#39;,</span>
-<span class="sd">                extent = extent,</span>
-<span class="sd">                cmap = &#39;tab10&#39;,</span>
-<span class="sd">            )</span>
-<span class="sd">            </span>
-<span class="sd">            plt.close(fig)</span>
-<span class="sd">            </span>
-<span class="sd">            ret = []</span>
-<span class="sd">            for s in order:</span>
-<span class="sd">                segments = cs.allsegs[s]</span>
-<span class="sd">                if not segments: continue</span>
-<span class="sd">                xy = []</span>
-<span class="sd">                for j, s in enumerate(segments):</span>
-<span class="sd">                    xy += s.tolist()</span>
-<span class="sd">                    xy += [[np.nan, np.nan]]</span>
-<span class="sd">                </span>
-<span class="sd">                xy = np.asarray(xy)</span>
-<span class="sd">                print(xy.shape)</span>
-<span class="sd">                ret += [np.column_stack((xy, np.full(len(xy), z)))]</span>
-<span class="sd">            return ret</span>
-<span class="sd">    &quot;&quot;&quot;</span></div>
+            <span class="c1"># Split the searched area into 3 segments, containing the 3 Lagrange</span>
+            <span class="c1"># points. We mark the separated segments by assigning NaN to some</span>
+            <span class="c1"># values, and then we split the region on NaNs.</span>
+
+            <span class="c1"># Move along the samples to find the places where phi was</span>
+            <span class="c1"># increasing, but is now starting to decrease.</span>
+            <span class="n">boundaries</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">decreasing</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">phi</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">phis</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]):</span>
+                <span class="k">if</span> <span class="n">phis</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">phi</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">decreasing</span><span class="p">:</span> <span class="k">continue</span>
+                    <span class="k">else</span><span class="p">:</span> <span class="n">boundaries</span> <span class="o">+=</span> <span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                    <span class="n">decreasing</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="k">elif</span> <span class="n">phis</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">phi</span><span class="p">:</span>
+                    <span class="n">decreasing</span> <span class="o">=</span> <span class="kc">False</span>
+
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">boundaries</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">3</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Failed to split the region into 3 distinct groups: number of boundaries found != 3&quot;</span><span class="p">)</span>
+            
+            <span class="n">idx1</span> <span class="o">=</span> <span class="n">boundaries</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">phis</span><span class="p">[</span><span class="n">boundaries</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="n">boundaries</span><span class="p">[</span><span class="mi">1</span><span class="p">]])</span>
+            <span class="n">idx2</span> <span class="o">=</span> <span class="n">boundaries</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">phis</span><span class="p">[</span><span class="n">boundaries</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span><span class="n">boundaries</span><span class="p">[</span><span class="mi">2</span><span class="p">]])</span>
+            <span class="n">phis</span><span class="p">[</span><span class="n">idx1</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+            <span class="n">samples</span><span class="p">[</span><span class="n">idx1</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+            <span class="n">phis</span><span class="p">[</span><span class="n">idx2</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+            <span class="n">samples</span><span class="p">[</span><span class="n">idx2</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+            
+            <span class="c1"># https://stackoverflow.com/a/14606271</span>
+            <span class="n">points</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">clump_unmasked</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">masked_invalid</span><span class="p">(</span><span class="n">phis</span><span class="p">)):</span>
+                <span class="n">s</span> <span class="o">=</span> <span class="n">samples</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="n">p</span> <span class="o">=</span> <span class="n">phis</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+                <span class="n">points</span> <span class="o">+=</span> <span class="p">[</span><span class="n">s</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">p</span><span class="p">)]]</span>
+
+            <span class="n">points</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">points</span><span class="p">)</span>
+
+            <span class="c1"># For debugging:</span>
+            <span class="c1">#import matplotlib.pyplot as plt</span>
+            <span class="c1">#fig, ax = plt.subplots()</span>
+            <span class="c1">#for x,y in zip(points, phis):</span>
+            <span class="c1">#    ax.scatter(x[0], y)</span>
+            <span class="c1">#plt.show()</span>
+            <span class="c1">#quit()</span>
+            
+            <span class="c1"># Thus, the &quot;line&quot; connecting the stars must be parallel to the</span>
+            <span class="c1"># direction of the gradient. The first 3 Lagrange points are located</span>
+            <span class="c1"># on that line.</span>
+
+            <span class="c1"># Search in the direction first, then negative the direction next to</span>
+            <span class="c1"># obtain all the Lagrange points. We distinguish between them after.</span>
+            <span class="c1"># (looking for the 3 maxima on the line)</span>
+            <span class="c1">#</span>
+            <span class="c1"># In one direction, phi will first decrease until passing through</span>
+            <span class="c1"># the COM of one of the stars, where phi = -inf. After, phi will</span>
+            <span class="c1"># increase to a maximum and then decrease again forever.</span>
+            <span class="c1">#</span>
+            <span class="c1"># In the other direction, phi will first increase until a maximum,</span>
+            <span class="c1"># then decrease until passing through the COM of the other star,</span>
+            <span class="c1"># where phi = inf. Then phi will increase to another maximum, and</span>
+            <span class="c1"># thereafter phi decreases again forever.</span>
+            
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">points</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">3</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Located a number of Lagrange points != 3:</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">points</span><span class="p">))</span>
+
+            <span class="n">center</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="n">extrema</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">not_extrema</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">point</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">points</span><span class="p">):</span>
+                <span class="n">to_center</span> <span class="o">=</span> <span class="n">center</span> <span class="o">-</span> <span class="n">point</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="n">action</span> <span class="o">=</span><span class="s1">&#39;ignore&#39;</span><span class="p">)</span>
+                <span class="n">to_center</span> <span class="o">/=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">to_center</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span> <span class="c1"># normalize</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">resetwarnings</span><span class="p">()</span>
+                <span class="k">for</span> <span class="n">other</span> <span class="ow">in</span> <span class="n">points</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">point</span> <span class="ow">is</span> <span class="n">other</span><span class="p">:</span> <span class="k">continue</span>
+                    <span class="n">diff</span> <span class="o">=</span> <span class="n">other</span> <span class="o">-</span> <span class="n">point</span> <span class="c1"># destination - origin</span>
+                    <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="n">action</span> <span class="o">=</span> <span class="s1">&#39;ignore&#39;</span><span class="p">)</span>
+                    <span class="n">direc</span> <span class="o">=</span> <span class="n">diff</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">diff</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+                    <span class="n">warnings</span><span class="o">.</span><span class="n">resetwarnings</span><span class="p">()</span>
+                    <span class="c1"># ahat dot bhat = cos(theta)</span>
+                    <span class="c1"># if cos(theta) == 1, it&#39;s the same direction</span>
+                    <span class="c1"># if cos(theta) == -1, it&#39;s the opposite direction</span>
+                    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">direc</span><span class="p">,</span> <span class="n">to_center</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="n">not_extrema</span> <span class="o">+=</span> <span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                        <span class="k">break</span>
+                <span class="k">else</span><span class="p">:</span> <span class="n">extrema</span> <span class="o">+=</span> <span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">not_extrema</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Expected one non-extrema point&quot;</span><span class="p">)</span>
+
+            <span class="c1"># L1 is between L2 and L3</span>
+            <span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">points</span><span class="p">[</span><span class="n">not_extrema</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+            
+            <span class="c1"># At the extrema, phi is larger behind the larger mass (L3)</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">points</span><span class="p">[</span><span class="n">extrema</span><span class="p">]))</span>
+            <span class="n">ret</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">points</span><span class="p">[</span><span class="n">extrema</span><span class="p">[</span><span class="n">idx</span><span class="p">[</span><span class="mi">0</span><span class="p">]]]</span>
+            <span class="n">ret</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">points</span><span class="p">[</span><span class="n">extrema</span><span class="p">[</span><span class="n">idx</span><span class="p">[</span><span class="mi">1</span><span class="p">]]]</span>
+
+        <span class="c1"># TODO: find Lagrange points 4 and 5</span>
+                
+        <span class="k">return</span> <span class="n">ret</span></div>
+</div>
 
 </pre></div>
 

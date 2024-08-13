@@ -123,9 +123,7 @@ class TestEffGravPot(basetest.BaseTest):
         
         g = starsmashertools.math.EffGravPot(
             np.asarray(self.g.m) * Msun,
-            np.asarray(self.g.x) * Rsun,
-            np.asarray(self.g.y) * Rsun,
-            np.asarray(self.g.z) * Rsun,
+            *(np.asarray(self.g.xyz.T) * Rsun),
             period = float(starsmashertools.lib.units.Unit(1, 'day').convert('s')),
         )
 
