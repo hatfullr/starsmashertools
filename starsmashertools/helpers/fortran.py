@@ -141,7 +141,7 @@ def get_numpy_format(
         offset = 4,
         strides = len(record)-8,
     )[0]
-
+    
     for variable, res in zip(variables, result):
         if variable.kind in ['real','double precision']:
             # Check if the exponent of the number exceeds 100. Usually junk

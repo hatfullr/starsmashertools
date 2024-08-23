@@ -51,20 +51,18 @@ class ColoredPlot(matplotlib.collections.LineCollection, object):
             **kwargs
     ):
         import starsmashertools.mpl.colorbar
-        
-        segments = list(zip(zip(x[:-1], y[:-1]), zip(x[1:], y[1:])))
 
-        if isinstance(colors, str) and not hasattr(colors, "__iter__"):
-            kwargs['colors'] = colors
+        #segments = list(zip(zip(x[:-1], y[:-1]), zip(x[1:], y[1:])))
+        segments = []
+        for i in range(len(x) - 1):
+            segments += [[[x[i], y[i]], [x[i+1], y[i+1]]]]
+        segments += [[[x[-2], y[-2]], [x[-1], y[-1]]]]
 
-        #if isinstance(colors, np.ndarray):
-        #    self.colors = np.repeat(colors, 2)
-            #self.colors = np.asarray(list(zip(colors[:-1], colors[1:])))
-        
         super(ColoredPlot, self).__init__(
             segments,
-            joinstyle=joinstyle,
-            capstyle=capstyle,
+            joinstyle = joinstyle,
+            capstyle = capstyle,
+            colors = colors,
             **kwargs
         )
         

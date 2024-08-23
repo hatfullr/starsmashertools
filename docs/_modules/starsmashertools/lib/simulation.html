@@ -448,6 +448,23 @@
         <span class="n">filename</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_compression_filename</span><span class="p">()</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span> <span class="k">return</span> <span class="kc">False</span>
         <span class="k">return</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">compressiontask</span><span class="o">.</span><span class="n">CompressionTask</span><span class="o">.</span><span class="n">isCompressedFile</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Simulation.get_kernel">
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.simulation.html#starsmashertools.lib.simulation.Simulation.get_kernel">[docs]</a>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="nf">get_kernel</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calls :func:`~.lib.kernel.get_by_nkernel` with this simulation&#39;s </span>
+<span class="sd">        ``nkernel`` input value.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        kernel : :class:`~.lib.kernel._BaseKernel`</span>
+<span class="sd">            The kernel function used by this simulation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.lib.kernel</span>
+        <span class="k">return</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">kernel</span><span class="o">.</span><span class="n">get_by_nkernel</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;nkernel&#39;</span><span class="p">])</span></div>
+
         
 <div class="viewcode-block" id="Simulation.get_search_directory">
 <a class="viewcode-back" href="../../../lib/starsmashertools.lib.simulation.html#starsmashertools.lib.simulation.Simulation.get_search_directory">[docs]</a>

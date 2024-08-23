@@ -6,6 +6,7 @@ from starsmashertools.helpers.apidecorator import api
 import starsmashertools.helpers.argumentenforcer
 import copy
 import warnings
+import typing
 
 try:
     import matplotlib.axes
@@ -13,10 +14,368 @@ try:
 except ImportError:
     has_matplotlib = False
 
-# Given the mass of a collection of particles and coordinates in args, return
-# the center of mass in each of those args
+class Integral(object):
+    r"""
+    The base class for implementing numerical integration techniques. This class
+    cannot be used directly. Only classes which inherit from this class and 
+    overrides :meth:`~._integrate` can be used.
+
+    Attributes
+    ----------
+    func : :class:`typing.Callable`
+        The integrand. Must accept a single argument, which is the integration
+        variable and is a 1D :class:`numpy.ndarray`\. It must return a 1D
+        :class:`numpy.ndarray` of the same length.
+
+    lower : int, float, None, default = None
+        The lower integration bound. If `None`\, then the integration starts at
+        the first value in the integration variable ``x`` supplied in 
+        :meth:`~.__call__`\.
+
+    upper : int, float, None, default = None
+        The upper integration bound. If `None`\, then the integration stops at
+        the last value in the integration variable ``x`` supplied in 
+        :meth:`~.__call__`\.
+    """
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def __init__(
+            self,
+            func : typing.Callable,
+            lower : int | float | type(None) = None,
+            upper : int | float | type(None) = None,
+    ):
+        self.func = func
+        self._lower = lower
+        self._upper = upper
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def _integrate(self, x : np.ndarray):
+        r"""
+        Invoked by :meth:`~.__call__` to obtain the integral. This method must 
+        be overridden in child classes. This is where the actual integration 
+        takes place.
+
+        Parameters
+        ----------
+        x : :class:`numpy.ndarray`
+            The integration variable as a 1D array. The first value is always 
+            the lower integration limit and the last value is always the upper
+            integration limit, each as returned by :meth:`~.get_lower` and 
+            :meth:`~.get_upper`\.
+        """
+        raise NotImplementedError
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def __call__(self, x : list | tuple | np.ndarray):
+        r"""
+        Calculate the integral. Integration steps proceed using the values in
+        ``x``\.
+
+        Parameters
+        ----------
+        x : list, tuple, :class:`numpy.ndarray`
+            The integration variable as a 1D array.
+        
+        Returns
+        -------
+        result : float
+            The result of the integration.
+        """
+        if isinstance(x, (list, tuple)): x = np.asarray(x)
+        lower = self.get_lower(x)
+        upper = self.get_upper(x)
+        if x[0] > lower: raise ValueError("The lower integration bound must be in range of the provided x values")
+        if x[-1] < upper: raise ValueError("The upper integration bound must be in range of the provided x values")
+        return self._integrate(x[(lower <= x) & (x <= upper)])
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def get_lower(
+            self,
+            x : list | tuple | np.ndarray,
+    ):
+        r"""
+        Obtain the lower integration bound for the given integration variable
+        ``x``\. If ``lower`` given in :meth:`~.__init__` was `None`\, then the
+        lower bound is the first value of ``x``\.
+        
+        Parameters
+        ----------
+        x : list, tuple, :class:`numpy.ndarray`
+            The integration variable as a 1D array.
+
+        Returns
+        -------
+        lower : float
+            The lower integration bound, which is either ``x[0]`` or ``lower``
+            from :meth:`~.__init__`\.
+
+        See Also
+        --------
+        :meth:`~.get_upper`
+        """
+        if isinstance(x, (list, tuple)): x = np.asarray(x)
+        if self._lower is None: return float(x[0])
+        return float(self._lower)
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def get_upper(
+            self,
+            x : list | tuple | np.ndarray,
+    ):
+        r"""
+        Obtain the upper integration bound for the given integration variable
+        ``x``\. If ``lower`` given in :meth:`~.__init__` was `None`\, then the
+        upper bound is the first value of ``x``\.
+        
+        Parameters
+        ----------
+        x : list, tuple, :class:`numpy.ndarray`
+            The integration variable as a 1D array.
+
+        Returns
+        -------
+        upper : float
+            The upper integration bound, which is either ``x[0]`` or ``upper``
+            from :meth:`~.__init__`\.
+
+        See Also
+        --------
+        :meth:`~.get_lower`
+        """
+        if isinstance(x, (list, tuple)): x = np.asarray(x)
+        if self._lower is None: return float(x[-1])
+        return float(self._upper)
+
+
+class Trapezoidal(Integral, object):
+    r"""
+    Non-uniform grid trapezoidal rule integration:
+
+    .. math::
+        :nowrap:
+
+        \int_\mathrm{lower}^\mathrm{upper}f(x)\,dx \approx \frac{1}{2}\sum_{k=1}^N \left[f(x_{k-1}) + f(x_k)\right] (x_k - x_{k-1})
+    
+    See Also
+    --------
+    :class:`~.Integral`
+    """
+    
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def _integrate(self, x : np.ndarray):
+        r"""
+        See Also
+        --------
+        :meth:`~.Integral._integrate`
+        """
+        y = self.func(x)
+        return 0.5 * np.sum((y[:-1] + y[1:]) * (x[1:] - x[:-1]))
+
+@starsmashertools.helpers.argumentenforcer.enforcetypes
 @api
-def center_of_mass(m, *args):
+def get_integral_by_name(name : str):
+    r"""
+    Returns the integral class whose class name or ``name`` attribute matches
+    the given name.
+
+    Parameters
+    ----------
+    name : str
+        The name of the integral class.
+
+    Returns
+    -------
+    integral : :class:`~.Integral`
+    """
+    for subclass in Integral.__subclasses__():
+        if name == subclass.__name__: return subclass
+        if not hasattr(subclass, 'name'): continue
+        if name == subclass.name: return subclass
+    raise ValueError("Integral class of name '%s' not found" % name)
+
+
+
+
+@starsmashertools.helpers.argumentenforcer.enforcetypes
+@api
+def G(
+        x : int | float | list | tuple | np.ndarray,
+        h : int | float | list | tuple | np.ndarray,
+        *args,
+        **kwargs
+):
+    r"""
+    The :math:`G(x,h)` function defined in Equation (A2) of 
+    `Gaburov et al. (2010) <Gaburov>`_:
+
+    .. math::
+        :nowrap:
+
+        G(x,h) \equiv V(4h-4|x-h|,h)
+    
+
+    .. _Gaburov: https://ui.adsabs.harvard.edu/abs/2010MNRAS.402..105G/abstract
+    
+    Parameters
+    ----------
+    x : int, float, list, tuple, :class:`numpy.ndarray`
+        The inter-particle distance :math:`|\vec{r}_i-\vec{r}_j|`\. If an 
+        array-like argument is given, it must have the same shape as ``h``\.
+
+    h : int, float, list, tuple, :class:`numpy.ndarray`
+        The kernel smoothing lengths. If an array-like argument is given, it 
+        must have the same shape as ``x``\.
+
+    Other Parameters
+    ----------------
+    *args
+        Other positional arguments are passed directly to :func:`~.V`\.
+
+    **kwargs
+        Other keyword arguments are passed directly to :func:`~.V`\.
+
+    Returns
+    -------
+    ret : int, float, :class:`numpy.ndarray`
+        If array-like arguments were given for ``x`` and ``h``\, ``ret`` is a
+        :class:`numpy.ndarray`\. Otherwise, ``ret`` is an int or float.
+
+    See Also
+    --------
+    :func:`~.V`
+    """
+    if isinstance(x, (list, tuple)): x = np.asarray(x)
+    if isinstance(h, (list, tuple)): h = np.asarray(h)
+    return V(4*h - 4*abs(x - h), h, *args, **kwargs)
+
+
+@api
+def V(
+        x : int | float | list | tuple | np.ndarray,
+        h : int | float | list | tuple | np.ndarray,
+        kernel : int | str | type(type),
+        resolution : int = 100,
+        integral : str | Integral = 'Trapezoidal',
+):
+    r"""
+    Equation (A3) of `Gaburov et al. (2010) <Gaburov>`_. Used in conjunction 
+    with :func:`~.G`\:
+
+    .. math::
+        :nowrap:
+
+        V(x,h) \equiv 4\pi \int_0^x x^2 W(x,h)\,dx
+    
+
+    .. _Gaburov: https://ui.adsabs.harvard.edu/abs/2010MNRAS.402..105G/abstract
+
+    Parameters
+    ----------
+    x : int, float, list, tuple, np.ndarray
+        The value :math:`4h - 4|x-h|` from :meth:`~.G` where :math:`x` is an 
+        inter-particle distance.
+    
+    h : int, float, list, tuple, np.ndarray
+        The kernel smoothing length.
+    
+    kernel : int, str, :class:`~.lib.kernel._BaseKernel`
+        The kernel function :math:`W(x,h)`\.
+
+    Other Parameters
+    ----------------
+    resolution : int, default = 100
+        The number of integration steps to take.
+
+    integral : str, :class:`~.Integral`\, default = 'Trapezoidal'
+        The name of the integration method to use.
+
+    Returns
+    -------
+    :class:`numpy.ndarray` or float
+        If ``x`` and ``h`` are array-like, the return type is 
+        :class:`numpy.ndarray` with the same shape as ``x`` and ``h``\. 
+        Otherwise, a single value is returned.
+
+    See Also
+    --------
+    :func:`~.G`
+    """
+    import starsmashertools.lib.kernels
+
+    starsmashertools.helpers.argumentenforcer.enforcetypes({
+        'x' : [int, float, list, tuple, np.ndarray],
+        'h' : [int, float, list, tuple, np.ndarray],
+        'kernel' : [int, str, starsmashertools.lib.kernels._BaseKernel],
+        'resolution' : [int],
+        'integral' : [str, Integral],
+    })
+    
+    if isinstance(kernel, int):
+        kernel = starsmashertools.lib.kernels.get_by_nkernel(kernel)()
+    elif isinstance(kernel, str):
+        kernel = starsmashertools.lib.kernels.get_by_name(kernel)()
+    
+    if not isinstance(x, (int, float)) and not isinstance(h, (int, float)):
+        if np.asarray(x).shape != np.asarray(h).shape:
+            raise ValueError("Arguments 'x' and 'h' must have the same shapes if they are array-like")
+        
+    if not isinstance(x, (int, float)) and isinstance(h, (int, float)):
+        h = np.full(x.shape, h)
+
+    if isinstance(integral, str):
+        integral = get_integral_by_name(integral)
+    
+    # h is now the same type as x
+    if not isinstance(x, (int, float)):
+        return 4*np.pi*np.asarray([
+            integral(
+                lambda s: s**2 * np.asarray([kernel(_s, _h) for _s in s]),
+                0, _x,
+            )(np.linspace(0, _x, resolution)) for _x, _h in zip(x, h)
+        ])
+    else:
+        return 4*np.pi*integral(
+            lambda s: s**2 * np.asarray([kernel(_s, h) for _s in s]),
+            0, x,
+        )(np.linspace(0, x, resolution))
+    
+    
+@api
+def center_of_mass(
+        m : list | tuple | np.ndarray,
+        *args,
+):
+    r"""
+    Given the mass of a collection of particles and coordinates in args, return
+    the center of mass in each of those args.
+    
+    The "center of mass" of any quantity :math:`A` is obtained as:
+    
+    .. math::
+        :nowrap:
+
+        A_\mathrm{com} = \frac{\sum_i m_i A_i}{\sum_i m_i}
+
+    This calculation is performed for each member of ``*args``\.
+
+    Parameters
+    ----------
+    m : list, tuple, :class:`numpy.ndarray`
+        The masses of the particles. It is converted to a :class:`numpy.ndarray`
+        before the calculations.
+    
+    Other Parameters
+    ----------------
+    *args
+        The quantities to use for the center of mass calculation.
+    """
+    m = np.asarray(m)
     total_mass = np.sum(m)
     result = np.zeros(len(args))
     for i, arg in enumerate(args):
@@ -215,6 +574,14 @@ def rotate_spherical(
         yangle = 0.,
         zangle = -phi,
     )
+
+
+
+
+
+
+
+
 
 
 

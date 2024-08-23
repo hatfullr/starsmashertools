@@ -3,6 +3,7 @@ import unittest
 import starsmashertools.math
 import numpy as np
 import basetest
+import typing
 
 class TestEffGravPot(basetest.BaseTest):
     def setUp(self):
@@ -167,7 +168,114 @@ class TestEffGravPot(basetest.BaseTest):
         if plot:
             ax.legend()
             plt.show()
-    
+
+
+
+
+
+class TestIntegral(basetest.BaseTest):
+    def test(self):
+        # A simple test for several different types of functions
+        functions = {
+            'x^2 from 0 to 3' : {
+                'func' : lambda x: x**2,
+                'lower' : 0, 'upper' : 3, 'expected' : 9,
+                'places' : 5,
+            },
+            'x^2 from -3 to 0' : {
+                'func' : lambda x: x**2,
+                'lower' : -3, 'upper' : 0, 'expected' : 9,
+                'places' : 5,
+            },
+            'x^2 from 4 to 7' : {
+                'func' : lambda x: x**2,
+                'lower' : 4, 'upper' : 7, 'expected' : 93,
+                'places' : 5,
+            },
+            '1/x from 1 to 2' : {
+                'func' : lambda x: 1/x,
+                'lower' : 1, 'upper' : 2, 'expected' : np.log(2),
+                'places' : 5,
+            },
+            '1/x from -2 to -1' : {
+                'func' : lambda x: 1/x,
+                'lower' : -2, 'upper' : -1, 'expected' : -np.log(2),
+                'places' : 5,
+            },
+            'sin(x) from 0 to pi' : {
+                'func' : lambda x: np.sin(x),
+                'lower' : 0, 'upper' : np.pi, 'expected' : 2,
+                'places' : 5,
+            },
+            # A strange function
+            'x sin(x^2 cos(16x)) from 0 to 2' : {
+                'func' : lambda x: x * np.sin(x**2 * np.cos(16 * x)),
+                'lower' : 0, 'upper' : 2, 'expected' : -0.0642987942,
+                'places' : 3,
+            },
+        }
+        for _class in starsmashertools.math.Integral.__subclasses__():
+            for name, obj in functions.items():
+                if isinstance(obj['expected'], typing.Callable):
+                    expected = obj['expected'](obj['upper']) - obj['expected'](obj['lower'])
+                else: expected = obj['expected']
+                self.assertAlmostEqual(
+                    _class(obj['func'], obj['lower'], obj['upper'])(np.linspace(obj['lower'], obj['upper'], 1000)),
+                    expected,
+                    places = obj['places'],
+                    msg = "{_class:s} {func:s}".format(
+                        _class = str(_class),
+                        func = name,
+                    ),
+                )
+        
+
+
+class Test_GandV(basetest.BaseTest):
+    def test_G(self):
+        # Ensure self-consistency with G and V. We expect
+        # G(x,h) = V(4h - |x-h|, h)
+        import starsmashertools.lib.kernels
+
+        """ Uncomment to show a debug plot
+        import matplotlib.pyplot as plt
+        for kernel in starsmashertools.lib.kernels._BaseKernel.__subclasses__():
+            if kernel.name == 'uniform': continue
+            h = 1
+            x = np.linspace(0, 2*h, 1000)
+            plt.plot(
+                x,
+                starsmashertools.math.G(x, h, kernel()),
+                label = kernel.__name__,
+            )
+            
+        plt.gca().legend()
+        plt.show()
+        """
+
+        for kernel in starsmashertools.lib.kernels._BaseKernel.__subclasses__():
+            if kernel.name == 'uniform': continue
+
+            self.assertAlmostEqual(
+                starsmashertools.math.G(1, 1, kernel()),
+                1,
+                msg = str(kernel),
+                places = 5,
+            )
+            self.assertAlmostEqual(
+                starsmashertools.math.G(2, 1, kernel()),
+                0,
+                msg = str(kernel),
+                places = 5,
+            )
+
+            x = np.linspace(1 - 0.1, 1 + 0.1, 10)
+            for value in starsmashertools.math.G(x, 1, kernel()):
+                self.assertAlmostEqual(value, 1, msg = str(kernel), places = 5)
+
+        
+        
+        
     
 if __name__ == "__main__":
     unittest.main(failfast=True)

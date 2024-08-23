@@ -315,7 +315,7 @@ class CubicSplineKernel(_BaseKernel, object):
         
         if q <= 0.5: v = 6 * q**2 * (q - 1) + 1
         else: v = 2 * (1 - q)**3
-        return 1./np.pi * v
+        return v / np.pi
 
 class WendlandC4Kernel(_BaseKernel, object):
     r"""

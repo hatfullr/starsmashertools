@@ -342,6 +342,20 @@ class Simulation(object):
         filename = self._get_compression_filename()
         if not starsmashertools.helpers.path.isfile(filename): return False
         return starsmashertools.helpers.compressiontask.CompressionTask.isCompressedFile(filename)
+
+    @api
+    def get_kernel(self):
+        r"""
+        Calls :func:`~.lib.kernel.get_by_nkernel` with this simulation's 
+        ``nkernel`` input value.
+        
+        Returns
+        -------
+        kernel : :class:`~.lib.kernel._BaseKernel`
+            The kernel function used by this simulation.
+        """
+        import starsmashertools.lib.kernel
+        return starsmashertools.lib.kernel.get_by_nkernel(self['nkernel'])
         
     @api
     def get_search_directory(self):

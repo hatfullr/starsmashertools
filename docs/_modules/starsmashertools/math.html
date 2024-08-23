@@ -89,6 +89,7 @@
 <span class="kn">import</span> <span class="nn">starsmashertools.helpers.argumentenforcer</span>
 <span class="kn">import</span> <span class="nn">copy</span>
 <span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">import</span> <span class="nn">typing</span>
 
 <span class="k">try</span><span class="p">:</span>
     <span class="kn">import</span> <span class="nn">matplotlib.axes</span>
@@ -96,12 +97,403 @@
 <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
     <span class="n">has_matplotlib</span> <span class="o">=</span> <span class="kc">False</span>
 
-<span class="c1"># Given the mass of a collection of particles and coordinates in args, return</span>
-<span class="c1"># the center of mass in each of those args</span>
+<div class="viewcode-block" id="Integral">
+<a class="viewcode-back" href="../../math/starsmashertools.math.html#starsmashertools.math.Integral">[docs]</a>
+<span class="k">class</span> <span class="nc">Integral</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The base class for implementing numerical integration techniques. This class</span>
+<span class="sd">    cannot be used directly. Only classes which inherit from this class and </span>
+<span class="sd">    overrides :meth:`~._integrate` can be used.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    func : :class:`typing.Callable`</span>
+<span class="sd">        The integrand. Must accept a single argument, which is the integration</span>
+<span class="sd">        variable and is a 1D :class:`numpy.ndarray`\. It must return a 1D</span>
+<span class="sd">        :class:`numpy.ndarray` of the same length.</span>
+
+<span class="sd">    lower : int, float, None, default = None</span>
+<span class="sd">        The lower integration bound. If `None`\, then the integration starts at</span>
+<span class="sd">        the first value in the integration variable ``x`` supplied in </span>
+<span class="sd">        :meth:`~.__call__`\.</span>
+
+<span class="sd">    upper : int, float, None, default = None</span>
+<span class="sd">        The upper integration bound. If `None`\, then the integration stops at</span>
+<span class="sd">        the last value in the integration variable ``x`` supplied in </span>
+<span class="sd">        :meth:`~.__call__`\.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="Integral.__init__">
+<a class="viewcode-back" href="../../math/starsmashertools.math.html#starsmashertools.math.Integral.__init__">[docs]</a>
+    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">func</span> <span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">Callable</span><span class="p">,</span>
+            <span class="n">lower</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">upper</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">func</span> <span class="o">=</span> <span class="n">func</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_lower</span> <span class="o">=</span> <span class="n">lower</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_upper</span> <span class="o">=</span> <span class="n">upper</span></div>
+
+
+<div class="viewcode-block" id="Integral._integrate">
+<a class="viewcode-back" href="../../math/starsmashertools.math.html#starsmashertools.math.Integral._integrate">[docs]</a>
+    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="nf">_integrate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span> <span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Invoked by :meth:`~.__call__` to obtain the integral. This method must </span>
+<span class="sd">        be overridden in child classes. This is where the actual integration </span>
+<span class="sd">        takes place.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        x : :class:`numpy.ndarray`</span>
+<span class="sd">            The integration variable as a 1D array. The first value is always </span>
+<span class="sd">            the lower integration limit and the last value is always the upper</span>
+<span class="sd">            integration limit, each as returned by :meth:`~.get_lower` and </span>
+<span class="sd">            :meth:`~.get_upper`\.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+
+
+<div class="viewcode-block" id="Integral.__call__">
+<a class="viewcode-back" href="../../math/starsmashertools.math.html#starsmashertools.math.Integral.__call__">[docs]</a>
+    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate the integral. Integration steps proceed using the values in</span>
+<span class="sd">        ``x``\.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        x : list, tuple, :class:`numpy.ndarray`</span>
+<span class="sd">            The integration variable as a 1D array.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        result : float</span>
+<span class="sd">            The result of the integration.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span> <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">lower</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_lower</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">upper</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_upper</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">lower</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The lower integration bound must be in range of the provided x values&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">x</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">upper</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The upper integration bound must be in range of the provided x values&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_integrate</span><span class="p">(</span><span class="n">x</span><span class="p">[(</span><span class="n">lower</span> <span class="o">&lt;=</span> <span class="n">x</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">x</span> <span class="o">&lt;=</span> <span class="n">upper</span><span class="p">)])</span></div>
+
+
+<div class="viewcode-block" id="Integral.get_lower">
+<a class="viewcode-back" href="../../math/starsmashertools.math.html#starsmashertools.math.Integral.get_lower">[docs]</a>
+    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="nf">get_lower</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">x</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Obtain the lower integration bound for the given integration variable</span>
+<span class="sd">        ``x``\. If ``lower`` given in :meth:`~.__init__` was `None`\, then the</span>
+<span class="sd">        lower bound is the first value of ``x``\.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        x : list, tuple, :class:`numpy.ndarray`</span>
+<span class="sd">            The integration variable as a 1D array.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        lower : float</span>
+<span class="sd">            The lower integration bound, which is either ``x[0]`` or ``lower``</span>
+<span class="sd">            from :meth:`~.__init__`\.</span>
+
+<span class="sd">        See Also</span>
+<span class="sd">        --------</span>
+<span class="sd">        :meth:`~.get_upper`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span> <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lower</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_lower</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Integral.get_upper">
+<a class="viewcode-back" href="../../math/starsmashertools.math.html#starsmashertools.math.Integral.get_upper">[docs]</a>
+    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="nf">get_upper</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">x</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Obtain the upper integration bound for the given integration variable</span>
+<span class="sd">        ``x``\. If ``lower`` given in :meth:`~.__init__` was `None`\, then the</span>
+<span class="sd">        upper bound is the first value of ``x``\.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        x : list, tuple, :class:`numpy.ndarray`</span>
+<span class="sd">            The integration variable as a 1D array.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        upper : float</span>
+<span class="sd">            The upper integration bound, which is either ``x[0]`` or ``upper``</span>
+<span class="sd">            from :meth:`~.__init__`\.</span>
+
+<span class="sd">        See Also</span>
+<span class="sd">        --------</span>
+<span class="sd">        :meth:`~.get_lower`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span> <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lower</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_upper</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Trapezoidal">
+<a class="viewcode-back" href="../../math/starsmashertools.math.html#starsmashertools.math.Trapezoidal">[docs]</a>
+<span class="k">class</span> <span class="nc">Trapezoidal</span><span class="p">(</span><span class="n">Integral</span><span class="p">,</span> <span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Non-uniform grid trapezoidal rule integration:</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        :nowrap:</span>
+
+<span class="sd">        \int_\mathrm{lower}^\mathrm{upper}f(x)\,dx \approx \frac{1}{2}\sum_{k=1}^N \left[f(x_{k-1}) + f(x_k)\right] (x_k - x_{k-1})</span>
+<span class="sd">    </span>
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    :class:`~.Integral`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+<div class="viewcode-block" id="Trapezoidal._integrate">
+<a class="viewcode-back" href="../../math/starsmashertools.math.html#starsmashertools.math.Trapezoidal._integrate">[docs]</a>
+    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="nf">_integrate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span> <span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        See Also</span>
+<span class="sd">        --------</span>
+<span class="sd">        :meth:`~.Integral._integrate`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">func</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">return</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">y</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">y</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span> <span class="o">*</span> <span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">-</span> <span class="n">x</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span></div>
+</div>
+
+
+<div class="viewcode-block" id="get_integral_by_name">
+<a class="viewcode-back" href="../../math/starsmashertools.math.html#starsmashertools.math.get_integral_by_name">[docs]</a>
+<span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+<span class="nd">@api</span>
+<span class="k">def</span> <span class="nf">get_integral_by_name</span><span class="p">(</span><span class="n">name</span> <span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Returns the integral class whose class name or ``name`` attribute matches</span>
+<span class="sd">    the given name.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    name : str</span>
+<span class="sd">        The name of the integral class.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    integral : :class:`~.Integral`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">subclass</span> <span class="ow">in</span> <span class="n">Integral</span><span class="o">.</span><span class="n">__subclasses__</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="n">subclass</span><span class="o">.</span><span class="vm">__name__</span><span class="p">:</span> <span class="k">return</span> <span class="n">subclass</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">subclass</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">):</span> <span class="k">continue</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="n">subclass</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="k">return</span> <span class="n">subclass</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Integral class of name &#39;</span><span class="si">%s</span><span class="s2">&#39; not found&quot;</span> <span class="o">%</span> <span class="n">name</span><span class="p">)</span></div>
+
+
+
+
+
+<div class="viewcode-block" id="G">
+<a class="viewcode-back" href="../../math/starsmashertools.math.html#starsmashertools.math.G">[docs]</a>
+<span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+<span class="nd">@api</span>
+<span class="k">def</span> <span class="nf">G</span><span class="p">(</span>
+        <span class="n">x</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">h</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The :math:`G(x,h)` function defined in Equation (A2) of </span>
+<span class="sd">    `Gaburov et al. (2010) &lt;Gaburov&gt;`_:</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        :nowrap:</span>
+
+<span class="sd">        G(x,h) \equiv V(4h-4|x-h|,h)</span>
+<span class="sd">    </span>
+
+<span class="sd">    .. _Gaburov: https://ui.adsabs.harvard.edu/abs/2010MNRAS.402..105G/abstract</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    x : int, float, list, tuple, :class:`numpy.ndarray`</span>
+<span class="sd">        The inter-particle distance :math:`|\vec{r}_i-\vec{r}_j|`\. If an </span>
+<span class="sd">        array-like argument is given, it must have the same shape as ``h``\.</span>
+
+<span class="sd">    h : int, float, list, tuple, :class:`numpy.ndarray`</span>
+<span class="sd">        The kernel smoothing lengths. If an array-like argument is given, it </span>
+<span class="sd">        must have the same shape as ``x``\.</span>
+
+<span class="sd">    Other Parameters</span>
+<span class="sd">    ----------------</span>
+<span class="sd">    *args</span>
+<span class="sd">        Other positional arguments are passed directly to :func:`~.V`\.</span>
+
+<span class="sd">    **kwargs</span>
+<span class="sd">        Other keyword arguments are passed directly to :func:`~.V`\.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    ret : int, float, :class:`numpy.ndarray`</span>
+<span class="sd">        If array-like arguments were given for ``x`` and ``h``\, ``ret`` is a</span>
+<span class="sd">        :class:`numpy.ndarray`\. Otherwise, ``ret`` is an int or float.</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    :func:`~.V`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span> <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span> <span class="n">h</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">V</span><span class="p">(</span><span class="mi">4</span><span class="o">*</span><span class="n">h</span> <span class="o">-</span> <span class="mi">4</span><span class="o">*</span><span class="nb">abs</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">h</span><span class="p">),</span> <span class="n">h</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="V">
+<a class="viewcode-back" href="../../math/starsmashertools.math.html#starsmashertools.math.V">[docs]</a>
+<span class="nd">@api</span>
+<span class="k">def</span> <span class="nf">V</span><span class="p">(</span>
+        <span class="n">x</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">h</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">kernel</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="nb">type</span><span class="p">),</span>
+        <span class="n">resolution</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span>
+        <span class="n">integral</span> <span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Integral</span> <span class="o">=</span> <span class="s1">&#39;Trapezoidal&#39;</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Equation (A3) of `Gaburov et al. (2010) &lt;Gaburov&gt;`_. Used in conjunction </span>
+<span class="sd">    with :func:`~.G`\:</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        :nowrap:</span>
+
+<span class="sd">        V(x,h) \equiv 4\pi \int_0^x x^2 W(x,h)\,dx</span>
+<span class="sd">    </span>
+
+<span class="sd">    .. _Gaburov: https://ui.adsabs.harvard.edu/abs/2010MNRAS.402..105G/abstract</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    x : int, float, list, tuple, np.ndarray</span>
+<span class="sd">        The value :math:`4h - 4|x-h|` from :meth:`~.G` where :math:`x` is an </span>
+<span class="sd">        inter-particle distance.</span>
+<span class="sd">    </span>
+<span class="sd">    h : int, float, list, tuple, np.ndarray</span>
+<span class="sd">        The kernel smoothing length.</span>
+<span class="sd">    </span>
+<span class="sd">    kernel : int, str, :class:`~.lib.kernel._BaseKernel`</span>
+<span class="sd">        The kernel function :math:`W(x,h)`\.</span>
+
+<span class="sd">    Other Parameters</span>
+<span class="sd">    ----------------</span>
+<span class="sd">    resolution : int, default = 100</span>
+<span class="sd">        The number of integration steps to take.</span>
+
+<span class="sd">    integral : str, :class:`~.Integral`\, default = &#39;Trapezoidal&#39;</span>
+<span class="sd">        The name of the integration method to use.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    :class:`numpy.ndarray` or float</span>
+<span class="sd">        If ``x`` and ``h`` are array-like, the return type is </span>
+<span class="sd">        :class:`numpy.ndarray` with the same shape as ``x`` and ``h``\. </span>
+<span class="sd">        Otherwise, a single value is returned.</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    :func:`~.G`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span> <span class="nn">starsmashertools.lib.kernels</span>
+
+    <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span><span class="p">({</span>
+        <span class="s1">&#39;x&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+        <span class="s1">&#39;h&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+        <span class="s1">&#39;kernel&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">kernels</span><span class="o">.</span><span class="n">_BaseKernel</span><span class="p">],</span>
+        <span class="s1">&#39;resolution&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+        <span class="s1">&#39;integral&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Integral</span><span class="p">],</span>
+    <span class="p">})</span>
+    
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">kernel</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="n">kernel</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">kernels</span><span class="o">.</span><span class="n">get_by_nkernel</span><span class="p">(</span><span class="n">kernel</span><span class="p">)()</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">kernel</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">kernel</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">kernels</span><span class="o">.</span><span class="n">get_by_name</span><span class="p">(</span><span class="n">kernel</span><span class="p">)()</span>
+    
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">))</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">h</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Arguments &#39;x&#39; and &#39;h&#39; must have the same shapes if they are array-like&quot;</span><span class="p">)</span>
+        
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">))</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">h</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">integral</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">integral</span> <span class="o">=</span> <span class="n">get_integral_by_name</span><span class="p">(</span><span class="n">integral</span><span class="p">)</span>
+    
+    <span class="c1"># h is now the same type as x</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+        <span class="k">return</span> <span class="mi">4</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span>
+            <span class="n">integral</span><span class="p">(</span>
+                <span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="n">s</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="n">kernel</span><span class="p">(</span><span class="n">_s</span><span class="p">,</span> <span class="n">_h</span><span class="p">)</span> <span class="k">for</span> <span class="n">_s</span> <span class="ow">in</span> <span class="n">s</span><span class="p">]),</span>
+                <span class="mi">0</span><span class="p">,</span> <span class="n">_x</span><span class="p">,</span>
+            <span class="p">)(</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">_x</span><span class="p">,</span> <span class="n">resolution</span><span class="p">))</span> <span class="k">for</span> <span class="n">_x</span><span class="p">,</span> <span class="n">_h</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">h</span><span class="p">)</span>
+        <span class="p">])</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mi">4</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">integral</span><span class="p">(</span>
+            <span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="n">s</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="n">kernel</span><span class="p">(</span><span class="n">_s</span><span class="p">,</span> <span class="n">h</span><span class="p">)</span> <span class="k">for</span> <span class="n">_s</span> <span class="ow">in</span> <span class="n">s</span><span class="p">]),</span>
+            <span class="mi">0</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span>
+        <span class="p">)(</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">resolution</span><span class="p">))</span></div>
+
+    
+    
 <div class="viewcode-block" id="center_of_mass">
 <a class="viewcode-back" href="../../math/starsmashertools.math.html#starsmashertools.math.center_of_mass">[docs]</a>
 <span class="nd">@api</span>
-<span class="k">def</span> <span class="nf">center_of_mass</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">center_of_mass</span><span class="p">(</span>
+        <span class="n">m</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Given the mass of a collection of particles and coordinates in args, return</span>
+<span class="sd">    the center of mass in each of those args.</span>
+<span class="sd">    </span>
+<span class="sd">    The &quot;center of mass&quot; of any quantity :math:`A` is obtained as:</span>
+<span class="sd">    </span>
+<span class="sd">    .. math::</span>
+<span class="sd">        :nowrap:</span>
+
+<span class="sd">        A_\mathrm{com} = \frac{\sum_i m_i A_i}{\sum_i m_i}</span>
+
+<span class="sd">    This calculation is performed for each member of ``*args``\.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    m : list, tuple, :class:`numpy.ndarray`</span>
+<span class="sd">        The masses of the particles. It is converted to a :class:`numpy.ndarray`</span>
+<span class="sd">        before the calculations.</span>
+<span class="sd">    </span>
+<span class="sd">    Other Parameters</span>
+<span class="sd">    ----------------</span>
+<span class="sd">    *args</span>
+<span class="sd">        The quantities to use for the center of mass calculation.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
     <span class="n">total_mass</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
     <span class="n">result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">))</span>
     <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">arg</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">args</span><span class="p">):</span>
@@ -316,6 +708,14 @@
         <span class="n">yangle</span> <span class="o">=</span> <span class="mf">0.</span><span class="p">,</span>
         <span class="n">zangle</span> <span class="o">=</span> <span class="o">-</span><span class="n">phi</span><span class="p">,</span>
     <span class="p">)</span>
+
+
+
+
+
+
+
+
 
 
 

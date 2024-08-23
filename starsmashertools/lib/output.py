@@ -247,7 +247,7 @@ class Output(dict, object):
             self._header = None
         if data:
             # Remove keys associated with the current data
-            for key in self.keys(ensure_read = False):
+            for key in list(self.keys(ensure_read = False)):
                 if key not in self: continue
                 if self._header is not None and key in self._header: continue
                 del self[key]
