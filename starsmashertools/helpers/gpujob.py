@@ -2,6 +2,13 @@ import starsmashertools.preferences
 from starsmashertools.preferences import Pref
 import typing
 
+def get_locks(index : int):
+    import starsmashertools.helpers.path
+    from starsmashertools import LOCK_DIRECTORY
+    for entry in starsmashertools.helpers.path.listdir(LOCK_DIRECTORY):
+        if entry == 'GPU' + str(index):
+            yield starsmashertools.helpers.path.join(LOCK_DIRECTORY, entry)
+
 def is_device_available(index : int):
     r"""
     Returns ``True`` if there are no :class:`~.GPUJob` objects currently running
@@ -17,8 +24,7 @@ def is_device_available(index : int):
     bool
         ``True`` if the device is available, ``False`` otherwise.
     """
-    import starsmashertools.helpers.file
-    return not starsmashertools.helpers.file.is_locked('GPU' + str(index))
+    return len(list(get_locks(index))) == 0
 
 
 try:
@@ -82,6 +88,7 @@ try:
             being used.
             """
             import starsmashertools.helpers.file
+            from starsmashertools import LOCK_DIRECTORY
             import time
 
             if self.lock is not None:
@@ -99,6 +106,10 @@ try:
             # Lock the GPU
             self.lock = starsmashertools.helpers.file.Lock(
                 'GPU' + str(device_index), 'w'
+            )
+            self.lock.path = starsmashertools.helpers.path.join(
+                LOCK_DIRECTORY,
+                starsmashertools.helpers.path.basename(self.lock.path),
             )
             self.lock.lock()
             
