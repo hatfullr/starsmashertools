@@ -2,6 +2,25 @@ import starsmashertools.preferences
 from starsmashertools.preferences import Pref
 import typing
 
+def is_device_available(index : int):
+    r"""
+    Returns ``True`` if there are no :class:`~.GPUJob` objects currently running
+    on the device of index ``index``\.
+
+    Parameters
+    ----------
+    index : int
+        The device index.
+
+    Returns
+    -------
+    bool
+        ``True`` if the device is available, ``False`` otherwise.
+    """
+    import starsmashertools.helpers.file
+    return not starsmashertools.helpers.file.is_locked('GPU' + str(index))
+
+
 try:
     import starsmashertools.helpers.argumentenforcer
     import starsmashertools.lib.output
@@ -38,6 +57,7 @@ try:
                 if kernel is None:
                     raise ValueError("Argument 'kernel' must have a value when the implementing class of a GPUJob does not implement a function called 'kernel'")
                 self.kernel = kernel
+            self.lock = None
 
         @property
         def outputs(self): return self._outputs
@@ -55,6 +75,41 @@ try:
                 elif self._outputs[i].shape != self._resolution:
                     raise Exception("Outputs must all have the same shape")
 
+        def get_device(self):
+            r"""
+            Block until there exists a GPU without a GPUJob running on it. When
+            a device becomes available, record in data/locks that the GPU is
+            being used.
+            """
+            import starsmashertools.helpers.file
+            import time
+
+            if self.lock is not None:
+                raise Exception("The GPUJob has already locked a GPU. Call release_device() first.")
+            
+            # Wait for an available GPU
+            device_index = -1
+            while device_index == -1:
+                for i, device in enumerate(cuda.gpus):
+                    if not is_device_available(i): continue
+                    cuda.select_device(i)
+                    device_index = i
+                    break
+                time.sleep(1.e-2)
+            # Lock the GPU
+            self.lock = starsmashertools.helpers.file.Lock(
+                'GPU' + str(device_index), 'w'
+            )
+            self.lock.lock()
+            
+
+        def release_device(self):
+            if self.lock is None:
+                raise Exception("Cannot release a device because this GPUJob never locked a device")
+            self.lock.unlock()
+            self.lock = None
+            cuda.close()
+            
         @starsmashertools.helpers.argumentenforcer.enforcetypes
         def run(
                 self,
@@ -62,68 +117,59 @@ try:
                 return_duration : bool = False,
         ):
             import starsmashertools
-            import time
             
-            # Wait for an available GPU
-            GPU_found = False
-            while not GPU_found:
-                for i, device in enumerate(cuda.gpus):
-                    cuda.select_device(i)
-                    if not cuda.is_available():
-                        cuda.close()
-                        continue
-                    GPU_found = True
-                    break
-                time.sleep(1.e-2)
-                
-            
-            # Send inputs to the GPU
-            inputs = []
-            for i in range(len(self.inputs)):
-                if hasattr(self.inputs[i], '__iter__') and not isinstance(self.inputs[i], str):
-                    inputs += [cuda.to_device(np.ascontiguousarray(self.inputs[i]))]
+            self.get_device()
+
+            try:
+                # Send inputs to the GPU
+                inputs = []
+                for i in range(len(self.inputs)):
+                    if hasattr(self.inputs[i], '__iter__') and not isinstance(self.inputs[i], str):
+                        inputs += [cuda.to_device(np.ascontiguousarray(self.inputs[i]))]
+                    else:
+                        inputs += [self.inputs[i]]
+
+                # Send outputs to the GPU
+                outputs = []
+                for i in range(len(self.outputs)):
+                    outputs += [cuda.to_device(np.ascontiguousarray(self.outputs[i]))]
+
+                # Determine allocation sizes on the GPU
+                if len(self._resolution) == 1:
+                    blockspergrid = self._resolution[0] // threadsperblock + 1
                 else:
-                    inputs += [self.inputs[i]]
+                    ndims = len(self._resolution)
+                    threadsperblock = np.full(ndims, int(threadsperblock**(1./ndims)), dtype=int)
 
-            # Send outputs to the GPU
-            outputs = []
-            for i in range(len(self.outputs)):
-                outputs += [cuda.to_device(np.ascontiguousarray(self.outputs[i]))]
+                    blockspergrid = np.array(self._resolution, dtype=int) // threadsperblock + 1
+                    threadsperblock = tuple(threadsperblock)
+                    blockspergrid = tuple(blockspergrid)
 
-            # Determine allocation sizes on the GPU
-            if len(self._resolution) == 1:
-                blockspergrid = self._resolution[0] // threadsperblock + 1
-            else:
-                ndims = len(self._resolution)
-                threadsperblock = np.full(ndims, int(threadsperblock**(1./ndims)), dtype=int)
+                start_time = time.time()
 
-                blockspergrid = np.array(self._resolution, dtype=int) // threadsperblock + 1
-                threadsperblock = tuple(threadsperblock)
-                blockspergrid = tuple(blockspergrid)
+                # These warnings are caused by under-utilizing the device, which we
+                # typically don't have any control over
+                warnings.filterwarnings(
+                    action='ignore',
+                    category=numba.core.errors.NumbaPerformanceWarning,
+                )
+                self.kernel[blockspergrid, threadsperblock](
+                    *outputs,
+                    *inputs,
+                )
+                warnings.resetwarnings()
+                cuda.synchronize()
 
-            start_time = time.time()
+                for i in range(len(outputs)):
+                    outputs[i] = outputs[i].copy_to_host()
 
-            if not hasattr(self, "kernel"):
-                raise NotImplementedError("You must define a method named 'kernel'")
+                if len(outputs) == 1: outputs = outputs[0]
+            except Exception as e:
+                self.release_device()
+                raise e
 
-            # These warnings are caused by under-utilizing the device, which we
-            # typically don't have any control over
-            warnings.filterwarnings(
-                action='ignore',
-                category=numba.core.errors.NumbaPerformanceWarning,
-            )
-            self.kernel[blockspergrid, threadsperblock](
-                *outputs,
-                *inputs,
-            )
-            warnings.resetwarnings()
-            cuda.synchronize()
-
-            for i in range(len(outputs)):
-                outputs[i] = outputs[i].copy_to_host()
-
-            if len(outputs) == 1: outputs = outputs[0]
-
+            self.release_device()
+            
             if return_duration:
                 return outputs, time.time() - start_time
             return outputs
