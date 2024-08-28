@@ -102,13 +102,17 @@ try:
                     break
                 time.sleep(1.e-2)
             # Lock the GPU
-            with open(
-                    starsmashertools.helpers.path.join(
-                        LOCK_DIRECTORY, 'GPU' + str(self.device),
-                    ),
-                    'x',
-            ) as f:
-                f.write(' ')
+            while True:
+                try:
+                    with open(
+                            starsmashertools.helpers.path.join(
+                                LOCK_DIRECTORY, 'GPU' + str(self.device),
+                            ),
+                            'x',
+                    ) as f:
+                        f.write(' ')
+                except FileExistsError:
+                    continue
         
 
         def release_device(self):
