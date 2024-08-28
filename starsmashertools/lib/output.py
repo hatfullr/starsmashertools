@@ -756,13 +756,7 @@ class Output(dict, object):
             raise NotImplementedError("Gravitational softening is not supported in this version of starsmashertools")
 
         g = np.zeros((ntot, 3))
-        # Ignore annoying divide-by-zero warnings
-        starsmashertools.helpers.warnings.filterwarnings(action = 'ignore')
-        for i in range(ntot):
-            if i == ntot - 1: jlower = 0 # so any last point particle interacts with everything
-
-            if nselfgravity == 1: jlower = i
-
+        def do(i, jlower, jupper):
             mj = m[jlower:jupper]
             offset = xyz[jlower:jupper] - xyz[i]
             r2 = (offset**2).sum(axis = 1)
@@ -772,6 +766,20 @@ class Output(dict, object):
             dgsum = dg.sum(axis = 0)
             g[i] += dgsum
             g[jlower:jupper] -= dg*(m[i]/mj)[:,None]
+
+        # Ignore annoying divide-by-zero warnings
+        starsmashertools.helpers.warnings.filterwarnings(action = 'ignore')
+        
+        # This loop is written nearly identically to StarSmasher's cpu_grav.f,
+        # except that the calculations are vectorized.
+        if nselfgravity:
+            for i in range(ntot):
+                do(i, i, jupper)
+        else:
+            for i in range(ntot - 1):
+                do(i, jlower, jupper)
+            do(ntot - 1, 0, jupper) # so any last point particle interacts with everything
+        
         starsmashertools.helpers.warnings.resetwarnings()
         return g * float(constants['G'])
                     
