@@ -66,13 +66,13 @@ class TestKernelFunction(basetest.BaseTest):
             x = np.linspace(0, f.compact_support, 100)
             l = plt.plot(
                 x / f.compact_support,
-                np.array([f(_x, 1) for _x in x]),
+                np.array([f(_x, 0.5*f.compact_support) for _x in x]),
                 label = function.__name__,
             )[0]
 
             plt.plot(
                 x / f.compact_support,
-                np.array([f2(_x, 1) for _x in x]),
+                np.array([f2(_x, 0.5*f.compact_support) for _x in x]),
                 color = l.get_color(),
                 linestyle = '--',
             )
@@ -81,6 +81,28 @@ class TestKernelFunction(basetest.BaseTest):
         #plt.show() # Uncomment to see results
 
         #plt.close('all')
+
+    def test_derivatives(self):
+        """ # Uncomment for a visual check
+        import matplotlib.pyplot as plt
+        compact_support = 2
+        for function in get_all_functions():
+            f = function(compact_support = compact_support)
+            
+            x = np.linspace(0, f.compact_support, 100)
+            plt.plot(
+                x,
+                np.array([
+                    f.dr( # change to f.dh to see deriv wrt h
+                        _x, 0.5*f.compact_support
+                    ) for _x in x
+                ]),
+                label = function.__name__,
+            )
+        
+        plt.legend()
+        plt.show()
+        """
             
     def test_get_by_name(self):
         for function in get_all_functions():

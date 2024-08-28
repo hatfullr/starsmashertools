@@ -208,6 +208,7 @@ def G(
         x : int | float | list | tuple | np.ndarray,
         h : int | float | list | tuple | np.ndarray,
         *args,
+        gflag : int = 1,
         **kwargs
 ):
     r"""
@@ -232,6 +233,12 @@ def G(
         The kernel smoothing lengths. If an array-like argument is given, it 
         must have the same shape as ``x``\.
 
+    gflag : int, default = 1
+        If 0, then the function follows equation (A2) in Gaburov et al. (2010).
+        If 1, then the function is the same, except that G=1 where x/h < 1. A
+        value of 1 is the StarSmasher default. If gflag has any other value, a
+        ValueError is raised.
+
     Other Parameters
     ----------------
     *args
@@ -250,16 +257,23 @@ def G(
     --------
     :func:`~.V`
     """
+    if gflag not in [0,1]:
+        raise ValueError("Invalid gflag value %d. gflag must be 0 or 1."%gflag)
     if isinstance(x, (list, tuple)): x = np.asarray(x)
     if isinstance(h, (list, tuple)): h = np.asarray(h)
-    return V(4*h - 4*abs(x - h), h, *args, **kwargs)
+
+    if gflag == 1 and not isinstance(x, np.ndarray) and x/h < 1: return 1
+
+    ret = V(4*h - 4*abs(x - h), h, *args, **kwargs)
+    if gflag == 1 and isinstance(ret, np.ndarray): ret[x/h < 1] = 1
+    return ret
 
 
 @api
 def V(
         x : int | float | list | tuple | np.ndarray,
         h : int | float | list | tuple | np.ndarray,
-        kernel : int | str | type(type),
+        kernel : int | str | type(type) = 'cubic spline',
         resolution : int = 100,
         integral : str | Integral = 'Trapezoidal',
 ):
@@ -272,7 +286,7 @@ def V(
 
         V(x,h) \equiv 4\pi \int_0^x x^2 W(x,h)\,dx
     
-
+    
     .. _Gaburov: https://ui.adsabs.harvard.edu/abs/2010MNRAS.402..105G/abstract
 
     Parameters
@@ -284,8 +298,9 @@ def V(
     h : int, float, list, tuple, np.ndarray
         The kernel smoothing length.
     
-    kernel : int, str, :class:`~.lib.kernel._BaseKernel`
-        The kernel function :math:`W(x,h)`\.
+    kernel : int, str, :class:`~.lib.kernel._BaseKernel`\, default = ``'cubic spline'``
+        The kernel function :math:`W(x,h)`\. In StarSmasher, the cubic spline
+        function is used regardless of the value of ``nkernel``\.
 
     Other Parameters
     ----------------
@@ -344,7 +359,139 @@ def V(
             lambda s: s**2 * np.asarray([kernel(_s, h) for _s in s]),
             0, x,
         )(np.linspace(0, x, resolution))
+
+
+@api
+def dV(
+        x : int | float | list | tuple | np.ndarray,
+        h : int | float | list | tuple | np.ndarray,
+        kernel : int | str | type(type) = 'cubic spline',
+):
+    r"""
+    The spatial derivative of :func:`~.V`\, :math:`\nabla V`\.
+    """
+    import starsmashertools.lib.kernels
+
+    starsmashertools.helpers.argumentenforcer.enforcetypes({
+        'x' : [int, float, list, tuple, np.ndarray],
+        'h' : [int, float, list, tuple, np.ndarray],
+        'kernel' : [int, str, starsmashertools.lib.kernels._BaseKernel],
+    })
+
+    if isinstance(kernel, int):
+        kernel = starsmashertools.lib.kernels.get_by_nkernel(kernel)()
+    elif isinstance(kernel, str):
+        kernel = starsmashertools.lib.kernels.get_by_name(kernel)()
+
+    if not isinstance(x, (int, float)) and not isinstance(h, (int, float)):
+        if np.asarray(x).shape != np.asarray(h).shape:
+            raise ValueError("Arguments 'x' and 'h' must have the same shapes if they are array-like")
+        
+    if not isinstance(x, (int, float)) and isinstance(h, (int, float)):
+        h = np.full(x.shape, h)
+
+    # h is now the same type as x
+    if not isinstance(x, (int, float)):
+        return 4 * np.pi * np.array([_x**2 * kernel(_x,_h) for _x,_h in zip(x,h)])
+    else:
+        return 4 * np.pi * x**2 * kernel(x, h)
     
+
+@starsmashertools.helpers.argumentenforcer.enforcetypes
+@api
+def dG(
+        x : int | float | list | tuple | np.ndarray,
+        h : int | float | list | tuple | np.ndarray,
+        *args,
+        gflag : int = 1,
+        **kwargs
+):
+    r"""
+    The spatial derivative of :func:`~.G`\, :math:`\nabla G`\.
+    """
+    if gflag not in [0,1]:
+        raise ValueError("Invalid gflag value %d. gflag must be 0 or 1."%gflag)
+    if isinstance(x, (list, tuple)): x = np.asarray(x)
+    if isinstance(h, (list, tuple)): h = np.asarray(h)
+    if not isinstance(x, np.ndarray) and x/h < 1 and gflag == 1: return 0
+    ret = dV(4*h - 4*abs(x - h), h, *args, **kwargs)
+    if gflag == 1 and isinstance(ret, np.ndarray): ret[x/h < 1] = 0
+    return ret
+
+
+@starsmashertools.helpers.argumentenforcer.enforcetypes
+@api
+def dGdh(
+        x : int | float | list | tuple | np.ndarray,
+        h : int | float | list | tuple | np.ndarray,
+        *args,
+        gflag : int = 1,
+        **kwargs
+):
+    r"""
+    Derivative of :func:`~.G` with respect to the smoothing length :math:`h`\:
+    :math:`\partial G/\partial h`\.
+    """
+    if gflag not in [0,1]:
+        raise ValueError("Invalid gflag value %d. gflag must be 0 or 1."%gflag)
+    if isinstance(x, (list, tuple)): x = np.asarray(x)
+    if isinstance(h, (list, tuple)): h = np.asarray(h)
+    if not isinstance(x, np.ndarray) and x/h < 1 and gflag == 1: return 0
+    ret = dVdh(4*h - 4*abs(x - h), h, *args, **kwargs)
+    if gflag == 1 and isinstance(ret, np.ndarray): ret[x/h < 1] = 0
+    return ret
+    
+@starsmashertools.helpers.argumentenforcer.enforcetypes
+@api
+def dVdh(
+        x : int | float | list | tuple | np.ndarray,
+        h : int | float | list | tuple | np.ndarray,
+        kernel : int | str | type(type) = 'cubic spline',
+        resolution : int = 100,
+        integral : str | Integral = 'Trapezoidal',
+):
+    r"""
+    Derivative of :func:`~.V` with respect to the smoothing length :math:`h`\:
+    :math:`\partial V/\partial h`\.
+    """
+    import starsmashertools.lib.kernels
+
+    starsmashertools.helpers.argumentenforcer.enforcetypes({
+        'x' : [int, float, list, tuple, np.ndarray],
+        'h' : [int, float, list, tuple, np.ndarray],
+        'kernel' : [int, str, starsmashertools.lib.kernels._BaseKernel],
+        'resolution' : [int],
+        'integral' : [str, Integral],
+    })
+    
+    if isinstance(kernel, int):
+        kernel = starsmashertools.lib.kernels.get_by_nkernel(kernel)()
+    elif isinstance(kernel, str):
+        kernel = starsmashertools.lib.kernels.get_by_name(kernel)()
+    
+    if not isinstance(x, (int, float)) and not isinstance(h, (int, float)):
+        if np.asarray(x).shape != np.asarray(h).shape:
+            raise ValueError("Arguments 'x' and 'h' must have the same shapes if they are array-like")
+        
+    if not isinstance(x, (int, float)) and isinstance(h, (int, float)):
+        h = np.full(x.shape, h)
+
+    if isinstance(integral, str):
+        integral = get_integral_by_name(integral)
+    
+    # h is now the same type as x
+    if not isinstance(x, (int, float)):
+        return 4*np.pi*np.asarray([
+            integral(
+                lambda s: s**2 * np.asarray([kernel.dh(_s, _h) for _s in s]),
+                0, _x,
+            )(np.linspace(0, _x, resolution)) for _x, _h in zip(x, h)
+        ])
+    else:
+        return 4*np.pi*integral(
+            lambda s: s**2 * np.asarray([kernel.dh(_s, h) for _s in s]),
+            0, x,
+        )(np.linspace(0, x, resolution))
     
 @api
 def center_of_mass(

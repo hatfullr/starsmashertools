@@ -448,7 +448,6 @@ def strip_inline_comment(
     provided that ``character`` does not appear within a string literal in 
     ``line``\.
     """
-
     for i, c in enumerate(line):
         if c == character:
             if is_index_in_literal(line, i): continue

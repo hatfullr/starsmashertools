@@ -9,6 +9,7 @@ import basetest
 # This test depends on 
 
 class TestSimulation(basetest.BaseTest):
+    #trace = True
     def setUp(self):
         curdir = os.path.dirname(__file__)
         self.simdir = os.path.join(curdir, 'data')
@@ -204,7 +205,38 @@ class TestSimulation(basetest.BaseTest):
 
         # Make sure to restore the original behavior
         #sim1.split()
+
+
+    def test_get_nusegpus(self):
+        sim1 = starsmashertools.lib.simulation.Simulation(self.simdir)
+
+        self.assertEqual(
+            tuple(sim1.get_nusegpus()),
+            (1, 1, 1),
+        )
         
+        # This simulation has out002.sph and out003.sph, while sim1 has
+        # out000.sph and out001.sph.
+        sim2 = starsmashertools.lib.simulation.Simulation(
+            os.path.join(os.path.dirname(self.simdir), 'data2'),
+        )
+
+        self.assertEqual(
+            tuple(sim2.get_nusegpus()),
+            (0, 0),
+        )
+        
+        # Careful not to permanently edit our testing environment
+        with sim1.archive.nosave():
+            with sim2.archive.nosave():
+                sim1.join(sim2)
+                self.assertEqual(
+                    tuple(sim1.get_nusegpus()),
+                    (1, 1, 0, 0),
+                )
+
+
 
 if __name__ == "__main__":
-    unittest.main(failfast=True)
+    unittest.main(failfast = True)
+

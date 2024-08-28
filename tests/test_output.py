@@ -173,5 +173,10 @@ np.sum(am*u)
                 old,
             )
 
+    def test_grav_accels(self):
+        output = self.simulation.get_output(0)
+
+        print(output.get_gravitational_acceleration(softening = False))
+            
 if __name__ == "__main__":
     unittest.main(failfast=True)

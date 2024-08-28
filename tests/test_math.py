@@ -273,8 +273,30 @@ class Test_GandV(basetest.BaseTest):
             for value in starsmashertools.math.G(x, 1, kernel()):
                 self.assertAlmostEqual(value, 1, msg = str(kernel), places = 5)
 
-        
-        
+        self.assertEqual(starsmashertools.math.G(0, 1, gflag = 1), 1)
+        self.assertEqual(starsmashertools.math.G(0, 1, gflag = 0), 0)
+
+    def test_dG(self):
+        self.assertEqual(starsmashertools.math.dG(0, 1, gflag = 1), 0)
+        self.assertEqual(starsmashertools.math.dG(0, 1, gflag = 0), 0)
+        self.assertNotEqual(starsmashertools.math.dG(0.1, 1, gflag = 0), 0)
+        self.assertEqual(starsmashertools.math.dG(0.1, 1, gflag = 1), 0)
+
+        """ Uncomment to show a debug plot
+        import matplotlib.pyplot as plt
+        for kernel in starsmashertools.lib.kernels._BaseKernel.__subclasses__():
+            if kernel.name == 'uniform': continue
+            h = 1
+            x = np.linspace(0, 2*h, 1000)
+            plt.plot(
+                x,
+                starsmashertools.math.dG(x, h, kernel(), gflag = 0),
+                label = kernel.__name__,
+            )
+            
+        plt.gca().legend()
+        plt.show()
+        """
         
     
 if __name__ == "__main__":

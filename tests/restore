@@ -1,38 +1,29 @@
 #!/usr/bin/env python3
 
-if __name__ == '__main__':
-    import zipfile
-    import os
+def restore():
     import shutil
+    import os
+    import zipfile
+    from importlib.util import spec_from_loader, module_from_spec
+    from importlib.machinery import SourceFileLoader 
+
+    spec = spec_from_loader('compress', SourceFileLoader('compress', 'compress'))
+    compress = module_from_spec(spec)
+    spec.loader.exec_module(compress)
     
-    code = ''
-    listening = False
-    with open('extract', 'r') as f:
-        for line in f:
-            if line.startswith('# Start restore code'):
-                listening = True
-                continue
-            if listening:
-                if line.startswith('# Stop restore code'):
-                    break
-                code += line
-
-    exec(code)
-
-    code = get_compress_code()
-    for script in code.values():
-        exec(script)
-
-    if not os.path.isfile(zipname): quit()
+    if not os.path.isfile(compress.zipname): quit()
         
     filenames = []
     with zipfile.ZipFile(
-            zipname,
+            compress.zipname,
             mode = 'r',
-            **compression_kwargs,
+            **compress.compression_kwargs,
     ) as zfile:
         for zinfo in zfile.infolist():
-            if zinfo.filename in [size_identifier, times_identifier]: continue
+            if zinfo.filename in [
+                    compress.size_identifier,
+                    compress.times_identifier
+            ]: continue
             filenames += [zinfo.filename]
 
     directories = []
@@ -40,10 +31,12 @@ if __name__ == '__main__':
         dirname = os.path.dirname(filename)
         while os.sep in dirname:
             dirname = os.path.dirname(dirname)
-        if dirname not in directories:
-            directories += [dirname]
-
+        if dirname in directories: continue
+        directories += [dirname]
+    
     for directory in directories:
         if os.path.isdir(directory): shutil.rmtree(directory)
         elif os.path.isfile(directory): os.remove(directory)
     
+
+if __name__ == '__main__': restore()

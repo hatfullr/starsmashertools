@@ -94,30 +94,45 @@ class LogFile(object):
         i1 = i0 + self.header[i0:].index('\n')
         return self.header[i0:i1]
 
-    # Return a list of boolean values of the same length as 'outputfiles', where
-    # an element is 'True' if it is included in this LogFile.
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def has_output_files(
             self,
-            filenames : list | tuple | np.ndarray,
+            paths : list | tuple | np.ndarray,
     ):
+        r"""
+        Return a list of boolean values of the same length as ``paths``, where
+        an element is ``True`` if it is included in this LogFile.
+
+        Parameters
+        ----------
+        paths : list, tuple, :class:`numpy.ndarray`
+            The file paths to check.
+
+        Returns
+        -------
+        list
+            A list of boolean values with the same length as ``paths``\, where
+            elements are ``True`` if this log file contains the output file at
+            the corresponding path in ``paths``\. Otherwise, that element is
+            ``False``\.
+        """
         import starsmashertools.helpers.path
         
         first_file = self.get_first_output_file(throw_error=False)
         last_file = self.get_last_output_file(throw_error=False)
         
         # This is only going to work with out*.sph files
-        def get_filenum(filename):
-            filename = starsmashertools.helpers.path.basename(filename)
-            if 'out' not in filename:
+        def get_filenum(path):
+            basename = starsmashertools.helpers.path.basename(path)
+            if 'out' not in basename:
                 raise Exception("has_output_files only works with files of type out*.sph")
-            return int(filename.replace('out','').replace('.sph',''))
+            return int(basename.replace('out','').replace('.sph',''))
         
         start_num = get_filenum(first_file)
         stop_num = get_filenum(last_file)
 
-        nums = [get_filenum(filename) for filename in filenames]
+        nums = [get_filenum(path) for path in paths]
         return [num >= start_num and num <= stop_num for num in nums]
     
     # Find the time that this log file stopped at

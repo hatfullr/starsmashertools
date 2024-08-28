@@ -691,17 +691,62 @@ class Output(dict, object):
             return ret
 
 
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def get_gravitational_acceleration(
+            self,
+            softening : bool = False,
+            nselfgravity : int | type(None) = None,
+    ):
+        r"""
+        Obtain the gravitational acceleration vectors of each particle in this 
+        output file. Softening as implemented in StarSmasher is currently not 
+        supported, but may be supported in future versions.
 
+        Other Parameters
+        ----------------
+        softening : bool, default = False
+            If ``False``\, accelerations are calculated using only 
+            :math:`\sum_j Gm_j/|\vec{r}_i-\vec{r}_j|^2`\. If ``True``\, a 
+            :py:class:`NotImplementedError` is raised.
 
+        nselfgravity : int, None, default = None
+            If ``0``\, gravity is only calculated to point particles. If ``1``\,
+            gravity is calculated to all particles. If ``None``\, the value of
+            ``nselfgravity`` from the StarSmasher simulation will be used.
 
+        Returns
+        -------
+        g : :class:`numpy.ndarray`
+            A 2D array of gravitational acceleration vectors in shape (N,3), 
+            where N is the number of particles.
 
+        Raises
+        ------
+        :py:class:`NotImplementedError`
+            If ``softening = True``\, this error is raised.
 
+        Notes
+        -----
+        To obtain the magnitude of the returned vectors, try 
+        ``np.sqrt((g**2).sum(axis = 1))``\.
+        """
 
+        if nselfgravity is None: nselfgravity = self.simulation['nselfgravity']
 
+        ntot = self['ntot']
+        if nselfgravity == 0:
+            jlower = ntot
+            
 
-
-
-
+        jupper = ntot
+            
+        if softening:
+            raise NotImplementedError("Gravitational softening is not supported in this version of starsmashertools")
+        else:
+            g = np.zeros((ntot, 3))
+            
+        
 
 
 

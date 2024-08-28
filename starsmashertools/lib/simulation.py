@@ -343,6 +343,53 @@ class Simulation(object):
         if not starsmashertools.helpers.path.isfile(filename): return False
         return starsmashertools.helpers.compressiontask.CompressionTask.isCompressedFile(filename)
 
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def get_nusegpus(
+            self,
+            outputs : list | tuple | type(None) = None,
+    ):
+        r"""
+        Returns the value of ``nusegpus`` for individual 
+        :class:`~.output.Output` objects originating from this simulation. For
+        each output file, the log file corresponding to that output file is
+        checked for the phrase ``using cpus to calculate gravity w/ 
+        ngravprocs=``\, as written in ``init.f`` in StarSmasher. If the phrase
+        is present, then ``nusegpus=0`` for that output file. Otherwise,
+        ``nusegpus=1``\.
+
+        Other Parameters
+        ----------------
+        outputs : list, tuple, None, default = None
+            If not ``None``\, the value of ``nusegpus`` for all output files in
+            this simulation are returned. Otherwise, only those in the given
+            list are returned. The elements of the given list or tuple can be
+            either :py:class:`str`\, representing file paths,
+            :class:`~.output.Output`\, or a mix of the two.
+        
+        Returns
+        -------
+        nusegpus : :class:`numpy.ndarray`
+            A 1D integer array containing the values of ``nusegpus`` from the
+            StarSmasher simulation for each provided :class:`~.output.Output`\.
+        """
+        import starsmashertools.lib.logfile
+        import starsmashertools.helpers.path
+
+        if outputs is None: outputs = self.get_output()
+        paths = [output.path if isinstance(output, starsmashertools.lib.output.Output) else output for output in outputs]
+        logfiles = self.get_logfiles()
+        nusegpus = np.zeros(len(outputs), dtype = int)
+        for logfile in logfiles:
+            has = np.asarray(logfile.has_output_files(paths))
+            if not has.any(): continue
+            try:
+                logfile.get('using cpus to calculate gravity w/ ngravprocs=')
+                nusegpus[has] = 0
+            except starsmashertools.lib.logfile.LogFile.PhraseNotFoundError:
+                nusegpus[has] = 1
+        return nusegpus
+
     @api
     def get_kernel(self):
         r"""
@@ -462,9 +509,13 @@ class Simulation(object):
         
         if self._logfiles is None:
             self._logfiles = []
-            for _path in starsmashertools.lib.logfile.find(self.directory, **kwargs):
-                if starsmashertools.helpers.path.getsize(_path) > 0:
-                    self._logfiles += [starsmashertools.lib.logfile.LogFile(_path, self)]
+            for _path in starsmashertools.lib.logfile.find(
+                    self.directory, **kwargs
+            ):
+                if starsmashertools.helpers.path.getsize(_path) <= 0: continue
+                self._logfiles += [starsmashertools.lib.logfile.LogFile(
+                    _path, self
+                )]
 
         all_files = [logfile for logfile in self._logfiles]
         if include_joined:
