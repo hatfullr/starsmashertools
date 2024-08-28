@@ -744,8 +744,6 @@ class Output(dict, object):
         import starsmashertools.helpers.warnings
         import math
 
-        import starsmashertools.helpers.gpujob
-
         try:
             import starsmashertools.helpers.gpujob
             has_gpujob = True
