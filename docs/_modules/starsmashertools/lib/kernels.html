@@ -221,8 +221,8 @@
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span>
-            <span class="n">x</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-            <span class="n">h</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+            <span class="n">x</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span><span class="p">,</span>
+            <span class="n">h</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Calculate the value of the kernel function at a given distance ``x`` </span>
@@ -250,26 +250,71 @@
     <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
     <span class="k">def</span> <span class="nf">_scaled</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span>
-            <span class="n">x</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-            <span class="n">h</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+            <span class="n">x</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span><span class="p">,</span>
+            <span class="n">h</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This must be overridden by classes which inherit from this class.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span>
 
+    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+    <span class="k">def</span> <span class="nf">_scaled_dr</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">x</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span><span class="p">,</span>
+            <span class="n">h</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The first derivative of the kernel function :math:`W` with respect to </span>
+<span class="sd">        the particle distance. This method must be implemented in child classes</span>
+<span class="sd">        for methods :meth:`~.dq`\, :meth:`~.dr`\, and :meth:`~.dq`\. The value </span>
+<span class="sd">        returned should be :math:`h^5/r \partial W/\partial r`\.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        x : int, float</span>
+<span class="sd">            The distance from the particle.</span>
+<span class="sd">        </span>
+<span class="sd">        h : int, float</span>
+<span class="sd">            The smoothing length of the particle.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+
+    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+    <span class="k">def</span> <span class="nf">_scaled_dh</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">x</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span><span class="p">,</span>
+            <span class="n">h</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The first derivative of the kernel function :math:`W` with respect to </span>
+<span class="sd">        the smoothing length. This method must be implemented in child classes</span>
+<span class="sd">        for methods :meth:`~.dq`\, :meth:`~.dr`\, and :meth:`~.dq`\. The value</span>
+<span class="sd">        returned should be :math:`h^4 \partial W/\partial h`\.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        x : int, float</span>
+<span class="sd">            The distance from the particle.</span>
+<span class="sd">        </span>
+<span class="sd">        h : int, float</span>
+<span class="sd">            The smoothing length of the particle.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+    
+
 <div class="viewcode-block" id="_BaseKernel.scaled">
 <a class="viewcode-back" href="../../../lib/starsmashertools.lib.kernels.html#starsmashertools.lib.kernels._BaseKernel.scaled">[docs]</a>
     <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
     <span class="nd">@api</span>
-    <span class="k">def</span> <span class="nf">scaled</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-            <span class="n">x</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-            <span class="n">h</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="k">def</span> <span class="nf">scaled</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">x</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span><span class="p">,</span>
+            <span class="n">h</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Calculate the scaled value of the kernel function :math:`W(x,h)h^3` at a</span>
-<span class="sd">        given distance ``x`` and smoothing length ``h``\. If the function is</span>
-<span class="sd">        integrated, returns :math:`h^2 \int W(x,h) dx` instead.</span>
+<span class="sd">        given distance ``x`` and smoothing length ``h``\.</span>
 <span class="sd">        </span>
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -291,6 +336,94 @@
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_ntab</span> <span class="o">*</span> <span class="n">v</span><span class="p">)]</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scaled</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">h</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="_BaseKernel.scaled_dr">
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.kernels.html#starsmashertools.lib.kernels._BaseKernel.scaled_dr">[docs]</a>
+    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="nf">scaled_dr</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">x</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span><span class="p">,</span>
+            <span class="n">h</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="k">if</span> <span class="n">x</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">compact_support</span> <span class="o">*</span> <span class="n">h</span><span class="p">:</span> <span class="k">return</span> <span class="mi">0</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scaled_dr</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">h</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="_BaseKernel.scaled_dh">
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.kernels.html#starsmashertools.lib.kernels._BaseKernel.scaled_dh">[docs]</a>
+    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="nf">scaled_dh</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">x</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span><span class="p">,</span>
+            <span class="n">h</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="k">if</span> <span class="n">x</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">compact_support</span> <span class="o">*</span> <span class="n">h</span><span class="p">:</span> <span class="k">return</span> <span class="mi">0</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scaled_dh</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">h</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="_BaseKernel.dr">
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.kernels.html#starsmashertools.lib.kernels._BaseKernel.dr">[docs]</a>
+    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="nf">dr</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">x</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span><span class="p">,</span>
+            <span class="n">h</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate the unscaled value of the first derivative of the kernel </span>
+<span class="sd">        function with respect to the distance from a particle,</span>
+<span class="sd">        :math:`\partial W/\partial r` for smoothing length :math:`h`\.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        x : int, float</span>
+<span class="sd">            The distance from the particle.</span>
+<span class="sd">        </span>
+<span class="sd">        h : int, float</span>
+<span class="sd">            The smoothing length of the particle.</span>
+
+<span class="sd">        See Also</span>
+<span class="sd">        --------</span>
+<span class="sd">        :meth:`~.scaled_dr`</span>
+<span class="sd">        </span>
+<span class="sd">        :meth:`~.dh`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">scaled_dr</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">h</span><span class="p">)</span> <span class="o">*</span> <span class="n">x</span> <span class="o">/</span> <span class="n">h</span><span class="o">**</span><span class="mi">5</span></div>
+
+
+<div class="viewcode-block" id="_BaseKernel.dh">
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.kernels.html#starsmashertools.lib.kernels._BaseKernel.dh">[docs]</a>
+    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="nf">dh</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">x</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span><span class="p">,</span>
+            <span class="n">h</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate the unscaled value of the first derivative of the kernel </span>
+<span class="sd">        function with respect to the smoothing length :math:`h`\,</span>
+<span class="sd">        :math:`\partial W/\partial r` for distance :math:`r` from a particle.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        x : int, float</span>
+<span class="sd">            The distance from the particle.</span>
+<span class="sd">        </span>
+<span class="sd">        h : int, float</span>
+<span class="sd">            The smoothing length of the particle.</span>
+
+<span class="sd">        See Also</span>
+<span class="sd">        --------</span>
+<span class="sd">        :meth:`~.scaled_dh`</span>
+<span class="sd">        </span>
+<span class="sd">        :meth:`~.dr`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">scaled_dh</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">h</span><span class="p">)</span> <span class="o">/</span> <span class="n">h</span><span class="o">**</span><span class="mi">4</span></div>
 
 
 <div class="viewcode-block" id="_BaseKernel.set_integrated">
@@ -361,8 +494,6 @@
 </div>
 
 
-
-
         
 
 <span class="k">class</span> <span class="nc">UniformKernel</span><span class="p">(</span><span class="n">_BaseKernel</span><span class="p">,</span> <span class="nb">object</span><span class="p">):</span>
@@ -376,6 +507,9 @@
             <span class="n">h</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="k">return</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">x</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compact_support</span> <span class="o">*</span> <span class="n">h</span> <span class="k">else</span> <span class="mi">0</span>
+
+    <span class="k">def</span> <span class="nf">_scaled_dr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span> <span class="k">return</span> <span class="mi">0</span>
+    <span class="k">def</span> <span class="nf">_scaled_dh</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span> <span class="k">return</span> <span class="mi">0</span>
 
 
 <span class="k">class</span> <span class="nc">CubicSplineKernel</span><span class="p">(</span><span class="n">_BaseKernel</span><span class="p">,</span> <span class="nb">object</span><span class="p">):</span>
@@ -413,12 +547,21 @@
             <span class="n">x</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span><span class="p">,</span>
             <span class="n">h</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="k">if</span> <span class="n">x</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">compact_support</span> <span class="o">*</span> <span class="n">h</span><span class="p">:</span> <span class="k">return</span> <span class="mi">0</span>
-        
         <span class="n">q</span> <span class="o">=</span> <span class="n">x</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">compact_support</span> <span class="o">*</span> <span class="n">h</span><span class="p">)</span>
-        
         <span class="k">if</span> <span class="n">q</span> <span class="o">&lt;=</span> <span class="mf">0.5</span><span class="p">:</span> <span class="n">v</span> <span class="o">=</span> <span class="mi">6</span> <span class="o">*</span> <span class="n">q</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">q</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
         <span class="k">else</span><span class="p">:</span> <span class="n">v</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">q</span><span class="p">)</span><span class="o">**</span><span class="mi">3</span>
+        <span class="k">return</span> <span class="n">v</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span>
+
+    <span class="k">def</span> <span class="nf">_scaled_dr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span><span class="p">,</span> <span class="n">h</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span><span class="p">):</span>
+        <span class="n">q</span> <span class="o">=</span> <span class="n">x</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">compact_support</span> <span class="o">*</span> <span class="n">h</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">q</span> <span class="o">&lt;=</span> <span class="mf">0.5</span><span class="p">:</span> <span class="n">v</span> <span class="o">=</span> <span class="mi">6</span> <span class="o">*</span> <span class="p">(</span><span class="mi">3</span><span class="o">*</span><span class="n">q</span> <span class="o">-</span> <span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">compact_support</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span> <span class="n">v</span> <span class="o">=</span> <span class="o">-</span><span class="mi">6</span> <span class="o">*</span> <span class="p">(</span><span class="n">q</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">compact_support</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">q</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">v</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span>
+
+    <span class="k">def</span> <span class="nf">_scaled_dh</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span><span class="p">,</span> <span class="n">h</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span><span class="p">):</span>
+        <span class="n">q</span> <span class="o">=</span> <span class="n">x</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">compact_support</span> <span class="o">*</span> <span class="n">h</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">q</span> <span class="o">&lt;=</span> <span class="mf">0.5</span><span class="p">:</span> <span class="n">v</span> <span class="o">=</span> <span class="o">-</span><span class="mi">3</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">q</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="mi">6</span><span class="o">*</span><span class="n">q</span> <span class="o">-</span> <span class="mi">5</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span> <span class="n">v</span> <span class="o">=</span> <span class="o">-</span><span class="mi">6</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="mi">2</span><span class="o">*</span><span class="n">q</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">q</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span>
         <span class="k">return</span> <span class="n">v</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span>
 
 <span class="k">class</span> <span class="nc">WendlandC4Kernel</span><span class="p">(</span><span class="n">_BaseKernel</span><span class="p">,</span> <span class="nb">object</span><span class="p">):</span>
@@ -433,8 +576,15 @@
             <span class="n">h</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="n">q</span> <span class="o">=</span> <span class="n">x</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">compact_support</span> <span class="o">*</span> <span class="n">h</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">q</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span> <span class="k">return</span> <span class="mi">0</span>
         <span class="k">return</span> <span class="mi">495</span><span class="o">/</span><span class="p">(</span><span class="mi">256</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">q</span><span class="p">)</span><span class="o">**</span><span class="mi">6</span><span class="o">*</span><span class="p">(</span><span class="mf">35.</span><span class="o">/</span><span class="mf">3.</span><span class="o">*</span><span class="n">q</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="mi">6</span><span class="o">*</span><span class="n">q</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_scaled_dr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span><span class="p">,</span> <span class="n">h</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span><span class="p">):</span>
+        <span class="n">q</span> <span class="o">=</span> <span class="n">x</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">compact_support</span> <span class="o">*</span> <span class="n">h</span><span class="p">)</span>
+        <span class="k">return</span> <span class="o">-</span><span class="mi">1155</span><span class="o">/</span><span class="p">(</span><span class="mi">32</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">compact_support</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">q</span><span class="p">)</span><span class="o">**</span><span class="mi">5</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="mi">5</span><span class="o">*</span><span class="n">q</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_scaled_dh</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span><span class="p">,</span> <span class="n">h</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span><span class="p">):</span>
+        <span class="n">q</span> <span class="o">=</span> <span class="n">x</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">compact_support</span> <span class="o">*</span> <span class="n">h</span><span class="p">)</span>
+        <span class="k">return</span> <span class="o">-</span><span class="mi">165</span><span class="o">/</span><span class="p">(</span><span class="mi">256</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">q</span><span class="p">)</span><span class="o">**</span><span class="mi">5</span> <span class="o">*</span> <span class="p">(</span><span class="mi">9</span> <span class="o">+</span> <span class="mi">45</span><span class="o">*</span><span class="n">q</span> <span class="o">-</span> <span class="mi">5</span><span class="o">*</span><span class="n">q</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="mi">385</span><span class="o">*</span><span class="n">q</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span>
 </pre></div>
 
            </div>

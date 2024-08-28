@@ -94,6 +94,8 @@
 <li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_flux"><code class="docutils literal notranslate"><span class="pre">Simulation.get_flux()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_kernel"><code class="docutils literal notranslate"><span class="pre">Simulation.get_kernel()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_logfiles"><code class="docutils literal notranslate"><span class="pre">Simulation.get_logfiles()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_nselfgravity"><code class="docutils literal notranslate"><span class="pre">Simulation.get_nselfgravity()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_nusegpus"><code class="docutils literal notranslate"><span class="pre">Simulation.get_nusegpus()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_output"><code class="docutils literal notranslate"><span class="pre">Simulation.get_output()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_output_at_time"><code class="docutils literal notranslate"><span class="pre">Simulation.get_output_at_time()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_output_generator"><code class="docutils literal notranslate"><span class="pre">Simulation.get_output_generator()</span></code></a></li>
@@ -551,6 +553,77 @@ system modification times.</p>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)">list</a></p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.simulation.Simulation.get_nselfgravity">
+<span class="sig-name descname"><span class="pre">get_nselfgravity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">outputs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><span class="pre">list</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.12)"><span class="pre">tuple</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/simulation.html#Simulation.get_nselfgravity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.simulation.Simulation.get_nselfgravity" title="Link to this definition"></a></dt>
+<dd><p>Return the value of <code class="docutils literal notranslate"><span class="pre">nselfgravity</span></code> that StarSmasher had at runtime
+when creating the given output files.</p>
+<p>It can be ambiguous in the StarSmasher outputs whether or not GPUs were
+used, or if only CPUs were used. If GPUs were used, then the value of
+<code class="docutils literal notranslate"><span class="pre">nselfgravity</span></code> given as input is overwritten by
+<code class="docutils literal notranslate"><span class="pre">subroutine</span> <span class="pre">set_nusegpus</span></code>, which comes from file <code class="docutils literal notranslate"><span class="pre">gpu_grav.f</span></code> by
+default. If the user compiled StarSmasher with the <code class="docutils literal notranslate"><span class="pre">cpu</span></code> option in
+‘make’ command, then <code class="docutils literal notranslate"><span class="pre">subroutine</span> <span class="pre">set_nusegpus</span></code> from <code class="docutils literal notranslate"><span class="pre">cpu_grav.f</span></code> is
+used instead. The value of <code class="docutils literal notranslate"><span class="pre">nselfgravity=1</span></code> in <code class="docutils literal notranslate"><span class="pre">gpu_grav.f</span></code>, as
+well as <code class="docutils literal notranslate"><span class="pre">nusegpus=1</span></code>, overwriting any input values.</p>
+<p>Thus, here we check the value of <code class="docutils literal notranslate"><span class="pre">nusegpus</span></code> for each output file using
+<a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_nusegpus" title="starsmashertools.lib.simulation.Simulation.get_nusegpus"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_nusegpus()</span></code></a>. If any have <code class="docutils literal notranslate"><span class="pre">nusegpus=0</span></code>, then we return
+<code class="docutils literal notranslate"><span class="pre">self['nselfgravity']</span></code> for those.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>outputs</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><em>list</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.12)"><em>tuple</em></a><em>, </em><em>None</em><em>, </em><em>default = None</em>) – If not <code class="docutils literal notranslate"><span class="pre">None</span></code>, the value of <code class="docutils literal notranslate"><span class="pre">nusegpus</span></code> for all output files in
+this simulation are returned. Otherwise, only those in the given
+list are returned. The elements of the given list or tuple can be
+either <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, representing file paths,
+<a class="reference internal" href="starsmashertools.lib.output.html#starsmashertools.lib.output.Output" title="starsmashertools.lib.output.Output"><code class="xref py py-class docutils literal notranslate"><span class="pre">Output</span></code></a>, or a mix of the two.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>nselfgravity</strong> – A 1D integer array containing the values of <code class="docutils literal notranslate"><span class="pre">nselfgravity</span></code> from
+the StarSmasher simulation for each provided
+<a class="reference internal" href="starsmashertools.lib.output.html#starsmashertools.lib.output.Output" title="starsmashertools.lib.output.Output"><code class="xref py py-class docutils literal notranslate"><span class="pre">Output</span></code></a>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></a></p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_nusegpus" title="starsmashertools.lib.simulation.Simulation.get_nusegpus"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_nusegpus()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.simulation.Simulation.get_nusegpus">
+<span class="sig-name descname"><span class="pre">get_nusegpus</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">outputs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><span class="pre">list</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.12)"><span class="pre">tuple</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/simulation.html#Simulation.get_nusegpus"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.simulation.Simulation.get_nusegpus" title="Link to this definition"></a></dt>
+<dd><p>Returns the value of <code class="docutils literal notranslate"><span class="pre">nusegpus</span></code> for individual
+<a class="reference internal" href="starsmashertools.lib.output.html#starsmashertools.lib.output.Output" title="starsmashertools.lib.output.Output"><code class="xref py py-class docutils literal notranslate"><span class="pre">Output</span></code></a> objects originating from this simulation. For
+each output file, the log file corresponding to that output file is
+checked for the phrase <code class="docutils literal notranslate"><span class="pre">using</span> <span class="pre">cpus</span> <span class="pre">to</span> <span class="pre">calculate</span> <span class="pre">gravity</span> <span class="pre">w/</span>
+<span class="pre">ngravprocs=</span></code>, as written in <code class="docutils literal notranslate"><span class="pre">init.f</span></code> in StarSmasher. If the phrase
+is present, then <code class="docutils literal notranslate"><span class="pre">nusegpus=0</span></code> for that output file. Otherwise,
+<code class="docutils literal notranslate"><span class="pre">nusegpus=1</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>outputs</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><em>list</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.12)"><em>tuple</em></a><em>, </em><em>None</em><em>, </em><em>default = None</em>) – If not <code class="docutils literal notranslate"><span class="pre">None</span></code>, the value of <code class="docutils literal notranslate"><span class="pre">nusegpus</span></code> for all output files in
+this simulation are returned. Otherwise, only those in the given
+list are returned. The elements of the given list or tuple can be
+either <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, representing file paths,
+<a class="reference internal" href="starsmashertools.lib.output.html#starsmashertools.lib.output.Output" title="starsmashertools.lib.output.Output"><code class="xref py py-class docutils literal notranslate"><span class="pre">Output</span></code></a>, or a mix of the two.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>nusegpus</strong> – A 1D integer array containing the values of <code class="docutils literal notranslate"><span class="pre">nusegpus</span></code> from the
+StarSmasher simulation for each provided <a class="reference internal" href="starsmashertools.lib.output.html#starsmashertools.lib.output.Output" title="starsmashertools.lib.output.Output"><code class="xref py py-class docutils literal notranslate"><span class="pre">Output</span></code></a>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></a></p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_nselfgravity" title="starsmashertools.lib.simulation.Simulation.get_nselfgravity"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_nselfgravity()</span></code></a></p>
+</div>
 </dd></dl>
 
 <dl class="py method">

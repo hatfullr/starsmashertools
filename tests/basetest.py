@@ -102,7 +102,7 @@ class BaseTest(unittest.TestCase, object):
         if cls.__module__ != '__main__': return
         if isArchiveExtracted(): restore_archive()
     
-    def runTest(self, *args, **kwargs):
+    def run(self, *args, **kwargs):
         if hasattr(self, 'tracer'):
             # intercept print functions from trace module
             trace.print = lambda *args, **kwargs: trace_print(
@@ -111,12 +111,12 @@ class BaseTest(unittest.TestCase, object):
                 **kwargs
             )
             ret = self.tracer.runfunc(
-                super(BaseTest, self).runTest,
+                super(BaseTest, self).run,
                 *args,
                 **kwargs
             )
             # Reset print functions in trace module
             trace.print = print
             return ret
-        return super(BaseTest, self).runTest(*args, **kwargs)
+        return super(BaseTest, self).run(*args, **kwargs)
 

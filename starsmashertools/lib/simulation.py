@@ -372,6 +372,10 @@ class Simulation(object):
         nusegpus : :class:`numpy.ndarray`
             A 1D integer array containing the values of ``nusegpus`` from the
             StarSmasher simulation for each provided :class:`~.output.Output`\.
+
+        See Also
+        --------
+        :meth:`~.get_nselfgravity`
         """
         import starsmashertools.lib.logfile
         import starsmashertools.helpers.path
@@ -389,6 +393,54 @@ class Simulation(object):
             except starsmashertools.lib.logfile.LogFile.PhraseNotFoundError:
                 nusegpus[has] = 1
         return nusegpus
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def get_nselfgravity(
+            self,
+            outputs : list | tuple | type(None) = None,
+    ):
+        r"""
+        Return the value of ``nselfgravity`` that StarSmasher had at runtime 
+        when creating the given output files.
+
+        It can be ambiguous in the StarSmasher outputs whether or not GPUs were
+        used, or if only CPUs were used. If GPUs were used, then the value of 
+        ``nselfgravity`` given as input is overwritten by 
+        ``subroutine set_nusegpus``\, which comes from file ``gpu_grav.f`` by
+        default. If the user compiled StarSmasher with the ``cpu`` option in
+        'make' command, then ``subroutine set_nusegpus`` from ``cpu_grav.f`` is
+        used instead. The value of ``nselfgravity=1`` in ``gpu_grav.f``\, as 
+        well as ``nusegpus=1``\, overwriting any input values.
+        
+        Thus, here we check the value of ``nusegpus`` for each output file using
+        :meth:`~.get_nusegpus`\. If any have ``nusegpus=0``\, then we return
+        ``self['nselfgravity']`` for those.
+
+        Other Parameters
+        ----------------
+        outputs : list, tuple, None, default = None
+            If not ``None``\, the value of ``nusegpus`` for all output files in
+            this simulation are returned. Otherwise, only those in the given
+            list are returned. The elements of the given list or tuple can be
+            either :py:class:`str`\, representing file paths,
+            :class:`~.output.Output`\, or a mix of the two.
+        
+        Returns
+        -------
+        nselfgravity : :class:`numpy.ndarray`
+            A 1D integer array containing the values of ``nselfgravity`` from
+            the StarSmasher simulation for each provided 
+            :class:`~.output.Output`\.
+
+        See Also
+        --------
+        :meth:`~.get_nusegpus`
+        """
+        # 0 where CPUs used, 1 where GPUs used
+        nselfgravity = self.get_nusegpus(outputs)
+        nselfgravity[nselfgravity == 0] = self['nselfgravity']
+        return nselfgravity
 
     @api
     def get_kernel(self):

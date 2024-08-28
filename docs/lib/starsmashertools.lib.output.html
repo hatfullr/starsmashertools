@@ -74,6 +74,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.output.Output.get_core_particles"><code class="docutils literal notranslate"><span class="pre">Output.get_core_particles()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.output.Output.get_extents"><code class="docutils literal notranslate"><span class="pre">Output.get_extents()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.output.Output.get_formatted_string"><code class="docutils literal notranslate"><span class="pre">Output.get_formatted_string()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.output.Output.get_gravitational_acceleration"><code class="docutils literal notranslate"><span class="pre">Output.get_gravitational_acceleration()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.output.Output.get_non_core_particles"><code class="docutils literal notranslate"><span class="pre">Output.get_non_core_particles()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.output.Output.items"><code class="docutils literal notranslate"><span class="pre">Output.items()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.output.Output.keys"><code class="docutils literal notranslate"><span class="pre">Output.keys()</span></code></a></li>
@@ -319,6 +320,39 @@ directory.</p>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)">str</a></p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.output.Output.get_gravitational_acceleration">
+<span class="sig-name descname"><span class="pre">get_gravitational_acceleration</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">softening</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nselfgravity</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/output.html#Output.get_gravitational_acceleration"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.output.Output.get_gravitational_acceleration" title="Link to this definition"></a></dt>
+<dd><p>Obtain the gravitational acceleration vectors of each particle in this
+output file. Softening as implemented in StarSmasher is currently not
+supported, but may be supported in future versions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>softening</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><em>bool</em></a><em>, </em><em>default = False</em>) – If <code class="docutils literal notranslate"><span class="pre">False</span></code>, accelerations are calculated using only
+<span class="math notranslate nohighlight">\(\sum_j Gm_j/|\vec{r}_i-\vec{r}_j|^2\)</span>. If <code class="docutils literal notranslate"><span class="pre">True</span></code>, a
+<a class="reference external" href="https://docs.python.org/3/library/exceptions.html#NotImplementedError" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">NotImplementedError</span></code></a> is raised.</p></li>
+<li><p><strong>nselfgravity</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><em>int</em></a><em>, </em><em>None</em><em>, </em><em>default = None</em>) – If <code class="docutils literal notranslate"><span class="pre">0</span></code>, gravity is only calculated to point particles. If <code class="docutils literal notranslate"><span class="pre">1</span></code>,
+gravity is calculated to all particles. If <code class="docutils literal notranslate"><span class="pre">None</span></code>, the value of
+<code class="docutils literal notranslate"><span class="pre">nselfgravity</span></code> from the StarSmasher simulation will be used.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>g</strong> – A 2D array of gravitational acceleration vectors in shape (N,3),
+where N is the number of particles. The result is in cgs units.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></a></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#NotImplementedError" title="(in Python v3.12)"><strong>NotImplementedError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">softening</span> <span class="pre">=</span> <span class="pre">True</span></code>, this error is raised.</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>To obtain the magnitude of the returned vectors, try
+<code class="docutils literal notranslate"><span class="pre">np.sqrt((g**2).sum(axis</span> <span class="pre">=</span> <span class="pre">1))</span></code>.</p>
 </dd></dl>
 
 <dl class="py method">

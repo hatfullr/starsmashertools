@@ -719,7 +719,7 @@ class Output(dict, object):
         -------
         g : :class:`numpy.ndarray`
             A 2D array of gravitational acceleration vectors in shape (N,3), 
-            where N is the number of particles.
+            where N is the number of particles. The result is in cgs units.
 
         Raises
         ------
@@ -731,20 +731,51 @@ class Output(dict, object):
         To obtain the magnitude of the returned vectors, try 
         ``np.sqrt((g**2).sum(axis = 1))``\.
         """
+        import starsmashertools
+        from starsmashertools.lib.units import constants
+        import starsmashertools.helpers.warnings
+        
 
-        if nselfgravity is None: nselfgravity = self.simulation['nselfgravity']
-
+        if nselfgravity is None:
+            nselfgravity = self.simulation.get_nselfgravity([self])[0]
+        
         ntot = self['ntot']
         if nselfgravity == 0:
-            jlower = ntot
-            
+            jlower = ntot - 1
+            if self['u'][jlower] != 0:
+                raise starsmashertools.StarSmasherError('last particle not a point particle?')
 
         jupper = ntot
-            
+
+        xyz = np.column_stack((
+            self['x'] * float(self.simulation.units['x']),
+            self['y'] * float(self.simulation.units['y']),
+            self['z'] * float(self.simulation.units['z']),
+        ))
+        m = self['am'] * float(self.simulation.units['am'])
         if softening:
             raise NotImplementedError("Gravitational softening is not supported in this version of starsmashertools")
-        else:
-            g = np.zeros((ntot, 3))
+
+        g = np.zeros((ntot, 3))
+        # Ignore annoying divide-by-zero warnings
+        starsmashertools.helpers.warnings.filterwarnings(action = 'ignore')
+        for i in range(ntot):
+            if i == ntot - 1: jlower = 0 # so any last point particle interacts with everything
+
+            if nselfgravity == 1: jlower = i
+
+            mj = m[jlower:jupper]
+            offset = xyz[jlower:jupper] - xyz[i]
+            r2 = (offset**2).sum(axis = 1)
+            
+            dg = (mj / r2**(3./2.))[:,None] * offset
+            dg[r2 == 0] = 0
+            dgsum = dg.sum(axis = 0)
+            g[i] += dgsum
+            g[jlower:jupper] -= dg*(m[i]/mj)[:,None]
+        starsmashertools.helpers.warnings.resetwarnings()
+        return g * float(constants['G'])
+                    
             
         
 

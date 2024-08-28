@@ -176,7 +176,22 @@ np.sum(am*u)
     def test_grav_accels(self):
         output = self.simulation.get_output(0)
 
-        print(output.get_gravitational_acceleration(softening = False))
+        g = output.get_gravitational_acceleration(softening = False)
+        
+        expected = {
+            0  : ( 7734.75835735,  3527.35086023,   593.50571955),
+            1  : ( 8013.23910703,   921.00194358,  3228.35186091),
+            -2 : (-8478.51410502,  -443.83140321,   666.40552241),
+            -1 : (-8478.51410502,   443.83140321,  -666.40552241),
+        }
+
+        for index, value in expected.items():
+            for v1, v2, axis in zip(g[index], value, ['x','y','z']):
+                self.assertAlmostEqual(
+                    v1, v2,
+                    msg = 'index = %d, axis = %s' % (index, axis),
+                )
+
             
 if __name__ == "__main__":
     unittest.main(failfast=True)

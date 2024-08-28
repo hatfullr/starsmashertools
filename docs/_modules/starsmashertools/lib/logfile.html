@@ -188,32 +188,47 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="n">i0</span><span class="p">:</span><span class="n">i1</span><span class="p">]</span></div>
 
 
-    <span class="c1"># Return a list of boolean values of the same length as &#39;outputfiles&#39;, where</span>
-    <span class="c1"># an element is &#39;True&#39; if it is included in this LogFile.</span>
 <div class="viewcode-block" id="LogFile.has_output_files">
 <a class="viewcode-back" href="../../../lib/starsmashertools.lib.logfile.html#starsmashertools.lib.logfile.LogFile.has_output_files">[docs]</a>
     <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="nf">has_output_files</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span>
-            <span class="n">filenames</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+            <span class="n">paths</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
     <span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a list of boolean values of the same length as ``paths``, where</span>
+<span class="sd">        an element is ``True`` if it is included in this LogFile.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        paths : list, tuple, :class:`numpy.ndarray`</span>
+<span class="sd">            The file paths to check.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        list</span>
+<span class="sd">            A list of boolean values with the same length as ``paths``\, where</span>
+<span class="sd">            elements are ``True`` if this log file contains the output file at</span>
+<span class="sd">            the corresponding path in ``paths``\. Otherwise, that element is</span>
+<span class="sd">            ``False``\.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="kn">import</span> <span class="nn">starsmashertools.helpers.path</span>
         
         <span class="n">first_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_first_output_file</span><span class="p">(</span><span class="n">throw_error</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
         <span class="n">last_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_last_output_file</span><span class="p">(</span><span class="n">throw_error</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
         
         <span class="c1"># This is only going to work with out*.sph files</span>
-        <span class="k">def</span> <span class="nf">get_filenum</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
-            <span class="n">filename</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
-            <span class="k">if</span> <span class="s1">&#39;out&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">filename</span><span class="p">:</span>
+        <span class="k">def</span> <span class="nf">get_filenum</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+            <span class="n">basename</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s1">&#39;out&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">basename</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;has_output_files only works with files of type out*.sph&quot;</span><span class="p">)</span>
-            <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">filename</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;out&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;.sph&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">))</span>
+            <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">basename</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;out&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;.sph&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">))</span>
         
         <span class="n">start_num</span> <span class="o">=</span> <span class="n">get_filenum</span><span class="p">(</span><span class="n">first_file</span><span class="p">)</span>
         <span class="n">stop_num</span> <span class="o">=</span> <span class="n">get_filenum</span><span class="p">(</span><span class="n">last_file</span><span class="p">)</span>
 
-        <span class="n">nums</span> <span class="o">=</span> <span class="p">[</span><span class="n">get_filenum</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span> <span class="k">for</span> <span class="n">filename</span> <span class="ow">in</span> <span class="n">filenames</span><span class="p">]</span>
+        <span class="n">nums</span> <span class="o">=</span> <span class="p">[</span><span class="n">get_filenum</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">paths</span><span class="p">]</span>
         <span class="k">return</span> <span class="p">[</span><span class="n">num</span> <span class="o">&gt;=</span> <span class="n">start_num</span> <span class="ow">and</span> <span class="n">num</span> <span class="o">&lt;=</span> <span class="n">stop_num</span> <span class="k">for</span> <span class="n">num</span> <span class="ow">in</span> <span class="n">nums</span><span class="p">]</span></div>
 
     

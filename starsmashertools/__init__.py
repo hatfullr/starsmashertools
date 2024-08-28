@@ -857,6 +857,14 @@ def report(simulations : list | tuple):
     return starsmashertools.lib.report.Report(simulations)
 
 
+class StarSmasherError(Exception):
+    r"""
+    This error will have an identical message to one found in the StarSmasher
+    source code.
+    """
+    @api
+    def __init__(self, *args, **kwargs): # Defined just to add to documentation
+        return super(StarSmasherError, self).__init__(*args, **kwargs)
 
 
 
