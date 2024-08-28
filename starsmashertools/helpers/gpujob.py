@@ -24,7 +24,10 @@ def is_device_available(index : int):
     bool
         ``True`` if the device is available, ``False`` otherwise.
     """
-    return len(list(get_locks(index))) == 0
+    import starsmashertools.helpers.path
+    from starsmashertools import LOCK_DIRECTORY
+    path = starsmashertools.helpers.path.join(LOCK_DIRECTORY, 'GPU' + str(index))
+    return not starsmashertools.helpers.path.exists(path)
 
 
 try:
@@ -63,7 +66,7 @@ try:
                 if kernel is None:
                     raise ValueError("Argument 'kernel' must have a value when the implementing class of a GPUJob does not implement a function called 'kernel'")
                 self.kernel = kernel
-            self.lock = None
+            self.device = None
 
         @property
         def outputs(self): return self._outputs
@@ -89,36 +92,39 @@ try:
             """
             import starsmashertools.helpers.file
             from starsmashertools import LOCK_DIRECTORY
+            import starsmashertools.helpers.path
             import time
-
-            if self.lock is not None:
-                raise Exception("The GPUJob has already locked a GPU. Call release_device() first.")
+            
+            if self.device is not None:
+                raise Exception("The GPUJob has already device. Call release_device() first.")
             
             # Wait for an available GPU
-            device_index = -1
-            while device_index == -1:
+            self.device = -1
+            while self.device == -1:
                 for i, device in enumerate(cuda.gpus):
                     if not is_device_available(i): continue
                     cuda.select_device(i)
-                    device_index = i
+                    self.device = i
                     break
                 time.sleep(1.e-2)
             # Lock the GPU
-            self.lock = starsmashertools.helpers.file.Lock(
-                'GPU' + str(device_index), 'w'
-            )
-            self.lock.path = starsmashertools.helpers.path.join(
-                LOCK_DIRECTORY,
-                starsmashertools.helpers.path.basename(self.lock.path),
-            )
-            self.lock.lock()
-            
+            with open(
+                    starsmashertools.helpers.path.join(
+                        LOCK_DIRECTORY, 'GPU' + str(self.device),
+                    ),
+                    'x',
+            ) as f:
+                f.write(' ')
+        
 
         def release_device(self):
-            if self.lock is None:
-                raise Exception("Cannot release a device because this GPUJob never locked a device")
-            self.lock.unlock()
-            self.lock = None
+            import starsmashertools.helpers.path
+            path = starsmashertools.helpers.path.join(
+                LOCK_DIRECTORY, 'GPU' + str(device_index)
+            )
+            if starsmashertools.helpers.path.exists(path):
+                starsmashertools.helpers.path.remove(path)
+            self.device = None
             cuda.close()
             
         @starsmashertools.helpers.argumentenforcer.enforcetypes
