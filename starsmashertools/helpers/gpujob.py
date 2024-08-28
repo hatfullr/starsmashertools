@@ -45,12 +45,12 @@ try:
 
         def __init__(
                 self,
-                inputs : list | tuple,
-                outputs : list | tuple,
+                inputs : list | tuple = [],
+                outputs : list | tuple = [],
                 kernel : typing.Callable | type(None) = None,
         ):
             self.inputs = inputs
-            self.outputs = outputs
+            if outputs: self.outputs = outputs
             if hasattr(self, 'kernel') and kernel is not None:
                 raise ValueError("Argument 'kernel' cannot be None when the implementing class of a GPUJob already implements a function called 'kernel'")
             if not hasattr(self, 'kernel'):
@@ -198,6 +198,8 @@ try:
 
             if output.simulation['nkernel'] not in [0, 1, 2]:
                 raise NotImplementedError("nkernel '%s' is not supported" % str(output.simulation['nkernel']))
+
+            super(GravitationalPotentialEnergies, self).__init__()
 
             units = output.simulation.units
             ntot = len(output['x'])
