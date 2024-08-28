@@ -2,12 +2,6 @@ import starsmashertools.preferences
 from starsmashertools.preferences import Pref
 import typing
 
-def get_locks(index : int):
-    import starsmashertools.helpers.path
-    from starsmashertools import LOCK_DIRECTORY
-    for entry in starsmashertools.helpers.path.listdir(LOCK_DIRECTORY):
-        if entry == 'GPU' + str(index):
-            yield starsmashertools.helpers.path.join(LOCK_DIRECTORY, entry)
 
 def is_device_available(index : int):
     r"""
@@ -119,8 +113,9 @@ try:
 
         def release_device(self):
             import starsmashertools.helpers.path
+            from starsmashertools import LOCK_DIRECTORY
             path = starsmashertools.helpers.path.join(
-                LOCK_DIRECTORY, 'GPU' + str(device_index)
+                LOCK_DIRECTORY, 'GPU' + str(self.device),
             )
             if starsmashertools.helpers.path.exists(path):
                 starsmashertools.helpers.path.remove(path)
