@@ -62,6 +62,20 @@ try:
                 return_duration : bool = False,
         ):
             import starsmashertools
+            import time
+            
+            # Wait for an available GPU
+            GPU_found = False
+            while not GPU_found:
+                for i, device in enumerate(cuda.gpus):
+                    cuda.select_device(i)
+                    if not cuda.is_available():
+                        cuda.close()
+                        continue
+                    GPU_found = True
+                    break
+                time.sleep(1.e-2)
+                
             
             # Send inputs to the GPU
             inputs = []
