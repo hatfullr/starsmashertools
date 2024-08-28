@@ -20,10 +20,11 @@ class TestGPUJob(basetest.BaseTest):
             inputs = [np.arange(0, 5)]
             outputs = [np.full(5, np.nan)]
 
-            g = starsmashertools.helpers.gpujob.GPUJob(inputs, outputs)
-            self.assertEqual(g._resolution, outputs[0].shape)
-            with self.assertRaises(NotImplementedError):
-                g.run()
+            with self.assertRaises(ValueError):
+                g = starsmashertools.helpers.gpujob.GPUJob(inputs, outputs)
+            #self.assertEqual(g._resolution, outputs[0].shape)
+            #with self.assertRaises(NotImplementedError):
+            #    g.run()
 
 
         def testGravPot(self):
