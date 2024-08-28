@@ -734,7 +734,6 @@ class Output(dict, object):
         import starsmashertools
         from starsmashertools.lib.units import constants
         import starsmashertools.helpers.warnings
-        
 
         if nselfgravity is None:
             nselfgravity = self.simulation.get_nselfgravity([self])[0]

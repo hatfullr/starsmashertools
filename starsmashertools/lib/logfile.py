@@ -135,6 +135,13 @@ class LogFile(object):
         
         first_file = self.get_first_output_file(throw_error=False)
         last_file = self.get_last_output_file(throw_error=False)
+
+        if first_file is None and last_file is None:
+            # No output files written in this log file
+            return [False]*len(paths)
+        if None in [first_file, last_file]:
+            raise Exception("Exactly one of first_file or last_file were None. This should never be possible.")
+            
         
         # This is only going to work with out*.sph files
         def get_filenum(path):

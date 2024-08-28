@@ -231,6 +231,13 @@
         
         <span class="n">first_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_first_output_file</span><span class="p">(</span><span class="n">throw_error</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
         <span class="n">last_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_last_output_file</span><span class="p">(</span><span class="n">throw_error</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">first_file</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">last_file</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># No output files written in this log file</span>
+            <span class="k">return</span> <span class="p">[</span><span class="kc">False</span><span class="p">]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">paths</span><span class="p">)</span>
+        <span class="k">if</span> <span class="kc">None</span> <span class="ow">in</span> <span class="p">[</span><span class="n">first_file</span><span class="p">,</span> <span class="n">last_file</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Exactly one of first_file or last_file were None. This should never be possible.&quot;</span><span class="p">)</span>
+            
         
         <span class="c1"># This is only going to work with out*.sph files</span>
         <span class="k">def</span> <span class="nf">get_filenum</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
