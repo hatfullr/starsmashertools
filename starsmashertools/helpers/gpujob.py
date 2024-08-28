@@ -111,6 +111,7 @@ try:
                             'x',
                     ) as f:
                         f.write(' ')
+                    break
                 except FileExistsError:
                     continue
         
