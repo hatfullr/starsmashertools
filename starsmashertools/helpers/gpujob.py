@@ -1,5 +1,6 @@
 import starsmashertools.preferences
 from starsmashertools.preferences import Pref
+import typing
 
 try:
     import starsmashertools.helpers.argumentenforcer
@@ -27,16 +28,22 @@ try:
                 self,
                 inputs : list | tuple,
                 outputs : list | tuple,
+                kernel : typing.Callable | type(None) = None,
         ):
             self.inputs = inputs
             self.outputs = outputs
-
+            if hasattr(self, 'kernel') and kernel is not None:
+                raise ValueError("Argument 'kernel' cannot be None when the implementing class of a GPUJob already implements a function called 'kernel'")
+            if not hasattr(self, 'kernel'):
+                if kernel is None:
+                    raise ValueError("Argument 'kernel' must have a value when the implementing class of a GPUJob does not implement a function called 'kernel'")
+                self.kernel = kernel
 
         @property
         def outputs(self): return self._outputs
         @outputs.setter
         def outputs(self, value):
-            if not value:
+            if len(value) == 0:
                 raise ValueError("Invalid output arguments: '%s'" % str(value))
 
             self._outputs = value

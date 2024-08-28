@@ -175,8 +175,9 @@ np.sum(am*u)
 
     def test_grav_accels(self):
         output = self.simulation.get_output(0)
-
+        
         g = output.get_gravitational_acceleration(softening = False)
+        print(g)
         
         expected = {
             0  : ( 7734.75835735,  3527.35086023,   593.50571955),

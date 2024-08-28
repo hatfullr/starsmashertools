@@ -20,6 +20,14 @@ try:
 except ImportError:
     has_matplotlib = False
 
+try:
+    import numba
+    from numba import cuda
+    has_gpu = True
+except ImportError:
+    has_gpu = False
+    
+
 @starsmashertools.preferences.use
 class Output(dict, object):
     r"""
@@ -734,6 +742,15 @@ class Output(dict, object):
         import starsmashertools
         from starsmashertools.lib.units import constants
         import starsmashertools.helpers.warnings
+        import math
+
+        import starsmashertools.helpers.gpujob
+
+        try:
+            import starsmashertools.helpers.gpujob
+            has_gpujob = True
+        except:
+            has_gpujob = False
 
         if nselfgravity is None:
             nselfgravity = self.simulation.get_nselfgravity([self])[0]
@@ -754,33 +771,78 @@ class Output(dict, object):
         m = self['am'] * float(self.simulation.units['am'])
         if softening:
             raise NotImplementedError("Gravitational softening is not supported in this version of starsmashertools")
-
         g = np.zeros((ntot, 3))
-        def do(i, jlower, jupper):
-            mj = m[jlower:jupper]
-            offset = xyz[jlower:jupper] - xyz[i]
-            r2 = (offset**2).sum(axis = 1)
-            
-            dg = (mj / r2**(3./2.))[:,None] * offset
-            dg[r2 == 0] = 0
-            dgsum = dg.sum(axis = 0)
-            g[i] += dgsum
-            g[jlower:jupper] -= dg*(m[i]/mj)[:,None]
+        
+        if has_gpu and has_gpujob:
+            @cuda.jit('void(float64[:], float64[:], float64[:], float64[:], float64[:], float64[:], float64[:], int32)')
+            def kernel(gx, gy, gz, m, x, y, z, N):
+                i = cuda.grid(1)
+                if i < N:
+                    ami = m[i]
+                    xi = x[i]
+                    yi = y[i]
+                    zi = z[i]
+                    gx[i] = 0
+                    gy[i] = 0
+                    gz[i] = 0
+                    for j in range(N):
+                        if i == j: continue
+                        dx = x[j] - xi
+                        dy = y[j] - yi
+                        dz = z[j] - zi
+                        r2 = dx * dx + dy * dy + dz * dz
+                        
+                        rinv = 1. / math.sqrt(r2)
+                        mrinv3 = m[j] * rinv * rinv * rinv
 
-        # Ignore annoying divide-by-zero warnings
-        starsmashertools.helpers.warnings.filterwarnings(action = 'ignore')
+                        cuda.atomic.add(gx, i, mrinv3 * dx)
+                        cuda.atomic.add(gy, i, mrinv3 * dy)
+                        cuda.atomic.add(gz, i, mrinv3 * dz)
+
+            gx = np.zeros(ntot)
+            gy = np.zeros(ntot)
+            gz = np.zeros(ntot)
+            job = starsmashertools.helpers.gpujob.GPUJob(
+                [m, xyz[:,0], xyz[:,1], xyz[:,2], ntot],
+                [gx, gy, gz],
+                kernel = kernel,
+            )
+            g = np.column_stack(job.run())
         
-        # This loop is written nearly identically to StarSmasher's cpu_grav.f,
-        # except that the calculations are vectorized.
-        if nselfgravity:
-            for i in range(ntot):
-                do(i, i, jupper)
         else:
-            for i in range(ntot - 1):
-                do(i, jlower, jupper)
-            do(ntot - 1, 0, jupper) # so any last point particle interacts with everything
-        
-        starsmashertools.helpers.warnings.resetwarnings()
+            def do(i, jlower, jupper):
+                mj = m[jlower:jupper]
+                offset = xyz[jlower:jupper] - xyz[i] # \vec{r}_j - \vec{r}_i
+                r3 = ((offset**2).sum(axis = 1))**1.5 # |\vec{r}_{ij}|^3
+                dg = (mj / r3)[:,None] * offset # Gm_j \vec{r}_{ij} / |\vec{r}_{ij}|^3
+                dg[r3 == 0] = 0
+                g[i] += dg.sum(axis = 0)
+                g[jlower:jupper] -= dg*(m[i]/mj)[:,None]
+
+            # Ignore annoying divide-by-zero warnings
+            starsmashertools.helpers.warnings.filterwarnings(action = 'ignore')
+
+            # This loop is written nearly identically to StarSmasher's
+            # cpu_grav.f, except that the calculations are vectorized.
+            
+            if nselfgravity:
+                for i in range(ntot):
+                    do(i, i + 1, jupper)
+            else:
+                for i in range(ntot - 1):
+                    do(i, jlower, jupper)
+                do(ntot - 1, 0, jupper) # so any last point particle interacts with everything
+            
+            """ This can be helpful for sanity checking
+            for i in range(ntot):
+                for j in range(ntot):
+                    if i == j: continue
+                    offset = xyz[j] - xyz[i]
+                    r3 = (offset**2).sum()**1.5 
+                    g[i] += m[j] * offset / r3
+            """
+
+            starsmashertools.helpers.warnings.resetwarnings()
         return g * float(constants['G'])
                     
             
