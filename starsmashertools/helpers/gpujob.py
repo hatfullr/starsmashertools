@@ -68,7 +68,8 @@ try:
         def __del__(self, *args, **kwargs):
             # Ensure the device we used is released, if we used one
             self.release_device()
-            return super(GPUJob, self).__del__(*args, **kwargs)
+            if hasattr(super(GPUJob, self), '__del__'):
+                return super(GPUJob, self).__del__(*args, **kwargs)
 
         @property
         def outputs(self): return self._outputs
