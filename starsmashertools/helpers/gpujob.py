@@ -1,7 +1,7 @@
 import starsmashertools.preferences
 from starsmashertools.preferences import Pref
 import typing
-
+import atexit
 
 def is_device_available(index : int):
     r"""
@@ -60,7 +60,15 @@ try:
                 if kernel is None:
                     raise ValueError("Argument 'kernel' must have a value when the implementing class of a GPUJob does not implement a function called 'kernel'")
                 self.kernel = kernel
-            self.device = None
+            self._lockfile = None
+
+            # Just in case for some reason the device isn't released 
+            atexit.register(self.release_device)
+
+        def __del__(self, *args, **kwargs):
+            # Ensure the device we used is released, if we used one
+            self.release_device()
+            return super(GPUJob, self).__del__(*args, **kwargs)
 
         @property
         def outputs(self): return self._outputs
@@ -89,42 +97,37 @@ try:
             import starsmashertools.helpers.path
             import time
             
-            if self.device is not None:
+            if self._lockfile is not None:
                 raise Exception("The GPUJob has already device. Call release_device() first.")
             
             # Wait for an available GPU
-            self.device = -1
-            while self.device == -1:
-                for i, device in enumerate(cuda.gpus):
+            device = -1
+            while device == -1:
+                for i in range(len(cuda.gpus)):
                     if not is_device_available(i): continue
                     cuda.select_device(i)
-                    self.device = i
+                    device = i
                     break
                 time.sleep(1.e-2)
+            
             # Lock the GPU
+            self._lockfile = starsmashertools.helpers.path.join(
+                LOCK_DIRECTORY, 'GPU' + str(device),
+            )
+            
             while True:
                 try:
-                    with open(
-                            starsmashertools.helpers.path.join(
-                                LOCK_DIRECTORY, 'GPU' + str(self.device),
-                            ),
-                            'x',
-                    ) as f:
+                    with open(self._lockfile, 'x') as f:
                         f.write(' ')
                     break
-                except FileExistsError:
-                    continue
-        
+                except FileExistsError: continue
 
         def release_device(self):
             import starsmashertools.helpers.path
-            from starsmashertools import LOCK_DIRECTORY
-            path = starsmashertools.helpers.path.join(
-                LOCK_DIRECTORY, 'GPU' + str(self.device),
-            )
-            if starsmashertools.helpers.path.exists(path):
-                starsmashertools.helpers.path.remove(path)
-            self.device = None
+            if self._lockfile is None: return
+            if starsmashertools.helpers.path.exists(self._lockfile):
+                starsmashertools.helpers.path.remove(self._lockfile)
+            self._lockfile = None
             cuda.close()
             
         @starsmashertools.helpers.argumentenforcer.enforcetypes
