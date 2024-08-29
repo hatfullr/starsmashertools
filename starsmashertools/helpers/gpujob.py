@@ -65,12 +65,6 @@ try:
             # Just in case for some reason the device isn't released 
             atexit.register(self.release_device)
 
-        def __del__(self, *args, **kwargs):
-            # Ensure the device we used is released, if we used one
-            self.release_device()
-            if hasattr(super(GPUJob, self), '__del__'):
-                return super(GPUJob, self).__del__(*args, **kwargs)
-
         @property
         def outputs(self): return self._outputs
         @outputs.setter
