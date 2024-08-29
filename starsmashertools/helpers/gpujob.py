@@ -2,6 +2,8 @@ import starsmashertools.preferences
 from starsmashertools.preferences import Pref
 import typing
 import atexit
+import signal
+import sys
 
 def is_device_available(index : int):
     r"""
@@ -44,6 +46,16 @@ try:
         def __new__(cls, *args, **kwargs):
             instance = super(GPUJob, cls).__new__(cls)
             instance._outputs = []
+            
+            def kill_handler(*args, **kwargs):
+                instance.release_device()
+                sys.exit()
+            
+            # Run this function when the code quits
+            atexit.register(instance.release_device)
+            signal.signal(signal.SIGINT, kill_handler)
+            signal.signal(signal.SIGTERM, kill_handler)
+            
             return instance
 
         def __init__(
@@ -61,9 +73,6 @@ try:
                     raise ValueError("Argument 'kernel' must have a value when the implementing class of a GPUJob does not implement a function called 'kernel'")
                 self.kernel = kernel
             self._lockfile = None
-
-            # Just in case for some reason the device isn't released 
-            atexit.register(self.release_device)
 
         @property
         def outputs(self): return self._outputs
@@ -116,7 +125,7 @@ try:
                         f.write(' ')
                     break
                 except FileExistsError: continue
-
+        
         def release_device(self):
             import starsmashertools.helpers.path
             if self._lockfile is None: return
