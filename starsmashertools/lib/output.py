@@ -800,12 +800,12 @@ class Output(dict, object):
             gx = np.zeros(ntot)
             gy = np.zeros(ntot)
             gz = np.zeros(ntot)
-            job = starsmashertools.helpers.gpujob.GPUJob(
+            with starsmashertools.helpers.gpujob.GPUJob(
                 [m, xyz[:,0], xyz[:,1], xyz[:,2], ntot],
                 [gx, gy, gz],
                 kernel = kernel,
-            )
-            g = np.column_stack(job.run())
+            ) as result:
+                g = np.column_stack(result)
         
         else:
             def do(i, jlower, jupper):

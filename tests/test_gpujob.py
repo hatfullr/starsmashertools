@@ -37,9 +37,9 @@ class TestGPUJob(basetest.BaseTest):
             g = starsmashertools.helpers.gpujob.GravitationalPotentialEnergies(
                 output,
             )
-            result = g.run()
-            for r1, r2 in zip(result, output['grpot']):
-                self.assertAlmostEqual(r1, r2)
+            with g as result:
+                for r1, r2 in zip(result, output['grpot']):
+                    self.assertAlmostEqual(r1, r2)
         
 
         

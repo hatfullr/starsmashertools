@@ -46,14 +46,10 @@ try:
         def __new__(cls, *args, **kwargs):
             instance = super(GPUJob, cls).__new__(cls)
             instance._outputs = []
-            
-            def kill_handler(*args, **kwargs):
-                sys.exit()
+            instance._lockfile = None
             
             # Run this function when the code quits
             atexit.register(instance.release_device)
-            signal.signal(signal.SIGINT, kill_handler)
-            signal.signal(signal.SIGTERM, kill_handler)
             
             return instance
 
@@ -71,7 +67,14 @@ try:
                 if kernel is None:
                     raise ValueError("Argument 'kernel' must have a value when the implementing class of a GPUJob does not implement a function called 'kernel'")
                 self.kernel = kernel
-            self._lockfile = None
+        
+        def __enter__(self):
+            self.get_device()
+            return self.run()
+
+        def __exit__(self, *args, **kwargs):
+            self.release_device()
+            
 
         @property
         def outputs(self): return self._outputs
@@ -139,60 +142,68 @@ try:
                 threadsperblock : int = Pref('run.threadsperblock'),
                 return_duration : bool = False,
         ):
+            r"""
+            Using this method outright is unsafe, as it doesn't guarantee that
+            the GPUs will be unlocked when processing is finished. Instead, use
+            the context manager:
+            
+            .. code-block:: python
+
+                with GPUJob(inputs, outputs) as result:
+                    print(result)
+            
+            
+            """
             import starsmashertools
-            
-            self.get_device()
+            import starsmashertools.helpers.warnings
 
-            try:
-                # Send inputs to the GPU
-                inputs = []
-                for i in range(len(self.inputs)):
-                    if hasattr(self.inputs[i], '__iter__') and not isinstance(self.inputs[i], str):
-                        inputs += [cuda.to_device(np.ascontiguousarray(self.inputs[i]))]
-                    else:
-                        inputs += [self.inputs[i]]
+            if self._lockfile is None:
+                raise Exception("Cannot run a GPUJob that has not first obtained a device. Use the context manager instead.")
 
-                # Send outputs to the GPU
-                outputs = []
-                for i in range(len(self.outputs)):
-                    outputs += [cuda.to_device(np.ascontiguousarray(self.outputs[i]))]
-
-                # Determine allocation sizes on the GPU
-                if len(self._resolution) == 1:
-                    blockspergrid = self._resolution[0] // threadsperblock + 1
+            # Send inputs to the GPU
+            inputs = []
+            for i in range(len(self.inputs)):
+                if hasattr(self.inputs[i], '__iter__') and not isinstance(self.inputs[i], str):
+                    inputs += [cuda.to_device(np.ascontiguousarray(self.inputs[i]))]
                 else:
-                    ndims = len(self._resolution)
-                    threadsperblock = np.full(ndims, int(threadsperblock**(1./ndims)), dtype=int)
+                    inputs += [self.inputs[i]]
 
-                    blockspergrid = np.array(self._resolution, dtype=int) // threadsperblock + 1
-                    threadsperblock = tuple(threadsperblock)
-                    blockspergrid = tuple(blockspergrid)
+            # Send outputs to the GPU
+            outputs = []
+            for i in range(len(self.outputs)):
+                outputs += [cuda.to_device(np.ascontiguousarray(self.outputs[i]))]
 
-                start_time = time.time()
+            # Determine allocation sizes on the GPU
+            if len(self._resolution) == 1:
+                blockspergrid = self._resolution[0] // threadsperblock + 1
+            else:
+                ndims = len(self._resolution)
+                threadsperblock = np.full(ndims, int(threadsperblock**(1./ndims)), dtype=int)
 
-                # These warnings are caused by under-utilizing the device, which we
-                # typically don't have any control over
-                warnings.filterwarnings(
-                    action='ignore',
-                    category=numba.core.errors.NumbaPerformanceWarning,
-                )
-                self.kernel[blockspergrid, threadsperblock](
-                    *outputs,
-                    *inputs,
-                )
-                warnings.resetwarnings()
-                cuda.synchronize()
+                blockspergrid = np.array(self._resolution, dtype=int) // threadsperblock + 1
+                threadsperblock = tuple(threadsperblock)
+                blockspergrid = tuple(blockspergrid)
 
-                for i in range(len(outputs)):
-                    outputs[i] = outputs[i].copy_to_host()
+            start_time = time.time()
 
-                if len(outputs) == 1: outputs = outputs[0]
-            except Exception as e:
-                self.release_device()
-                raise e
+            # These warnings are caused by under-utilizing the device, which we
+            # typically don't have any control over
+            starsmashertools.helpers.warnings.filterwarnings(
+                action='ignore',
+                category=numba.core.errors.NumbaPerformanceWarning,
+            )
+            self.kernel[blockspergrid, threadsperblock](
+                *outputs,
+                *inputs,
+            )
+            starsmashertools.helpers.warnings.resetwarnings()
+            cuda.synchronize()
 
-            self.release_device()
-            
+            for i in range(len(outputs)):
+                outputs[i] = outputs[i].copy_to_host()
+
+            if len(outputs) == 1: outputs = outputs[0]
+        
             if return_duration:
                 return outputs, time.time() - start_time
             return outputs
