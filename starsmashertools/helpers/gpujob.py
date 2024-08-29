@@ -48,7 +48,6 @@ try:
             instance._outputs = []
             
             def kill_handler(*args, **kwargs):
-                instance.release_device()
                 sys.exit()
             
             # Run this function when the code quits
