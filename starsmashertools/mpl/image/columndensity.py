@@ -29,6 +29,7 @@ class ColumnDensity(matplotlib.image.AxesImage, object):
             kernel_function : str | starsmashertools.lib.kernels._BaseKernel | type(None) = None,
             units : str | dict | starsmashertools.lib.units.Units | type(None) = None,
             view_units : dict | starsmashertools.lib.units.Units | type(None) = None,
+            view_box : list | tuple | np.ndarray | type(None) = None,
             log : bool = False,
             parallel : bool = True,
             gpus : bool = True,
@@ -85,6 +86,11 @@ class ColumnDensity(matplotlib.image.AxesImage, object):
             values. If ``key_or_array`` is a :py:class:`str` then the units of
             the image values will be set to ``view_units[key_or_array]`` if 
             there is no key ``'A'`` in ``view_units``\.
+        
+        view_box : list, tuple, :class:`numpy.ndarray`\, None, default = None
+            Extents outside of which particles will not be rendered. If 
+            ``None``\, then the view box is set to the current axis limits. 
+            Values are in units of ``view_units``\.
 
         interpolation : str, None, default = 'none'
             See :meth:`matplotlib.image.AxesImage.__init__`\.
@@ -128,6 +134,7 @@ class ColumnDensity(matplotlib.image.AxesImage, object):
         self.kernel_function = kernel_function
         self.units = units
         self.view_units = view_units
+        self.view_box = view_box
         self.log = log
         self.gpus = gpus
         self.parallel = parallel
@@ -174,6 +181,10 @@ class ColumnDensity(matplotlib.image.AxesImage, object):
         # update ax.dataLim, and, if autoscaling, set viewLim
         # to tightly fit the image, regardless of dataLim.
         #self.set_extent(self.get_extent())
+
+        if self.view_box is None:
+            self.view_box = list(self.axes.get_xlim()) + list(self.axes.get_ylim())
+        self.view_box = np.asarray(self.view_box)
         
         self.calculate()
         
@@ -208,6 +219,41 @@ class ColumnDensity(matplotlib.image.AxesImage, object):
         
         A *= m / rho
         r = self.kernel_function.compact_support * h
+
+
+        physical_extent = np.asarray([None,None,None,None])
+        view_extent = copy.deepcopy(physical_extent)
+        
+        if resolution is None:
+            dx, dy = None, None
+        else:
+            if self.view_box is None:
+                physical_extent = np.asarray([
+                    np.amin(x - r), np.amax(x + r),
+                    np.amin(y - r), np.amax(y + r),
+                ])
+                view_extent = copy.deepcopy(physical_extent)
+                if self.view_units is not None:
+                    if 'x' in self.view_units:
+                        view_extent[0] /= self.view_units['x']
+                        view_extent[1] /= self.view_units['x']
+                    if 'y' in self.view_units:
+                        view_extent[2] /= self.view_units['y']
+                        view_extent[3] /= self.view_units['y']
+            else:
+                view_extent = copy.deepcopy(self.view_box)
+                physical_extent = copy.deepcopy(self.view_box)
+                if self.view_units is not None:
+                    if 'x' in self.view_units:
+                        physical_extent[0] *= self.view_units['x']
+                        physical_extent[1] *= self.view_units['x']
+                    if 'y' in self.view_units:
+                        physical_extent[2] *= self.view_units['y']
+                        physical_extent[3] *= self.view_units['y']
+            dx = (physical_extent[1] - physical_extent[0]) / resolution[0]
+            dy = (physical_extent[3] - physical_extent[2]) / resolution[1]
+        
+        """
         
         if resolution is None:
             dx, dy, xmin, xmax, ymin, ymax = None, None, None, None, None, None
@@ -235,7 +281,7 @@ class ColumnDensity(matplotlib.image.AxesImage, object):
                     view_extent[2] /= self.view_units['y']
                 if view_extent[3] is not None:
                     view_extent[3] /= self.view_units['y']
-        
+        """
         return {
             'ntot' : self.output['ntot'],
             'resolution' : resolution,
