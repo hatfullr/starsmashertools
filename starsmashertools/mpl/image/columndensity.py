@@ -29,7 +29,7 @@ class ColumnDensity(matplotlib.image.AxesImage, object):
             kernel_function : str | starsmashertools.lib.kernels._BaseKernel | type(None) = None,
             units : str | dict | starsmashertools.lib.units.Units | type(None) = None,
             view_units : dict | starsmashertools.lib.units.Units | type(None) = None,
-            view_box : list | tuple | np.ndarray | type(None) = None,
+            view_box : str | list | tuple | np.ndarray | type(None) = 'fit',
             log : bool = False,
             parallel : bool = True,
             gpus : bool = True,
@@ -87,10 +87,13 @@ class ColumnDensity(matplotlib.image.AxesImage, object):
             the image values will be set to ``view_units[key_or_array]`` if 
             there is no key ``'A'`` in ``view_units``\.
         
-        view_box : list, tuple, :class:`numpy.ndarray`\, None, default = None
+        view_box : str, list, tuple, :class:`numpy.ndarray`\, None, default = 'fit'
             Extents outside of which particles will not be rendered. If 
             ``None``\, then the view box is set to the current axis limits. 
-            Values are in units of ``view_units``\.
+            Values are in units of ``view_units``\. If a `str` is given it can
+            be either ``'none'``\, which has the same effect as ``None``\, or
+            ``'fit'``\, which sets the view box to the same physical extents as
+            the particles, but in units of ``view_units``\.
 
         interpolation : str, None, default = 'none'
             See :meth:`matplotlib.image.AxesImage.__init__`\.
@@ -182,12 +185,27 @@ class ColumnDensity(matplotlib.image.AxesImage, object):
         # to tightly fit the image, regardless of dataLim.
         #self.set_extent(self.get_extent())
 
-        if self.view_box is None:
-            self.view_box = list(self.axes.get_xlim()) + list(self.axes.get_ylim())
-        self.view_box = np.asarray(self.view_box)
+        if (self.view_box is None or
+            (isinstance(self.view_box, str) and self.view_box.lower() == 'none')
+            ):
+            self.view_box = np.asarray(
+                list(self.axes.get_xlim()) + list(self.axes.get_ylim())
+            )
+        if isinstance(self.view_box, str):
+            if self.view_box.lower() == 'fit':
+                self.view_box = np.asarray([
+                    np.nanmin(x - r), np.nanmax(x + r),
+                    np.nanmin(y - r), np.nanmax(y + r),
+                ])
+                if self.view_units is not None:
+                    if 'x' in self.view_units:
+                        self.view_box[:2] /= float(self.view_units['x'])
+                    if 'y' in self.view_units:
+                        self.view_box[2:] /= float(self.view_units['y'])
+            else:
+                raise ValueError("Keyword argument 'view_box' must be either 'none' or 'fit' if a str is given, not '%s'" % self.view_box)
         
         self.calculate()
-        
         self.axes.add_image(self)
 
     def get_image_properties(self):
@@ -235,53 +253,24 @@ class ColumnDensity(matplotlib.image.AxesImage, object):
                 view_extent = copy.deepcopy(physical_extent)
                 if self.view_units is not None:
                     if 'x' in self.view_units:
-                        view_extent[0] /= self.view_units['x']
-                        view_extent[1] /= self.view_units['x']
+                        view_extent[0] /= float(self.view_units['x'])
+                        view_extent[1] /= float(self.view_units['x'])
                     if 'y' in self.view_units:
-                        view_extent[2] /= self.view_units['y']
-                        view_extent[3] /= self.view_units['y']
+                        view_extent[2] /= float(self.view_units['y'])
+                        view_extent[3] /= float(self.view_units['y'])
             else:
                 view_extent = copy.deepcopy(self.view_box)
                 physical_extent = copy.deepcopy(self.view_box)
                 if self.view_units is not None:
                     if 'x' in self.view_units:
-                        physical_extent[0] *= self.view_units['x']
-                        physical_extent[1] *= self.view_units['x']
+                        physical_extent[0] *= float(self.view_units['x'])
+                        physical_extent[1] *= float(self.view_units['x'])
                     if 'y' in self.view_units:
-                        physical_extent[2] *= self.view_units['y']
-                        physical_extent[3] *= self.view_units['y']
+                        physical_extent[2] *= float(self.view_units['y'])
+                        physical_extent[3] *= float(self.view_units['y'])
             dx = (physical_extent[1] - physical_extent[0]) / resolution[0]
             dy = (physical_extent[3] - physical_extent[2]) / resolution[1]
         
-        """
-        
-        if resolution is None:
-            dx, dy, xmin, xmax, ymin, ymax = None, None, None, None, None, None
-        else:
-            xmin = np.amin(x - r)
-            xmax = np.amax(x + r)
-            ymin = np.amin(y - r)
-            ymax = np.amax(y + r)
-            #xmin, xmax, ymin, ymax = self.get_extent()
-            #xmin, xmax = self.axes.get_xlim()
-            #ymin, ymax = self.axes.get_ylim()
-            dx = (xmax - xmin) / resolution[0]
-            dy = (ymax - ymin) / resolution[1]
-
-        physical_extent = np.asarray([xmin, xmax, ymin, ymax])
-        view_extent = copy.deepcopy(physical_extent)
-        if self.view_units is not None:
-            if 'x' in self.view_units:
-                if view_extent[0] is not None:
-                    view_extent[0] /= self.view_units['x']
-                if view_extent[1] is not None:
-                    view_extent[1] /= self.view_units['x']
-            if 'y' in self.view_units:
-                if view_extent[2] is not None:
-                    view_extent[2] /= self.view_units['y']
-                if view_extent[3] is not None:
-                    view_extent[3] /= self.view_units['y']
-        """
         return {
             'ntot' : self.output['ntot'],
             'resolution' : resolution,
