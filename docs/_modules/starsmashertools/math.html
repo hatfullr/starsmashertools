@@ -914,8 +914,6 @@
 <span class="sd">    particle :math:`i`\. This method is significantly slower.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">class</span> <span class="nc">MaxItersExceededError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span> <span class="k">pass</span>
-    
 <div class="viewcode-block" id="EffGravPot.__init__">
 <a class="viewcode-back" href="../../math/starsmashertools.math.html#starsmashertools.math.EffGravPot.__init__">[docs]</a>
     <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
@@ -991,7 +989,7 @@
 <span class="sd">        ----------</span>
 <span class="sd">        positions : list, tuple, :class:`numpy.ndarray`</span>
 <span class="sd">            The x, y, and z positions to get the effective gravitational </span>
-<span class="sd">            potential at. Must have a shape (n,3).</span>
+<span class="sd">            potential at. Must have a shape (N,3).</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -1000,14 +998,19 @@
 <span class="sd">            The result is an array of magnitudes with the same length as ``x``\,</span>
 <span class="sd">            ``y``\, and ``z``\.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">positions</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)):</span>
-            <span class="n">positions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="n">positions</span><span class="p">])</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">positions</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+            <span class="n">positions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">positions</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">positions</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Argument &#39;positions&#39; must be a 2D array&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">positions</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Argument &#39;positions&#39; must have shape (N,3), not </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="n">positions</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
+        
         <span class="n">result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">positions</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
-        <span class="n">rcom2s</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">positions</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_com</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">rcom2s</span> <span class="o">=</span> <span class="p">((</span><span class="n">positions</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_com</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
         
         <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">pos</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">positions</span><span class="p">):</span>
-            <span class="n">r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">pos</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">xyz</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span>
-            <span class="n">result</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">m</span> <span class="o">/</span> <span class="n">r</span><span class="p">)</span>
+            <span class="n">r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(((</span><span class="n">pos</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">xyz</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+            <span class="n">result</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">m</span> <span class="o">/</span> <span class="n">r</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
         <span class="k">return</span> <span class="n">result</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">G</span> <span class="o">-</span> <span class="mf">0.5</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">_omega</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">rcom2s</span></div>
 
 
@@ -1123,9 +1126,13 @@
 
             <span class="c1"># For debugging:</span>
             <span class="c1">#import matplotlib.pyplot as plt</span>
+            <span class="c1">#import time</span>
             <span class="c1">#fig, ax = plt.subplots()</span>
             <span class="c1">#ax.plot(samples[:,0], phis)</span>
             <span class="c1">#plt.show()</span>
+            <span class="c1">#while plt.fignum_exists(fig.number):</span>
+            <span class="c1">#    fig.canvas.flush_events()</span>
+            <span class="c1">#    time.sleep(1.e-3)</span>
             <span class="c1">#quit()</span>
 
             <span class="c1"># Split the searched area into 3 segments, containing the 3 Lagrange</span>
@@ -1145,6 +1152,7 @@
                     <span class="n">decreasing</span> <span class="o">=</span> <span class="kc">False</span>
 
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">boundaries</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">3</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">boundaries</span><span class="p">)</span>
                 <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Failed to split the region into 3 distinct groups: number of boundaries found != 3&quot;</span><span class="p">)</span>
             
             <span class="n">idx1</span> <span class="o">=</span> <span class="n">boundaries</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">phis</span><span class="p">[</span><span class="n">boundaries</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="n">boundaries</span><span class="p">[</span><span class="mi">1</span><span class="p">]])</span>
@@ -1228,8 +1236,111 @@
         <span class="c1"># TODO: find Lagrange points 4 and 5</span>
                 
         <span class="k">return</span> <span class="n">ret</span></div>
+
+
+
+<div class="viewcode-block" id="EffGravPot.get_contours">
+<a class="viewcode-back" href="../../math/starsmashertools.math.html#starsmashertools.math.EffGravPot.get_contours">[docs]</a>
+    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="nf">get_contours</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">values</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+            <span class="n">extent</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+            <span class="n">z</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.</span><span class="p">,</span>
+            <span class="n">resolution</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">),</span>
+            <span class="n">name</span> <span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;threaded&#39;</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Obtain vertices of equipotential contour lines for the given effective</span>
+<span class="sd">        gravitational potential values. This method requires </span>
+<span class="sd">        `contourpy &lt;https://pypi.org/project/contourpy/&gt;`_ to be installed.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        values : list, tuple, :class:`numpy.ndarray`</span>
+<span class="sd">            An array of effective gravitational potential values for which to</span>
+<span class="sd">            find the lines of equipotential.</span>
+
+<span class="sd">        Other Parameters</span>
+<span class="sd">        ----------------</span>
+<span class="sd">        extent : list, tuple, :class:`numpy.ndarray`</span>
+<span class="sd">            The physical extents in which to search for the equipotential lines.</span>
+<span class="sd">            Together with ``zplane`` and ``resolution``\, this defines the grid</span>
+<span class="sd">            of positions that will be searched.</span>
+
+<span class="sd">        z : int, float, default = 0.</span>
+<span class="sd">            The :math:`z` location of the search grid.</span>
+
+<span class="sd">        resolution : list, tuple, :class:`numpy.ndarray`\, default = (100, 100)</span>
+<span class="sd">            The grid resolution on which to calculate the contour lines.</span>
+
+<span class="sd">        name : str, default = &#39;threaded&#39;</span>
+<span class="sd">            The ``name`` keyword argument to </span>
+<span class="sd">            :func:`contourpy.contour_generator`\. This sets the algorithm used.</span>
+<span class="sd">        </span>
+<span class="sd">        **kwargs</span>
+<span class="sd">            Other keyword arguments are passed directly to </span>
+<span class="sd">            :func:`contourpy.contour_generator`\.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        lines : list</span>
+<span class="sd">            A list of vertices as :class:`numpy.ndarray` each with shape (N,2).</span>
+<span class="sd">            The length of the list is the same as the length of ``values``\.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        :py:class:`ImportError`</span>
+<span class="sd">            If contourpy is not installed, an :py:class:`ImportError` is raised.</span>
+
+<span class="sd">        :py:class:`ValueError`</span>
+<span class="sd">            If ``name`` is ``mpl2005`` or ``mpl2014``\, or if ``line_type`` in</span>
+<span class="sd">            ``**kwargs`` is not ``&#39;Separate&#39;``\.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="kn">import</span> <span class="nn">contourpy</span>
+        <span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">e</span><span class="o">.</span><span class="n">message</span> <span class="o">+=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Try &quot;pip install contourpy&quot;, or visit https://contourpy.readthedocs.io/en/v1.3.0/installation.html for installation instructions.&#39;</span>
+            <span class="k">raise</span> <span class="n">e</span>
+
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;mpl2014&#39;</span><span class="p">,</span> <span class="s1">&#39;mpl2005&#39;</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Algorithm &#39;mpl2014&#39; is not supported&quot;</span><span class="p">)</span>
+
+        <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;line_type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;line_type&#39;</span><span class="p">,</span> <span class="s1">&#39;Separate&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;line_type&#39;</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;Separate&#39;</span><span class="p">,</span> <span class="n">contourpy</span><span class="o">.</span><span class="n">LineType</span><span class="o">.</span><span class="n">Separate</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Keyword argument &#39;line_type&#39; must be &#39;Separate&#39;, not &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;line_type&#39;</span><span class="p">]))</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">extent</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">extent</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">resolution</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">extent</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">extent</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">resolution</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+
+        <span class="n">positions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">((</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">resolution</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">resolution</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">resolution</span><span class="p">),</span> <span class="n">z</span><span class="p">)</span>
+        <span class="p">))</span>
+        
+        <span class="n">generator</span> <span class="o">=</span> <span class="n">contourpy</span><span class="o">.</span><span class="n">contour_generator</span><span class="p">(</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="p">,</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="n">y</span><span class="p">,</span>
+            <span class="n">z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">swapaxes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">positions</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">resolution</span><span class="p">),</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span>
+        <span class="p">)</span>
+        
+        <span class="n">lines</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">values</span><span class="p">:</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">vertices</span> <span class="ow">in</span> <span class="n">generator</span><span class="o">.</span><span class="n">lines</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+                <span class="n">line</span> <span class="o">+=</span> <span class="n">vertices</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+                <span class="n">line</span> <span class="o">+=</span> <span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">]]</span>
+            <span class="n">lines</span> <span class="o">+=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">line</span><span class="p">)]</span>
+
+        <span class="k">return</span> <span class="n">lines</span></div>
 </div>
 
+        
 </pre></div>
 
            </div>

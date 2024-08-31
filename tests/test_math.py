@@ -169,7 +169,31 @@ class TestEffGravPot(basetest.BaseTest):
             ax.legend()
             plt.show()
 
+    def test_get_contours(self):
+        points = self.g.get_lagrange()
+        mmax = np.nanmax(points)
+        mmin = np.nanmin(points)
 
+        d = (mmax - mmin) * 10
+
+        phi = self.g.get(points)
+        
+        lines = self.g.get_contours(
+            phi,
+            [mmin - d, mmax + d, mmin - d, mmax + d],
+            resolution = (1000, 1000),
+        )
+
+        """
+        import matplotlib.pyplot as plt
+        plt.scatter(self.g.xyz[:,0][0], self.g.xyz[:,1][0], color = 'k', s = 100)
+        plt.scatter(self.g.xyz[:,0][1], self.g.xyz[:,1][1], color = 'r', s = 100)
+        for i, line in enumerate(lines):
+            if len(line) == 0: continue
+            plt.plot(line[:,0], line[:,1], label = str(i))
+        plt.legend()
+        plt.show()
+        """
 
 
 

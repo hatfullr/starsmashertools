@@ -766,8 +766,6 @@ class EffGravPot(object):
     particle :math:`i`\. This method is significantly slower.
     """
 
-    class MaxItersExceededError(Exception): pass
-    
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def __init__(
@@ -838,7 +836,7 @@ class EffGravPot(object):
         ----------
         positions : list, tuple, :class:`numpy.ndarray`
             The x, y, and z positions to get the effective gravitational 
-            potential at. Must have a shape (n,3).
+            potential at. Must have a shape (N,3).
 
         Returns
         -------
@@ -847,14 +845,19 @@ class EffGravPot(object):
             The result is an array of magnitudes with the same length as ``x``\,
             ``y``\, and ``z``\.
         """
-        if not isinstance(positions[0], (list, tuple, np.ndarray)):
-            positions = np.asarray([positions])
+        if isinstance(positions, (list, tuple)):
+            positions = np.asarray(positions)
+        if len(positions.shape) != 2:
+            raise ValueError("Argument 'positions' must be a 2D array")
+        if positions.shape[1] != 3:
+            raise ValueError("Argument 'positions' must have shape (N,3), not %s" % str(positions.shape))
+        
         result = np.full(len(positions), np.nan)
-        rcom2s = np.sum((positions - self._com)**2, axis = -1)
+        rcom2s = ((positions - self._com)**2).sum(axis = -1)
         
         for i, pos in enumerate(positions):
-            r = np.sqrt(np.sum((pos - self.xyz)**2, axis = -1))
-            result[i] = -np.sum(self.m / r)
+            r = np.sqrt(((pos - self.xyz)**2).sum(axis = -1))
+            result[i] = -(self.m / r).sum()
         return result * self.G - 0.5*self._omega**2*rcom2s
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
@@ -964,9 +967,13 @@ class EffGravPot(object):
 
             # For debugging:
             #import matplotlib.pyplot as plt
+            #import time
             #fig, ax = plt.subplots()
             #ax.plot(samples[:,0], phis)
             #plt.show()
+            #while plt.fignum_exists(fig.number):
+            #    fig.canvas.flush_events()
+            #    time.sleep(1.e-3)
             #quit()
 
             # Split the searched area into 3 segments, containing the 3 Lagrange
@@ -986,6 +993,7 @@ class EffGravPot(object):
                     decreasing = False
 
             if len(boundaries) != 3:
+                print(boundaries)
                 raise Exception("Failed to split the region into 3 distinct groups: number of boundaries found != 3")
             
             idx1 = boundaries[0] + np.argmin(phis[boundaries[0]:boundaries[1]])
@@ -1069,3 +1077,103 @@ class EffGravPot(object):
         # TODO: find Lagrange points 4 and 5
                 
         return ret
+
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def get_contours(
+            self,
+            values : list | tuple | np.ndarray,
+            extent : list | tuple | np.ndarray,
+            z : int | float = 0.,
+            resolution : list | tuple | np.ndarray = (100, 100),
+            name : str = 'threaded',
+            **kwargs
+    ):
+        r"""
+        Obtain vertices of equipotential contour lines for the given effective
+        gravitational potential values. This method requires 
+        `contourpy <https://pypi.org/project/contourpy/>`_ to be installed.
+        
+        Parameters
+        ----------
+        values : list, tuple, :class:`numpy.ndarray`
+            An array of effective gravitational potential values for which to
+            find the lines of equipotential.
+
+        Other Parameters
+        ----------------
+        extent : list, tuple, :class:`numpy.ndarray`
+            The physical extents in which to search for the equipotential lines.
+            Together with ``zplane`` and ``resolution``\, this defines the grid
+            of positions that will be searched.
+
+        z : int, float, default = 0.
+            The :math:`z` location of the search grid.
+
+        resolution : list, tuple, :class:`numpy.ndarray`\, default = (100, 100)
+            The grid resolution on which to calculate the contour lines.
+
+        name : str, default = 'threaded'
+            The ``name`` keyword argument to 
+            :func:`contourpy.contour_generator`\. This sets the algorithm used.
+        
+        **kwargs
+            Other keyword arguments are passed directly to 
+            :func:`contourpy.contour_generator`\.
+
+        Returns
+        -------
+        lines : list
+            A list of vertices as :class:`numpy.ndarray` each with shape (N,2).
+            The length of the list is the same as the length of ``values``\.
+
+        Raises
+        ------
+        :py:class:`ImportError`
+            If contourpy is not installed, an :py:class:`ImportError` is raised.
+
+        :py:class:`ValueError`
+            If ``name`` is ``mpl2005`` or ``mpl2014``\, or if ``line_type`` in
+            ``**kwargs`` is not ``'Separate'``\.
+        """
+        try:
+            import contourpy
+        except ImportError as e:
+            e.message += '\nTry "pip install contourpy", or visit https://contourpy.readthedocs.io/en/v1.3.0/installation.html for installation instructions.'
+            raise e
+
+        if name in ['mpl2014', 'mpl2005']:
+            raise ValueError("Algorithm 'mpl2014' is not supported")
+
+        kwargs['line_type'] = kwargs.get('line_type', 'Separate')
+        if kwargs['line_type'] not in ['Separate', contourpy.LineType.Separate]:
+            raise ValueError("Keyword argument 'line_type' must be 'Separate', not '%s'" % str(kwargs['line_type']))
+
+        x = np.linspace(extent[0], extent[1], resolution[0])
+        y = np.linspace(extent[2], extent[3], resolution[1])
+
+        positions = np.column_stack((
+            np.repeat(x, resolution[1]),
+            np.tile(y, resolution[0]),
+            np.full(np.prod(resolution), z)
+        ))
+        
+        generator = contourpy.contour_generator(
+            x = x,
+            y = y,
+            z = np.swapaxes(self.get(positions).reshape(resolution), 0, 1),
+            name = name,
+            **kwargs
+        )
+        
+        lines = []
+        for value in values:
+            line = []
+            for vertices in generator.lines(value):
+                line += vertices.tolist()
+                line += [[np.nan, np.nan]]
+            lines += [np.asarray(line)]
+
+        return lines
+        
