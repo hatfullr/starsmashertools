@@ -334,7 +334,7 @@ class FluxFinder(object):
         flux_tot = starsmashertools.lib.units.Unit(flux_tot, 'g/s*s*s')
         
         # Finish the ltot calculations
-        cell_area = self.dx * self.dy * self.units['x'] * self.units['y']
+        cell_area = self.dx * self.dy * self.length_scale**2
         ltot = 4 * cell_area * flux_tot
         
         self.spectrum.finalize()
