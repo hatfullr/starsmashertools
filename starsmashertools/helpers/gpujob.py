@@ -1,5 +1,30 @@
 import starsmashertools.preferences
 from starsmashertools.preferences import Pref
+import typing
+import atexit
+import signal
+import sys
+
+def is_device_available(index : int):
+    r"""
+    Returns ``True`` if there are no :class:`~.GPUJob` objects currently running
+    on the device of index ``index``\.
+
+    Parameters
+    ----------
+    index : int
+        The device index.
+
+    Returns
+    -------
+    bool
+        ``True`` if the device is available, ``False`` otherwise.
+    """
+    import starsmashertools.helpers.path
+    from starsmashertools import LOCK_DIRECTORY
+    path = starsmashertools.helpers.path.join(LOCK_DIRECTORY, 'GPU' + str(index))
+    return not starsmashertools.helpers.path.exists(path)
+
 
 try:
     import starsmashertools.helpers.argumentenforcer
@@ -15,28 +40,47 @@ try:
 
     @starsmashertools.preferences.use
     class GPUJob(object):
-        """
+        r"""
         A base class for utilizing the GPU.
         """
         def __new__(cls, *args, **kwargs):
             instance = super(GPUJob, cls).__new__(cls)
             instance._outputs = []
+            instance._lockfile = None
+            
+            # Run this function when the code quits
+            atexit.register(instance.release_device)
+            
             return instance
 
         def __init__(
                 self,
-                inputs : list | tuple,
-                outputs : list | tuple,
+                inputs : list | tuple = [],
+                outputs : list | tuple = [],
+                kernel : typing.Callable | type(None) = None,
         ):
             self.inputs = inputs
-            self.outputs = outputs
+            if outputs: self.outputs = outputs
+            if hasattr(self, 'kernel') and kernel is not None:
+                raise ValueError("Argument 'kernel' cannot be None when the implementing class of a GPUJob already implements a function called 'kernel'")
+            if not hasattr(self, 'kernel'):
+                if kernel is None:
+                    raise ValueError("Argument 'kernel' must have a value when the implementing class of a GPUJob does not implement a function called 'kernel'")
+                self.kernel = kernel
+        
+        def __enter__(self):
+            self.get_device()
+            return self.run()
 
+        def __exit__(self, *args, **kwargs):
+            self.release_device()
+            
 
         @property
         def outputs(self): return self._outputs
         @outputs.setter
         def outputs(self, value):
-            if not value:
+            if len(value) == 0:
                 raise ValueError("Invalid output arguments: '%s'" % str(value))
 
             self._outputs = value
@@ -48,14 +92,74 @@ try:
                 elif self._outputs[i].shape != self._resolution:
                     raise Exception("Outputs must all have the same shape")
 
+        def get_device(self):
+            r"""
+            Block until there exists a GPU without a GPUJob running on it. When
+            a device becomes available, record in data/locks that the GPU is
+            being used.
+            """
+            import starsmashertools.helpers.file
+            from starsmashertools import LOCK_DIRECTORY
+            import starsmashertools.helpers.path
+            import time
+            
+            if self._lockfile is not None:
+                raise Exception("The GPUJob has already device. Call release_device() first.")
+            
+            # Wait for an available GPU
+            device = -1
+            while device == -1:
+                for i in range(len(cuda.gpus)):
+                    if not is_device_available(i): continue
+                    cuda.select_device(i)
+                    device = i
+                    break
+                time.sleep(1.e-2)
+            
+            # Lock the GPU
+            self._lockfile = starsmashertools.helpers.path.join(
+                LOCK_DIRECTORY, 'GPU' + str(device),
+            )
+            
+            while True:
+                try:
+                    with open(self._lockfile, 'x') as f:
+                        f.write(' ')
+                    break
+                except FileExistsError: continue
+        
+        def release_device(self):
+            import starsmashertools.helpers.path
+            if self._lockfile is None: return
+            if starsmashertools.helpers.path.exists(self._lockfile):
+                starsmashertools.helpers.path.remove(self._lockfile)
+            self._lockfile = None
+            cuda.close()
+            
         @starsmashertools.helpers.argumentenforcer.enforcetypes
         def run(
                 self,
                 threadsperblock : int = Pref('run.threadsperblock'),
                 return_duration : bool = False,
         ):
-            import starsmashertools
+            r"""
+            Using this method outright is unsafe, as it doesn't guarantee that
+            the GPUs will be unlocked when processing is finished. Instead, use
+            the context manager:
             
+            .. code-block:: python
+
+                with GPUJob(inputs, outputs) as result:
+                    print(result)
+            
+            
+            """
+            import starsmashertools
+            import starsmashertools.helpers.warnings
+
+            if self._lockfile is None:
+                raise Exception("Cannot run a GPUJob that has not first obtained a device. Use the context manager instead.")
+
             # Send inputs to the GPU
             inputs = []
             for i in range(len(self.inputs)):
@@ -82,12 +186,9 @@ try:
 
             start_time = time.time()
 
-            if not hasattr(self, "kernel"):
-                raise NotImplementedError("You must define a method named 'kernel'")
-
             # These warnings are caused by under-utilizing the device, which we
             # typically don't have any control over
-            warnings.filterwarnings(
+            starsmashertools.helpers.warnings.filterwarnings(
                 action='ignore',
                 category=numba.core.errors.NumbaPerformanceWarning,
             )
@@ -95,14 +196,14 @@ try:
                 *outputs,
                 *inputs,
             )
-            warnings.resetwarnings()
+            starsmashertools.helpers.warnings.resetwarnings()
             cuda.synchronize()
 
             for i in range(len(outputs)):
                 outputs[i] = outputs[i].copy_to_host()
 
             if len(outputs) == 1: outputs = outputs[0]
-
+        
             if return_duration:
                 return outputs, time.time() - start_time
             return outputs
@@ -124,13 +225,15 @@ try:
                 self,
                 output : starsmashertools.lib.output.Output,
         ):
-            """
+            r"""
             Given a `~.Output` object, calculate the gravitational potential
             energies of each particle.
             """
 
             if output.simulation['nkernel'] not in [0, 1, 2]:
                 raise NotImplementedError("nkernel '%s' is not supported" % str(output.simulation['nkernel']))
+
+            super(GravitationalPotentialEnergies, self).__init__()
 
             units = output.simulation.units
             ntot = len(output['x'])

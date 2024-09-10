@@ -3,7 +3,7 @@ import copy
 import starsmashertools.helpers.argumentenforcer
 
 class Midpoint(object):
-    """
+    r"""
     This class provides an abstract way of implementing the midpoint method.
     A list of objects is specified at instantiation and a set of criteria are
     provided in :meth:`~.set_criteria`\. Each criterion is a function which 
@@ -16,7 +16,7 @@ class Midpoint(object):
             self,
             objects : list | tuple,
     ):
-        """
+        r"""
         The constructor for Midpoint class.
 
         Parameters
@@ -31,7 +31,7 @@ class Midpoint(object):
         self._criteria = None
         
     def set_criteria(self, low, equal, high):
-        """
+        r"""
         Set the criterion functions to be evaluated by the :meth:`~.get` method.
         Each criterion is passed as input to the :class:`~.Midpoint.Criteria` 
         class constructor.
@@ -70,7 +70,7 @@ class Midpoint(object):
             max_iter : int = 10000,
             return_index : bool = False,
     ):
-        """
+        r"""
         Obtain the object at the midpoint. We work with 3 indices, ``low``\, 
         ``mid``\, and ``high``\, where each index points to one of the objects 
         in the list of objects specified in the constructor. The value of 
@@ -154,12 +154,12 @@ class Midpoint(object):
         raise RuntimeError("Reached maximum iterations in '%s'" % str(self))
 
     class Criteria(object):
-        """
+        r"""
         A class representing the criterion functions used in the
         :class:`~.Midpoint` class.
         """
         class Result(enum.Enum):
-            """
+            r"""
             An enumerator used to identify the result of the criterion functions
             used in the :class:`~.Midpoint.Criteria` class.
             """
@@ -168,7 +168,7 @@ class Midpoint(object):
             GreaterThan = 3
         
         def __init__(self, low, equal, high):
-            """
+            r"""
             Criteria constructor.
 
             Parameters
@@ -205,7 +205,7 @@ class Midpoint(object):
             self.high = high
 
         def check(self, obj):
-            """
+            r"""
             Check the return values of the ``low``\, ``equal``\, and ``high`` 
             functions given in :meth:`~.set_criteria`\, in that order. The 
             first one to evaluate as `True` returns the return value.

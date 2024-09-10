@@ -216,7 +216,7 @@ def find_all_indices(
         string : str,
         substring : str,
 ):
-    """
+    r"""
     Return a list of indices for all occurrances of a substring.
 
     Parameters
@@ -384,3 +384,72 @@ def get_fortran_variable_types(
             else: result[current_type] += _names
         else: current_type = None
     return result
+
+
+
+
+def is_index_in_literal(
+        string : str,
+        index : int,
+):
+    r"""
+    Returns True if the given index is contained within a string literal in the
+    given string. That is, if the index is within a " " or a ' '. Returns False
+    otherwise.
+    """
+
+    if index in [0, len(string) - 1]: return False
+
+    string_type = None
+    for i, c in enumerate(string[:index]):
+        if c not in ['"', "'"]: continue
+
+        # Ignore escaped quotes
+        nescape = 0
+        for b in string[:i][::-1]:
+            if b != '\\': break
+            nescape += 1
+        if nescape > 0 and nescape%2 == 1: # It is an escape sequence
+            continue
+
+        if string_type is not None and c == string_type:
+            string_type = None
+            continue
+        
+        string_type = c
+
+    # No opened string
+    if string_type is None: return False
+    
+    # A string is opened, so check if it is closed on the other side
+    for i, c in enumerate(string[index+1:]):
+        if c not in ['"', "'"]: continue
+
+        # Ignore escaped quotes
+        nescape = 0
+        for b in string[:i][::-1]:
+            if b != '\\': break
+            nescape += 1
+        if nescape > 0 and nescape%2 == 1: # It is an escape sequence
+            continue
+
+        if string_type is not None and c == string_type:
+            # Yes, it is closed
+            return True
+
+    return False
+
+def strip_inline_comment(
+        line : str,
+        character : str,
+):
+    r"""
+    Remove inline code comments. After the first appearance of ``character``\,
+    provided that ``character`` does not appear within a string literal in 
+    ``line``\.
+    """
+    for i, c in enumerate(line):
+        if c == character:
+            if is_index_in_literal(line, i): continue
+            return line[:i]
+    return line

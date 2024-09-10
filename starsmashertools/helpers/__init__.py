@@ -1,5 +1,5 @@
 def defer_keyboardinterrupt(message : str = "Deferring KeyboardInterrupt. Raise KeyboardInterrupt again to stop execution"):
-    """ For a block of code, finish execution before raising exceptions, unless
+    r""" For a block of code, finish execution before raising exceptions, unless
     an exception is raised which involves something in the block of code. """
     import signal
     import functools

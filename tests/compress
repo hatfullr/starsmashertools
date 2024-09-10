@@ -4,7 +4,6 @@ import zipfile
 # Compresses the contents of all subdirectories in the current working directory
 
 # We need the comments below to identify this part of the file in extract script
-# Start extract static variables
 zipname = 'archive.zip'
 size_identifier = 'uncompressed_size'
 times_identifier = 'times'
@@ -12,7 +11,7 @@ compression_kwargs = {
     'compresslevel' : 9,
     'compression' : zipfile.ZIP_DEFLATED,
 }
-# Stop extract static variables
+
 
 
 def get_gitignore_patterns(filename):
@@ -49,9 +48,6 @@ def get_to_compress():
     if os.path.isfile(gitignore):
         gitignore_patterns = get_gitignore_patterns(gitignore)
 
-    #print(gitignore_patterns)
-    #quit()
-    
     # Only compress files that are in the directories of the current working
     # directory
     directories = []
@@ -72,24 +68,20 @@ def get_to_compress():
             for filename in filenames:
                 path = os.path.join(dirpath, filename)
                 if path in files: continue
-                files += [path]
+                for pattern in gitignore_patterns:
+                    relpath = os.path.relpath(
+                        path,
+                        start = os.path.dirname(gitignore),
+                    )
+                    if fnmatch.fnmatch(relpath, pattern): break
+                else:
+                    files += [path]
     
     return files
 
-# Start extract print_progress
 def print_progress(progress):
-    string = 'progress = %5.1f%%' % progress
-    if progress == 0:
-        print(string)
-    else:
-        print('\033[F', end='') # Go to top of previous line
-        # Clear the line
-        print(' '*len(string))
-        # Return to the start of previous line
-        print('\033[F', end='')
-        # Print the progress
-        print(string)
-# Stop extract print_progress
+    print('\r\033[K\rprogress = %5.1f%%' % progress, flush = True, end = '')
+
 
 def compress(files, verbose):
     import zipfile
@@ -156,7 +148,7 @@ def compress(files, verbose):
                 )
                 compressed += os.path.getsize(_file)
                 if verbose: print_progress(compressed / total * 100)
-
+        if verbose: print()
         # Double check to make sure the zip file does indeed exist
         if not os.path.exists(zipname): raise FileNotFoundError(zipname)
     except:

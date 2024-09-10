@@ -40,7 +40,7 @@ def islink(path):
     return os.path.islink(path)
 
 def getsize(path : str):
-    """
+    r"""
     Return the size, in bytes, of `path`\.
 
     Parameters
@@ -57,7 +57,7 @@ def getsize(path : str):
         address, remote_path = starsmashertools.helpers.ssh.split_address(path)
         result = starsmashertools.helpers.ssh.run_python(
             address,
-            """
+            r"""
 import os
 print(os.path.getsize('%s'))
             """ % remote_path,
@@ -67,7 +67,7 @@ print(os.path.getsize('%s'))
 
 @starsmashertools.helpers.argumentenforcer.enforcetypes
 def get_directory_size(path : str):
-    """Returns the total size of the directory given by `path` in bytes
+    r"""Returns the total size of the directory given by `path` in bytes
     
     Parameters
     ----------
@@ -93,7 +93,7 @@ def realpath(path):
         address, remote_path = starsmashertools.helpers.ssh.split_address(path)
         result = starsmashertools.helpers.ssh.run_python(
             address,
-            """
+            r"""
 import os
 import glob
 path='%s'
@@ -173,6 +173,25 @@ def listdir(directory):
     if starsmashertools.helpers.ssh.isRemote(directory):
         raise NotImplementedError
     return os.listdir(directory)
+
+def find_files(
+        directory,
+        recursive : bool = True,
+        include_symlinks : bool = True,
+):
+    if starsmashertools.helpers.ssh.isRemote(directory):
+        raise NotImplementedError
+    def get(path):
+        with scandir(path) as it:
+            for entry in it:
+                if not include_symlinks and (entry.is_symlink() or entry.is_junction()):
+                    continue
+                if entry.is_dir():
+                    if recursive: yield from get(realpath(entry.path))
+                    continue
+                # Must be a file
+                yield realpath(entry.path)
+    return get(realpath(directory))
 
 def remove(path):
     if starsmashertools.helpers.ssh.isRemote(path):
@@ -276,7 +295,7 @@ def get_src(directory, throw_error=False):
         address, remote_path = starsmashertools.helpers.ssh.split_address(directory)
         result = starsmashertools.helpers.ssh.run_python(
             address,
-            """
+            r"""
 import os
 for obj in os.scandir('%s'):
     if obj.is_dir():

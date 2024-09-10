@@ -28,7 +28,7 @@ def get_all_labels():
 
 @starsmashertools.preferences.use
 class Unit(object):
-    """
+    r"""
     To use string formatters with a Unit, you can either specify the usual
     formatting as integer or float types, i.e., ``'{:5.3f}'``\, or you can
     specify a formatter for both the value and the label, i.e. ``'{:5.3f 6s}'``
@@ -165,10 +165,11 @@ class Unit(object):
             key=lambda x: float('inf') if x.value > threshold else threshold - x.value,
         )
         return possible_results[0]
-
+    
     @api
     def get_conversion_factor(self, new_label, conversions = None):
-        # Convert this Unit into a compatible new Unit
+        r""" Convert this :class:`~.Unit` into a compatible new 
+        :class:`~.Unit` """
         starsmashertools.helpers.argumentenforcer.enforcetypes({
             'new_label' : [str, Unit.Label],
         })
@@ -216,7 +217,7 @@ class Unit(object):
             to : list | tuple | type(None) = None,
             **kwargs
     ):
-        """
+        r"""
         Return a copy of this :class:`~.Unit` converted to a new unit.
         
         Other Parameters
@@ -644,7 +645,7 @@ class Unit(object):
             return ''
 
         def get_base_string(self):
-            """ Return this label's string with all units converted down to the
+            r""" Return this label's string with all units converted down to the
             base units. """
             if Unit.get_conversions() is None: return self.long
 
@@ -672,7 +673,7 @@ class Unit(object):
             return ret
         
         def is_compatible(self, other):
-            """
+            r"""
             Returns `True` if this Label can be safely converted to the other
             Label.
             """
@@ -746,7 +747,41 @@ class Unit(object):
             ) + sorted(
                 [b for b in self.right if b not in self.base],
             )
-        
+
+        def to_latex(self, join = r'\,'):
+            r""" Return a latex representation. """
+            import collections
+            left = collections.OrderedDict()
+            right = collections.OrderedDict()
+            for name in self.left:
+                if name not in left: left[name] = 0
+                left[name] += 1
+            for name in self.right:
+                if name not in right: right[name] = 0
+                right[name] += 1
+
+            replacements = collections.OrderedDict({
+                ' ' : r'\ ',
+                '_' : r'\_',
+                'Rsun' : 'R_\odot',
+                'Msun' : 'M_\odot',
+            })
+                
+            strings = []
+            for name, num in left.items():
+                n = name
+                for replacement in replacements.items():
+                    n = n.replace(*replacement)
+                string = r'\mathrm{%s}' % n
+                if num > 1: string += '^{%d}' % num
+                strings += [string]
+            for name, num in right.items():
+                n = name
+                for replacement in replacements.items():
+                    n = n.replace(*replacement)
+                strings += [(r'\mathrm{%s}' % n) + ('^{-%d}' % num)]
+            return '$%s$' % join.join(strings)
+                
         def __str__(self): return self.short
         def __repr__(self): return self.long
 
@@ -863,7 +898,7 @@ class Unit(object):
         
 @starsmashertools.preferences.use
 class Units(starsmashertools.helpers.readonlydict.ReadOnlyDict, object):
-    """
+    r"""
     This class represents the units which a :class:`~.lib.simulation.Simulation`
     uses, as set in the StarSmasher code.
     """

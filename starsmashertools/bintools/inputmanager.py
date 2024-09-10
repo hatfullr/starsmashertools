@@ -185,7 +185,7 @@ class CursesInput(object):
 
 
 class Session(object):
-    """ Store information about the CLI session. Whenever an InputManager has 
+    r""" Store information about the CLI session. Whenever an InputManager has 
     method :meth:`~.InputManager.get` called, we store the user's input
     whenever we ask them for a keyword (has a default value). The next time we
     ask them for that value, the new default will be their previous response. 
@@ -205,7 +205,7 @@ class Session(object):
         return function.__module__ + '.' + function.__qualname__
 
     class Value(object):
-        """ These are stored in a Session. """
+        r""" These are stored in a Session. """
         def __init__(self, function : typing.Callable | type(None) = None):
             import inspect
             import os
@@ -320,7 +320,7 @@ class Session(object):
 
     @staticmethod
     def update_to_current(session):
-        """ Remove non-exiting keys and functions. """
+        r""" Remove non-exiting keys and functions. """
         import importlib
         new_session = Session(session.values)
         for function_name, val in session.values.items():

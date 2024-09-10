@@ -91,7 +91,7 @@
 <a class="viewcode-back" href="../../../lib/starsmashertools.lib.input.html#starsmashertools.lib.input.Input">[docs]</a>
 <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">preferences</span><span class="o">.</span><span class="n">use</span>
 <span class="k">class</span> <span class="nc">Input</span><span class="p">(</span><span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">readonlydict</span><span class="o">.</span><span class="n">ReadOnlyDict</span><span class="p">,</span> <span class="nb">object</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    This class holds information about inputs that are sent to a ``StarSmasher``</span>
 <span class="sd">    simulation. It is a dictionary whose keys are ``StarSmasher`` code variable</span>
 <span class="sd">    names and the values are the actual values that those variables have in</span>
@@ -114,7 +114,7 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">src</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        The ``StarSmasher`` source directory.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="kn">import</span> <span class="nn">starsmashertools.helpers.path</span>
@@ -133,7 +133,7 @@
             <span class="bp">self</span><span class="p">,</span>
             <span class="n">filename</span> <span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Pref</span><span class="p">(</span><span class="s1">&#39;src init filename&#39;</span><span class="p">,</span> <span class="s1">&#39;init.f&#39;</span><span class="p">),</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Obtain the ``&#39;init.f&#39;`` file that ``StarSmasher`` uses to initialize the</span>
 <span class="sd">        simulation.</span>
 <span class="sd">        </span>
@@ -246,7 +246,7 @@
             <span class="bp">self</span><span class="p">,</span>
             <span class="n">init_file</span> <span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Open up the ``init.f`` file to figure out what it reads as the input </span>
 <span class="sd">        file. We search for the &quot;namelist&quot; block in the variable declarations of</span>
 <span class="sd">        init.f and then search the simulation directory&#39;s files for one whose</span>
@@ -392,7 +392,7 @@
 <a class="viewcode-back" href="../../../lib/starsmashertools.lib.input.html#starsmashertools.lib.input.Input.initialize">[docs]</a>
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Read the ``StarSmasher`` input file and the ``&#39;init.f&#39;`` file to </span>
 <span class="sd">        determine the value of each ``StarSmasher`` input variable. Fills this </span>
 <span class="sd">        object with keys and values.</span>

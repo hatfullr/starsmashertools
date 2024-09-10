@@ -87,6 +87,9 @@
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">starsmashertools.helpers.apidecorator</span> <span class="kn">import</span> <span class="n">api</span>
 <span class="kn">import</span> <span class="nn">starsmashertools.helpers.argumentenforcer</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">import</span> <span class="nn">typing</span>
 
 <span class="k">try</span><span class="p">:</span>
     <span class="kn">import</span> <span class="nn">matplotlib.axes</span>
@@ -94,12 +97,562 @@
 <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
     <span class="n">has_matplotlib</span> <span class="o">=</span> <span class="kc">False</span>
 
-<span class="c1"># Given the mass of a collection of particles and coordinates in args, return</span>
-<span class="c1"># the center of mass in each of those args</span>
+<div class="viewcode-block" id="Integral">
+<a class="viewcode-back" href="../../math/starsmashertools.math.html#starsmashertools.math.Integral">[docs]</a>
+<span class="k">class</span> <span class="nc">Integral</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The base class for implementing numerical integration techniques. This class</span>
+<span class="sd">    cannot be used directly. Only classes which inherit from this class and </span>
+<span class="sd">    overrides :meth:`~._integrate` can be used.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    func : :class:`typing.Callable`</span>
+<span class="sd">        The integrand. Must accept a single argument, which is the integration</span>
+<span class="sd">        variable and is a 1D :class:`numpy.ndarray`\. It must return a 1D</span>
+<span class="sd">        :class:`numpy.ndarray` of the same length.</span>
+
+<span class="sd">    lower : int, float, None, default = None</span>
+<span class="sd">        The lower integration bound. If `None`\, then the integration starts at</span>
+<span class="sd">        the first value in the integration variable ``x`` supplied in </span>
+<span class="sd">        :meth:`~.__call__`\.</span>
+
+<span class="sd">    upper : int, float, None, default = None</span>
+<span class="sd">        The upper integration bound. If `None`\, then the integration stops at</span>
+<span class="sd">        the last value in the integration variable ``x`` supplied in </span>
+<span class="sd">        :meth:`~.__call__`\.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="Integral.__init__">
+<a class="viewcode-back" href="../../math/starsmashertools.math.html#starsmashertools.math.Integral.__init__">[docs]</a>
+    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">func</span> <span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">Callable</span><span class="p">,</span>
+            <span class="n">lower</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">upper</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">func</span> <span class="o">=</span> <span class="n">func</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_lower</span> <span class="o">=</span> <span class="n">lower</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_upper</span> <span class="o">=</span> <span class="n">upper</span></div>
+
+
+<div class="viewcode-block" id="Integral._integrate">
+<a class="viewcode-back" href="../../math/starsmashertools.math.html#starsmashertools.math.Integral._integrate">[docs]</a>
+    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="nf">_integrate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span> <span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Invoked by :meth:`~.__call__` to obtain the integral. This method must </span>
+<span class="sd">        be overridden in child classes. This is where the actual integration </span>
+<span class="sd">        takes place.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        x : :class:`numpy.ndarray`</span>
+<span class="sd">            The integration variable as a 1D array. The first value is always </span>
+<span class="sd">            the lower integration limit and the last value is always the upper</span>
+<span class="sd">            integration limit, each as returned by :meth:`~.get_lower` and </span>
+<span class="sd">            :meth:`~.get_upper`\.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+
+
+<div class="viewcode-block" id="Integral.__call__">
+<a class="viewcode-back" href="../../math/starsmashertools.math.html#starsmashertools.math.Integral.__call__">[docs]</a>
+    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate the integral. Integration steps proceed using the values in</span>
+<span class="sd">        ``x``\.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        x : list, tuple, :class:`numpy.ndarray`</span>
+<span class="sd">            The integration variable as a 1D array.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        result : float</span>
+<span class="sd">            The result of the integration.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span> <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">lower</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_lower</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">upper</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_upper</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">lower</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The lower integration bound must be in range of the provided x values&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">x</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">upper</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The upper integration bound must be in range of the provided x values&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_integrate</span><span class="p">(</span><span class="n">x</span><span class="p">[(</span><span class="n">lower</span> <span class="o">&lt;=</span> <span class="n">x</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">x</span> <span class="o">&lt;=</span> <span class="n">upper</span><span class="p">)])</span></div>
+
+
+<div class="viewcode-block" id="Integral.get_lower">
+<a class="viewcode-back" href="../../math/starsmashertools.math.html#starsmashertools.math.Integral.get_lower">[docs]</a>
+    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="nf">get_lower</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">x</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Obtain the lower integration bound for the given integration variable</span>
+<span class="sd">        ``x``\. If ``lower`` given in :meth:`~.__init__` was `None`\, then the</span>
+<span class="sd">        lower bound is the first value of ``x``\.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        x : list, tuple, :class:`numpy.ndarray`</span>
+<span class="sd">            The integration variable as a 1D array.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        lower : float</span>
+<span class="sd">            The lower integration bound, which is either ``x[0]`` or ``lower``</span>
+<span class="sd">            from :meth:`~.__init__`\.</span>
+
+<span class="sd">        See Also</span>
+<span class="sd">        --------</span>
+<span class="sd">        :meth:`~.get_upper`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span> <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lower</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_lower</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Integral.get_upper">
+<a class="viewcode-back" href="../../math/starsmashertools.math.html#starsmashertools.math.Integral.get_upper">[docs]</a>
+    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="nf">get_upper</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">x</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Obtain the upper integration bound for the given integration variable</span>
+<span class="sd">        ``x``\. If ``lower`` given in :meth:`~.__init__` was `None`\, then the</span>
+<span class="sd">        upper bound is the first value of ``x``\.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        x : list, tuple, :class:`numpy.ndarray`</span>
+<span class="sd">            The integration variable as a 1D array.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        upper : float</span>
+<span class="sd">            The upper integration bound, which is either ``x[0]`` or ``upper``</span>
+<span class="sd">            from :meth:`~.__init__`\.</span>
+
+<span class="sd">        See Also</span>
+<span class="sd">        --------</span>
+<span class="sd">        :meth:`~.get_lower`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span> <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lower</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_upper</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Trapezoidal">
+<a class="viewcode-back" href="../../math/starsmashertools.math.html#starsmashertools.math.Trapezoidal">[docs]</a>
+<span class="k">class</span> <span class="nc">Trapezoidal</span><span class="p">(</span><span class="n">Integral</span><span class="p">,</span> <span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Non-uniform grid trapezoidal rule integration:</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        :nowrap:</span>
+
+<span class="sd">        \int_\mathrm{lower}^\mathrm{upper}f(x)\,dx \approx \frac{1}{2}\sum_{k=1}^N \left[f(x_{k-1}) + f(x_k)\right] (x_k - x_{k-1})</span>
+<span class="sd">    </span>
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    :class:`~.Integral`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+<div class="viewcode-block" id="Trapezoidal._integrate">
+<a class="viewcode-back" href="../../math/starsmashertools.math.html#starsmashertools.math.Trapezoidal._integrate">[docs]</a>
+    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="nf">_integrate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span> <span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        See Also</span>
+<span class="sd">        --------</span>
+<span class="sd">        :meth:`~.Integral._integrate`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">func</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">return</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">y</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">y</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span> <span class="o">*</span> <span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">-</span> <span class="n">x</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span></div>
+</div>
+
+
+<div class="viewcode-block" id="get_integral_by_name">
+<a class="viewcode-back" href="../../math/starsmashertools.math.html#starsmashertools.math.get_integral_by_name">[docs]</a>
+<span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+<span class="nd">@api</span>
+<span class="k">def</span> <span class="nf">get_integral_by_name</span><span class="p">(</span><span class="n">name</span> <span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Returns the integral class whose class name or ``name`` attribute matches</span>
+<span class="sd">    the given name.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    name : str</span>
+<span class="sd">        The name of the integral class.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    integral : :class:`~.Integral`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">subclass</span> <span class="ow">in</span> <span class="n">Integral</span><span class="o">.</span><span class="n">__subclasses__</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="n">subclass</span><span class="o">.</span><span class="vm">__name__</span><span class="p">:</span> <span class="k">return</span> <span class="n">subclass</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">subclass</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">):</span> <span class="k">continue</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="n">subclass</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="k">return</span> <span class="n">subclass</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Integral class of name &#39;</span><span class="si">%s</span><span class="s2">&#39; not found&quot;</span> <span class="o">%</span> <span class="n">name</span><span class="p">)</span></div>
+
+
+
+
+
+<div class="viewcode-block" id="G">
+<a class="viewcode-back" href="../../math/starsmashertools.math.html#starsmashertools.math.G">[docs]</a>
+<span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+<span class="nd">@api</span>
+<span class="k">def</span> <span class="nf">G</span><span class="p">(</span>
+        <span class="n">x</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">h</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+        <span class="n">gflag</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The :math:`G(x,h)` function defined in Equation (A2) of </span>
+<span class="sd">    `Gaburov et al. (2010) &lt;Gaburov&gt;`_:</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        :nowrap:</span>
+
+<span class="sd">        G(x,h) \equiv V(4h-4|x-h|,h)</span>
+<span class="sd">    </span>
+
+<span class="sd">    .. _Gaburov: https://ui.adsabs.harvard.edu/abs/2010MNRAS.402..105G/abstract</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    x : int, float, list, tuple, :class:`numpy.ndarray`</span>
+<span class="sd">        The inter-particle distance :math:`|\vec{r}_i-\vec{r}_j|`\. If an </span>
+<span class="sd">        array-like argument is given, it must have the same shape as ``h``\.</span>
+
+<span class="sd">    h : int, float, list, tuple, :class:`numpy.ndarray`</span>
+<span class="sd">        The kernel smoothing lengths. If an array-like argument is given, it </span>
+<span class="sd">        must have the same shape as ``x``\.</span>
+
+<span class="sd">    gflag : int, default = 1</span>
+<span class="sd">        If 0, then the function follows equation (A2) in Gaburov et al. (2010).</span>
+<span class="sd">        If 1, then the function is the same, except that G=1 where x/h &lt; 1. A</span>
+<span class="sd">        value of 1 is the StarSmasher default. If gflag has any other value, a</span>
+<span class="sd">        ValueError is raised.</span>
+
+<span class="sd">    Other Parameters</span>
+<span class="sd">    ----------------</span>
+<span class="sd">    *args</span>
+<span class="sd">        Other positional arguments are passed directly to :func:`~.V`\.</span>
+
+<span class="sd">    **kwargs</span>
+<span class="sd">        Other keyword arguments are passed directly to :func:`~.V`\.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    ret : int, float, :class:`numpy.ndarray`</span>
+<span class="sd">        If array-like arguments were given for ``x`` and ``h``\, ``ret`` is a</span>
+<span class="sd">        :class:`numpy.ndarray`\. Otherwise, ``ret`` is an int or float.</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    :func:`~.V`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">gflag</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Invalid gflag value </span><span class="si">%d</span><span class="s2">. gflag must be 0 or 1.&quot;</span><span class="o">%</span><span class="n">gflag</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span> <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span> <span class="n">h</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">gflag</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="ow">and</span> <span class="n">x</span><span class="o">/</span><span class="n">h</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span> <span class="k">return</span> <span class="mi">1</span>
+
+    <span class="n">ret</span> <span class="o">=</span> <span class="n">V</span><span class="p">(</span><span class="mi">4</span><span class="o">*</span><span class="n">h</span> <span class="o">-</span> <span class="mi">4</span><span class="o">*</span><span class="nb">abs</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">h</span><span class="p">),</span> <span class="n">h</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">gflag</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span> <span class="n">ret</span><span class="p">[</span><span class="n">x</span><span class="o">/</span><span class="n">h</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">ret</span></div>
+
+
+
+<div class="viewcode-block" id="V">
+<a class="viewcode-back" href="../../math/starsmashertools.math.html#starsmashertools.math.V">[docs]</a>
+<span class="nd">@api</span>
+<span class="k">def</span> <span class="nf">V</span><span class="p">(</span>
+        <span class="n">x</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">h</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">kernel</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="nb">type</span><span class="p">)</span> <span class="o">=</span> <span class="s1">&#39;cubic spline&#39;</span><span class="p">,</span>
+        <span class="n">resolution</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span>
+        <span class="n">integral</span> <span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Integral</span> <span class="o">=</span> <span class="s1">&#39;Trapezoidal&#39;</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Equation (A3) of `Gaburov et al. (2010) &lt;Gaburov&gt;`_. Used in conjunction </span>
+<span class="sd">    with :func:`~.G`\:</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        :nowrap:</span>
+
+<span class="sd">        V(x,h) \equiv 4\pi \int_0^x x^2 W(x,h)\,dx</span>
+<span class="sd">    </span>
+<span class="sd">    </span>
+<span class="sd">    .. _Gaburov: https://ui.adsabs.harvard.edu/abs/2010MNRAS.402..105G/abstract</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    x : int, float, list, tuple, np.ndarray</span>
+<span class="sd">        The value :math:`4h - 4|x-h|` from :meth:`~.G` where :math:`x` is an </span>
+<span class="sd">        inter-particle distance.</span>
+<span class="sd">    </span>
+<span class="sd">    h : int, float, list, tuple, np.ndarray</span>
+<span class="sd">        The kernel smoothing length.</span>
+<span class="sd">    </span>
+<span class="sd">    kernel : int, str, :class:`~.lib.kernel._BaseKernel`\, default = ``&#39;cubic spline&#39;``</span>
+<span class="sd">        The kernel function :math:`W(x,h)`\. In StarSmasher, the cubic spline</span>
+<span class="sd">        function is used regardless of the value of ``nkernel``\.</span>
+
+<span class="sd">    Other Parameters</span>
+<span class="sd">    ----------------</span>
+<span class="sd">    resolution : int, default = 100</span>
+<span class="sd">        The number of integration steps to take.</span>
+
+<span class="sd">    integral : str, :class:`~.Integral`\, default = &#39;Trapezoidal&#39;</span>
+<span class="sd">        The name of the integration method to use.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    :class:`numpy.ndarray` or float</span>
+<span class="sd">        If ``x`` and ``h`` are array-like, the return type is </span>
+<span class="sd">        :class:`numpy.ndarray` with the same shape as ``x`` and ``h``\. </span>
+<span class="sd">        Otherwise, a single value is returned.</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    :func:`~.G`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span> <span class="nn">starsmashertools.lib.kernels</span>
+
+    <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span><span class="p">({</span>
+        <span class="s1">&#39;x&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+        <span class="s1">&#39;h&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+        <span class="s1">&#39;kernel&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">kernels</span><span class="o">.</span><span class="n">_BaseKernel</span><span class="p">],</span>
+        <span class="s1">&#39;resolution&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+        <span class="s1">&#39;integral&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Integral</span><span class="p">],</span>
+    <span class="p">})</span>
+    
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">kernel</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="n">kernel</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">kernels</span><span class="o">.</span><span class="n">get_by_nkernel</span><span class="p">(</span><span class="n">kernel</span><span class="p">)()</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">kernel</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">kernel</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">kernels</span><span class="o">.</span><span class="n">get_by_name</span><span class="p">(</span><span class="n">kernel</span><span class="p">)()</span>
+    
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">))</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">h</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Arguments &#39;x&#39; and &#39;h&#39; must have the same shapes if they are array-like&quot;</span><span class="p">)</span>
+        
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">))</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">h</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">integral</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">integral</span> <span class="o">=</span> <span class="n">get_integral_by_name</span><span class="p">(</span><span class="n">integral</span><span class="p">)</span>
+    
+    <span class="c1"># h is now the same type as x</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+        <span class="k">return</span> <span class="mi">4</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span>
+            <span class="n">integral</span><span class="p">(</span>
+                <span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="n">s</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="n">kernel</span><span class="p">(</span><span class="n">_s</span><span class="p">,</span> <span class="n">_h</span><span class="p">)</span> <span class="k">for</span> <span class="n">_s</span> <span class="ow">in</span> <span class="n">s</span><span class="p">]),</span>
+                <span class="mi">0</span><span class="p">,</span> <span class="n">_x</span><span class="p">,</span>
+            <span class="p">)(</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">_x</span><span class="p">,</span> <span class="n">resolution</span><span class="p">))</span> <span class="k">for</span> <span class="n">_x</span><span class="p">,</span> <span class="n">_h</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">h</span><span class="p">)</span>
+        <span class="p">])</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mi">4</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">integral</span><span class="p">(</span>
+            <span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="n">s</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="n">kernel</span><span class="p">(</span><span class="n">_s</span><span class="p">,</span> <span class="n">h</span><span class="p">)</span> <span class="k">for</span> <span class="n">_s</span> <span class="ow">in</span> <span class="n">s</span><span class="p">]),</span>
+            <span class="mi">0</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span>
+        <span class="p">)(</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">resolution</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="dV">
+<a class="viewcode-back" href="../../math/starsmashertools.math.html#starsmashertools.math.dV">[docs]</a>
+<span class="nd">@api</span>
+<span class="k">def</span> <span class="nf">dV</span><span class="p">(</span>
+        <span class="n">x</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">h</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">kernel</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="nb">type</span><span class="p">)</span> <span class="o">=</span> <span class="s1">&#39;cubic spline&#39;</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The spatial derivative of :func:`~.V`\, :math:`\nabla V`\.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span> <span class="nn">starsmashertools.lib.kernels</span>
+
+    <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span><span class="p">({</span>
+        <span class="s1">&#39;x&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+        <span class="s1">&#39;h&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+        <span class="s1">&#39;kernel&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">kernels</span><span class="o">.</span><span class="n">_BaseKernel</span><span class="p">],</span>
+    <span class="p">})</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">kernel</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="n">kernel</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">kernels</span><span class="o">.</span><span class="n">get_by_nkernel</span><span class="p">(</span><span class="n">kernel</span><span class="p">)()</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">kernel</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">kernel</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">kernels</span><span class="o">.</span><span class="n">get_by_name</span><span class="p">(</span><span class="n">kernel</span><span class="p">)()</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">))</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">h</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Arguments &#39;x&#39; and &#39;h&#39; must have the same shapes if they are array-like&quot;</span><span class="p">)</span>
+        
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">))</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">h</span><span class="p">)</span>
+
+    <span class="c1"># h is now the same type as x</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+        <span class="k">return</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">_x</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">kernel</span><span class="p">(</span><span class="n">_x</span><span class="p">,</span><span class="n">_h</span><span class="p">)</span> <span class="k">for</span> <span class="n">_x</span><span class="p">,</span><span class="n">_h</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">h</span><span class="p">)])</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">x</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">kernel</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">h</span><span class="p">)</span></div>
+
+    
+
+<div class="viewcode-block" id="dG">
+<a class="viewcode-back" href="../../math/starsmashertools.math.html#starsmashertools.math.dG">[docs]</a>
+<span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+<span class="nd">@api</span>
+<span class="k">def</span> <span class="nf">dG</span><span class="p">(</span>
+        <span class="n">x</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">h</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+        <span class="n">gflag</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The spatial derivative of :func:`~.G`\, :math:`\nabla G`\.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">gflag</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Invalid gflag value </span><span class="si">%d</span><span class="s2">. gflag must be 0 or 1.&quot;</span><span class="o">%</span><span class="n">gflag</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span> <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span> <span class="n">h</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="ow">and</span> <span class="n">x</span><span class="o">/</span><span class="n">h</span> <span class="o">&lt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">gflag</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span> <span class="k">return</span> <span class="mi">0</span>
+    <span class="n">ret</span> <span class="o">=</span> <span class="n">dV</span><span class="p">(</span><span class="mi">4</span><span class="o">*</span><span class="n">h</span> <span class="o">-</span> <span class="mi">4</span><span class="o">*</span><span class="nb">abs</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">h</span><span class="p">),</span> <span class="n">h</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">gflag</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span> <span class="n">ret</span><span class="p">[</span><span class="n">x</span><span class="o">/</span><span class="n">h</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">return</span> <span class="n">ret</span></div>
+
+
+
+<div class="viewcode-block" id="dGdh">
+<a class="viewcode-back" href="../../math/starsmashertools.math.html#starsmashertools.math.dGdh">[docs]</a>
+<span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+<span class="nd">@api</span>
+<span class="k">def</span> <span class="nf">dGdh</span><span class="p">(</span>
+        <span class="n">x</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">h</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+        <span class="n">gflag</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Derivative of :func:`~.G` with respect to the smoothing length :math:`h`\:</span>
+<span class="sd">    :math:`\partial G/\partial h`\.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">gflag</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Invalid gflag value </span><span class="si">%d</span><span class="s2">. gflag must be 0 or 1.&quot;</span><span class="o">%</span><span class="n">gflag</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span> <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span> <span class="n">h</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="ow">and</span> <span class="n">x</span><span class="o">/</span><span class="n">h</span> <span class="o">&lt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">gflag</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span> <span class="k">return</span> <span class="mi">0</span>
+    <span class="n">ret</span> <span class="o">=</span> <span class="n">dVdh</span><span class="p">(</span><span class="mi">4</span><span class="o">*</span><span class="n">h</span> <span class="o">-</span> <span class="mi">4</span><span class="o">*</span><span class="nb">abs</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">h</span><span class="p">),</span> <span class="n">h</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">gflag</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span> <span class="n">ret</span><span class="p">[</span><span class="n">x</span><span class="o">/</span><span class="n">h</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">return</span> <span class="n">ret</span></div>
+
+    
+<div class="viewcode-block" id="dVdh">
+<a class="viewcode-back" href="../../math/starsmashertools.math.html#starsmashertools.math.dVdh">[docs]</a>
+<span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+<span class="nd">@api</span>
+<span class="k">def</span> <span class="nf">dVdh</span><span class="p">(</span>
+        <span class="n">x</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">h</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">kernel</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="nb">type</span><span class="p">)</span> <span class="o">=</span> <span class="s1">&#39;cubic spline&#39;</span><span class="p">,</span>
+        <span class="n">resolution</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span>
+        <span class="n">integral</span> <span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Integral</span> <span class="o">=</span> <span class="s1">&#39;Trapezoidal&#39;</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Derivative of :func:`~.V` with respect to the smoothing length :math:`h`\:</span>
+<span class="sd">    :math:`\partial V/\partial h`\.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span> <span class="nn">starsmashertools.lib.kernels</span>
+
+    <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span><span class="p">({</span>
+        <span class="s1">&#39;x&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+        <span class="s1">&#39;h&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+        <span class="s1">&#39;kernel&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">kernels</span><span class="o">.</span><span class="n">_BaseKernel</span><span class="p">],</span>
+        <span class="s1">&#39;resolution&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+        <span class="s1">&#39;integral&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Integral</span><span class="p">],</span>
+    <span class="p">})</span>
+    
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">kernel</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="n">kernel</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">kernels</span><span class="o">.</span><span class="n">get_by_nkernel</span><span class="p">(</span><span class="n">kernel</span><span class="p">)()</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">kernel</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">kernel</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">kernels</span><span class="o">.</span><span class="n">get_by_name</span><span class="p">(</span><span class="n">kernel</span><span class="p">)()</span>
+    
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">))</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">h</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Arguments &#39;x&#39; and &#39;h&#39; must have the same shapes if they are array-like&quot;</span><span class="p">)</span>
+        
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">))</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">h</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">integral</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">integral</span> <span class="o">=</span> <span class="n">get_integral_by_name</span><span class="p">(</span><span class="n">integral</span><span class="p">)</span>
+    
+    <span class="c1"># h is now the same type as x</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+        <span class="k">return</span> <span class="mi">4</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span>
+            <span class="n">integral</span><span class="p">(</span>
+                <span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="n">s</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="n">kernel</span><span class="o">.</span><span class="n">dh</span><span class="p">(</span><span class="n">_s</span><span class="p">,</span> <span class="n">_h</span><span class="p">)</span> <span class="k">for</span> <span class="n">_s</span> <span class="ow">in</span> <span class="n">s</span><span class="p">]),</span>
+                <span class="mi">0</span><span class="p">,</span> <span class="n">_x</span><span class="p">,</span>
+            <span class="p">)(</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">_x</span><span class="p">,</span> <span class="n">resolution</span><span class="p">))</span> <span class="k">for</span> <span class="n">_x</span><span class="p">,</span> <span class="n">_h</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">h</span><span class="p">)</span>
+        <span class="p">])</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mi">4</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">integral</span><span class="p">(</span>
+            <span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="n">s</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="n">kernel</span><span class="o">.</span><span class="n">dh</span><span class="p">(</span><span class="n">_s</span><span class="p">,</span> <span class="n">h</span><span class="p">)</span> <span class="k">for</span> <span class="n">_s</span> <span class="ow">in</span> <span class="n">s</span><span class="p">]),</span>
+            <span class="mi">0</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span>
+        <span class="p">)(</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">resolution</span><span class="p">))</span></div>
+
+    
 <div class="viewcode-block" id="center_of_mass">
 <a class="viewcode-back" href="../../math/starsmashertools.math.html#starsmashertools.math.center_of_mass">[docs]</a>
 <span class="nd">@api</span>
-<span class="k">def</span> <span class="nf">center_of_mass</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">center_of_mass</span><span class="p">(</span>
+        <span class="n">m</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Given the mass of a collection of particles and coordinates in args, return</span>
+<span class="sd">    the center of mass in each of those args.</span>
+<span class="sd">    </span>
+<span class="sd">    The &quot;center of mass&quot; of any quantity :math:`A` is obtained as:</span>
+<span class="sd">    </span>
+<span class="sd">    .. math::</span>
+<span class="sd">        :nowrap:</span>
+
+<span class="sd">        A_\mathrm{com} = \frac{\sum_i m_i A_i}{\sum_i m_i}</span>
+
+<span class="sd">    This calculation is performed for each member of ``*args``\.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    m : list, tuple, :class:`numpy.ndarray`</span>
+<span class="sd">        The masses of the particles. It is converted to a :class:`numpy.ndarray`</span>
+<span class="sd">        before the calculations.</span>
+<span class="sd">    </span>
+<span class="sd">    Other Parameters</span>
+<span class="sd">    ----------------</span>
+<span class="sd">    *args</span>
+<span class="sd">        The quantities to use for the center of mass calculation.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
     <span class="n">total_mass</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
     <span class="n">result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">))</span>
     <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">arg</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">args</span><span class="p">):</span>
@@ -195,7 +748,7 @@
         <span class="n">yangle</span> <span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">float_</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
         <span class="n">zangle</span> <span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">float_</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
 <span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Rotate the given ``x``\, ``y``\, and ``z`` points using an Euler rotation.</span>
 
 <span class="sd">    An Euler rotation can be understood as follows. Imagine the x, y, and z axes</span>
@@ -267,7 +820,7 @@
         <span class="n">theta</span> <span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">float_</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
         <span class="n">phi</span> <span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">float_</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
 <span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Uses :func:`~.rotate` twice to perform a correct spherical coordinates</span>
 <span class="sd">    rotation.</span>
 <span class="sd">    </span>
@@ -319,9 +872,16 @@
 
 
 
+
+
+
+
+
+
+
+
 <div class="viewcode-block" id="EffGravPot">
 <a class="viewcode-back" href="../../math/starsmashertools.math.html#starsmashertools.math.EffGravPot">[docs]</a>
-<span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">preferences</span><span class="o">.</span><span class="n">use</span>
 <span class="k">class</span> <span class="nc">EffGravPot</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    A class for working with effective gravitational potentials in an</span>
@@ -360,425 +920,427 @@
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span>
-            <span class="n">output</span> <span class="p">:</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">Output</span><span class="p">,</span>
-            <span class="n">as_point_masses</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">Pref</span><span class="p">(</span><span class="s1">&#39;as_point_masses&#39;</span><span class="p">,</span> <span class="kc">True</span><span class="p">),</span>
-            <span class="o">**</span><span class="n">kwargs</span>
+            <span class="n">m</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+            <span class="n">x</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+            <span class="n">y</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+            <span class="n">z</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+            <span class="n">period</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.</span><span class="p">,</span>
+            <span class="n">G</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Class constructor.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        output : :class:`~.lib.output.Output`</span>
-<span class="sd">            The output file to calculate the gravitational potentials for. If</span>
-<span class="sd">            ``as_point_masses = True``\, the particles are separated based on</span>
-<span class="sd">            the star they belong to using </span>
-<span class="sd">            :meth:`~.lib.binary.Binary.get_primary_IDs` and </span>
-<span class="sd">            :meth:`~.lib.binary.Binary.get_secondary_IDs`\. If the output</span>
-<span class="sd">            belongs to a :class:`~.lib.dynamical.Dynamical` simulation, a search</span>
-<span class="sd">            will be done to find its parent binary simulation.</span>
+<span class="sd">        m : list, tuple, :class:`numpy.ndarray`</span>
+<span class="sd">            Masses of the particles. Must be 1D.</span>
 
-<span class="sd">            Particles which are detected as ejecta are not processed.</span>
+<span class="sd">        x : list, tuple, :class:`numpy.ndarray`</span>
+<span class="sd">            x-positions of the particles. Must be 1D and have the same length as</span>
+<span class="sd">            ``m``\.</span>
 
+<span class="sd">        y : list, tuple, :class:`numpy.ndarray`</span>
+<span class="sd">            y-positions of the particles. Must be 1D and have the same length as</span>
+<span class="sd">            ``m``\.</span>
+
+<span class="sd">        z : list, tuple, :class:`numpy.ndarray`</span>
+<span class="sd">            z-positions of the particles. Must be 1D and have the same length as</span>
+<span class="sd">            ``m``\.</span>
+<span class="sd">        </span>
 <span class="sd">        Other Parameters</span>
 <span class="sd">        ----------------</span>
-<span class="sd">        as_point_masses : bool, default = ``Pref(&#39;as_point_masses&#39;, True)``</span>
-<span class="sd">            If `True`\, the center of mass for the particles in the primary and</span>
-<span class="sd">            secondary stars are each calculated and used as the point masses in</span>
-<span class="sd">            the first equation for :math:`\varphi` above. Otherwise, the</span>
-<span class="sd">            calculation proceeds using the second equation.</span>
+<span class="sd">        period : int, float, default = 0.</span>
+<span class="sd">            The oribtal period of the binary system.</span>
 
+<span class="sd">        G : int, float, :class:`~.lib.units.Unit`\, None, default = None</span>
+<span class="sd">            The value of the gravitational constant. If `None`\, the value </span>
+<span class="sd">            stored in the constants in :mod:`~.starsmashertools.lib.units` is </span>
+<span class="sd">            used. If a :class:`~.lib.units.Unit` is given, it is converted to a</span>
+<span class="sd">            :py:class:`float`\.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_output</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_as_point_masses</span> <span class="o">=</span> <span class="n">as_point_masses</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s1">&#39;com1&#39;</span> <span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
-            <span class="s1">&#39;com2&#39;</span> <span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
-            <span class="s1">&#39;com&#39;</span> <span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
-            <span class="s1">&#39;M1&#39;</span> <span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
-            <span class="s1">&#39;M2&#39;</span> <span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
-            <span class="s1">&#39;omega2&#39;</span> <span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="p">}</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">output</span> <span class="o">=</span> <span class="n">output</span> <span class="c1"># Updates the data for the first time</span></div>
+        <span class="k">if</span> <span class="n">G</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="kn">from</span> <span class="nn">starsmashertools.lib.units</span> <span class="kn">import</span> <span class="n">constants</span>
+            <span class="n">G</span> <span class="o">=</span> <span class="n">constants</span><span class="p">[</span><span class="s1">&#39;G&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">G</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">G</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">m</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xyz</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">((</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">z</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">period</span> <span class="o">=</span> <span class="n">period</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_com</span> <span class="o">=</span> <span class="n">center_of_mass</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">m</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">_omega</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">period</span></div>
 
 
-    <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">output</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_output</span>
-    
-    <span class="nd">@output</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_output</span> <span class="o">==</span> <span class="n">value</span><span class="p">:</span> <span class="k">return</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_output</span> <span class="o">=</span> <span class="n">value</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_update_data</span><span class="p">()</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">as_point_masses</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_as_point_masses</span>
-
-    <span class="nd">@as_point_masses</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">as_point_masses</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span> <span class="p">:</span> <span class="nb">bool</span><span class="p">):</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_as_point_masses</span> <span class="o">==</span> <span class="n">value</span><span class="p">:</span> <span class="k">return</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_as_point_masses</span> <span class="ow">and</span> <span class="n">value</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_update_data</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_as_point_masses</span> <span class="o">=</span> <span class="n">value</span>
-
-    <span class="k">def</span> <span class="nf">_update_data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="kn">import</span> <span class="nn">starsmashertools.lib.binary</span>
-        <span class="kn">import</span> <span class="nn">starsmashertools.lib.dynamical</span>
-        <span class="kn">import</span> <span class="nn">starsmashertools</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="s1">&#39;omega2&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">((</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">get_period</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_output</span>
-        <span class="p">)))</span><span class="o">**</span><span class="mi">2</span>
-
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="o">.</span><span class="n">simulation</span><span class="p">,</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">binary</span><span class="o">.</span><span class="n">Binary</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="s1">&#39;com1&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="s1">&#39;com2&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">get_COMs</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="p">,</span>
-            <span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="s1">&#39;M1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">get_primary_mass</span><span class="p">()</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="s1">&#39;M2&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">get_secondary_mass</span><span class="p">()</span>
-            
-        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="o">.</span><span class="n">simulation</span><span class="p">,</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">dynamical</span><span class="o">.</span><span class="n">Dynamical</span><span class="p">):</span>
-            <span class="n">binary</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">get_binary</span><span class="p">()</span>
-            
-            <span class="c1"># Get the primary star COM</span>
-            <span class="k">with</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">mask</span><span class="p">(</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="p">,</span>
-                    <span class="o">~</span><span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="p">[</span><span class="s1">&#39;unbound&#39;</span><span class="p">]</span> <span class="o">&amp;</span> <span class="n">np</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="p">[</span><span class="s1">&#39;ID&#39;</span><span class="p">],</span> <span class="n">binary</span><span class="o">.</span><span class="n">get_primary_IDs</span><span class="p">(),</span>
-                        <span class="n">assume_unique</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-                    <span class="p">),</span>
-                    <span class="n">copy</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-            <span class="p">)</span> <span class="k">as</span> <span class="n">masked</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="s1">&#39;com1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">center_of_mass</span><span class="p">(</span>
-                    <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;am&#39;</span><span class="p">],</span> <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">],</span> <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">],</span> <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;z&#39;</span><span class="p">],</span>
-                <span class="p">)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="s1">&#39;M1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">masked</span><span class="p">[</span><span class="s1">&#39;am&#39;</span><span class="p">])</span>
-            <span class="c1"># Get the secondary star COM</span>
-            <span class="k">with</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">mask</span><span class="p">(</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="p">,</span>
-                    <span class="o">~</span><span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="p">[</span><span class="s1">&#39;unbound&#39;</span><span class="p">]</span> <span class="o">&amp;</span> <span class="n">np</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="p">[</span><span class="s1">&#39;ID&#39;</span><span class="p">],</span> <span class="n">binary</span><span class="o">.</span><span class="n">get_secondary_IDs</span><span class="p">(),</span>
-                        <span class="n">assume_unique</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-                    <span class="p">),</span>
-                    <span class="n">copy</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-            <span class="p">)</span> <span class="k">as</span> <span class="n">masked</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="s1">&#39;com2&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">center_of_mass</span><span class="p">(</span>
-                    <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;am&#39;</span><span class="p">],</span> <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">],</span> <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">],</span> <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;z&#39;</span><span class="p">],</span>
-                <span class="p">)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="s1">&#39;M2&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">masked</span><span class="p">[</span><span class="s1">&#39;am&#39;</span><span class="p">])</span>
-
-            <span class="c1"># The rotation frequency can be obtained as v/r where r is the</span>
-            <span class="c1"># distance from the center of mass of a body with tangential</span>
-            <span class="c1"># velocity v. We obtain the net tangential velocities of both bodies</span>
-            <span class="c1"># and check to make sure they agree: they should be almost equal in</span>
-            <span class="c1"># magnitude and pointing in opposite directions. Otherwise, there is</span>
-            <span class="c1"># probably no orbit.</span>
-            
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Effective gravitational potential plots are available only for simulations of type Binary or Dynamical, not &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="o">.</span><span class="n">simulation</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
-
-        <span class="c1"># Get the overall COM</span>
-        <span class="k">with</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">mask</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="p">,</span> <span class="o">~</span><span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="p">[</span><span class="s1">&#39;unbound&#39;</span><span class="p">])</span> <span class="k">as</span> <span class="n">masked</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="s1">&#39;com&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">center_of_mass</span><span class="p">(</span>
-                <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;am&#39;</span><span class="p">],</span> <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">],</span> <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">],</span> <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;z&#39;</span><span class="p">],</span>
-            <span class="p">)</span>
-
-        <span class="c1"># convert all to cgs</span>
-        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;com1&#39;</span><span class="p">,</span> <span class="s1">&#39;com2&#39;</span><span class="p">,</span> <span class="s1">&#39;com&#39;</span><span class="p">]:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">*=</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">length</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;M1&#39;</span><span class="p">,</span> <span class="s1">&#39;M2&#39;</span><span class="p">]:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">*=</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">mass</span><span class="p">)</span>
-    
 <div class="viewcode-block" id="EffGravPot.get">
 <a class="viewcode-back" href="../../math/starsmashertools.math.html#starsmashertools.math.EffGravPot.get">[docs]</a>
     <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="nf">get</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span>
-            <span class="n">x</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-            <span class="n">y</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-            <span class="n">as_point_masses</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">positions</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Sample the effective gravitational potential :math:`\varphi` field at </span>
+<span class="sd">        the given positions.</span>
+
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        x : list, tuple, :class:`numpy.ndarray`</span>
-<span class="sd">            The ``x`` positions to get the effective gravitational potential at.</span>
-<span class="sd">            Must have the same shape as ``y`` and ``z``\. Values must be in</span>
-<span class="sd">            units of cm.</span>
-<span class="sd">        </span>
-<span class="sd">        y : list, tuple, :class:`numpy.ndarray`</span>
-<span class="sd">            The ``y`` positions to get the effective gravitational potential at.</span>
-<span class="sd">            Must have the same shape as ``x`` and ``z``\. Values must be in</span>
-<span class="sd">            units of cm.</span>
-<span class="sd">        </span>
-<span class="sd">        z : float, list, tuple, :class:`numpy.ndarray`</span>
-<span class="sd">            The ``z`` positions to get the effective gravitational potential at.</span>
-<span class="sd">            Must have the same shape as ``x`` and ``y``\. Values must be in</span>
-<span class="sd">            units of cm.</span>
-
-<span class="sd">        Other Parameters</span>
-<span class="sd">        ----------------</span>
-<span class="sd">        as_point_masses : bool, None, default = None</span>
-<span class="sd">            If `None`\, the value from :meth:`~.__init__` will be used.</span>
+<span class="sd">        positions : list, tuple, :class:`numpy.ndarray`</span>
+<span class="sd">            The x, y, and z positions to get the effective gravitational </span>
+<span class="sd">            potential at. Must have a shape (N,3).</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        :class:`numpy.ndarray`</span>
-<span class="sd">            The effective gravitational potentials at positions ``(x, y, z)``\,</span>
-<span class="sd">            in cgs units.</span>
+<span class="sd">            The effective gravitational potential at positions ``(x, y, z)``\. </span>
+<span class="sd">            The result is an array of magnitudes with the same length as ``x``\,</span>
+<span class="sd">            ``y``\, and ``z``\.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">starsmashertools.lib.units</span> <span class="kn">import</span> <span class="n">constants</span>
-        <span class="kn">import</span> <span class="nn">warnings</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">positions</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+            <span class="n">positions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">positions</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">positions</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Argument &#39;positions&#39; must be a 2D array&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">positions</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Argument &#39;positions&#39; must have shape (N,3), not </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="n">positions</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
         
-        <span class="k">if</span> <span class="n">as_point_masses</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="n">as_point_masses</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">as_point_masses</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">positions</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+        <span class="n">rcom2s</span> <span class="o">=</span> <span class="p">((</span><span class="n">positions</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_com</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
         
-        <span class="n">G</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">constants</span><span class="p">[</span><span class="s1">&#39;G&#39;</span><span class="p">])</span>
-        <span class="n">com1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="s1">&#39;com1&#39;</span><span class="p">]</span>
-        <span class="n">com2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="s1">&#39;com2&#39;</span><span class="p">]</span>
-        <span class="n">com</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="s1">&#39;com&#39;</span><span class="p">]</span>
-        <span class="n">M1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="s1">&#39;M1&#39;</span><span class="p">]</span>
-        <span class="n">M2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="s1">&#39;M2&#39;</span><span class="p">]</span>
-        <span class="n">omega2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="s1">&#39;omega2&#39;</span><span class="p">]</span>
-        
-        <span class="n">xy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">((</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">),</span> <span class="n">axis</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
-        
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">as_point_masses</span><span class="p">:</span>
-            <span class="k">with</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">mask</span><span class="p">(</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="p">,</span> <span class="o">~</span><span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="p">[</span><span class="s1">&#39;unbound&#39;</span><span class="p">],</span> <span class="n">copy</span> <span class="o">=</span> <span class="kc">False</span>
-            <span class="p">)</span> <span class="k">as</span> <span class="n">masked</span><span class="p">:</span>
-                <span class="n">xyzi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">((</span><span class="n">masked</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">],</span> <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">],</span> <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;z&#39;</span><span class="p">]))</span>
-                <span class="n">m</span> <span class="o">=</span> <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;am&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">units</span><span class="p">[</span><span class="s1">&#39;am&#39;</span><span class="p">])</span>
-            <span class="n">xyzi</span> <span class="o">*=</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_output</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">length</span><span class="p">)</span>
-            <span class="n">xyi</span> <span class="o">=</span> <span class="n">xyzi</span><span class="p">[:,:</span><span class="mi">2</span><span class="p">]</span>
-
-            <span class="c1"># Maybe it&#39;s fastest to loop over the particles...</span>
-            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">_xy</span><span class="p">,</span> <span class="n">_m</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">xyi</span><span class="p">,</span> <span class="n">m</span><span class="p">)):</span>
-                <span class="n">result</span> <span class="o">-=</span> <span class="n">G</span><span class="o">*</span><span class="n">_m</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">xy</span> <span class="o">-</span> <span class="n">_xy</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span>
-            <span class="n">rcom2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">xy</span> <span class="o">-</span> <span class="n">com</span><span class="p">[:</span><span class="mi">2</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span><span class="n">axis</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-            <span class="n">result</span> <span class="o">+=</span> <span class="o">-</span><span class="mf">0.5</span><span class="o">*</span><span class="n">omega2</span><span class="o">*</span><span class="n">rcom2</span>
-            <span class="k">return</span> <span class="n">result</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">r1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">xy</span> <span class="o">-</span> <span class="n">com1</span><span class="p">[:</span><span class="mi">2</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span>
-            <span class="n">r2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">xy</span> <span class="o">-</span> <span class="n">com2</span><span class="p">[:</span><span class="mi">2</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span>
-            <span class="n">rcom2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">xy</span> <span class="o">-</span> <span class="n">com</span><span class="p">[:</span><span class="mi">2</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-            <span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
-                <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s1">&#39;ignore&#39;</span><span class="p">)</span>
-                <span class="k">return</span> <span class="o">-</span><span class="n">G</span><span class="o">*</span><span class="n">M1</span><span class="o">/</span><span class="n">r1</span> <span class="o">-</span> <span class="n">G</span><span class="o">*</span><span class="n">M2</span><span class="o">/</span><span class="n">r2</span> <span class="o">-</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">omega2</span><span class="o">*</span><span class="n">rcom2</span></div>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">pos</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">positions</span><span class="p">):</span>
+            <span class="n">r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(((</span><span class="n">pos</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">xyz</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+            <span class="n">result</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">m</span> <span class="o">/</span> <span class="n">r</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">result</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">G</span> <span class="o">-</span> <span class="mf">0.5</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">_omega</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">rcom2s</span></div>
 
 
 <div class="viewcode-block" id="EffGravPot.get_gradient">
 <a class="viewcode-back" href="../../math/starsmashertools.math.html#starsmashertools.math.EffGravPot.get_gradient">[docs]</a>
+    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
     <span class="nd">@api</span>
-    <span class="k">def</span> <span class="nf">get_gradient</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Get the 3D gradient of the effective gravitational potential.</span>
-
-<span class="sd">        Other Parameters</span>
+    <span class="k">def</span> <span class="nf">get_gradient</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">positions</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Sample the effective gravitational potential gradient </span>
+<span class="sd">        :math:`\nabla\varphi` field at the given positions. This is the same as</span>
+<span class="sd">        negative the gravitational acceleration vector, since </span>
+<span class="sd">        :math:`m\vec{g}=\vec{F}=-m\nabla\varphi`\.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        *args</span>
-<span class="sd">            Positional arguments are passed directly to :meth:`~.get`\.</span>
-<span class="sd">        </span>
-<span class="sd">        **kwargs</span>
-<span class="sd">            Keyword arguments are passed directly to :meth:`~.get`\.</span>
-<span class="sd">        </span>
+<span class="sd">        positions : list, tuple, :class:`numpy.ndarray`</span>
+<span class="sd">            The x, y, and z positions to get the effective gravitational </span>
+<span class="sd">            potential gradient at. Must have a shape (n,3).</span>
+
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
-<span class="sd">        :class:`numpy.ndarray`\, :class:`numpy.ndarray`\, :class:`numpy.ndarray`</span>
-<span class="sd">            The gradient of the effective gravitational potential in the x, y,</span>
-<span class="sd">            and z directions respectively.</span>
-
-<span class="sd">        See Also</span>
-<span class="sd">        --------</span>
-<span class="sd">        :meth:`~.get`</span>
-<span class="sd">        :meth:`numpy.gradient`</span>
+<span class="sd">        :class:`numpy.ndarray`</span>
+<span class="sd">            The gradient of the effective gravitational potential at positions</span>
+<span class="sd">            ``(x, y, z)``\. The result is an array of 3-vectors, with the same</span>
+<span class="sd">            length as ``x``\, ``y``\, and ``z``\.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">gradient</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_potential</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">))</span></div>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">positions</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)):</span>
+            <span class="n">positions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="n">positions</span><span class="p">])</span>
+        
+        <span class="n">result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">positions</span><span class="p">),</span> <span class="mi">3</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">pos</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">positions</span><span class="p">):</span>
+            <span class="n">dxyz</span> <span class="o">=</span> <span class="n">pos</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">xyz</span> <span class="c1"># destination - origin</span>
+            
+            <span class="c1"># distance magnitude squared (row sum)</span>
+            <span class="n">r2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dxyz</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">r2</span><span class="p">)</span>
 
+            <span class="c1"># divide each x, y, and z component of the offsets by the magnitude</span>
+            <span class="c1"># of that offset</span>
+            <span class="n">directions</span> <span class="o">=</span> <span class="n">dxyz</span> <span class="o">/</span> <span class="n">r</span><span class="p">[:,</span><span class="kc">None</span><span class="p">]</span>
+            
+            <span class="c1"># \vec{g} (column sum)</span>
+            <span class="n">g</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">directions</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">G</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">m</span> <span class="o">/</span> <span class="n">r2</span><span class="p">)[:,</span> <span class="kc">None</span><span class="p">],</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
+            
+            <span class="c1"># centripetal acceleration here</span>
+            <span class="n">a</span> <span class="o">=</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">_omega</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">pos</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_com</span><span class="p">)</span> <span class="c1"># destination - origin</span>
+            
+            <span class="n">result</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="n">g</span> <span class="o">+</span> <span class="n">a</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span></div>
 
-
+    
 <div class="viewcode-block" id="EffGravPot.get_lagrange">
 <a class="viewcode-back" href="../../math/starsmashertools.math.html#starsmashertools.math.EffGravPot.get_lagrange">[docs]</a>
     <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="nf">get_lagrange</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span>
-            <span class="n">n</span> <span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-            <span class="n">resolution</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">,</span>
-            <span class="n">return_potential</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="n">which</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">],</span>
+            <span class="n">extent_frac</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">5.</span><span class="p">,</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Get the n&#39;th Lagrange point</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the n&#39;th Lagrange points.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        n : int</span>
-<span class="sd">            The Lagrange point to obtain. Must be 1, 2, 3, 4, or 5.</span>
-
-<span class="sd">        resolution : int, default = 1000</span>
-<span class="sd">            How many positions to search in the parameter space.</span>
-
+<span class="sd">        which : list, tuple, :class:`numpy.ndarray`, default = ``[1,2,3]``</span>
+<span class="sd">            The Lagrange points to obtain. Currently only :math:`L_1`\, </span>
+<span class="sd">            :math:`L_2`\, and :math:`L_3` are supported. </span>
+<span class="sd">        </span>
 <span class="sd">        Other Parameters</span>
 <span class="sd">        ----------------</span>
-<span class="sd">        return_potential : bool, default = False</span>
-<span class="sd">            If `True`\, also returns the effective gravitational potential</span>
-<span class="sd">            corresponding with the Lagrange point.</span>
+<span class="sd">        extent_frac : int, float, default = 5.</span>
+<span class="sd">            The fraction of the maximum extent to search. The extent is the </span>
+<span class="sd">            distance of the farthest-away particle. We search beyond that </span>
+<span class="sd">            particle by this amount to sample :math:`\varphi`\.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        :class:`numpy.ndarray`</span>
-<span class="sd">            A NumPy array of shape (3,) with the x, y, and z positions of the </span>
-<span class="sd">            Lagrange point specified by ``n``\.</span>
-
-<span class="sd">        float</span>
-<span class="sd">            The effective gravitational potential at the Lagrange point if</span>
-<span class="sd">            ``return_potential = True``</span>
+<span class="sd">            A NumPy array of shape (n,3) with the x, y, and z positions of the </span>
+<span class="sd">            Lagrange points where n is the length of ``which``\.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcevalues</span><span class="p">({</span>
-            <span class="s1">&#39;n&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">],</span>
-        <span class="p">})</span>
-
-        <span class="n">com1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="s1">&#39;com1&#39;</span><span class="p">]</span>
-        <span class="n">com2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="s1">&#39;com2&#39;</span><span class="p">]</span>
-        <span class="n">diff</span> <span class="o">=</span> <span class="n">com2</span> <span class="o">-</span> <span class="n">com1</span> <span class="c1"># destination - origin</span>
-        <span class="n">distance</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">diff</span><span class="p">,</span> <span class="n">diff</span><span class="p">))</span>
-        <span class="n">direction</span> <span class="o">=</span> <span class="n">diff</span> <span class="o">/</span> <span class="n">distance</span>
+        <span class="kn">import</span> <span class="nn">warnings</span>
         
-        <span class="k">if</span> <span class="n">n</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span> <span class="c1"># L1 is always located between M1 and M2</span>
-            <span class="n">origin</span> <span class="o">=</span> <span class="n">com1</span> <span class="c1">#- 4*distance * direction</span>
-            <span class="n">span</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">distance</span><span class="p">,</span> <span class="n">resolution</span><span class="p">)</span>
-            <span class="n">direc</span> <span class="o">=</span> <span class="n">direction</span>
-            <span class="c1">#print(positions)</span>
-        <span class="k">elif</span> <span class="n">n</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span> <span class="c1"># L2 is always located behind M2</span>
-            <span class="c1"># Take a guess that we should search twice the distance behind M2</span>
-            <span class="n">origin</span> <span class="o">=</span> <span class="n">com2</span>
-            <span class="n">span</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">distance</span><span class="p">,</span> <span class="n">resolution</span><span class="p">)</span>
-            <span class="n">direc</span> <span class="o">=</span> <span class="n">direction</span>
-        <span class="k">elif</span> <span class="n">n</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span> <span class="c1"># L3 is always located behind M1</span>
-            <span class="c1"># Take a guess to search twice the distance behind M1</span>
-            <span class="n">origin</span> <span class="o">=</span> <span class="n">com1</span>
-            <span class="n">span</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">distance</span><span class="p">,</span> <span class="n">resolution</span><span class="p">)</span>
-            <span class="n">direc</span> <span class="o">=</span> <span class="o">-</span><span class="n">direction</span>
-        <span class="k">else</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">NotImplementedError</span> <span class="c1"># Not sure yet.</span>
+        <span class="c1"># Start at the COM, and find the gradient. If it truly is a binary</span>
+        <span class="c1"># system, then the COM is always somewhere between the two stars. We</span>
+        <span class="c1"># want to check along the line connecting the two stars. To find that</span>
+        <span class="c1"># line, we first move radially outward from the COM until we locate two</span>
+        <span class="c1"># local minima in \phi and a local maximum in \phi</span>
+        <span class="n">gradcom</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_gradient</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_com</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
 
-        <span class="n">positions</span> <span class="o">=</span> <span class="n">origin</span> <span class="o">+</span> <span class="n">span</span><span class="p">[:,</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="n">direc</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">which</span><span class="p">),</span> <span class="mi">3</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">any</span><span class="p">([</span><span class="n">i</span> <span class="ow">in</span> <span class="n">which</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]):</span>
+            <span class="c1"># Obtain a bunch of sample points up until the centripetal</span>
+            <span class="c1"># acceleration is greater than the gravitational acceleration</span>
+            <span class="n">r2s</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">xyz</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_com</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+            <span class="c1"># The location of the closest star is in the direction of the</span>
+            <span class="c1"># specific net force, |\vec{F}/m| = |\nabla\varphi|.</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="n">action</span><span class="o">=</span><span class="s1">&#39;ignore&#39;</span><span class="p">)</span>
+            <span class="n">direction</span> <span class="o">=</span> <span class="n">gradcom</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">gradcom</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">resetwarnings</span><span class="p">()</span>
+
+            <span class="n">max_extent</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">amax</span><span class="p">(</span><span class="n">r2s</span><span class="p">))</span>
+            <span class="c1"># search around the area</span>
+            <span class="n">samples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="n">max_extent</span><span class="p">,</span> <span class="n">max_extent</span><span class="p">,</span> <span class="mi">1000</span><span class="p">)[:,</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="n">extent_frac</span> <span class="o">*</span> <span class="n">direction</span>
+            <span class="n">phis</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">samples</span><span class="p">)</span>
+
+            <span class="c1"># For debugging:</span>
+            <span class="c1">#import matplotlib.pyplot as plt</span>
+            <span class="c1">#import time</span>
+            <span class="c1">#fig, ax = plt.subplots()</span>
+            <span class="c1">#ax.plot(samples[:,0], phis)</span>
+            <span class="c1">#plt.show()</span>
+            <span class="c1">#while plt.fignum_exists(fig.number):</span>
+            <span class="c1">#    fig.canvas.flush_events()</span>
+            <span class="c1">#    time.sleep(1.e-3)</span>
+            <span class="c1">#quit()</span>
+
+            <span class="c1"># Split the searched area into 3 segments, containing the 3 Lagrange</span>
+            <span class="c1"># points. We mark the separated segments by assigning NaN to some</span>
+            <span class="c1"># values, and then we split the region on NaNs.</span>
+
+            <span class="c1"># Move along the samples to find the places where phi was</span>
+            <span class="c1"># increasing, but is now starting to decrease.</span>
+            <span class="n">boundaries</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">decreasing</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">phi</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">phis</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]):</span>
+                <span class="k">if</span> <span class="n">phis</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">phi</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">decreasing</span><span class="p">:</span> <span class="k">continue</span>
+                    <span class="k">else</span><span class="p">:</span> <span class="n">boundaries</span> <span class="o">+=</span> <span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                    <span class="n">decreasing</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="k">elif</span> <span class="n">phis</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">phi</span><span class="p">:</span>
+                    <span class="n">decreasing</span> <span class="o">=</span> <span class="kc">False</span>
+
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">boundaries</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">3</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">boundaries</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Failed to split the region into 3 distinct groups: number of boundaries found != 3&quot;</span><span class="p">)</span>
+            
+            <span class="n">idx1</span> <span class="o">=</span> <span class="n">boundaries</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">phis</span><span class="p">[</span><span class="n">boundaries</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="n">boundaries</span><span class="p">[</span><span class="mi">1</span><span class="p">]])</span>
+            <span class="n">idx2</span> <span class="o">=</span> <span class="n">boundaries</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">phis</span><span class="p">[</span><span class="n">boundaries</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span><span class="n">boundaries</span><span class="p">[</span><span class="mi">2</span><span class="p">]])</span>
+            <span class="n">phis</span><span class="p">[</span><span class="n">idx1</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+            <span class="n">samples</span><span class="p">[</span><span class="n">idx1</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+            <span class="n">phis</span><span class="p">[</span><span class="n">idx2</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+            <span class="n">samples</span><span class="p">[</span><span class="n">idx2</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+            
+            <span class="c1"># https://stackoverflow.com/a/14606271</span>
+            <span class="n">points</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">clump_unmasked</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">masked_invalid</span><span class="p">(</span><span class="n">phis</span><span class="p">)):</span>
+                <span class="n">s</span> <span class="o">=</span> <span class="n">samples</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="n">p</span> <span class="o">=</span> <span class="n">phis</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+                <span class="n">points</span> <span class="o">+=</span> <span class="p">[</span><span class="n">s</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">p</span><span class="p">)]]</span>
+
+            <span class="n">points</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">points</span><span class="p">)</span>
+
+            <span class="c1"># For debugging:</span>
+            <span class="c1">#import matplotlib.pyplot as plt</span>
+            <span class="c1">#fig, ax = plt.subplots()</span>
+            <span class="c1">#for x,y in zip(points, phis):</span>
+            <span class="c1">#    ax.scatter(x[0], y)</span>
+            <span class="c1">#plt.show()</span>
+            <span class="c1">#quit()</span>
+            
+            <span class="c1"># Thus, the &quot;line&quot; connecting the stars must be parallel to the</span>
+            <span class="c1"># direction of the gradient. The first 3 Lagrange points are located</span>
+            <span class="c1"># on that line.</span>
+
+            <span class="c1"># Search in the direction first, then negative the direction next to</span>
+            <span class="c1"># obtain all the Lagrange points. We distinguish between them after.</span>
+            <span class="c1"># (looking for the 3 maxima on the line)</span>
+            <span class="c1">#</span>
+            <span class="c1"># In one direction, phi will first decrease until passing through</span>
+            <span class="c1"># the COM of one of the stars, where phi = -inf. After, phi will</span>
+            <span class="c1"># increase to a maximum and then decrease again forever.</span>
+            <span class="c1">#</span>
+            <span class="c1"># In the other direction, phi will first increase until a maximum,</span>
+            <span class="c1"># then decrease until passing through the COM of the other star,</span>
+            <span class="c1"># where phi = inf. Then phi will increase to another maximum, and</span>
+            <span class="c1"># thereafter phi decreases again forever.</span>
+            
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">points</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">3</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Located a number of Lagrange points != 3:</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">points</span><span class="p">))</span>
+
+            <span class="n">center</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="n">extrema</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">not_extrema</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">point</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">points</span><span class="p">):</span>
+                <span class="n">to_center</span> <span class="o">=</span> <span class="n">center</span> <span class="o">-</span> <span class="n">point</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="n">action</span> <span class="o">=</span><span class="s1">&#39;ignore&#39;</span><span class="p">)</span>
+                <span class="n">to_center</span> <span class="o">/=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">to_center</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span> <span class="c1"># normalize</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">resetwarnings</span><span class="p">()</span>
+                <span class="k">for</span> <span class="n">other</span> <span class="ow">in</span> <span class="n">points</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">point</span> <span class="ow">is</span> <span class="n">other</span><span class="p">:</span> <span class="k">continue</span>
+                    <span class="n">diff</span> <span class="o">=</span> <span class="n">other</span> <span class="o">-</span> <span class="n">point</span> <span class="c1"># destination - origin</span>
+                    <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="n">action</span> <span class="o">=</span> <span class="s1">&#39;ignore&#39;</span><span class="p">)</span>
+                    <span class="n">direc</span> <span class="o">=</span> <span class="n">diff</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">diff</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+                    <span class="n">warnings</span><span class="o">.</span><span class="n">resetwarnings</span><span class="p">()</span>
+                    <span class="c1"># ahat dot bhat = cos(theta)</span>
+                    <span class="c1"># if cos(theta) == 1, it&#39;s the same direction</span>
+                    <span class="c1"># if cos(theta) == -1, it&#39;s the opposite direction</span>
+                    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">direc</span><span class="p">,</span> <span class="n">to_center</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="n">not_extrema</span> <span class="o">+=</span> <span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                        <span class="k">break</span>
+                <span class="k">else</span><span class="p">:</span> <span class="n">extrema</span> <span class="o">+=</span> <span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">not_extrema</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Expected one non-extrema point&quot;</span><span class="p">)</span>
+
+            <span class="c1"># L1 is between L2 and L3</span>
+            <span class="n">ret</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">points</span><span class="p">[</span><span class="n">not_extrema</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+            
+            <span class="c1"># At the extrema, phi is larger behind the larger mass (L3)</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">points</span><span class="p">[</span><span class="n">extrema</span><span class="p">]))</span>
+            <span class="n">ret</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">points</span><span class="p">[</span><span class="n">extrema</span><span class="p">[</span><span class="n">idx</span><span class="p">[</span><span class="mi">0</span><span class="p">]]]</span>
+            <span class="n">ret</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">points</span><span class="p">[</span><span class="n">extrema</span><span class="p">[</span><span class="n">idx</span><span class="p">[</span><span class="mi">1</span><span class="p">]]]</span>
+
+        <span class="c1"># TODO: find Lagrange points 4 and 5</span>
+                
+        <span class="k">return</span> <span class="n">ret</span></div>
+
+
+
+<div class="viewcode-block" id="EffGravPot.get_contours">
+<a class="viewcode-back" href="../../math/starsmashertools.math.html#starsmashertools.math.EffGravPot.get_contours">[docs]</a>
+    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="nf">get_contours</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">values</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+            <span class="n">extent</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+            <span class="n">z</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.</span><span class="p">,</span>
+            <span class="n">resolution</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">),</span>
+            <span class="n">name</span> <span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;threaded&#39;</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Obtain vertices of equipotential contour lines for the given effective</span>
+<span class="sd">        gravitational potential values. This method requires </span>
+<span class="sd">        `contourpy &lt;https://pypi.org/project/contourpy/&gt;`_ to be installed.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        values : list, tuple, :class:`numpy.ndarray`</span>
+<span class="sd">            An array of effective gravitational potential values for which to</span>
+<span class="sd">            find the lines of equipotential.</span>
+
+<span class="sd">        Other Parameters</span>
+<span class="sd">        ----------------</span>
+<span class="sd">        extent : list, tuple, :class:`numpy.ndarray`</span>
+<span class="sd">            The physical extents in which to search for the equipotential lines.</span>
+<span class="sd">            Together with ``zplane`` and ``resolution``\, this defines the grid</span>
+<span class="sd">            of positions that will be searched.</span>
+
+<span class="sd">        z : int, float, default = 0.</span>
+<span class="sd">            The :math:`z` location of the search grid.</span>
+
+<span class="sd">        resolution : list, tuple, :class:`numpy.ndarray`\, default = (100, 100)</span>
+<span class="sd">            The grid resolution on which to calculate the contour lines.</span>
+
+<span class="sd">        name : str, default = &#39;threaded&#39;</span>
+<span class="sd">            The ``name`` keyword argument to </span>
+<span class="sd">            :func:`contourpy.contour_generator`\. This sets the algorithm used.</span>
+<span class="sd">        </span>
+<span class="sd">        **kwargs</span>
+<span class="sd">            Other keyword arguments are passed directly to </span>
+<span class="sd">            :func:`contourpy.contour_generator`\.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        lines : list</span>
+<span class="sd">            A list of vertices as :class:`numpy.ndarray` each with shape (N,2).</span>
+<span class="sd">            The length of the list is the same as the length of ``values``\.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        :py:class:`ImportError`</span>
+<span class="sd">            If contourpy is not installed, an :py:class:`ImportError` is raised.</span>
+
+<span class="sd">        :py:class:`ValueError`</span>
+<span class="sd">            If ``name`` is ``mpl2005`` or ``mpl2014``\, or if ``line_type`` in</span>
+<span class="sd">            ``**kwargs`` is not ``&#39;Separate&#39;``\.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="kn">import</span> <span class="nn">contourpy</span>
+        <span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">e</span><span class="o">.</span><span class="n">message</span> <span class="o">+=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Try &quot;pip install contourpy&quot;, or visit https://contourpy.readthedocs.io/en/v1.3.0/installation.html for installation instructions.&#39;</span>
+            <span class="k">raise</span> <span class="n">e</span>
+
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;mpl2014&#39;</span><span class="p">,</span> <span class="s1">&#39;mpl2005&#39;</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Algorithm &#39;mpl2014&#39; is not supported&quot;</span><span class="p">)</span>
+
+        <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;line_type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;line_type&#39;</span><span class="p">,</span> <span class="s1">&#39;Separate&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;line_type&#39;</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;Separate&#39;</span><span class="p">,</span> <span class="n">contourpy</span><span class="o">.</span><span class="n">LineType</span><span class="o">.</span><span class="n">Separate</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Keyword argument &#39;line_type&#39; must be &#39;Separate&#39;, not &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;line_type&#39;</span><span class="p">]))</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">extent</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">extent</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">resolution</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">extent</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">extent</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">resolution</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+
+        <span class="n">positions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">((</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">resolution</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">resolution</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">resolution</span><span class="p">),</span> <span class="n">z</span><span class="p">)</span>
+        <span class="p">))</span>
         
-        <span class="n">pot</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">positions</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span> <span class="n">positions</span><span class="p">[:,</span><span class="mi">1</span><span class="p">])</span>
-
-        <span class="n">mpot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">pot</span><span class="p">)</span>
-        <span class="n">potmin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmin</span><span class="p">(</span><span class="n">mpot</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">mpot</span><span class="p">)])</span>
-        <span class="n">potmax</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">mpot</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">mpot</span><span class="p">)])</span>
-        <span class="n">mpot</span> <span class="o">-=</span> <span class="n">potmin</span>
-        <span class="n">mpot</span> <span class="o">/=</span> <span class="n">potmax</span> <span class="o">-</span> <span class="n">potmin</span>
+        <span class="n">generator</span> <span class="o">=</span> <span class="n">contourpy</span><span class="o">.</span><span class="n">contour_generator</span><span class="p">(</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="p">,</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="n">y</span><span class="p">,</span>
+            <span class="n">z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">swapaxes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">positions</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">resolution</span><span class="p">),</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span>
+        <span class="p">)</span>
         
-        <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">pot</span><span class="p">)</span>
-        <span class="n">pot</span> <span class="o">=</span> <span class="n">pot</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
-        <span class="n">positions</span> <span class="o">=</span> <span class="n">positions</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">values</span><span class="p">:</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">vertices</span> <span class="ow">in</span> <span class="n">generator</span><span class="o">.</span><span class="n">lines</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+                <span class="n">line</span> <span class="o">+=</span> <span class="n">vertices</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+                <span class="n">line</span> <span class="o">+=</span> <span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">]]</span>
+            <span class="n">lines</span> <span class="o">+=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">line</span><span class="p">)]</span>
 
-        <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanargmin</span><span class="p">(</span><span class="n">mpot</span><span class="p">)</span>
-        
-        <span class="k">if</span> <span class="n">return_potential</span><span class="p">:</span> <span class="k">return</span> <span class="n">positions</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span> <span class="n">pot</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
-        <span class="k">return</span> <span class="n">positions</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span></div>
-
-
-    <span class="k">if</span> <span class="n">has_matplotlib</span><span class="p">:</span>
-<div class="viewcode-block" id="EffGravPot.get_equipotentials">
-<a class="viewcode-back" href="../../math/starsmashertools.math.html#starsmashertools.math.EffGravPot.get_equipotentials">[docs]</a>
-        <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
-        <span class="nd">@api</span>
-        <span class="k">def</span> <span class="nf">get_equipotentials</span><span class="p">(</span>
-                <span class="bp">self</span><span class="p">,</span>
-                <span class="n">potentials</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-                <span class="n">extent</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                <span class="n">normalize</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-                <span class="n">resolution</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="p">):</span>
-<span class="w">            </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">            Find the positions of the equipotential contours corresponding with </span>
-<span class="sd">            the given effective gravitational potentials.</span>
-
-<span class="sd">            Note that this requires Matplotlib.</span>
-
-<span class="sd">            Parameters</span>
-<span class="sd">            ----------</span>
-<span class="sd">            potentials : list, tuple, :class:`numpy.ndarray`</span>
-<span class="sd">                The effective gravitational potentials for which to find the </span>
-<span class="sd">                contours of effective gravitational equipotentials.</span>
-<span class="sd">            </span>
-<span class="sd">            Other Parameters</span>
-<span class="sd">            ----------------</span>
-<span class="sd">            extent : list, tuple, :class:`numpy.ndarray`, None, default = None</span>
-<span class="sd">                Array of ``[xmin, xmax, ymin, ymax]`` for plotting purposes. If</span>
-<span class="sd">                `None`\, defaults to the current ``axes`` limits.</span>
-<span class="sd">            </span>
-<span class="sd">            Returns</span>
-<span class="sd">            -------</span>
-<span class="sd">            list</span>
-<span class="sd">                A list of :class:`numpy.ndarray` objects with the same length as</span>
-<span class="sd">                the given ``potentials``\. Each element is an (N,3) array of </span>
-<span class="sd">                positions.</span>
-<span class="sd">            &quot;&quot;&quot;</span>
-            <span class="kn">import</span> <span class="nn">starsmashertools.mpl.axes</span>
-            <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-
-            <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span>
-                <span class="n">figsize</span> <span class="o">=</span> <span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">8</span><span class="p">),</span>
-            <span class="p">)</span>
-            <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_axes</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
-
-            <span class="n">potentials</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">potentials</span><span class="p">)</span>
-
-            <span class="k">if</span> <span class="n">extent</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">extent</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">ax</span><span class="o">.</span><span class="n">get_xlim</span><span class="p">())</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">ax</span><span class="o">.</span><span class="n">get_ylim</span><span class="p">())</span>
-
-            <span class="k">if</span> <span class="n">resolution</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">res</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">mpl</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">get_resolution</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span> <span class="n">res</span> <span class="o">=</span> <span class="n">resolution</span>
-            
-            <span class="n">x</span> <span class="o">=</span>  <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">extent</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">extent</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">res</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-            <span class="n">y</span> <span class="o">=</span>  <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">extent</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">extent</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">res</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
-            <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
-
-            <span class="n">pot</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
-
-            <span class="c1"># Normalizing to enable this to work</span>
-            <span class="k">if</span> <span class="n">normalize</span><span class="p">:</span>
-                <span class="n">pot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">pot</span><span class="p">)</span>
-                <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">pot</span><span class="p">)</span>
-                <span class="n">potmin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmin</span><span class="p">(</span><span class="n">pot</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span>
-                <span class="n">potmax</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">pot</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span>
-                <span class="n">pot</span> <span class="o">-=</span> <span class="n">potmin</span>
-                <span class="n">pot</span> <span class="o">/=</span> <span class="n">potmax</span> <span class="o">-</span> <span class="n">potmin</span>
-                <span class="n">potentials</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">potentials</span><span class="p">)</span>
-                <span class="n">potentials</span> <span class="o">-=</span> <span class="n">potmin</span>
-                <span class="n">potentials</span> <span class="o">/=</span> <span class="n">potmax</span> <span class="o">-</span> <span class="n">potmin</span>
-            
-            <span class="n">order</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">potentials</span><span class="p">)</span>
-            
-            <span class="n">cs</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">contour</span><span class="p">(</span>
-                <span class="n">pot</span><span class="p">,</span>
-                <span class="n">potentials</span><span class="p">[</span><span class="n">order</span><span class="p">],</span>
-                <span class="n">origin</span> <span class="o">=</span> <span class="s1">&#39;lower&#39;</span><span class="p">,</span>
-                <span class="n">extent</span> <span class="o">=</span> <span class="n">extent</span><span class="p">,</span>
-                <span class="n">cmap</span> <span class="o">=</span> <span class="s1">&#39;tab10&#39;</span><span class="p">,</span>
-            <span class="p">)</span>
-
-            <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span>
-            
-            <span class="n">ret</span> <span class="o">=</span> <span class="p">[]</span>
-            <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">order</span><span class="p">:</span>
-                <span class="n">segments</span> <span class="o">=</span> <span class="n">cs</span><span class="o">.</span><span class="n">allsegs</span><span class="p">[</span><span class="n">s</span><span class="p">]</span>
-                <span class="n">xy</span> <span class="o">=</span> <span class="p">[]</span>
-                <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">segments</span><span class="p">):</span>
-                    <span class="n">xy</span> <span class="o">+=</span> <span class="n">s</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
-                    <span class="n">xy</span> <span class="o">+=</span> <span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">]]</span>
-                    
-                <span class="n">ret</span> <span class="o">+=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">xy</span><span class="p">)]</span>
-            <span class="k">return</span> <span class="n">ret</span></div>
+        <span class="k">return</span> <span class="n">lines</span></div>
 </div>
 
+        
 </pre></div>
 
            </div>

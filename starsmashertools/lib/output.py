@@ -9,12 +9,24 @@ import collections
 import itertools
 import time
 import mmap
+import re
+import itertools
+import struct
+import warnings
 
 try:
     import matplotlib.axes
     has_matplotlib = True
 except ImportError:
     has_matplotlib = False
+
+try:
+    import numba
+    from numba import cuda
+    has_gpu = True
+except ImportError:
+    has_gpu = False
+    
 
 @starsmashertools.preferences.use
 class Output(dict, object):
@@ -68,8 +80,7 @@ class Output(dict, object):
 
         self._mask = None
         self._header = None
-        self.data = None
-
+        
         self._original_data = None
 
     @property
@@ -127,7 +138,7 @@ class Output(dict, object):
 
     @api
     def __getitem__(self, item):
-        """
+        r"""
         If the file has not yet been read, read it. Then return the requested
         item.
         """
@@ -169,7 +180,10 @@ class Output(dict, object):
     # Use this to make sure that the file has been fully read
     def _ensure_read(self):
         if False in self._isRead.values():
-            self.read(return_headers=not self._isRead['header'], return_data=not self._isRead['data'])
+            self.read(
+                header = not self._isRead['header'],
+                data = not self._isRead['data'],
+            )
 
     def _clear_cache(self):
         self._cache = copy.deepcopy(self.preferences.get('cache'))
@@ -178,8 +192,8 @@ class Output(dict, object):
 
     @property
     def header(self):
-        if not self._isRead['header']:
-            self.read(return_headers=True, return_data=False)
+        if self._header is None:
+            self.read(header = True, data = False)
         return self._header
 
     @property
@@ -213,49 +227,66 @@ class Output(dict, object):
     
     @api
     def copy_from(self, output : 'starsmashertools.lib.output.Output'):
+        for key in list(self.keys(ensure_read = False)):
+            if key in self: del[key]
+        self._clear_cache()
+        
+        self._path = copy.deepcopy(output._path)
+        self.simulation = output.simulation
+        self._header = copy.deepcopy(output._header)
+        self._original_data = copy.deepcopy(output._original_data)
+        self.mode = copy.deepcopy(output.mode)
+        
         self._mask = copy.deepcopy(output._mask)
         
-        for key in self._isRead.keys():
-            self._isRead[key] = True
-        
-        for key, val in output.items():
+        for key, val in output.items(ensure_read = False):
             self[key] = copy.deepcopy(val)
+
+        self._isRead = copy.deepcopy(output._isRead)
     
-    def read(self, return_headers=True, return_data=True, **kwargs):
-        if self._isRead['header']: return_headers = False
-        if self._isRead['data']: return_data = False
-
-        self._header = None
-        self.data = None
-
-        read_header = return_headers
-        read_data = return_data
-
-        if read_header or read_data:
-            obj = self.simulation.reader.read(
+    def read(self, header = True, data = True, **kwargs):
+        if self._isRead['header']: header = False
+        if self._isRead['data']: data = False
+        
+        if header and self._header is not None:
+            # Remove keys associated with the current header
+            for key in self._header:
+                del self[key]
+            self._header = None
+        if data:
+            # Remove keys associated with the current data
+            for key in list(self.keys(ensure_read = False)):
+                if key not in self: continue
+                if self._header is not None and key in self._header: continue
+                del self[key]
+        
+        if header and data:
+            self._header, data = self.simulation.reader.read(
                 self.path,
-                return_headers=read_header,
-                return_data=read_data,
+                return_headers = header,
+                return_data = data,
                 **kwargs
             )
-
-            if read_header and read_data:
-                self.data, self._header = obj
-            elif not read_header and read_data:
-                self.data = obj
-            elif read_header and not read_data:
-                self._header = obj
-        
-        if self._header is not None:
-            for key, val in self._header.items():
-                self[key] = val
-
-        if self.data is not None:
-            for key, val in self.data.items():
-                self[key] = val
-
-        if read_header: self._isRead['header'] = True
-        if read_data: self._isRead['data'] = True
+            self.update(self._header)
+            self.update(data)
+            for key in ['header','data']: self._isRead[key] = True
+        elif not header and data:
+            self.update(self.simulation.reader.read(
+                self.path,
+                return_headers = header,
+                return_data = data,
+                **kwargs
+            ))
+            self._isRead['data'] = True
+        elif header and not data:
+            self._header = self.simulation.reader.read(
+                self.path,
+                return_headers = header,
+                return_data = data,
+                **kwargs
+            )
+            self.update(self._header)
+            self._isRead['header'] = True
     
     @api
     def from_cache(self, key : str):
@@ -301,7 +332,7 @@ class Output(dict, object):
 
     @api
     def get_core_particles(self):
-        """
+        r"""
         Return the IDs of any core particles present in this output file. A core
         particle is identified in ``StarSmasher`` as having the unique property
         of zero specific internal energy. This is because core particles act 
@@ -318,7 +349,7 @@ class Output(dict, object):
 
     @api
     def get_non_core_particles(self):
-        """
+        r"""
         Similar to :meth:`~.get_core_particles`\, but instead returns the IDs of
         the particles which are not identified as being core particles.
         
@@ -341,7 +372,7 @@ class Output(dict, object):
             overwrite : bool = False,
             max_stored : int = Pref('condense.max stored', 10000),
     ):
-        """
+        r"""
         Perform an operation as defined by a string or function using this
         :class:`~.Output` object. The result is saved to the 
         :class:`~.simulation.Simulation` archive for quick access in the
@@ -496,7 +527,7 @@ class Output(dict, object):
             yangle : float | int = 0.,
             zangle : float | int = 0.,
     ):
-        """
+        r"""
         Rotate the particles using an Euler rotation.
 
         An Euler rotation can be understood as follows. Imagine the x, y, and z
@@ -542,7 +573,7 @@ class Output(dict, object):
             radial : bool = False,
             r : list | tuple | np.ndarray | type(None) = None,
     ):
-        """
+        r"""
         Get the x, y, and z bounds of the simulation, where the minima are found
         as ``min(x - 2*h)`` and maxima ``max(x + 2*h)`` for the x-axis and 
         similarly for the y and z axes.
@@ -594,7 +625,7 @@ class Output(dict, object):
             self,
             format_sheet : str = Pref('get_formatted_string.format sheet'),
     ):
-        """
+        r"""
         Convert an output file to a (mostly) human-readable string format. 
         This will only display the values in the header of the output file and 
         it uses one of the format sheets located in the ``format_sheets`` 
@@ -629,7 +660,7 @@ class Output(dict, object):
                 y : str = 'y',
                 **kwargs
         ):
-            """
+            r"""
             Create a scatter plot on the given Matplotlib axes showing the
             particle values.
             
@@ -668,17 +699,152 @@ class Output(dict, object):
             return ret
 
 
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def get_gravitational_acceleration(
+            self,
+            softening : bool = False,
+            nselfgravity : int | type(None) = None,
+    ):
+        r"""
+        Obtain the gravitational acceleration vectors of each particle in this 
+        output file. Softening as implemented in StarSmasher is currently not 
+        supported, but may be supported in future versions.
 
+        Other Parameters
+        ----------------
+        softening : bool, default = False
+            If ``False``\, accelerations are calculated using only 
+            :math:`\sum_j Gm_j/|\vec{r}_i-\vec{r}_j|^2`\. If ``True``\, a 
+            :py:class:`NotImplementedError` is raised.
 
+        nselfgravity : int, None, default = None
+            If ``0``\, gravity is only calculated to point particles. If ``1``\,
+            gravity is calculated to all particles. If ``None``\, the value of
+            ``nselfgravity`` from the StarSmasher simulation will be used.
 
+        Returns
+        -------
+        g : :class:`numpy.ndarray`
+            A 2D array of gravitational acceleration vectors in shape (N,3), 
+            where N is the number of particles. The result is in cgs units.
 
+        Raises
+        ------
+        :py:class:`NotImplementedError`
+            If ``softening = True``\, this error is raised.
 
+        Notes
+        -----
+        To obtain the magnitude of the returned vectors, try 
+        ``np.sqrt((g**2).sum(axis = 1))``\.
+        """
+        import starsmashertools
+        from starsmashertools.lib.units import constants
+        import starsmashertools.helpers.warnings
+        import math
 
+        try:
+            import starsmashertools.helpers.gpujob
+            has_gpujob = True
+        except:
+            has_gpujob = False
 
+        if nselfgravity is None:
+            nselfgravity = self.simulation.get_nselfgravity([self])[0]
+        
+        ntot = self['ntot']
+        if nselfgravity == 0:
+            jlower = ntot - 1
+            if self['u'][jlower] != 0:
+                raise starsmashertools.StarSmasherError('last particle not a point particle?')
 
+        jupper = ntot
 
+        xyz = np.column_stack((
+            self['x'] * float(self.simulation.units['x']),
+            self['y'] * float(self.simulation.units['y']),
+            self['z'] * float(self.simulation.units['z']),
+        ))
+        m = self['am'] * float(self.simulation.units['am'])
+        if softening:
+            raise NotImplementedError("Gravitational softening is not supported in this version of starsmashertools")
+        g = np.zeros((ntot, 3))
+        
+        if has_gpu and has_gpujob:
+            @cuda.jit('void(float64[:], float64[:], float64[:], float64[:], float64[:], float64[:], float64[:], int32)')
+            def kernel(gx, gy, gz, m, x, y, z, N):
+                i = cuda.grid(1)
+                if i < N:
+                    ami = m[i]
+                    xi = x[i]
+                    yi = y[i]
+                    zi = z[i]
+                    gx[i] = 0
+                    gy[i] = 0
+                    gz[i] = 0
+                    for j in range(N):
+                        if i == j: continue
+                        dx = x[j] - xi
+                        dy = y[j] - yi
+                        dz = z[j] - zi
+                        r2 = dx * dx + dy * dy + dz * dz
+                        
+                        rinv = 1. / math.sqrt(r2)
+                        mrinv3 = m[j] * rinv * rinv * rinv
 
+                        cuda.atomic.add(gx, i, mrinv3 * dx)
+                        cuda.atomic.add(gy, i, mrinv3 * dy)
+                        cuda.atomic.add(gz, i, mrinv3 * dz)
 
+            gx = np.zeros(ntot)
+            gy = np.zeros(ntot)
+            gz = np.zeros(ntot)
+            with starsmashertools.helpers.gpujob.GPUJob(
+                [m, xyz[:,0], xyz[:,1], xyz[:,2], ntot],
+                [gx, gy, gz],
+                kernel = kernel,
+            ) as result:
+                g = np.column_stack(result)
+        
+        else:
+            def do(i, jlower, jupper):
+                mj = m[jlower:jupper]
+                offset = xyz[jlower:jupper] - xyz[i] # \vec{r}_j - \vec{r}_i
+                r3 = ((offset**2).sum(axis = 1))**1.5 # |\vec{r}_{ij}|^3
+                dg = (mj / r3)[:,None] * offset # Gm_j \vec{r}_{ij} / |\vec{r}_{ij}|^3
+                dg[r3 == 0] = 0
+                g[i] += dg.sum(axis = 0)
+                g[jlower:jupper] -= dg*(m[i]/mj)[:,None]
+
+            # Ignore annoying divide-by-zero warnings
+            starsmashertools.helpers.warnings.filterwarnings(action = 'ignore')
+
+            # This loop is written nearly identically to StarSmasher's
+            # cpu_grav.f, except that the calculations are vectorized.
+            
+            if nselfgravity:
+                for i in range(ntot):
+                    do(i, i + 1, jupper)
+            else:
+                for i in range(ntot - 1):
+                    do(i, jlower, jupper)
+                do(ntot - 1, 0, jupper) # so any last point particle interacts with everything
+            
+            """ This can be helpful for sanity checking
+            for i in range(ntot):
+                for j in range(ntot):
+                    if i == j: continue
+                    offset = xyz[j] - xyz[i]
+                    r3 = (offset**2).sum()**1.5 
+                    g[i] += m[j] * offset / r3
+            """
+
+            starsmashertools.helpers.warnings.resetwarnings()
+        return g * float(constants['G'])
+                    
+            
+        
 
 
 
@@ -730,7 +896,7 @@ class Output(dict, object):
 # Asynchronous output file reading
 @starsmashertools.preferences.use
 class OutputIterator(object):
-    """
+    r"""
     An iterator which can be used to iterate through :class:`~.Output` objects
     efficiently.
     """
@@ -745,7 +911,7 @@ class OutputIterator(object):
             asynchronous : bool = True,
             **kwargs,
     ):
-        """
+        r"""
         Constructor.
         
         Parameters
@@ -884,7 +1050,7 @@ class OutputIterator(object):
 
 
 class ParticleIterator(OutputIterator, object):
-    """
+    r"""
     Similar to an :class:`~.OutputIterator`, but instead of iterating through 
     all the particles in each Output file, we iterate through a list of
     particles instead.
@@ -910,50 +1076,42 @@ class ParticleIterator(OutputIterator, object):
         header_stride = self.simulation.reader._stride['header']
         header_dtype = self.simulation.reader._dtype['header']
         
-        EOL_size = self.simulation.reader._EOL_size
-        data_stride = self.simulation.reader._stride['data'] + EOL_size
+        data_stride = self.simulation.reader._stride['data']
         dtype = self.simulation.reader._dtype['data']
 
         sort_indices = np.argsort(self.particle_IDs)
         IDs = np.asarray(self.particle_IDs)[sort_indices]
-        positions = [header_stride + EOL_size + data_stride * ID for ID in IDs]
+        # Each 4 is a Fortran record marker
+        positions = [4 + header_stride + 4 + 4 + (data_stride + 4+4) * ID for ID in IDs]
+
+        # Calling Reader.read also ensures that the proper Fortran write
+        # statements have been located ahead of time
+        header = self.simulation.reader.read(
+            filename,
+            return_headers = True,
+            return_data = False,
+        )
         
-        _buffer = bytearray(len(IDs) * data_stride)
         with starsmashertools.helpers.file.open(
                 filename, 'rb', lock = False, verbose = False,
         ) as f:
             buffer = mmap.mmap(f.fileno(),0,access=mmap.ACCESS_READ)
-        # Grab the headers so we can record the times
-        try:
-            header = self.simulation.reader._read(
-                buffer=buffer,
-                shape=1,
-                dtype=header_dtype,
-                offset=4,
-                strides=header_stride,
-            )
-        except Exception as e:
-            raise Reader.CorruptedFileError("This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories. %s" % filename) from e
         
+        _buffer = bytearray(len(IDs) * (data_stride + 4+4))
         for i, (ID, position) in enumerate(zip(IDs, positions)):
-            pos = i * data_stride
+            pos = i * (data_stride+4+4)
             _buffer[pos : pos + data_stride] = buffer[position : position + data_stride]
-        try:
-            d = self.simulation.reader._read(
-                buffer=_buffer,
-                shape=len(self.particle_IDs),
-                dtype=dtype,
-                offset=4,
-                strides=data_stride,
-            )[np.argsort(sort_indices)]
-        except Exception as e:
-            raise Reader.CorruptedFileError("This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories. %s" % filename) from e
-        
-        data = {name:d[name].flatten() for name in d.dtype.names}
-        data['t'] = header['t'][0]
-        data['ID'] = self.particle_IDs
-        data = starsmashertools.helpers.readonlydict.ReadOnlyDict(data)
-        return data
+        d = np.ndarray(
+            buffer=_buffer,
+            shape=len(self.particle_IDs),
+            dtype=dtype,
+            strides=data_stride + 4 + 4,
+        )[np.argsort(sort_indices)]
+        return starsmashertools.helpers.readonlydict.ReadOnlyDict(
+            {name:d[name].flatten() for name in d.dtype.names} | \
+            {'t': header['t'], 'ID' : self.particle_IDs}
+        )
+
                 
                 
 
@@ -996,344 +1154,292 @@ class ParticleIterator(OutputIterator, object):
 
 
 
-
+@starsmashertools.preferences.use
 class Reader(object):
-    formats = {
-        'integer' : 'i4',
-        'real*8'  : 'f8',
-        'real'    : 'f4',
-    }
-
-    EOL = 'f8'
-    
-    def __init__(self, simulation):
+    def __init__(
+            self,
+            simulation,
+    ):
         self.simulation = simulation
-        header_format, header_names, data_format, data_names = Reader.get_output_format(self.simulation)
-        
-        self._dtype = {
-            'data' : np.dtype([(name, fmt) for name, fmt in zip(data_names, data_format.split(","))]),
-            'header' : np.dtype([(name, fmt) for name, fmt in zip(header_names, header_format.split(","))]),
+
+        self._endian = None
+        self._dtype = None
+        self._stride = None
+        self._formats = {
+            'header' : {
+                'format' : None,
+                'variables' : None,
+            },
+            'data' : {
+                'format' : None,
+                'variables' : None,
+            },
         }
 
-        self._stride = {
-            'header' : sum([header_format.count(str(num))*num for num in [1, 2, 4, 6, 8]]),
-            'data' : sum([data_format.count(str(num))*num for num in [1, 2, 4, 6, 8]]),
-        }
-
-        self._EOL_size = sum([Reader.EOL.count(str(num))*num for num in [1, 2, 4, 6, 8]])
-
+    def get_endian(self):
+        if self._endian is None:
+            for s in ['header','data']:
+                if self._formats[s]['format'] is None: continue
+                if self._formats[s]['format'].startswith('<'):
+                    self._endian = 'little'
+                    break
+                elif self._formats[s]['format'].startswith('>'):
+                    self._endian = 'big'
+                    break
+            else: return None
+        return self._endian
+    
     def read_from_header(self, key : str, filename : str):
         import starsmashertools.helpers.file
-        names = self._dtype['header'].names
+        
+        if self._formats['header']['variables'] is None:
+            self.update_format(filename)
+        
+        variables = self._formats['header']['variables']
+        names = [v.name for v in variables]
         if key not in names:
             raise KeyError("No key '%s' in the dtypes" % key)
-
-        index = names.index(key)
-        size = self._dtype['header'][index].itemsize
-        others = names[:index]
-        location = 4 + sum([self._dtype['header'][name].itemsize for name in others])
+        variable = variables[names.index(key)]
         
         with starsmashertools.helpers.file.open(
                 filename, 'rb', lock = False, verbose = False,
         ) as f:
-            f.seek(location)
-            content = f.read(size)
-        return self._read(
-            buffer = content,
-            shape = 1,
-            dtype = self._dtype['header'][key],
-            offset = 0,
-            strides = size,
-        )[0]
-        
-    def _read(self, *args, **kwargs):
-        ret = np.ndarray(*args, **kwargs)
-        if ret.dtype.names is not None:
-            for name in ret.dtype.names:
-                finite = np.isfinite(ret[name])
-                if not np.any(finite): continue
-                if np.any(np.abs(ret[name][finite]) > 1e100):
-                    raise Reader.UnexpectedFileFormatError
-        else:
-            finite = np.isfinite(ret)
-            if np.any(finite):
-                if np.abs(ret[finite]) < 1e-100 or np.abs(ret[finite]) > 1e100:
-                    raise Reader.UnexpectedFileFormatError
-        return ret
-
-    def _read_header(self, buffer):
-        import starsmashertools.helpers.readonlydict
-        
-        header = self._read(
-            buffer=buffer,
-            shape=1,
-            dtype=self._dtype['header'],
-            offset=4,
-            strides=self._stride['header'],
-        )
-        
-        new_header = {}
-        for name in header[0].dtype.names:
-            new_header[name] = np.array(header[name])[0]
-        header = starsmashertools.helpers.readonlydict.ReadOnlyDict(new_header)
-        return header
-
-    def _read_data(self, buffer, ntot):
-        import starsmashertools.helpers.readonlydict
-        # There are 'ntot' particles to read
-        data = self._read(
-            buffer=buffer,
-            shape=ntot,
-            dtype=self._dtype['data'],
-            offset=self._stride['header'] + self._EOL_size + 4,
-            strides=self._stride['data'] + self._EOL_size,
-        )
-        
-        # Now organize the data into Pythonic structures
-        new_data = {}
-        for name in data[0].dtype.names:
-            new_data[name] = np.array(data[name])
-        # Always include an 'ID' key
-        new_data['ID'] = np.arange(ntot, dtype = int)
-        return starsmashertools.helpers.readonlydict.ReadOnlyDict(new_data)
+            f.seek(4 + sum([v.size for v in variables[:names.index(key)]]))
+            return variable.get_value(f.read(variable.size), self.get_endian())
 
     def read(
             self,
-            filename,
-            return_headers=True,
-            return_data=True,
-            verbose=False,
+            filename : str,
+            return_headers : bool = True,
+            return_data : bool = True,
+            verbose : bool = False,
     ):
         import starsmashertools.helpers.file
         import starsmashertools.helpers.path
         
         if verbose: print(filename)
-        
+
         if True not in [return_headers, return_data]:
             raise ValueError("One of 'return_headers' or 'return_data' must be True")
+        
+        if None in [self._dtype, self._stride]:
+            self.update_format(filename)
+        
+        endian = self.get_endian()
+        
         try:
             with starsmashertools.helpers.file.open(
                     filename, 'rb', lock = False, verbose = False,
             ) as f:
-                # We always need to check ntot at beginning and end of file
-                f.seek(4) # Garbage in front (Fortran issue?)
-                ntot_buffer = f.read(8)
+                # Check how many rows of data the file has
+                # The last thing written to the file must always be variable
+                # "ntot"
+                f.seek(-4, 2)
+                recl = int.from_bytes(f.read(4), byteorder = endian)
+                f.seek(-(4 + recl), 2)
+                size = f.tell() - 4
+                ntot = int.from_bytes(f.read(recl), byteorder = endian)
+                nlines = (size - (self._stride['header'] + 8)) // (self._stride['data'] + 8)
+                # Compare the number of lines to the written number of particles
+                # at the end of the file. This number must always be written as
+                # a regular Fortran integer
+                if nlines != ntot:
+                    raise Reader.CorruptedFileError("nlines != ntot (%d != %d). This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories: '%s'" % (nlines, ntot, filename))
 
-                if return_data:
-                    # This speeds up reading significantly when reading data,
-                    # but it's about 2x slower when reading the header only.
-                    buffer = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
-                else: # Return header only
-                    f.seek(0)
-                    buffer = f.read(self._stride['header'] + 4)
-
-                f.seek(-8, 2) # Go to 8th byte before the end
-                ntot_check_buffer = f.read(8) # Specifying 8 here goes faster
-            
-            ntot = self._read(
-                buffer = ntot_buffer,
-                shape = 1,
-                dtype = '<i4',
-                offset = 0,
-                strides = 8,
-            )[0]
-            
-            ntot_check = self._read(
-                buffer = ntot_check_buffer,
-                shape = 1,
-                dtype = '<i4',
-                offset = 0,
-                strides = 8,
-            )[0]
-        except Exception as e:
-            raise Reader.CorruptedFileError("This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories: '%s'" % filename) from e
-        
-        if ntot != ntot_check:
-            raise Reader.CorruptedFileError("ntot != ntot_check. This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories: '%s'" % filename)
-        
-        try:
-            if return_headers:
-                header = self._read_header(buffer)
-            
-            if return_headers and not return_data: return header
-            # return_data == True here
-            data = self._read_data(buffer, ntot)
-            
-            if return_headers: return data, header
-            else: return data # If return_headers == False
-        except Exception as e:
-            raise Reader.CorruptedFileError("This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories: '%s'" % filename) from e
-        
-    # This method returns instructions on how to read the data files
-    @staticmethod
-    def get_output_format(simulation):
-        import starsmashertools.helpers.path
-        import starsmashertools.helpers.file
-        import starsmashertools.helpers.string
-        
-        # Expected data types
-        data_types = ('integer', 'real', 'logical', 'character')
-        
-        src = starsmashertools.helpers.path.get_src(simulation.directory)
-
-        if src is None:
-            raise Reader.SourceDirectoryNotFoundError(simulation)
-        
-        # Find the output.f file
-        writerfile = starsmashertools.helpers.path.join(src, "output.f")
-        
-        listening = False
-        
-        # Read the output.f file
-        subroutine_text = ""
-        with starsmashertools.helpers.file.open(
-                writerfile, 'r', lock = False, verbose = False,
-        ) as f:
-            for line in f:
-                if len(line.strip()) == 0 or line[0] in starsmashertools.helpers.file.fortran_comment_characters:
-                    continue
-                if '!' in line: line = line[:line.index('!')] + "\n"
-                if len(line.strip()) == 0: continue
-
-                ls = line.strip()
-
-                if ls == 'subroutine dump(iu)':
-                    listening = True
-
-                if listening:
-                    subroutine_text += line
-                    if ls == 'end': break
-
-        # Use the subroutine text to get the variable names and their types
-        vtypes = {}
-        for line in subroutine_text.split("\n"):
-            if len(line.strip()) == 0 or (line[0] in starsmashertools.helpers.file.fortran_comment_characters):
-                continue
-            if '!' in line: line = line[:line.index('!')] + "\n"
-            if len(line.strip()) == 0: continue
-            
-            ls = line.strip()
-            if len(ls) > len('include') and ls[:len('include')] == 'include':
-                # On 'include' lines, we find the file that is being included
-                dname = starsmashertools.helpers.path.dirname(writerfile)
-                fname = starsmashertools.helpers.path.join(dname, ls.replace('include','').replace('"','').replace("'", '').strip())
-                with starsmashertools.helpers.file.open(
-                        fname, 'r', lock = False, verbose = False,
-                ) as f:
-                    for key, val in starsmashertools.helpers.string.get_fortran_variable_types(f.read(), data_types).items():
-                        if key not in vtypes.keys(): vtypes[key] = val
-                        else: vtypes[key] += val
-        
-        for key, val in starsmashertools.helpers.string.get_fortran_variable_types(subroutine_text, data_types).items():
-            if key not in vtypes.keys(): vtypes[key] = val
-            else: vtypes[key] += val
-
-        
-        # We have all the variables and their types now, so let's check which variables
-        # are written to the output file header
-        header_names = []
-        listening = False
-        for line in subroutine_text.split("\n"):
-            if len(line.strip()) == 0 or line[0] in starsmashertools.helpers.file.fortran_comment_characters:
-                continue
-            if '!' in line: line = line[:line.index('!')] + "\n"
-            if len(line.strip()) == 0: continue
-            
-            ls = line.strip().replace(' ','')
-            if 'write(iu)' in ls:
-                ls = ls[len('write(iu)'):]
-                if ls[-1] == ',': ls = ls[:-1]
-                header_names += ls.split(",")
-                listening = True
-                continue
-
-            if listening:
-                # When it isn't a line continuation, we stop
-                # https://gcc.gnu.org/onlinedocs/gcc-3.4.6/g77/Continuation-Line.html
-                isContinuation = line[5] not in [' ', '0']
-                if not isContinuation: break
-                l = line[6:].strip()
-                if l[-1] == ',': l = l[:-1]
-                header_names += l.split(",")
-
-        
-        # We know what the header is now, so we get the data types associated with it
-        header_formats = collections.OrderedDict()
-        for name in header_names:
-            for _type, names in vtypes.items():
-                if name in names:
-                    if _type not in Reader.formats:
-                        raise NotImplementedError("Fortran type '%s' is not included in Reader.formats in output.py but is found in '%s'" % (_type, writerfile))
-                    header_formats[name] = Reader.formats[_type]
-                    break
-
-
-        # To save us from actually interpreting the Fortran code, we make
-        # assumptions about the format of output.f.
-        if 'if(ncooling.eq.0)' not in subroutine_text.replace(' ',''):
-            raise Exception("Unexpected format in '%s'" % writerfile)
-
-        data_names = []
-        listening1 = False
-        listening2 = False
-        for line in subroutine_text.split("\n"):
-            if len(line.strip()) == 0 or line[0] in starsmashertools.helpers.file.fortran_comment_characters: continue
-            if '!' in line: line = line[:line.index('!')] + "\n"
-            if len(line.strip()) == 0: continue
-            
-            ls = line.strip().replace(' ','')
-            if not listening1:
-                if 'if(ncooling.eq.' in ls:
-                    idx = ls.index('if(ncooling.eq.') + len('if(ncooling.eq.')
-                    if simulation['ncooling'] == int(ls[idx]):
-                        listening1 = True
-                        continue
-            elif not listening2:
-                if len(ls) > len('write(iu)') and ls[:len('write(iu)')] == 'write(iu)':
-                    listening2 = True
-                    l = ls[len('write(iu)'):]
-                    if l[-1] == ',': l = l[:-1]
-                    data_names = l.split(',')
-            else:
-                # Each line should be either a line continuation or a comment line, otherwise stop
-                # https://gcc.gnu.org/onlinedocs/gcc-3.4.6/g77/Continuation-Line.html
-                isContinuation = line[5] not in [' ', '0']
-                if not isContinuation: break
+                if return_headers:
+                    f.seek(4)
+                    header = np.ndarray(
+                        buffer = f.read(self._stride['header']),
+                        shape = 1,
+                        dtype = self._dtype['header'],
+                        offset = 0, # start-of-record
+                        strides = self._stride['header'],
+                    )
                 
-                line = line[6:]
-                ls = line.strip().replace(' ','')
-                if ls[-1] == ',': ls = ls[:-1]
-                data_names += ls.split(',')
+                if return_data:
+                    # Go past the header's trailing record marker, to the start
+                    # of the first data row's record marker
+                    data = np.ndarray(
+                        # mmap speeds up reading significantly, but is about 2x
+                        # slower when reading only the header.
+                        buffer = mmap.mmap(
+                            f.fileno(), 0, access=mmap.ACCESS_READ,
+                        ),
+                        shape = ntot,
+                        dtype = self._dtype['data'],
+                        # Start at the beginning of the first record, beyond the
+                        # record marker for the first line of data.
+                        offset = 4 + self._stride['header'] + 4 + 4,
+                        # Skip the record markers at the end of each row, and at
+                        # the beginning of each next row.
+                        strides = self._stride['data'] + 4 + 4,
+                    )
+        except Exception as e:
+            if not isinstance(e, Reader.CorruptedFileError):
+                raise Reader.CorruptedFileError("This Output might have been written by a different simulation. Make sure you use the correct simulation when creating an Output object, as different simulation directories have different reading and writing methods in their source directories: '%s'" % filename) from e
+            raise
 
-        for i, name in enumerate(data_names):
-            if '(' in name:
-                data_names[i] = name[:name.index('(')] 
+        # Convert to read-only dictionaries
+        if return_headers:
+            header = starsmashertools.helpers.readonlydict.ReadOnlyDict(
+                {name:np.array(header[name])[0] for name in header[0].dtype.names}
+            )
+        if return_data:
+            data = starsmashertools.helpers.readonlydict.ReadOnlyDict(
+                {name:np.array(data[name]) for name in data[0].dtype.names} | \
+                {'ID': np.arange(ntot, dtype=int)} # Always include an 'ID' key
+            )
+        
+        if return_headers and not return_data: return header
+        if not return_headers and return_data: return data
+        if return_headers and return_data: return header, data
+    
+    @api
+    def get_starsmasher_write_statements(self):
+        r"""
+        Returns
+        -------
+        statement : list
+            The lines of Fortran code that contains the "write" Fortran 
+            directive from the `StarSmasher` source code.
+        
+        variables : list
+            Each element is a list of :class:`~.helpers.fortran.Variable` 
+            objects corresponding with the variables that are involved with each
+            write statement.
+        """
+        statements = []
+        variables = []
+        files = []
+        for fortran_file in self.simulation.get_source_files():
+            for statement, varis in fortran_file.get_write_statements():
+                statements += [statement]
+                variables += [varis]
+                files += [fortran_file]
+        return statements, variables, files
+    
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def set_write_statements(
+            self,
+            header : str | type(None) = None,
+            data : str | type(None) = None,
+    ):
+        r"""
+        Manually set the header and data write statements from the StarSmasher
+        Fortran source code. This is helpful in case there are multiple write
+        statements of the same formatting and you want to distinguish which of
+        them actually gets used in the simulation.
 
+        Parameters
+        ----------
+        header : str, None, default = None
+            The Fortran write statement used to create the headers. If `None`\,
+            this parameter is ignored.
 
-        # With all the data names known, we obtain their types
-        data_formats = collections.OrderedDict()
-        for name in data_names:
-            for _type, names in vtypes.items():
-                if name in names:
-                    if _type not in Reader.formats:
-                        raise NotImplementedError("Fortran type '%s' is not included in Reader.formats in output.py but is found in '%s'" % (_type, writerfile))
-                    data_formats[name] = Reader.formats[_type]
-                    break
+        data : str, None, default = None
+            The Fortran write statement used to create the data rows. If 
+            `None`\, this parameter is ignored.
+        """
+        
+        write_statements, ws_vars, _ = self.get_starsmasher_write_statements()
+        for s,d in zip(['header','data'], [header, data]):
+            if d is None: continue
+            statement = copy.deepcopy(d)
+            if not starsmashertools.helpers.fortran.is_stripped(d):
+                statement = starsmashertools.helpers.fortran.strip(statement)
+            if statement not in write_statements:
+                raise Exception("Failed to find an identical write statement in the StarSmasher source code as:\n%s" % statement)
+            self._formats[s]['variables'] = ws_vars[write_statements.index(statement)]
+    
+    
+    def update_format(self, filename : str):
+        r"""
+        Search the StarSmasher source directory for all fortran "write" 
+        statements and check to see if each write statement fits the formatting
+        of the out*.sph file. Raises an exception when more than one valid 
+        format is located.
 
-        header_format = '<' + ','.join(header_formats.values())
-        header_names = list(header_formats.keys())
-        data_format = '<' + ','.join(data_formats.values())
-        data_names = list(data_formats.keys())
-        return header_format, header_names, data_format, data_names
+        Note that strings are not permitted in the output files.
+        """
+        import starsmashertools.helpers.file
+        import starsmashertools.helpers.fortran
+        
+        # Figure out the length of the header and body. No need to lock the file
+        # because starsmashertools never edits StarSmasher outputs.
+        endian = self.get_endian()
+        if endian is None:
+            endian = starsmashertools.helpers.fortran.get_endian_from_file(
+                filename,
+            )
+        with starsmashertools.helpers.file.open(
+                filename, 'rb', lock = False, verbose = False
+        ) as f:
+            recl = int.from_bytes(f.read(4), byteorder = endian)
+            f.seek(0)
+            header = f.read(recl + 8)
+            start = f.tell()
+            recl = int.from_bytes(f.read(4), byteorder = endian)
+            f.seek(start)
+            dataline = f.read(recl + 8)
 
+        # Now we know the header contents and the contents of the first line of
+        # data in the file. We try to locate the write statement that was
+        # responsible for writing the header and each row of data. Note that it
+        # is possible for there for be more than one valid write statement, but
+        # we are not doing a full translation of the fortran code into python,
+        # so we can't know which one is correct.
+        if None in [s['variables'] for s in self._formats.values()]:
+            write_statements, ws_vars, files = self.get_starsmasher_write_statements()
+        
+        for s,byte_data in zip(['header','data'],[header,dataline]):
+            if self._formats[s]['variables'] is not None: continue
+            indices = []
+            for i, variables in enumerate(ws_vars):
+                attempt = starsmashertools.helpers.fortran.get_numpy_format(
+                    byte_data, variables, endian = endian,
+                )
+                if attempt is not None: indices += [i]
+            if len(indices) == 0:
+                raise Exception("Found no possible write statements in the StarSmasher source code that correspond with %s information in file '%s'" % (s,filename))
+            if len(indices) > 1:
+                p1 = "Found more than one possible write statements in the StarSmasher source code that correspond with %s information in file '%s'. Please choose one of the following write statements and manually set it for this reader, using \"simulation.reader.set_write_statements(%s = ...)\":" % (s,filename,s)
+                p1 += '\n\n'
+                p1 += '\n\n'.join([files[i].path + ':\n' + write_statements[i] for i in indices])
+                raise Exception(p1)
+            self.set_write_statements(**{s:write_statements[indices[0]]})
+        
+        for s,byte_data in zip(['header','data'],[header,dataline]):
+            self._formats[s]['format'] = starsmashertools.helpers.fortran.get_numpy_format(
+                byte_data,
+                self._formats[s]['variables'],
+                endian = endian,
+            )
+        
+        
+        header_fmt = self._formats['header']['format']
+        data_fmt = self._formats['data']['format']
+        header_names = [v.name for v in self._formats['header']['variables']]
+        data_names = [v.name for v in self._formats['data']['variables']]
 
+        self._dtype = {
+            key:np.dtype([
+                (name,f) for name,f in zip(names, fmt.split(','))
+            ]) for key,names,fmt in zip(
+                ['header','data'],
+                [header_names,data_names],
+                [header_fmt,data_fmt],
+            )
+        }
+        self._stride = {
+            key:sum([
+                v.size for v in self._formats[key]['variables']
+            ]) for key in ['header', 'data']
+        }
+    
     class CorruptedFileError(Exception):
         def __init__(self, message):
             super(Reader.CorruptedFileError, self).__init__(message)
-
-    class UnexpectedFileFormatError(Exception):
-        def __init__(self, message=""):
-            super(Reader.UnexpectedFileFormatError, self).__init__(message)
 
     class SourceDirectoryNotFoundError(Exception):
         def __init__(self, simulation, message=""):
@@ -1341,13 +1447,3 @@ class Reader(object):
                 message = "Failed to find the code source directory in simulation '%s'" % simulation.directory
             super(Reader.SourceDirectoryNotFoundError, self).__init__(message)
 
-
-
-
-
-
-
-
-
-
-        

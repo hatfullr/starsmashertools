@@ -62,7 +62,7 @@ def _check_default_arguments(f):
             raise Exception("Argument '%s' in function '%s' has a default value of the wrong type '%s'" % (name, func_name, str(type(parameter.default).__name__)))
 
 def enforcetypes(f):
-    """
+    r"""
     If this function is called, the input must be of type :py:class:`dict`\.
     Otherwise, this function is to be used as a wrapper.
     """

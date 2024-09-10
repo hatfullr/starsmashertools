@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>starsmashertools.helpers.fortran &mdash; starsmashertools</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../../../_static/documentation_options.js?v=61ccec80"></script>
+        <script src="../../../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            starsmashertools
+          </a>
+              <div class="version">
+                14.12.0
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../index.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cliprograms.html">CLI Programs</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../starsmashertools.helpers.html">helpers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../starsmashertools.lib.html">lib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../starsmashertools.math.html">math</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../starsmashertools.mpl.html">mpl</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">starsmashertools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">starsmashertools.helpers.fortran</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for starsmashertools.helpers.fortran</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">starsmashertools.preferences</span>
+<span class="kn">import</span> <span class="nn">starsmashertools.helpers.argumentenforcer</span>
+<span class="kn">from</span> <span class="nn">starsmashertools.helpers.apidecorator</span> <span class="kn">import</span> <span class="n">api</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="n">variable_statements</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s1">&#39;integer&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;real&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;double precision&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;complex&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;double complex&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;logical&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;character&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;byte&#39;</span><span class="p">,</span>
+<span class="p">]</span>
+
+<span class="n">object_statements</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s1">&#39;function&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;subroutine&#39;</span><span class="p">,</span>
+<span class="p">]</span>
+
+<span class="n">nonexecutable_statements</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s1">&#39;program&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;module&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;entry&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;block data&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;dimension&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;common&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;equivalence&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;implicit&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;parameter&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;external&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;intrinsic&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;save&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;integer&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;data&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;format&#39;</span><span class="p">,</span>
+<span class="p">]</span> <span class="o">+</span> <span class="n">object_statements</span> <span class="o">+</span> <span class="n">variable_statements</span>
+
+<span class="c1"># Refer to these pages:</span>
+<span class="c1"># https://docs.oracle.com/cd/E19957-01/805-4939/c400041360f5/index.html</span>
+<span class="c1"># https://numpy.org/doc/stable/reference/arrays.dtypes.html (&quot;Array-protocol type strings&quot;)</span>
+<span class="n">numpy_formats</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;byte&#39;</span> <span class="p">:</span> <span class="p">{</span>
+        <span class="mi">1</span> <span class="p">:</span> <span class="s1">&#39;B1&#39;</span><span class="p">,</span>
+    <span class="p">},</span>
+    <span class="s1">&#39;complex&#39;</span> <span class="p">:</span> <span class="p">{</span>
+        <span class="mi">8</span> <span class="p">:</span> <span class="s1">&#39;c8&#39;</span><span class="p">,</span>
+        <span class="mi">16</span> <span class="p">:</span> <span class="s1">&#39;c16&#39;</span><span class="p">,</span>
+        <span class="mi">32</span> <span class="p">:</span> <span class="s1">&#39;c32&#39;</span><span class="p">,</span>
+    <span class="p">},</span>
+    <span class="s1">&#39;double complex&#39;</span> <span class="p">:</span> <span class="p">{</span>
+        <span class="mi">16</span> <span class="p">:</span> <span class="s1">&#39;c16&#39;</span><span class="p">,</span>
+    <span class="p">},</span>
+    <span class="s1">&#39;double precision&#39;</span> <span class="p">:</span> <span class="p">{</span>
+        <span class="mi">8</span> <span class="p">:</span> <span class="s1">&#39;f8&#39;</span><span class="p">,</span>
+    <span class="p">},</span>
+    <span class="s1">&#39;real&#39;</span> <span class="p">:</span> <span class="p">{</span>
+        <span class="mi">4</span> <span class="p">:</span> <span class="s1">&#39;f4&#39;</span><span class="p">,</span>
+        <span class="mi">8</span> <span class="p">:</span> <span class="s1">&#39;f8&#39;</span><span class="p">,</span>
+        <span class="mi">16</span> <span class="p">:</span> <span class="s1">&#39;f16&#39;</span><span class="p">,</span>
+    <span class="p">},</span>
+    <span class="s1">&#39;integer&#39;</span> <span class="p">:</span> <span class="p">{</span>
+        <span class="mi">2</span> <span class="p">:</span> <span class="s1">&#39;i2&#39;</span><span class="p">,</span>
+        <span class="mi">4</span> <span class="p">:</span> <span class="s1">&#39;i4&#39;</span><span class="p">,</span>
+        <span class="mi">8</span> <span class="p">:</span> <span class="s1">&#39;i8&#39;</span><span class="p">,</span>
+    <span class="p">},</span>
+    <span class="s1">&#39;logical&#39;</span> <span class="p">:</span> <span class="p">{</span>
+        <span class="mi">1</span> <span class="p">:</span> <span class="s1">&#39;?1&#39;</span><span class="p">,</span>
+        <span class="mi">2</span> <span class="p">:</span> <span class="s1">&#39;?2&#39;</span><span class="p">,</span>
+        <span class="mi">4</span> <span class="p">:</span> <span class="s1">&#39;?4&#39;</span><span class="p">,</span>
+        <span class="mi">8</span> <span class="p">:</span> <span class="s1">&#39;?8&#39;</span><span class="p">,</span>
+    <span class="p">},</span>
+<span class="p">}</span>
+
+<span class="c1"># Some exceptions</span>
+<span class="k">class</span> <span class="nc">EndianError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span> <span class="k">pass</span>
+<span class="k">class</span> <span class="nc">ParsingError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span> <span class="k">pass</span>
+
+
+<div class="viewcode-block" id="get_numpy_format">
+<a class="viewcode-back" href="../../../helpers/starsmashertools.helpers.fortran.html#starsmashertools.helpers.fortran.get_numpy_format">[docs]</a>
+<span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+<span class="nd">@api</span>
+<span class="k">def</span> <span class="nf">get_numpy_format</span><span class="p">(</span>
+        <span class="n">record</span> <span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span>
+        <span class="n">variables</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">,</span>
+        <span class="n">endian</span> <span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return a format string that can be used in :class:`numpy.ndarray` for the </span>
+<span class="sd">    provided bytes of data that originated from a Fortran file.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    record : bytes</span>
+<span class="sd">        The bytes to check the variables against.</span>
+
+<span class="sd">    Other Parameters</span>
+<span class="sd">    ----------------</span>
+<span class="sd">    endian : str, None, default = None</span>
+<span class="sd">        If the endianness of ``record`` is known, a ``&#39;&lt;&#39;`` or ``&#39;&gt;&#39;`` is</span>
+<span class="sd">        appended to the start of the string where ``&#39;&lt;&#39;`` is for little endian</span>
+<span class="sd">        and ``&#39;&gt;&#39;`` is for big endian. If the endianness is not known, </span>
+<span class="sd">        ``endian`` should be given as `None`\, and the endianness will be </span>
+<span class="sd">        determined using the start-of-record and end-of-record markers provided</span>
+<span class="sd">        in ``record`` as written by Fortran. These are 4 byte integers which</span>
+<span class="sd">        indicate the length of the record.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    fmt : str, None</span>
+<span class="sd">        A valid format string that can be used in :class:`numpy.ndarray` for the</span>
+<span class="sd">        given ``record``\. If `None`\, then the given ``record`` is incompatible</span>
+<span class="sd">        with the given ``variables``\.</span>
+
+<span class="sd">        If any ``real`` or ``double precision`` variables have a value for which</span>
+<span class="sd">        the magnitude of its exponent exceeds 100, returns `None`\. Usually junk</span>
+<span class="sd">        values take on the form of having unrealistically large or small </span>
+<span class="sd">        exponents, like +300 or -300. There doesn&#39;t exist any good way to detect</span>
+<span class="sd">        bad values like this, so we instead just check for exponents that exceed</span>
+<span class="sd">        100 in magnitude. That is, if the exponent is less than -100 or greater</span>
+<span class="sd">        than 100, we skip this write statement.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    :class:`~.EndianError`</span>
+<span class="sd">        If the provided or detected endian is not ``&#39;little&#39;`` or ``&#39;big&#39;``\.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">sum</span><span class="p">([</span><span class="n">v</span><span class="o">.</span><span class="n">size</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">variables</span><span class="p">])</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">record</span><span class="p">)</span> <span class="o">-</span> <span class="mi">8</span><span class="p">:</span> <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">endian</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="n">endian</span> <span class="o">=</span> <span class="n">get_endian</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
+
+    <span class="n">fmt</span> <span class="o">=</span> <span class="s1">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">v</span><span class="o">.</span><span class="n">get_numpy_format</span><span class="p">()</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">variables</span><span class="p">])</span>
+    <span class="k">if</span> <span class="n">endian</span> <span class="o">==</span> <span class="s1">&#39;little&#39;</span><span class="p">:</span> <span class="n">fmt</span> <span class="o">=</span> <span class="s1">&#39;&lt;&#39;</span> <span class="o">+</span> <span class="n">fmt</span>
+    <span class="k">elif</span> <span class="n">endian</span> <span class="o">==</span> <span class="s1">&#39;big&#39;</span><span class="p">:</span> <span class="n">fmt</span> <span class="o">=</span> <span class="s1">&#39;&gt;&#39;</span> <span class="o">+</span> <span class="n">fmt</span>
+    <span class="k">else</span><span class="p">:</span> <span class="k">raise</span> <span class="n">EndianError</span><span class="p">(</span><span class="s2">&quot;Unrecognized endian &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="n">endian</span><span class="p">))</span>
+    
+    <span class="n">result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">(</span>
+        <span class="n">buffer</span> <span class="o">=</span> <span class="n">record</span><span class="p">,</span>
+        <span class="n">shape</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="c1"># Reading a single line</span>
+        <span class="n">dtype</span> <span class="o">=</span> <span class="n">fmt</span><span class="p">,</span>
+        <span class="n">offset</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span>
+        <span class="n">strides</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">record</span><span class="p">)</span><span class="o">-</span><span class="mi">8</span><span class="p">,</span>
+    <span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    
+    <span class="k">for</span> <span class="n">variable</span><span class="p">,</span> <span class="n">res</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">variables</span><span class="p">,</span> <span class="n">result</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">variable</span><span class="o">.</span><span class="n">kind</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;real&#39;</span><span class="p">,</span><span class="s1">&#39;double precision&#39;</span><span class="p">]:</span>
+            <span class="c1"># Check if the exponent of the number exceeds 100. Usually junk</span>
+            <span class="c1"># values take on the form of having unrealistically large or small</span>
+            <span class="c1"># exponents, like +300 or -300. There doesn&#39;t exist any good way to</span>
+            <span class="c1"># detect bad values like this, so we instead just check for</span>
+            <span class="c1"># exponents that exceed 100 in magnitude. That is, if the exponent</span>
+            <span class="c1"># is less than -100 or greater than 100, we skip this write</span>
+            <span class="c1"># statement.</span>
+            <span class="k">if</span> <span class="n">res</span> <span class="o">!=</span> <span class="mi">0</span> <span class="ow">and</span> <span class="nb">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">res</span><span class="p">)))</span> <span class="o">&gt;</span> <span class="mi">100</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="n">fmt</span></div>
+
+
+
+<div class="viewcode-block" id="parse_write_statement">
+<a class="viewcode-back" href="../../../helpers/starsmashertools.helpers.fortran.html#starsmashertools.helpers.fortran.parse_write_statement">[docs]</a>
+<span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+<span class="nd">@api</span>
+<span class="k">def</span> <span class="nf">parse_write_statement</span><span class="p">(</span><span class="n">string</span> <span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Given a stripped Fortran write statement, return the variable names. If the</span>
+<span class="sd">    write statement includes a string, returns an empty list.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    names : str</span>
+<span class="sd">        The names of each variable in the write statement.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">rules</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="c1"># Find the write statement if it has a Fortran formatting string</span>
+        <span class="c1"># https://regex101.com/r/lN3i2u/2</span>
+        <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;[wW][rR][iI][tT][eE] *\(.*?(?&lt;!</span><span class="se">\\</span><span class="s2">)([</span><span class="se">\&quot;</span><span class="s2">&#39;]).*?(?&lt;!</span><span class="se">\\</span><span class="s2">)\1\)&quot;</span><span class="p">),</span>
+        <span class="c1"># If the previous rule wasn&#39;t matched, try this one instead</span>
+        <span class="c1"># https://regex101.com/r/qo5l2T/1</span>
+        <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;[wW][rR][iI][tT][eE] *\(.*?\)&quot;</span><span class="p">),</span>
+    <span class="p">]</span>
+    <span class="n">write</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">for</span> <span class="n">rule</span> <span class="ow">in</span> <span class="n">rules</span><span class="p">:</span>
+        <span class="n">matches</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">rule</span><span class="o">.</span><span class="n">finditer</span><span class="p">(</span><span class="n">string</span><span class="p">)]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">matches</span><span class="p">:</span> <span class="k">continue</span>
+        <span class="n">write</span> <span class="o">=</span> <span class="n">matches</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">break</span>
+    <span class="k">if</span> <span class="n">write</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">ParsingError</span><span class="p">(</span><span class="s2">&quot;Failed to recognize the &#39;write&#39; Fortran directive in write statement: &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="n">string</span><span class="p">)</span>
+
+    <span class="c1"># Throw out the &quot;write&quot; fortran directive and focus only on the variables</span>
+    <span class="n">string</span> <span class="o">=</span> <span class="n">string</span><span class="p">[</span><span class="n">string</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">write</span><span class="p">)</span><span class="o">+</span><span class="nb">len</span><span class="p">(</span><span class="n">write</span><span class="p">):]</span>
+
+    <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;&quot;&#39;</span><span class="p">,</span> <span class="s2">&quot;&#39;&quot;</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">string</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ParsingError</span><span class="p">(</span><span class="s2">&quot;Cannot parse a write statement that contains string literals: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">string</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;+&#39;</span><span class="p">,</span><span class="s1">&#39;-&#39;</span><span class="p">,</span><span class="s1">&#39;/&#39;</span><span class="p">,</span><span class="s1">&#39;*&#39;</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">string</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ParsingError</span><span class="p">(</span><span class="s2">&quot;Cannot parse a write statement that contains math operators +, -, /, or *: &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="n">string</span><span class="p">)</span>
+
+    <span class="n">lp</span><span class="p">,</span> <span class="n">rp</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+    <span class="n">names</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">string</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">c</span> <span class="o">==</span> <span class="s1">&#39; &#39;</span><span class="p">:</span> <span class="k">continue</span> <span class="c1"># skip white space</span>
+        <span class="k">elif</span> <span class="n">c</span> <span class="o">==</span> <span class="s1">&#39;(&#39;</span><span class="p">:</span>
+            <span class="n">lp</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">continue</span>
+        <span class="k">elif</span> <span class="n">c</span> <span class="o">==</span> <span class="s1">&#39;)&#39;</span><span class="p">:</span>
+            <span class="n">rp</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">continue</span>
+        
+        <span class="k">if</span> <span class="n">lp</span> <span class="o">!=</span> <span class="n">rp</span><span class="p">:</span> <span class="c1"># In parentheses</span>
+            <span class="k">continue</span>
+        
+        <span class="k">if</span> <span class="n">c</span> <span class="o">==</span> <span class="s1">&#39;,&#39;</span><span class="p">:</span> <span class="c1"># the variables delimiter</span>
+            <span class="k">if</span> <span class="n">lp</span> <span class="o">==</span> <span class="n">rp</span><span class="p">:</span> <span class="c1"># Not in parentheses</span>
+                <span class="n">names</span> <span class="o">+=</span> <span class="p">[</span><span class="n">name</span><span class="p">]</span>
+                <span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+                <span class="k">continue</span>
+        <span class="k">else</span><span class="p">:</span> <span class="n">name</span> <span class="o">+=</span> <span class="n">c</span>
+    <span class="k">if</span> <span class="n">name</span><span class="p">:</span> <span class="n">names</span> <span class="o">+=</span> <span class="p">[</span><span class="n">name</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">names</span></div>
+
+
+
+<div class="viewcode-block" id="strip">
+<a class="viewcode-back" href="../../../helpers/starsmashertools.helpers.fortran.html#starsmashertools.helpers.fortran.strip">[docs]</a>
+<span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+<span class="nd">@api</span>
+<span class="k">def</span> <span class="nf">strip</span><span class="p">(</span><span class="n">source</span> <span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Given the contents of a Fortran file, this method returns the file contents</span>
+<span class="sd">    in a more consistent format. The Fortran comments are removed, continuation</span>
+<span class="sd">    lines are merged into single lines, and all non-newline whitespaces are </span>
+<span class="sd">    removed.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    source : str, :py:class:`io.TextIOBase`</span>
+<span class="sd">        If a :py:class:`str`\, it is expected to be a file path. Otherwise, it</span>
+<span class="sd">        is expected to be an opened file (in text format).</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    contents : str</span>
+<span class="sd">        The contents of the file without any Fortran comments.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Sun Fortran is not supported, so tabs in the source code are not expected</span>
+<span class="sd">    and will likely cause errors.</span>
+
+<span class="sd">    Source code containing semicolons as statement separators is not supported.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span> <span class="nn">starsmashertools.helpers.string</span>
+    
+    <span class="k">def</span> <span class="nf">strip_empty_lines</span><span class="p">(</span><span class="n">lines</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span> <span class="k">continue</span>
+            <span class="k">yield</span> <span class="n">line</span>
+
+    <span class="k">def</span> <span class="nf">strip_comments</span><span class="p">(</span><span class="n">lines</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">any</span><span class="p">([</span><span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;c&#39;</span><span class="p">,</span><span class="s1">&#39;C&#39;</span><span class="p">,</span><span class="s1">&#39;!&#39;</span><span class="p">,</span><span class="s1">&#39;*&#39;</span><span class="p">,</span><span class="s1">&#39;d&#39;</span><span class="p">,</span><span class="s1">&#39;D&#39;</span><span class="p">]]):</span>
+                <span class="k">continue</span>
+            <span class="k">yield</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">string</span><span class="o">.</span><span class="n">strip_inline_comment</span><span class="p">(</span>
+                <span class="n">line</span><span class="p">,</span> <span class="s1">&#39;!&#39;</span><span class="p">,</span>
+            <span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">merge_continuations</span><span class="p">(</span><span class="n">lines</span><span class="p">):</span>
+        <span class="c1"># Assuming that comments have already been removed and whitespace has</span>
+        <span class="c1"># not yet been removed</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span>
+
+        <span class="c1"># The regex101.com examples provided correspond with the unit test in</span>
+        <span class="c1"># tests/test_file.py</span>
+        <span class="n">regs</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="c1"># (F90+) Lines that end with &amp; with 6 spaces in the next line. Here</span>
+            <span class="c1"># we match 6 or more spaces so that the whitespace is removed from</span>
+            <span class="c1"># the continuation line. We replace the space padding with just a</span>
+            <span class="c1"># single space instead.</span>
+            <span class="c1"># 3.3.1.3.1 Noncharacter context continuation</span>
+            <span class="c1"># https://regex101.com/r/o7tiZg/1</span>
+            <span class="p">{</span><span class="s1">&#39;args&#39;</span><span class="p">:(</span><span class="sa">r</span><span class="s1">&#39; +&amp;.*\n +&amp; +&#39;</span><span class="p">,</span><span class="s1">&#39; &#39;</span><span class="p">),</span><span class="s1">&#39;kwargs&#39;</span><span class="p">:{</span><span class="s1">&#39;flags&#39;</span><span class="p">:</span><span class="n">re</span><span class="o">.</span><span class="n">M</span><span class="p">}},</span>
+            <span class="c1"># If a lexical token is split across the end of a line, the first</span>
+            <span class="c1"># nonblank character on the following line must be an &quot;&amp;&quot;</span>
+            <span class="c1"># https://regex101.com/r/itKtOV/1</span>
+            <span class="p">{</span><span class="s1">&#39;args&#39;</span><span class="p">:(</span><span class="sa">r</span><span class="s1">&#39; *\n +&amp; +&#39;</span><span class="p">,</span> <span class="s1">&#39; &#39;</span><span class="p">),</span><span class="s1">&#39;kwargs&#39;</span><span class="p">:{</span><span class="s1">&#39;flags&#39;</span><span class="p">:</span><span class="n">re</span><span class="o">.</span><span class="n">M</span><span class="p">}},</span>
+            <span class="c1"># 3.3.1.3.2 Character context continuation</span>
+            <span class="c1"># https://regex101.com/r/nwqz80/2</span>
+            <span class="p">{</span><span class="s1">&#39;args&#39;</span><span class="p">:(</span><span class="sa">r</span><span class="s1">&#39; +&amp;.*\n {6,}&#39;</span><span class="p">,</span><span class="s1">&#39; &#39;</span><span class="p">),</span><span class="s1">&#39;kwargs&#39;</span><span class="p">:{</span><span class="s1">&#39;flags&#39;</span><span class="p">:</span><span class="n">re</span><span class="o">.</span><span class="n">M</span><span class="p">}},</span>
+
+            <span class="c1"># When an &amp; ends a line and it wasn&#39;t after a blank space, then we</span>
+            <span class="c1"># don&#39;t need to replace that blank space. We do need to replace the</span>
+            <span class="c1"># 6 spaces at the start of the continuation line, though.</span>
+            <span class="c1"># https://regex101.com/r/bEeJiq/2</span>
+            <span class="p">{</span><span class="s1">&#39;args&#39;</span><span class="p">:(</span><span class="sa">r</span><span class="s1">&#39;&amp;.*\n </span><span class="si">{6}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">),</span><span class="s1">&#39;kwargs&#39;</span><span class="p">:{</span><span class="s1">&#39;flags&#39;</span><span class="p">:</span><span class="n">re</span><span class="o">.</span><span class="n">M</span><span class="p">}},</span>
+            
+            
+            <span class="c1"># (F77) Continuation lines have only spaces in columns 1-5 and</span>
+            <span class="c1"># contains a continuation character in column 6, which is anything</span>
+            <span class="c1"># other than space or 0.</span>
+            <span class="c1"># https://regex101.com/r/qNrsSn/3</span>
+            <span class="p">{</span><span class="s1">&#39;args&#39;</span><span class="p">:(</span><span class="sa">r</span><span class="s1">&#39; *\n </span><span class="si">{5}</span><span class="s1">[^ 0] *&#39;</span><span class="p">,</span><span class="s1">&#39; &#39;</span><span class="p">),</span> <span class="s1">&#39;kwargs&#39;</span><span class="p">:{</span><span class="s1">&#39;flags&#39;</span><span class="p">:</span><span class="n">re</span><span class="o">.</span><span class="n">M</span><span class="p">}},</span>
+            <span class="c1"># A continuation line can also start with a digit 0-9 in columns</span>
+            <span class="c1"># 7+, provided it is preceeded by only spaces.</span>
+            <span class="c1"># https://regex101.com/r/MzjGuc/5</span>
+            <span class="p">{</span><span class="s1">&#39;args&#39;</span><span class="p">:(</span><span class="sa">r</span><span class="s1">&#39; *\n {6,}[0-9]&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">),</span> <span class="s1">&#39;kwargs&#39;</span><span class="p">:{</span><span class="s1">&#39;flags&#39;</span><span class="p">:</span><span class="n">re</span><span class="o">.</span><span class="n">M</span><span class="p">}},</span>
+        <span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">reg</span> <span class="ow">in</span> <span class="n">regs</span><span class="p">:</span>
+            <span class="n">lines</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="o">*</span><span class="n">reg</span><span class="p">[</span><span class="s1">&#39;args&#39;</span><span class="p">],</span> <span class="n">lines</span><span class="p">,</span> <span class="o">**</span><span class="n">reg</span><span class="p">[</span><span class="s1">&#39;kwargs&#39;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">lines</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+    
+    <span class="n">lines</span> <span class="o">=</span> <span class="n">merge_continuations</span><span class="p">(</span>
+        <span class="n">strip_empty_lines</span><span class="p">(</span>
+            <span class="n">strip_comments</span><span class="p">(</span><span class="n">source</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">))</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="c1"># Remove columns 1-6, check for tabs, and remove white space</span>
+    <span class="k">return</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span>
+        <span class="c1"># https://regex101.com/r/gMkglu/1</span>
+        <span class="sa">r</span><span class="s1">&#39;^[ 0-9]{,6}[ \t]*|[ \t]+$&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">),</span>
+        <span class="n">flags</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">M</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="is_stripped">
+<a class="viewcode-back" href="../../../helpers/starsmashertools.helpers.fortran.html#starsmashertools.helpers.fortran.is_stripped">[docs]</a>
+<span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+<span class="nd">@api</span>
+<span class="k">def</span> <span class="nf">is_stripped</span><span class="p">(</span><span class="n">string</span> <span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    is_stripped : bool</span>
+<span class="sd">        `True` if Fortran code in ``string`` is stripped by :func:`~.strip`\, or</span>
+<span class="sd">        `False` otherwise.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">string</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">6</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">string</span><span class="p">[</span><span class="mi">6</span><span class="p">:]</span> <span class="o">==</span> <span class="n">strip</span><span class="p">(</span><span class="n">string</span><span class="p">)</span>
+    <span class="c1"># columns 1-6 are removed by the strip function</span>
+    <span class="k">return</span> <span class="kc">False</span></div>
+
+
+<div class="viewcode-block" id="get_endian">
+<a class="viewcode-back" href="../../../helpers/starsmashertools.helpers.fortran.html#starsmashertools.helpers.fortran.get_endian">[docs]</a>
+<span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+<span class="nd">@api</span>
+<span class="k">def</span> <span class="nf">get_endian</span><span class="p">(</span><span class="n">record</span> <span class="p">:</span> <span class="nb">bytes</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Returns &#39;little&#39; if the given Fortran record is little endian and &#39;big&#39; if </span>
+<span class="sd">    it is big endian. The endianness is checked by finding the first record </span>
+<span class="sd">    marker, which is the first 4 bytes of the record, and attempting to convert</span>
+<span class="sd">    that to an integer. If that length exceeds the actual length of the record,</span>
+<span class="sd">    an error is raised. Otherwise, the 4 bytes proceeding the record length is</span>
+<span class="sd">    read. If the two record markers match, then the endianness of the record is</span>
+<span class="sd">    returned.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    record : bytes</span>
+<span class="sd">        The Fortran record to determine the endianness for. It must contain the</span>
+<span class="sd">        leading and trailing record markers.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    endian : str</span>
+<span class="sd">        Either ``&#39;little&#39;`` or ``&#39;big&#39;``\.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    :class:`~.EndianError`</span>
+<span class="sd">        When the record length is less than 8 bytes, the first 4 bytes of the</span>
+<span class="sd">        record do not match the last 4 bytes, or if the endianness was neither</span>
+<span class="sd">        little nor big (should never happen).</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    :func:`~.get_endian_from_file`</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    https://gcc.gnu.org/onlinedocs/gfortran/File-format-of-unformatted-sequential-files.html</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">record</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">8</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">EndianError</span><span class="p">(</span><span class="s2">&quot;The length of the given record must be at least greater than or equal to the length of two record markers (4 bytes each): </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="n">record</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">record</span><span class="p">[:</span><span class="mi">4</span><span class="p">]</span> <span class="o">!=</span> <span class="n">record</span><span class="p">[</span><span class="o">-</span><span class="mi">4</span><span class="p">:]:</span>
+        <span class="k">raise</span> <span class="n">EndianError</span><span class="p">(</span><span class="s2">&quot;The first 4 bytes of the given record must be identical to the last 4 bytes, as these are the record markers: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="n">record</span><span class="p">))</span>
+    
+    <span class="k">for</span> <span class="n">endian</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;little&#39;</span><span class="p">,</span> <span class="s1">&#39;big&#39;</span><span class="p">]:</span> <span class="c1"># little endian is more common, I think</span>
+        <span class="n">recl</span> <span class="o">=</span> <span class="nb">int</span><span class="o">.</span><span class="n">from_bytes</span><span class="p">(</span><span class="n">record</span><span class="p">[:</span><span class="mi">4</span><span class="p">],</span> <span class="n">byteorder</span> <span class="o">=</span> <span class="n">endian</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">recl</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">record</span><span class="p">)</span> <span class="o">-</span> <span class="mi">8</span><span class="p">:</span> <span class="k">return</span> <span class="n">endian</span>
+    
+    <span class="k">raise</span> <span class="n">EndianError</span><span class="p">(</span><span class="s2">&quot;Failed to detect endianness of record </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="n">record</span><span class="p">))</span></div>
+
+
+
+<span class="k">def</span> <span class="nf">get_endian_from_file</span><span class="p">(</span><span class="n">path</span> <span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Similar to :func:`~.get_endian`\, except operates on a file instead.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    path : str</span>
+<span class="sd">        The path to the file.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    endian : str</span>
+<span class="sd">        Either ``&#39;little&#39;`` or ``&#39;big&#39;``\.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    :class:`~.EndianError`</span>
+<span class="sd">        When the record length is less than 8 bytes, the first 4 bytes of the</span>
+<span class="sd">        record do not match the last 4 bytes, or if the endianness was neither</span>
+<span class="sd">        little nor big (should never happen).</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    :func:`~.get_endian`</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    https://gcc.gnu.org/onlinedocs/gfortran/File-format-of-unformatted-sequential-files.html</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span> <span class="nn">starsmashertools.helpers.file</span>
+
+    <span class="k">with</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">open</span><span class="p">(</span>
+        <span class="n">path</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">,</span> <span class="n">lock</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">verbose</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">size</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">tell</span><span class="p">()</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">size</span> <span class="o">&lt;</span> <span class="mi">8</span><span class="p">:</span> <span class="k">raise</span> <span class="n">EndianError</span><span class="p">(</span><span class="s2">&quot;File size cannot be less than 8 bytes, as the length of a record marker is 4 bytes: &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="n">path</span><span class="p">)</span>
+        
+        <span class="n">record_marker</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+        <span class="n">recl_little</span> <span class="o">=</span> <span class="nb">int</span><span class="o">.</span><span class="n">from_bytes</span><span class="p">(</span><span class="n">record_marker</span><span class="p">,</span> <span class="n">byteorder</span> <span class="o">=</span> <span class="s1">&#39;little&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">recl_little</span> <span class="o">+</span> <span class="mi">8</span> <span class="o">&gt;</span> <span class="n">size</span><span class="p">:</span> <span class="k">return</span> <span class="s1">&#39;big&#39;</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">4</span> <span class="o">+</span> <span class="n">recl_little</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">recl_little</span> <span class="o">==</span> <span class="nb">int</span><span class="o">.</span><span class="n">from_bytes</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">4</span><span class="p">),</span> <span class="n">byteorder</span> <span class="o">=</span> <span class="s1">&#39;little&#39;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="s1">&#39;little&#39;</span>
+        <span class="k">else</span><span class="p">:</span> <span class="k">return</span> <span class="s1">&#39;big&#39;</span>
+
+<div class="viewcode-block" id="FortranFile">
+<a class="viewcode-back" href="../../../helpers/starsmashertools.helpers.fortran.html#starsmashertools.helpers.fortran.FortranFile">[docs]</a>
+<span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">preferences</span><span class="o">.</span><span class="n">use</span>
+<span class="k">class</span> <span class="nc">FortranFile</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">class</span> <span class="nc">FileExtensionError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span> <span class="k">pass</span>
+    
+<div class="viewcode-block" id="FortranFile.__init__">
+<a class="viewcode-back" href="../../../helpers/starsmashertools.helpers.fortran.html#starsmashertools.helpers.fortran.FortranFile.__init__">[docs]</a>
+    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span> <span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        A file containing Fortran source code.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        path : str</span>
+<span class="sd">            The path to the Fortran file.</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        Sun Fortran is not supported, so tabs in the source code will likely </span>
+<span class="sd">        cause errors.</span>
+
+<span class="sd">        Source code containing semicolons as statement separators is not </span>
+<span class="sd">        supported.</span>
+
+<span class="sd">        Statement functions are not supported and will lead to undefined </span>
+<span class="sd">        behaviors. Read more about these here:</span>
+<span class="sd">        https://docs.oracle.com/cd/E19957-01/805-4939/6j4m0vnb9/index.html</span>
+
+<span class="sd">        Derived data types are not recognized.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.string</span>
+        <span class="k">for</span> <span class="n">ext</span> <span class="ow">in</span> <span class="n">FortranFile</span><span class="o">.</span><span class="n">preferences</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;file extensions&#39;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">path</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="n">ext</span><span class="p">):</span> <span class="k">break</span>
+        <span class="k">else</span><span class="p">:</span> <span class="k">raise</span> <span class="n">FortranFile</span><span class="o">.</span><span class="n">FileExtensionError</span><span class="p">(</span><span class="s2">&quot;Fortran file does not end with one of the valid extensions (</span><span class="si">%s</span><span class="s2">): </span><span class="si">%s</span><span class="s2">. You can set the valid Fortran file extensions in your preferences.&quot;</span> <span class="o">%</span> <span class="p">(</span>
+                <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">string</span><span class="o">.</span><span class="n">list_to_string</span><span class="p">(</span>
+                    <span class="n">FortranFile</span><span class="o">.</span><span class="n">preferences</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;file extensions&#39;</span><span class="p">),</span>
+                    <span class="n">join</span> <span class="o">=</span> <span class="s1">&#39;or&#39;</span><span class="p">,</span>
+                <span class="p">),</span>
+                <span class="n">path</span>
+        <span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">path</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_content</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_contents</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="FortranFile.get_contents">
+<a class="viewcode-back" href="../../../helpers/starsmashertools.helpers.fortran.html#starsmashertools.helpers.fortran.FortranFile.get_contents">[docs]</a>
+    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="nf">get_contents</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stripped</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the contents of the file.</span>
+
+<span class="sd">        Other Parameters</span>
+<span class="sd">        ----------------</span>
+<span class="sd">        stripped : bool, default = True</span>
+<span class="sd">            If `False`\, the returned contents are unmodified. If `True`\, the</span>
+<span class="sd">            returned contents has comments removed, continuation lines merged,</span>
+<span class="sd">            columns 1-6 removed, and each line is stripped of leading and</span>
+<span class="sd">            trailing white space.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        content : str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_content</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="kn">import</span> <span class="nn">starsmashertools.helpers.file</span>
+            <span class="k">with</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">open</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">lock</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">verbose</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+            <span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_content</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">stripped</span><span class="p">:</span> <span class="k">return</span> <span class="n">strip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_content</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_content</span></div>
+
+
+<div class="viewcode-block" id="FortranFile.get_objects">
+<a class="viewcode-back" href="../../../helpers/starsmashertools.helpers.fortran.html#starsmashertools.helpers.fortran.FortranFile.get_objects">[docs]</a>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="nf">get_objects</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the functions and subroutines in the file.</span>
+
+<span class="sd">        Yields</span>
+<span class="sd">        ------</span>
+<span class="sd">        object : :class:`~.Object`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">object_content</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="n">contents</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_contents</span><span class="p">(</span><span class="n">stripped</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">kind</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;function&#39;</span><span class="p">,</span> <span class="s1">&#39;subroutine&#39;</span><span class="p">]:</span>
+            <span class="k">for</span> <span class="n">match</span> <span class="ow">in</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span>
+                    <span class="c1"># https://regex101.com/r/vGfZVE/1</span>
+                    <span class="sa">r</span><span class="s1">&#39;^ *</span><span class="si">%s</span><span class="s1">[\s\S]*?^ *[eE][nN][dD]$|^ *[eE][nN][dD] +</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">kind</span><span class="p">,</span> <span class="n">kind</span><span class="p">),</span>
+                    <span class="n">contents</span><span class="p">,</span>
+                    <span class="n">flags</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">M</span><span class="p">,</span>
+            <span class="p">):</span>
+                <span class="k">yield</span> <span class="n">Object</span><span class="p">(</span><span class="n">match</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="FortranFile.get_write_statements">
+<a class="viewcode-back" href="../../../helpers/starsmashertools.helpers.fortran.html#starsmashertools.helpers.fortran.FortranFile.get_write_statements">[docs]</a>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="nf">get_write_statements</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Find all lines which involve the ``write`` Fortran directive and obtain</span>
+<span class="sd">        the written variables. Write statements which include strings are </span>
+<span class="sd">        ignored.</span>
+<span class="sd">        </span>
+<span class="sd">        Yields</span>
+<span class="sd">        ------</span>
+<span class="sd">        statement : str</span>
+<span class="sd">            The stripped lines which contain write statements.</span>
+
+<span class="sd">        variables : list</span>
+<span class="sd">            A list of :class:`~.Variable` objects involved in the write </span>
+<span class="sd">            statement, in the order they are written.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_objects</span><span class="p">():</span>
+            <span class="n">variables</span> <span class="o">=</span> <span class="p">{</span><span class="n">var</span><span class="o">.</span><span class="n">name</span><span class="p">:</span><span class="n">var</span> <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="n">variables</span><span class="p">}</span>
+            <span class="k">for</span> <span class="n">statement</span> <span class="ow">in</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span>
+                    <span class="c1"># https://regex101.com/r/yiqSre/4</span>
+                    <span class="sa">r</span><span class="s2">&quot;[wW][rR][iI][tT][eE] *\([^\)]+\) *[^\n]*$&quot;</span><span class="p">,</span>
+                    <span class="n">obj</span><span class="o">.</span><span class="n">body</span><span class="p">,</span>
+                    <span class="n">flags</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">M</span><span class="p">,</span>
+            <span class="p">):</span>
+                <span class="c1"># Every variable name must be in our list of variables.</span>
+                <span class="c1"># Otherwise, the write statement probably contains either string</span>
+                <span class="c1"># literals, operators, or function calls, none of which we can</span>
+                <span class="c1"># reasonably parse without huge effort.</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">names</span> <span class="o">=</span> <span class="n">parse_write_statement</span><span class="p">(</span><span class="n">statement</span><span class="p">)</span>
+                <span class="k">except</span> <span class="n">ParsingError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="s1">&#39;contains string literals&#39;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="ow">or</span>
+                        <span class="s1">&#39;math operators&#39;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)):</span> <span class="k">continue</span>
+                    <span class="k">raise</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">variables</span><span class="p">:</span> <span class="k">break</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">yield</span> <span class="n">statement</span><span class="p">,</span> <span class="p">[</span><span class="n">variables</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names</span><span class="p">]</span></div>
+</div>
+
+        
+
+<span class="k">class</span> <span class="nc">Variable</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">name</span> <span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="n">kind</span> <span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="n">size</span> <span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        A Fortran variable.</span>
+
+<span class="sd">        Paramters</span>
+<span class="sd">        ---------</span>
+<span class="sd">        name : str</span>
+<span class="sd">            The name of the variable.</span>
+
+<span class="sd">        kind : str</span>
+<span class="sd">            The type of variable, such as ``real``\, ``integer``\, etc.</span>
+
+<span class="sd">        size : int</span>
+<span class="sd">            The size of the variable in bytes.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kind</span> <span class="o">=</span> <span class="n">kind</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">size</span> <span class="o">=</span> <span class="n">size</span>
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="k">return</span> <span class="s1">&#39;Variable(</span><span class="si">%s</span><span class="s1">, </span><span class="si">%s</span><span class="s1">)&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">kind</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">Variable</span><span class="p">):</span> <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">name</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">kind</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">kind</span>
+
+    <span class="k">def</span> <span class="nf">get_numpy_format</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">kind</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">numpy_formats</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s2">&quot;Fortran variable has no corresponding NumPy data type: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span>
+        <span class="n">fmts</span> <span class="o">=</span> <span class="n">numpy_formats</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">kind</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">fmts</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s2">&quot;Fortran variable has an unimplemented size </span><span class="si">%d</span><span class="s2"> for its NumPy data type: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">)))</span>
+        <span class="k">return</span> <span class="n">fmts</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">]</span>
+    
+    <span class="k">def</span> <span class="nf">get_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span> <span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">endian</span> <span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot; Get the value of this variable from the given byte string. &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">endian</span> <span class="o">==</span> <span class="s1">&#39;little&#39;</span><span class="p">:</span> <span class="n">endian</span> <span class="o">=</span> <span class="s1">&#39;&lt;&#39;</span>
+        <span class="k">elif</span> <span class="n">endian</span> <span class="o">==</span> <span class="s1">&#39;big&#39;</span><span class="p">:</span> <span class="n">endian</span> <span class="o">=</span> <span class="s1">&#39;&gt;&#39;</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">(</span>
+            <span class="n">buffer</span> <span class="o">=</span> <span class="n">obj</span><span class="p">,</span>
+            <span class="n">shape</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="n">dtype</span> <span class="o">=</span> <span class="n">endian</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_numpy_format</span><span class="p">(),</span>
+            <span class="n">strides</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">,</span>
+        <span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">from_string</span><span class="p">(</span><span class="n">string</span> <span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">kind</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">variable_statements</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">string</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">s</span><span class="p">):</span> <span class="k">continue</span>
+            <span class="n">kind</span> <span class="o">=</span> <span class="n">s</span>
+            <span class="k">break</span>
+        <span class="k">else</span><span class="p">:</span> <span class="k">return</span>
+
+        <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s1">&#39;character&#39;</span><span class="p">:</span> <span class="k">return</span>
+
+        <span class="c1"># Get the size specifier of the variable, if there is one</span>
+        <span class="n">matches</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;\*[0-9]+&#39;</span><span class="p">,</span> <span class="n">string</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">matches</span><span class="p">:</span>
+            <span class="n">size</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">matches</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">:])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Default variable sizes from</span>
+            <span class="c1"># https://docs.oracle.com/cd/E19957-01/805-4939/c400041360f5/index.html</span>
+            <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s1">&#39;integer&#39;</span><span class="p">:</span> <span class="n">size</span> <span class="o">=</span> <span class="mi">4</span>
+            <span class="k">elif</span> <span class="n">kind</span> <span class="o">==</span> <span class="s1">&#39;real&#39;</span><span class="p">:</span> <span class="n">size</span> <span class="o">=</span> <span class="mi">4</span>
+            <span class="k">elif</span> <span class="n">kind</span> <span class="o">==</span> <span class="s1">&#39;double precision&#39;</span><span class="p">:</span> <span class="n">size</span> <span class="o">=</span> <span class="mi">8</span>
+            <span class="k">elif</span> <span class="n">kind</span> <span class="o">==</span> <span class="s1">&#39;logical&#39;</span> <span class="p">:</span> <span class="n">size</span> <span class="o">=</span> <span class="mi">4</span>
+            <span class="k">elif</span> <span class="n">kind</span> <span class="o">==</span> <span class="s1">&#39;byte&#39;</span><span class="p">:</span> <span class="n">size</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="k">elif</span> <span class="n">kind</span> <span class="o">==</span> <span class="s1">&#39;complex&#39;</span><span class="p">:</span> <span class="n">size</span> <span class="o">=</span> <span class="mi">8</span>
+            <span class="k">else</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Fortran variable type &#39;</span><span class="si">%s</span><span class="s2">&#39; not recognized&quot;</span> <span class="o">%</span> <span class="n">kind</span><span class="p">)</span>
+
+        <span class="n">string</span> <span class="o">=</span> <span class="n">string</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">kind</span><span class="p">):]</span>
+        <span class="k">if</span> <span class="s1">&#39;::&#39;</span> <span class="ow">in</span> <span class="n">string</span><span class="p">:</span> <span class="n">string</span> <span class="o">=</span> <span class="n">string</span><span class="p">[</span><span class="n">string</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s1">&#39;::&#39;</span><span class="p">)</span><span class="o">+</span><span class="nb">len</span><span class="p">(</span><span class="s1">&#39;::&#39;</span><span class="p">):]</span>
+
+        <span class="n">vars_without_sizes</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span>
+            <span class="sa">r</span><span class="s1">&#39;[a-zA-Z_][a-zA-Z0-9_$]*(?![^\(,\n* /])(?! *\*[0-9]+)&#39;</span><span class="p">,</span>
+            <span class="n">string</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">vars_with_sizes</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span>
+            <span class="sa">r</span><span class="s1">&#39;[a-zA-Z_][a-zA-Z0-9_$]*(?![^\(,\n* /]) *\*[0-9]+&#39;</span><span class="p">,</span>
+            <span class="n">string</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">match</span> <span class="ow">in</span> <span class="n">vars_without_sizes</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">Variable</span><span class="p">(</span><span class="n">match</span><span class="p">,</span> <span class="n">kind</span><span class="p">,</span> <span class="n">size</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">match</span> <span class="ow">in</span> <span class="n">vars_with_sizes</span><span class="p">:</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s1">&#39;*&#39;</span><span class="p">)</span>
+            <span class="n">size</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">match</span><span class="p">[</span><span class="n">idx</span><span class="o">+</span><span class="mi">1</span><span class="p">:]</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+            <span class="k">yield</span> <span class="n">Variable</span><span class="p">(</span><span class="n">match</span><span class="p">[:</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span> <span class="n">kind</span><span class="p">,</span> <span class="n">size</span><span class="p">)</span>
+        
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">from_include_header</span><span class="p">(</span><span class="n">path</span> <span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.file</span>
+
+        <span class="k">with</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">open</span><span class="p">(</span>
+            <span class="n">path</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">lock</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">verbose</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">content</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+        <span class="n">content</span> <span class="o">=</span> <span class="n">strip</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">content</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">variable_statements</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">line</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">s</span><span class="p">):</span> <span class="k">continue</span>
+                <span class="k">yield from</span> <span class="n">Variable</span><span class="o">.</span><span class="n">from_string</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+                <span class="k">break</span>
+
+
+<span class="k">class</span> <span class="nc">Object</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A base class for Fortran objects such as functions and subroutines. Each</span>
+<span class="sd">    object contains variable declarations at its start. The provided content</span>
+<span class="sd">    must first be stripped using :meth:`~.strip`\.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">kinds</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s1">&#39;function&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;subroutine&#39;</span><span class="p">,</span>
+    <span class="p">]</span>
+    
+    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">content</span> <span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">file_path</span> <span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.path</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">file_path</span> <span class="o">=</span> <span class="n">file_path</span>
+        
+        <span class="c1"># The last line is always &quot;end&quot; or &quot;end subroutine&quot;, etc.</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="n">content</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="c1"># The first line of the content is always &quot;subroutine ...&quot; or</span>
+        <span class="c1"># &quot;function ...&quot; etc.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kind</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span>
+            <span class="sa">r</span><span class="s1">&#39;[a-zA-Z_][a-zA-Z0-9_$]*(?![^(]*\))&#39;</span><span class="p">,</span>
+            <span class="n">lines</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+            <span class="n">flags</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">M</span><span class="p">,</span>
+        <span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        
+        <span class="n">n</span> <span class="o">=</span> <span class="n">lines</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">lines</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">:]</span>
+        <span class="k">if</span> <span class="s1">&#39;(&#39;</span> <span class="ow">in</span> <span class="n">n</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">n</span><span class="p">[:</span><span class="n">n</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s1">&#39;(&#39;</span><span class="p">)]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">n</span>
+        
+        <span class="n">lines</span> <span class="o">=</span> <span class="n">lines</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        
+        <span class="c1"># Variable declarations stop at the first executable statement</span>
+        <span class="n">header</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">body</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="nb">any</span><span class="p">([</span><span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">nonexecutable_statements</span><span class="p">])</span> <span class="ow">or</span>
+                <span class="n">line</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;include &#39;</span><span class="p">)</span> <span class="ow">or</span>
+                <span class="n">line</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;use &#39;</span><span class="p">)):</span>
+                <span class="k">break</span>
+            <span class="n">header</span> <span class="o">+=</span> <span class="p">[</span><span class="n">line</span><span class="p">]</span>
+        
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">header</span><span class="p">:</span> <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;end &#39;</span><span class="p">):</span> <span class="k">break</span>
+            <span class="n">body</span> <span class="o">+=</span> <span class="p">[</span><span class="n">line</span><span class="p">]</span>
+            
+        <span class="bp">self</span><span class="o">.</span><span class="n">body</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">body</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">header</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">header</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">_variables</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">variables</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_variables</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="kn">import</span> <span class="nn">starsmashertools.helpers.path</span>
+            
+            <span class="c1"># Detect variables declared in the declarations</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_variables</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">):</span>
+                <span class="c1"># include statements are handled below</span>
+                <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;include &#39;</span><span class="p">):</span> <span class="k">continue</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_variables</span> <span class="o">+=</span> <span class="nb">list</span><span class="p">(</span><span class="n">Variable</span><span class="o">.</span><span class="n">from_string</span><span class="p">(</span><span class="n">line</span><span class="p">))</span>
+
+            <span class="c1"># Detect variables that come from &#39;include&#39; statements</span>
+            <span class="c1"># Here we get the relative paths to the header files</span>
+            <span class="k">for</span> <span class="n">match</span> <span class="ow">in</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span>
+                    <span class="sa">r</span><span class="s2">&quot;(?&lt;=[iI][nN][cC][lL][uU][dD][eE] &#39;)[^&#39;]*(?=&#39;)|(?&lt;=[iI][nN][cC][lL][uU][dD][eE] </span><span class="se">\&quot;</span><span class="s2">)[^</span><span class="se">\&quot;</span><span class="s2">]*(?=</span><span class="se">\&quot;</span><span class="s2">)&quot;</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="p">,</span>
+                    <span class="n">flags</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">M</span>
+            <span class="p">):</span>
+                <span class="n">p</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                    <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file_path</span><span class="p">),</span>
+                    <span class="n">match</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">p</span><span class="p">):</span> <span class="k">continue</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_variables</span> <span class="o">+=</span> <span class="nb">list</span><span class="p">(</span><span class="n">Variable</span><span class="o">.</span><span class="n">from_include_header</span><span class="p">(</span><span class="n">p</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_variables</span>
+        
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">is_function</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">kind</span> <span class="o">==</span> <span class="s1">&#39;function&#39;</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">is_subroutine</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">kind</span> <span class="o">==</span> <span class="s1">&#39;subroutine&#39;</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Roger Hatfull.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>  
+
+  <style>
+         .wy-nav-content { max-width: none; }
+  </style>
+
+
+
+</body>
+</html>

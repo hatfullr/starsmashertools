@@ -395,7 +395,7 @@
 <a class="viewcode-back" href="../../../lib/starsmashertools.lib.flux.html#starsmashertools.lib.flux.FluxFinder.get">[docs]</a>
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Initialize values and process the images. Fills the ``result`` attribute</span>
 <span class="sd">        with values.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -424,7 +424,7 @@
         <span class="n">flux_tot</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">Unit</span><span class="p">(</span><span class="n">flux_tot</span><span class="p">,</span> <span class="s1">&#39;g/s*s*s&#39;</span><span class="p">)</span>
         
         <span class="c1"># Finish the ltot calculations</span>
-        <span class="n">cell_area</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dx</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">dy</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">]</span>
+        <span class="n">cell_area</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dx</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">dy</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">length_scale</span><span class="o">**</span><span class="mi">2</span>
         <span class="n">ltot</span> <span class="o">=</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">cell_area</span> <span class="o">*</span> <span class="n">flux_tot</span>
         
         <span class="bp">self</span><span class="o">.</span><span class="n">spectrum</span><span class="o">.</span><span class="n">finalize</span><span class="p">()</span>
@@ -934,7 +934,7 @@
                 <span class="n">filters</span><span class="p">,</span>
                 <span class="n">ntot</span><span class="p">,</span>
         <span class="p">):</span>
-<span class="w">            </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">            </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            Holds spectrum information.</span>
 <span class="sd">            &quot;&quot;&quot;</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">dl</span> <span class="o">=</span> <span class="n">dl</span>
@@ -1055,7 +1055,7 @@
                 <span class="n">resolution</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
                 <span class="n">particle_array</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="p">):</span>
-<span class="w">            </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">            </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            A class wrapper for individual images.</span>
 <span class="sd">            &quot;&quot;&quot;</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">resolution</span> <span class="o">=</span> <span class="n">resolution</span>
@@ -1105,7 +1105,7 @@
             <span class="n">filename</span> <span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Pref</span><span class="p">(</span><span class="s1">&#39;save.filename&#39;</span><span class="p">),</span>
             <span class="n">allowed</span> <span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">nesteddict</span><span class="o">.</span><span class="n">NestedDict</span> <span class="o">=</span> <span class="n">Pref</span><span class="p">(</span><span class="s1">&#39;save.allowed&#39;</span><span class="p">),</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Save the results to disk as a compressed binary file.</span>
 <span class="sd">        </span>
 <span class="sd">        Other Parameters</span>
@@ -1151,7 +1151,7 @@
             <span class="n">filename</span> <span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
             <span class="n">allowed</span> <span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">nesteddict</span><span class="o">.</span><span class="n">NestedDict</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Load results from disk which were saved by :meth:`~.save`\.</span>
 
 <span class="sd">        Parameters</span>
@@ -1201,7 +1201,7 @@
                 <span class="n">log10</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
                 <span class="o">**</span><span class="n">kwargs</span>
         <span class="p">):</span>
-<span class="w">            </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">            </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            Creates a new :class:`~.mpl.artists.FluxPlot` and calls its </span>
 <span class="sd">            :meth:`~.mpl.artists.FluxPlot.imshow` method on the given Matplotlib</span>
 <span class="sd">            :class:`matplotlib.axes.Axes`\.</span>
@@ -1289,7 +1289,7 @@
 <a class="viewcode-back" href="../../../lib/starsmashertools.lib.flux.html#starsmashertools.lib.flux.FluxResults">[docs]</a>
 <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">preferences</span><span class="o">.</span><span class="n">use</span>
 <span class="k">class</span> <span class="nc">FluxResults</span><span class="p">(</span><span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">nesteddict</span><span class="o">.</span><span class="n">NestedDict</span><span class="p">,</span> <span class="nb">object</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    A container for multiple :class:`~.FluxResult` objects. Permits for multiple</span>
 <span class="sd">    :class:`~.FluxResult` objects to be saved in a single file, which can be </span>
 <span class="sd">    convenient when working with many :class:`~.FluxResult` objects.</span>
@@ -1304,7 +1304,7 @@
             <span class="n">allowed</span> <span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">nesteddict</span><span class="o">.</span><span class="n">NestedDict</span> <span class="o">=</span> <span class="n">Pref</span><span class="p">(</span><span class="s1">&#39;allowed&#39;</span><span class="p">),</span>
             <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Constructor.</span>
 <span class="sd">        </span>
 <span class="sd">        Parameters</span>

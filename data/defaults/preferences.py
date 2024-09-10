@@ -25,15 +25,21 @@ prefs = {
     ############################################################################
     
     'helpers' : {
-        'string' : {
-        }, # 'string'
-        
         'file' : {
             'Lock' : {
                 'timeout' : float('inf'), # seconds
             }, # 'Lock'
         }, # 'file'
 
+        'fortran' : {
+            'FortranFile' : {
+                'file extensions' : [
+                    '.f',
+                    '.f90',
+                ],
+            }, # 'FortranFile'
+        }, # 'fortran'
+        
         'gpujob' : {
             'GPUJob' : {
                 'run' : {
@@ -41,6 +47,9 @@ prefs = {
                 },
             },
         }, # 'gpujob'
+        
+        'string' : {
+        }, # 'string'
     }, # 'helpers'
     
     ############################################################################
@@ -286,7 +295,7 @@ prefs = {
                 'max buffer size' : 100,
             }, # 'OutputIterator'
         }, # 'output'
-
+        
         'report' : {
             'Report' : {
                 'columns' : [
@@ -369,7 +378,6 @@ prefs = {
                 'src identifiers' : [
                     'starsmasher.h',
                     'init.f',
-                    'output.f',
                 ],
 
                 # The name of the file which is used to restart a simulation
@@ -443,13 +451,6 @@ prefs = {
             }, # 'Units'
         }, # 'units'
     }, # 'lib'
-
-    ############################################################################
-    'math' : {
-        'EffGravPot' : {
-            'as_point_masses' : True,
-        }, # 'EffGravPot'
-    }, # 'math'
     
     ############################################################################
 

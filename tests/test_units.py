@@ -143,6 +143,13 @@ class TestUnits(basetest.BaseTest):
             for label2 in labels:
                 self.assertEqual(label, label2)
 
+    def test_to_latex(self):
+        l = starsmashertools.lib.units.Unit.Label("cm*cm/s")
+        self.assertEqual(
+            l.to_latex(),
+            r'$\mathrm{cm}^{2}\,\mathrm{s}^{-1}$',
+        )
+
     def test_conversions(self):
         # Simple conversions
         u = starsmashertools.lib.units.Unit(1, 's')

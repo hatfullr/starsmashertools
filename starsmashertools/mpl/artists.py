@@ -51,20 +51,18 @@ class ColoredPlot(matplotlib.collections.LineCollection, object):
             **kwargs
     ):
         import starsmashertools.mpl.colorbar
-        
-        segments = list(zip(zip(x[:-1], y[:-1]), zip(x[1:], y[1:])))
 
-        if isinstance(colors, str) and not hasattr(colors, "__iter__"):
-            kwargs['colors'] = colors
+        #segments = list(zip(zip(x[:-1], y[:-1]), zip(x[1:], y[1:])))
+        segments = []
+        for i in range(len(x) - 1):
+            segments += [[[x[i], y[i]], [x[i+1], y[i+1]]]]
+        segments += [[[x[-2], y[-2]], [x[-1], y[-1]]]]
 
-        #if isinstance(colors, np.ndarray):
-        #    self.colors = np.repeat(colors, 2)
-            #self.colors = np.asarray(list(zip(colors[:-1], colors[1:])))
-        
         super(ColoredPlot, self).__init__(
             segments,
-            joinstyle=joinstyle,
-            capstyle=capstyle,
+            joinstyle = joinstyle,
+            capstyle = capstyle,
+            colors = colors,
             **kwargs
         )
         
@@ -104,7 +102,7 @@ class ColoredPlot(matplotlib.collections.LineCollection, object):
 
 
 class OutputPlot(object):
-    """
+    r"""
     A class which represents the data contained in a 
     :class:`~starsmashertools.lib.output.Output` for plotting.
     """
@@ -225,7 +223,11 @@ class OutputPlot(object):
                 artist.set_visible(is_valid)
                 
                 legend = artist.axes.get_legend()
-                for handle, text in zip(legend.legendHandles, legend.get_texts()):
+                try:
+                    handles = legend.legendHandles
+                except AttributeError: # Matplotlib 3.7+
+                    handles = legend.legend_handles
+                for handle, text in zip(handles, legend.get_texts()):
                     if text.get_text() == artist.get_label():
                         handle.set_visible(is_valid)
                         if not is_valid: text.set_text("")
@@ -251,7 +253,7 @@ class OutputPlot(object):
 
 @starsmashertools.preferences.use
 class FluxPlot(object):
-    """
+    r"""
     A class for easily performing Matplotlib plotting operations on a 
     :class:`~.lib.flux.FluxResult`\.
     """
@@ -269,7 +271,7 @@ class FluxPlot(object):
     
     @api
     def remove(self):
-        """
+        r"""
         Remove all artists this object is responsible for from its axes.
         """
         artists = [
@@ -295,7 +297,7 @@ class FluxPlot(object):
             extent : list | tuple | np.ndarray | type(None) = None,
             **kwargs
     ):
-        """
+        r"""
         Plot a quantity on a Matplotlib :class:`matplotlib.axes.Axes`\.
         
         Parameters
@@ -350,7 +352,7 @@ class FluxPlot(object):
             IDs : list | tuple | np.ndarray,
             **kwargs
     ):
-        """
+        r"""
         There must be an image plotted with :meth:`~.imshow` first.
 
         Parameters
@@ -494,7 +496,7 @@ class FluxPlot(object):
             IDs : list | tuple | np.ndarray,
             **kwargs
     ):
-        """
+        r"""
         There must be an image plotted with :meth:`~.imshow` first.
 
         Parameters

@@ -13,7 +13,7 @@ import inspect
 
 @starsmashertools.preferences.use
 class Report(object):
-    """
+    r"""
     Given Simulations, generate a report which shows their properties in
     provided text formatting.
     """

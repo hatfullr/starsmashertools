@@ -134,20 +134,18 @@
             <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">):</span>
         <span class="kn">import</span> <span class="nn">starsmashertools.mpl.colorbar</span>
-        
-        <span class="n">segments</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">x</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">y</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]),</span> <span class="nb">zip</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">y</span><span class="p">[</span><span class="mi">1</span><span class="p">:])))</span>
 
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">colors</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">colors</span><span class="p">,</span> <span class="s2">&quot;__iter__&quot;</span><span class="p">):</span>
-            <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;colors&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">colors</span>
+        <span class="c1">#segments = list(zip(zip(x[:-1], y[:-1]), zip(x[1:], y[1:])))</span>
+        <span class="n">segments</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">segments</span> <span class="o">+=</span> <span class="p">[[[</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">]],</span> <span class="p">[</span><span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">],</span> <span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]]]]</span>
+        <span class="n">segments</span> <span class="o">+=</span> <span class="p">[[[</span><span class="n">x</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">],</span> <span class="n">y</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]],</span> <span class="p">[</span><span class="n">x</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">y</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]]]</span>
 
-        <span class="c1">#if isinstance(colors, np.ndarray):</span>
-        <span class="c1">#    self.colors = np.repeat(colors, 2)</span>
-            <span class="c1">#self.colors = np.asarray(list(zip(colors[:-1], colors[1:])))</span>
-        
         <span class="nb">super</span><span class="p">(</span><span class="n">ColoredPlot</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">segments</span><span class="p">,</span>
-            <span class="n">joinstyle</span><span class="o">=</span><span class="n">joinstyle</span><span class="p">,</span>
-            <span class="n">capstyle</span><span class="o">=</span><span class="n">capstyle</span><span class="p">,</span>
+            <span class="n">joinstyle</span> <span class="o">=</span> <span class="n">joinstyle</span><span class="p">,</span>
+            <span class="n">capstyle</span> <span class="o">=</span> <span class="n">capstyle</span><span class="p">,</span>
+            <span class="n">colors</span> <span class="o">=</span> <span class="n">colors</span><span class="p">,</span>
             <span class="o">**</span><span class="n">kwargs</span>
         <span class="p">)</span>
         
@@ -187,7 +185,7 @@
 
 
 <span class="k">class</span> <span class="nc">OutputPlot</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    A class which represents the data contained in a </span>
 <span class="sd">    :class:`~starsmashertools.lib.output.Output` for plotting.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -308,7 +306,11 @@
                 <span class="n">artist</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="n">is_valid</span><span class="p">)</span>
                 
                 <span class="n">legend</span> <span class="o">=</span> <span class="n">artist</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">get_legend</span><span class="p">()</span>
-                <span class="k">for</span> <span class="n">handle</span><span class="p">,</span> <span class="n">text</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">legend</span><span class="o">.</span><span class="n">legendHandles</span><span class="p">,</span> <span class="n">legend</span><span class="o">.</span><span class="n">get_texts</span><span class="p">()):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">handles</span> <span class="o">=</span> <span class="n">legend</span><span class="o">.</span><span class="n">legendHandles</span>
+                <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span> <span class="c1"># Matplotlib 3.7+</span>
+                    <span class="n">handles</span> <span class="o">=</span> <span class="n">legend</span><span class="o">.</span><span class="n">legend_handles</span>
+                <span class="k">for</span> <span class="n">handle</span><span class="p">,</span> <span class="n">text</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">handles</span><span class="p">,</span> <span class="n">legend</span><span class="o">.</span><span class="n">get_texts</span><span class="p">()):</span>
                     <span class="k">if</span> <span class="n">text</span><span class="o">.</span><span class="n">get_text</span><span class="p">()</span> <span class="o">==</span> <span class="n">artist</span><span class="o">.</span><span class="n">get_label</span><span class="p">():</span>
                         <span class="n">handle</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="n">is_valid</span><span class="p">)</span>
                         <span class="k">if</span> <span class="ow">not</span> <span class="n">is_valid</span><span class="p">:</span> <span class="n">text</span><span class="o">.</span><span class="n">set_text</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
@@ -336,7 +338,7 @@
 <a class="viewcode-back" href="../../../mpl/starsmashertools.mpl.artists.html#starsmashertools.mpl.artists.FluxPlot">[docs]</a>
 <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">preferences</span><span class="o">.</span><span class="n">use</span>
 <span class="k">class</span> <span class="nc">FluxPlot</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    A class for easily performing Matplotlib plotting operations on a </span>
 <span class="sd">    :class:`~.lib.flux.FluxResult`\.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -356,7 +358,7 @@
 <a class="viewcode-back" href="../../../mpl/starsmashertools.mpl.artists.html#starsmashertools.mpl.artists.FluxPlot.remove">[docs]</a>
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="nf">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Remove all artists this object is responsible for from its axes.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">artists</span> <span class="o">=</span> <span class="p">[</span>
@@ -385,7 +387,7 @@
             <span class="n">extent</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
             <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Plot a quantity on a Matplotlib :class:`matplotlib.axes.Axes`\.</span>
 <span class="sd">        </span>
 <span class="sd">        Parameters</span>
@@ -443,7 +445,7 @@
             <span class="n">IDs</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
             <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        There must be an image plotted with :meth:`~.imshow` first.</span>
 
 <span class="sd">        Parameters</span>
@@ -593,7 +595,7 @@
             <span class="n">IDs</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
             <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        There must be an image plotted with :meth:`~.imshow` first.</span>
 
 <span class="sd">        Parameters</span>

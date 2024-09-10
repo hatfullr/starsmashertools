@@ -15,8 +15,11 @@ import copy
 import time
 import filecmp
 import mmap
+import io
+import re
 
-fortran_comment_characters = ['c','C','!','*']
+
+fortran_comment_characters = ['c','C','!','*','d','D']
 
 downloaded_files = []
 
@@ -31,7 +34,7 @@ class FileModeError(Exception, object): pass
 
 @starsmashertools.preferences.use
 class Lock(object):
-    """
+    r"""
     If a file is being read, writing is not allowed.
     If a file is being written, reading/writing is not allowed.
     """
@@ -184,7 +187,7 @@ class Lock(object):
 @starsmashertools.helpers.argumentenforcer.enforcetypes
 @api
 def get_lock_files(path : str):
-    """
+    r"""
     Return all the files associated with the locking of a file. A separate lock
     file is created in the starsmashertools lock directory for each mode that a
     file is currently open in. For example, a file which has been opened in
@@ -217,7 +220,7 @@ def get_lock_files(path : str):
 @starsmashertools.helpers.argumentenforcer.enforcetypes
 @api
 def is_locked(path : str):
-    """
+    r"""
     Check if the given path to a file is currently considered locked by
     starsmashertools. Starsmashertools avoids simultaneous read/write operations
     on files, such as in the case of using :class:`~.lib.archive.Archive` 
@@ -239,7 +242,7 @@ def is_locked(path : str):
 @starsmashertools.helpers.argumentenforcer.enforcetypes
 @api
 def unlock(path : str, mode : str | type(None) = None):
-    """
+    r"""
     Remove lock files associated with a file.
 
     Parameters
@@ -269,7 +272,7 @@ def unlock(path : str, mode : str | type(None) = None):
 @starsmashertools.helpers.argumentenforcer.enforcetypes
 @api
 def unlock_all():
-    """
+    r"""
     Unlock all currently locked files.
     """
     from starsmashertools import LOCK_DIRECTORY
@@ -444,7 +447,7 @@ def get_phrase(
         phrase : str,
         end : str = '\n',
 ):
-    """
+    r"""
     Return instances of the given phrase in the given file as a list of strings
     where each element is the contents of the file after the phrase appears, up
     to the specified `end`\, or the next instance of the phrase.
@@ -498,7 +501,7 @@ def get_phrase(
 def sort_by_mtimes(
         files : list
 ):
-    """
+    r"""
     Sort the given files by their modification times.
 
     Parameters
@@ -518,7 +521,7 @@ def sort_by_mtimes(
 
 
 def reverse_readline(path, **kwargs):
-    """A generator that returns the lines of a file in reverse order
+    r"""A generator that returns the lines of a file in reverse order
     https://stackoverflow.com/a/23646049/4954083"""
     with open(path, 'rb') as fh:
         buffer = mmap.mmap(fh.fileno(), 0, access=mmap.ACCESS_READ)

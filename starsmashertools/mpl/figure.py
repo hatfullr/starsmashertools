@@ -8,7 +8,7 @@ import matplotlib.figure
 import starsmashertools.lib.flux
 
 def update_style_sheet_directories():
-    """ Locate the style sheets listed in the preferences. """
+    r""" Locate the style sheets listed in the preferences. """
     import starsmashertools
     import matplotlib.pyplot as plt
 
@@ -26,7 +26,7 @@ def update_style_sheet_directories():
 
 @starsmashertools.preferences.use
 class Figure(matplotlib.figure.Figure, object):
-    """
+    r"""
     Used internally to create Matplotlib figures. This normalizes the process
     for creating figures to ensure consistency.
 
@@ -46,7 +46,7 @@ class Figure(matplotlib.figure.Figure, object):
             debug : bool = False,
             **kwargs
     ):
-        """
+        r"""
         Initializer. Review the Matplotlib documentation for 
         :meth:`matplotlib.pyplot.subplots` for details which are not documented 
         here.
@@ -140,8 +140,8 @@ class Figure(matplotlib.figure.Figure, object):
         super(Figure, self).draw(*args, **kwargs)
     
     def show(self, *args, **kwargs):
-        """ Display the figure without blocking the code execution if the CLI is
-        being used. """
+        r""" Display the figure without blocking the code execution if the CLI 
+        is being used. """
         import starsmashertools.bintools.cli
         import matplotlib.pyplot as plt
         
@@ -311,7 +311,7 @@ class Figure(matplotlib.figure.Figure, object):
             artist_type : type | type(None) = matplotlib.artist.Artist,
             artist : matplotlib.artist.Artist | type(None) = None,
     ):
-        """ Obtain all artists of the given type. If the given type is `None`\, 
+        r""" Obtain all artists of the given type. If the given type is `None`\, 
         this returns all artists in the figure. The search begins at the given
         artist. If the given artist is None, all artists are searched. """
         if artist is None: artist = self
@@ -332,7 +332,7 @@ class Figure(matplotlib.figure.Figure, object):
 
 @starsmashertools.preferences.use
 class FluxFigure(Figure, object):
-    """
+    r"""
     Show any number of :class:`~.lib.flux.FluxResult`\s on a Figure. The figure
     appears as a collection of images, where each row represents one 
     :class:`~.lib.flux.FluxResult`\. The number of columns in each row is 
@@ -349,7 +349,7 @@ class FluxFigure(Figure, object):
             values : list | tuple = Pref('values', ['flux']),
             **kwargs
     ):
-        """
+        r"""
         Parameters
         ----------
         *args
@@ -384,7 +384,7 @@ class FluxFigure(Figure, object):
             sharey : bool = True,
             **kwargs
     ):
-        """
+        r"""
         This function is called by :meth:`~.mpl.subplots` to create the axes on
         the figure.
         """
@@ -399,7 +399,7 @@ class FluxFigure(Figure, object):
             self,
             result : str | starsmashertools.lib.flux.FluxResult,
     ):
-        """
+        r"""
         Add a :class:`~.lib.flux.FluxResult` to the figure.
 
         Parameters
@@ -424,7 +424,7 @@ class FluxFigure(Figure, object):
             flux_kw : dict | list | tuple = {},
             **kwargs
     ):
-        """ Create the actual plot. """
+        r""" Create the actual plot. """
         
         nrows = len(self._toplot)
         ncols = len(self._values)

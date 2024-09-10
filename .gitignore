@@ -12,6 +12,8 @@ data/user/*
 
 data/locks/
 
+tests/trace/*.trace
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

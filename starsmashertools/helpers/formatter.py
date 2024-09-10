@@ -20,7 +20,7 @@ def sheet_name_to_path(name : str):
 
 
 class FormatSheet(object):
-    """
+    r"""
     Contains information about a format sheet.
     """
 
@@ -227,7 +227,7 @@ class FormatSheet(object):
 
 
 class Formatter(object):
-    """
+    r"""
     A helper class for using format sheets to produce outputs.
     """
     def __init__(
@@ -279,7 +279,7 @@ class Formatter(object):
             values : dict,
             namelength : int | type(None) = None,
     ):
-        """ 
+        r""" 
         Get the total character width the sheet would have if given values.
         """
         xmin, xmax, ymin, ymax = None, None, None, None
@@ -309,7 +309,7 @@ class Formatter(object):
             self,
             output : starsmashertools.lib.output.Output,
     ):
-        """ Obtain the formatted string using the format sheet. """
+        r""" Obtain the formatted string using the format sheet. """
         units = output.simulation.units
         keys = []
         values = []

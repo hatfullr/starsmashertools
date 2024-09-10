@@ -3,7 +3,7 @@ from starsmashertools.helpers.apidecorator import api
 import numpy as np
 
 class Table(object):
-    """
+    r"""
     Contains a 2D array of data and supplies methods for looking up values,
     including interpolation.
     """
@@ -166,7 +166,7 @@ class TEOS(Table, object):
 
 
 class OpacityTable(Table, object):
-    """
+    r"""
     Intended for use with simulations that have ncooling = 2 or 3.
     """
     def __init__(self, *args, **kwargs):

@@ -39,7 +39,6 @@ class LogFile(object):
     @api
     def __init__(self, path, simulation):
         import starsmashertools.helpers.path
-        import starsmashertools.helpers.file
         import starsmashertools.lib.simulation
 
         starsmashertools.helpers.argumentenforcer.enforcetypes({
@@ -56,11 +55,7 @@ class LogFile(object):
         self._last_iteration = None
         self._iteration_content_length = None
 
-        with starsmashertools.helpers.file.open(self.path, 'rb', lock = False) as f:
-            try:
-                self._buffer = mmap.mmap(f.fileno(), 0, flags=mmap.MAP_POPULATE, access=mmap.ACCESS_READ)
-            except:
-                self._buffer = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
+        self._buffer = None
 
     def __eq__(self, other):
         import starsmashertools.helpers.file
@@ -68,6 +63,25 @@ class LogFile(object):
             'other' : LogFile,
         })
         return starsmashertools.helpers.file.compare(self.path, other.path)
+
+    @property
+    def buffer(self):
+        if self._buffer is not None: return self._buffer
+        import starsmashertools.helpers.path
+        import starsmashertools.helpers.file
+        with starsmashertools.helpers.file.open(self.path, 'rb', lock = False) as f:
+            try:
+                self._buffer = mmap.mmap(
+                    f.fileno(), 0,
+                    flags=mmap.MAP_POPULATE,
+                    access=mmap.ACCESS_READ,
+                )
+            except:
+                self._buffer = mmap.mmap(
+                    f.fileno(), 0,
+                    access=mmap.ACCESS_READ
+                )
+        return self._buffer
     
     @property
     def header(self):
@@ -76,8 +90,8 @@ class LogFile(object):
     
     def read_header(self):
         self._header = b""
-        self._buffer.seek(0)
-        for line in iter(self._buffer.readline, b""):
+        self.buffer.seek(0)
+        for line in iter(self.buffer.readline, b""):
             if b'output: end of iteration' in line: break
             self._header += line
         self._header = self._header.decode('utf-8')
@@ -94,30 +108,52 @@ class LogFile(object):
         i1 = i0 + self.header[i0:].index('\n')
         return self.header[i0:i1]
 
-    # Return a list of boolean values of the same length as 'outputfiles', where
-    # an element is 'True' if it is included in this LogFile.
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def has_output_files(
             self,
-            filenames : list | tuple | np.ndarray,
+            paths : list | tuple | np.ndarray,
     ):
+        r"""
+        Return a list of boolean values of the same length as ``paths``, where
+        an element is ``True`` if it is included in this LogFile.
+
+        Parameters
+        ----------
+        paths : list, tuple, :class:`numpy.ndarray`
+            The file paths to check.
+
+        Returns
+        -------
+        list
+            A list of boolean values with the same length as ``paths``\, where
+            elements are ``True`` if this log file contains the output file at
+            the corresponding path in ``paths``\. Otherwise, that element is
+            ``False``\.
+        """
         import starsmashertools.helpers.path
         
         first_file = self.get_first_output_file(throw_error=False)
         last_file = self.get_last_output_file(throw_error=False)
+
+        if first_file is None and last_file is None:
+            # No output files written in this log file
+            return [False]*len(paths)
+        if None in [first_file, last_file]:
+            raise Exception("Exactly one of first_file or last_file were None. This should never be possible.")
+            
         
         # This is only going to work with out*.sph files
-        def get_filenum(filename):
-            filename = starsmashertools.helpers.path.basename(filename)
-            if 'out' not in filename:
+        def get_filenum(path):
+            basename = starsmashertools.helpers.path.basename(path)
+            if 'out' not in basename:
                 raise Exception("has_output_files only works with files of type out*.sph")
-            return int(filename.replace('out','').replace('.sph',''))
+            return int(basename.replace('out','').replace('.sph',''))
         
         start_num = get_filenum(first_file)
         stop_num = get_filenum(last_file)
 
-        nums = [get_filenum(filename) for filename in filenames]
+        nums = [get_filenum(path) for path in paths]
         return [num >= start_num and num <= stop_num for num in nums]
     
     # Find the time that this log file stopped at
@@ -125,13 +161,13 @@ class LogFile(object):
     def get_stop_time(self):
         string = 'time='
         bstring = string.encode('utf-8')
-        index = self._buffer.rfind(bstring, len(self.header), self._buffer.size())
+        index = self.buffer.rfind(bstring, len(self.header), self.buffer.size())
         if index == -1:
             raise LogFile.PhraseNotFoundError(string)
         index += len(bstring)
-        end_idx = self._buffer.find(b'\n', index, self._buffer.size())
-        self._buffer.seek(index)
-        ret = float(self._buffer.read(end_idx - index).decode('utf-8').strip())
+        end_idx = self.buffer.find(b'\n', index, self.buffer.size())
+        self.buffer.seek(index)
+        ret = float(self.buffer.read(end_idx - index).decode('utf-8').strip())
         
         return ret
 
@@ -139,13 +175,13 @@ class LogFile(object):
     def get_start_time(self):
         string = 'time='
         bstring = string.encode('utf-8')
-        index = self._buffer.find(bstring, len(self.header), self._buffer.size())
+        index = self.buffer.find(bstring, len(self.header), self.buffer.size())
         if index == -1:
             raise LogFile.PhraseNotFoundError(string)
         index += len(bstring)
-        end_idx = self._buffer.find(b'\n', index, self._buffer.size())
-        self._buffer.seek(index)
-        ret = float(self._buffer.read(end_idx - index).decode('utf-8').strip())
+        end_idx = self.buffer.find(b'\n', index, self.buffer.size())
+        self.buffer.seek(index)
+        ret = float(self.buffer.read(end_idx - index).decode('utf-8').strip())
         
         return ret
 
@@ -160,13 +196,13 @@ class LogFile(object):
         string2 = 'at t='
         bstring2 = string2.encode('utf-8')
         
-        index = self._buffer.find(bstring, len(self.header), self._buffer.size())
+        index = self.buffer.find(bstring, len(self.header), self.buffer.size())
         ret = None
         if index != -1:
             index += len(bstring)
-            self._buffer.seek(index)
-            end_idx = self._buffer.find(bstring2)
-            ret = self._buffer.read(end_idx - index).decode('utf-8').strip()
+            self.buffer.seek(index)
+            end_idx = self.buffer.find(bstring2)
+            ret = self.buffer.read(end_idx - index).decode('utf-8').strip()
 
         
         
@@ -185,13 +221,13 @@ class LogFile(object):
         string2 = 'at t='
         bstring2 = string2.encode('utf-8')
         
-        index = self._buffer.rfind(bstring, len(self.header), self._buffer.size())
+        index = self.buffer.rfind(bstring, len(self.header), self.buffer.size())
         ret = None
         if index != -1:
             index += len(bstring)
-            self._buffer.seek(index)
-            end_idx = self._buffer.find(bstring2, index, self._buffer.size())
-            ret = self._buffer.read(end_idx - index).decode('utf-8').strip()
+            self.buffer.seek(index)
+            end_idx = self.buffer.find(bstring2, index, self.buffer.size())
+            ret = self.buffer.read(end_idx - index).decode('utf-8').strip()
         
         if throw_error:
             raise LogFile.PhraseNotFoundError(string)
@@ -212,16 +248,16 @@ class LogFile(object):
         startline = LogFile.Iteration.startline.encode('utf-8')
         endline = LogFile.Iteration.endline.encode('utf-8')
 
-        stop = self._buffer.size()
+        stop = self.buffer.size()
         
         # The iteration lines are always the same length
-        index = self._buffer.find(startline, len(self.header), stop)
+        index = self.buffer.find(startline, len(self.header), stop)
         if index == -1: return None
 
         _start = index
         
-        index2 = self._buffer.find(endline, index, stop)
-        index3 = self._buffer.find(b'\n', index2, stop)
+        index2 = self.buffer.find(endline, index, stop)
+        index3 = self.buffer.find(b'\n', index2, stop)
         
         self._iteration_content_length = index3 - index
         return self._iteration_content_length
@@ -232,13 +268,13 @@ class LogFile(object):
         
         string = LogFile.Iteration.startline.encode('utf-8')
         string2 = LogFile.Iteration.endline.encode('utf-8')
-        size = self._buffer.size()
-        index = self._buffer.find(string, len(self.header), size)
+        size = self.buffer.size()
+        index = self.buffer.find(string, len(self.header), size)
         if index == -1: return None
 
         length = self.get_iteration_content_length()
-        self._buffer.seek(index)
-        content = self._buffer.read(length)
+        self.buffer.seek(index)
+        content = self.buffer.read(length)
 
         try:
             self._first_iteration = LogFile.Iteration(content, self)
@@ -252,22 +288,22 @@ class LogFile(object):
         
         string = LogFile.Iteration.startline.encode('utf-8')
         string2 = LogFile.Iteration.endline.encode('utf-8')
-        size = self._buffer.size()
-        index = self._buffer.rfind(string, len(self.header), size)
+        size = self.buffer.size()
+        index = self.buffer.rfind(string, len(self.header), size)
         if index == -1: return None
 
         length = self.get_iteration_content_length()
-        self._buffer.seek(index)
-        content = self._buffer.read(length)
+        self.buffer.seek(index)
+        content = self.buffer.read(length)
         try:
             self._last_iteration = LogFile.Iteration(content, self)
         except:
             # Try going up higher in the log file
-            index = self._buffer.rfind(string, len(self.header), index)
+            index = self.buffer.rfind(string, len(self.header), index)
             #print("Trying higher up")
             if index == -1: return None
-            self._buffer.seek(index)
-            content = self._buffer.read(length)
+            self.buffer.seek(index)
+            content = self.buffer.read(length)
             self._last_iteration = LogFile.Iteration(content, self)
         
         return self._last_iteration
@@ -280,15 +316,15 @@ class LogFile(object):
         length = self.get_iteration_content_length()
         first_iteration = self.get_first_iteration()
         start = length*(number - first_iteration['iteration']) # + len(self.header)
-        index = self._buffer.find(
+        index = self.buffer.find(
             tomatch.encode('utf-8'),
             start,
-            self._buffer.size(),
+            self.buffer.size(),
         )
         if index == -1: return None
         
-        self._buffer.seek(index)
-        content = self._buffer.read(length)
+        self.buffer.seek(index)
+        content = self.buffer.read(length)
         
         return LogFile.Iteration(content, self)
 
@@ -312,14 +348,14 @@ class LogFile(object):
         length = self.get_iteration_content_length()
         first_iteration = self.get_first_iteration()
         start = len(self.header)
-        self._buffer.seek(start)
-        end = self._buffer.size()
+        self.buffer.seek(start)
+        end = self.buffer.size()
 
         toget += first_iteration['iteration']
 
         for number in toget:
             tomatch = (startline + '%8d') % number
-            index = self._buffer.find(
+            index = self.buffer.find(
                 tomatch.encode('utf-8'),
                 start,
                 end,
@@ -328,15 +364,15 @@ class LogFile(object):
                 raise Exception("Failed to find iteration %d" % (first_iteration['iteration'] + number))
             
             # Get the content of the iteration
-            self._buffer.seek(index)
-            content = self._buffer.read(length)
+            self.buffer.seek(index)
+            content = self.buffer.read(length)
             
             try:
                 yield LogFile.Iteration(content, self)
             except LogFile.PhraseNotFoundError:
                 break
             
-            start = self._buffer.tell()
+            start = self.buffer.tell()
 
             # This code scales worse than above because it has to read the log
             # file at the front and back before seeking ahead. We do the front-

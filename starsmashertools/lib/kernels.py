@@ -5,7 +5,7 @@ import starsmashertools.math
 import inspect
 import sys
 
-""" For integrating the kernel functions:
+r""" For integrating the kernel functions:
 Imagine you are looking at a particle's kernel. Trace a
 path through the kernel perpendicular to your line of
 sight, like so:
@@ -125,8 +125,8 @@ class _BaseKernel(object):
     @api
     def __call__(
             self,
-            x : int | float | list | tuple | np.ndarray,
-            h : int | float | list | tuple | np.ndarray,
+            x : int | float,
+            h : int | float,
     ):
         r"""
         Calculate the value of the kernel function at a given distance ``x`` 
@@ -153,8 +153,8 @@ class _BaseKernel(object):
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     def _scaled(
             self,
-            x : int | float | list | tuple | np.ndarray,
-            h : int | float | list | tuple | np.ndarray,
+            x : int | float,
+            h : int | float,
     ):
         r"""
         This must be overridden by classes which inherit from this class.
@@ -162,15 +162,60 @@ class _BaseKernel(object):
         raise NotImplementedError
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
+    def _scaled_dr(
+            self,
+            x : int | float,
+            h : int | float,
+    ):
+        r"""
+        The first derivative of the kernel function :math:`W` with respect to 
+        the particle distance. This method must be implemented in child classes
+        for methods :meth:`~.dq`\, :meth:`~.dr`\, and :meth:`~.dq`\. The value 
+        returned should be :math:`h^5/r \partial W/\partial r`\.
+        
+        Parameters
+        ----------
+        x : int, float
+            The distance from the particle.
+        
+        h : int, float
+            The smoothing length of the particle.
+        """
+        raise NotImplementedError
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    def _scaled_dh(
+            self,
+            x : int | float,
+            h : int | float,
+    ):
+        r"""
+        The first derivative of the kernel function :math:`W` with respect to 
+        the smoothing length. This method must be implemented in child classes
+        for methods :meth:`~.dq`\, :meth:`~.dr`\, and :meth:`~.dq`\. The value
+        returned should be :math:`h^4 \partial W/\partial h`\.
+        
+        Parameters
+        ----------
+        x : int, float
+            The distance from the particle.
+        
+        h : int, float
+            The smoothing length of the particle.
+        """
+        raise NotImplementedError
+    
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
-    def scaled(self,
-            x : int | float | list | tuple | np.ndarray,
-            h : int | float | list | tuple | np.ndarray,
+    def scaled(
+            self,
+            x : int | float,
+            h : int | float,
     ):
         r"""
         Calculate the scaled value of the kernel function :math:`W(x,h)h^3` at a
-        given distance ``x`` and smoothing length ``h``\. If the function is
-        integrated, returns :math:`h^2 \int W(x,h) dx` instead.
+        given distance ``x`` and smoothing length ``h``\.
         
         Parameters
         ----------
@@ -192,6 +237,82 @@ class _BaseKernel(object):
             else:
                 return self.table[int(self._ntab * v)]
         return self._scaled(x, h)
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def scaled_dr(
+            self,
+            x : int | float,
+            h : int | float,
+    ):
+        if x > self.compact_support * h: return 0
+        return self._scaled_dr(x, h)
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def scaled_dh(
+            self,
+            x : int | float,
+            h : int | float,
+    ):
+        if x > self.compact_support * h: return 0
+        return self._scaled_dh(x, h)
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def dr(
+            self,
+            x : int | float,
+            h : int | float,
+    ):
+        r"""
+        Calculate the unscaled value of the first derivative of the kernel 
+        function with respect to the distance from a particle,
+        :math:`\partial W/\partial r` for smoothing length :math:`h`\.
+
+        Parameters
+        ----------
+        x : int, float
+            The distance from the particle.
+        
+        h : int, float
+            The smoothing length of the particle.
+
+        See Also
+        --------
+        :meth:`~.scaled_dr`
+        
+        :meth:`~.dh`
+        """
+        return self.scaled_dr(x, h) * x / h**5
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def dh(
+            self,
+            x : int | float,
+            h : int | float,
+    ):
+        r"""
+        Calculate the unscaled value of the first derivative of the kernel 
+        function with respect to the smoothing length :math:`h`\,
+        :math:`\partial W/\partial r` for distance :math:`r` from a particle.
+        
+        Parameters
+        ----------
+        x : int, float
+            The distance from the particle.
+        
+        h : int, float
+            The smoothing length of the particle.
+
+        See Also
+        --------
+        :meth:`~.scaled_dh`
+        
+        :meth:`~.dr`
+        """
+        return self.scaled_dh(x, h) / h**4
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
@@ -257,8 +378,6 @@ class _BaseKernel(object):
             pass
         self._integrated = value
 
-
-
         
 
 class UniformKernel(_BaseKernel, object):
@@ -272,6 +391,9 @@ class UniformKernel(_BaseKernel, object):
             h : int | float,
     ):
         return 1 if x <= self.compact_support * h else 0
+
+    def _scaled_dr(self, *args, **kwargs): return 0
+    def _scaled_dh(self, *args, **kwargs): return 0
 
 
 class CubicSplineKernel(_BaseKernel, object):
@@ -309,13 +431,22 @@ class CubicSplineKernel(_BaseKernel, object):
             x : int | float,
             h : int | float,
     ):
-        if x > self.compact_support * h: return 0
-        
         q = x / (self.compact_support * h)
-        
         if q <= 0.5: v = 6 * q**2 * (q - 1) + 1
         else: v = 2 * (1 - q)**3
-        return 1./np.pi * v
+        return v / np.pi
+
+    def _scaled_dr(self, x : int | float, h : int | float):
+        q = x / (self.compact_support * h)
+        if q <= 0.5: v = 6 * (3*q - 2) / (self.compact_support**2)
+        else: v = -6 * (q - 1)**2 / (self.compact_support**2 * q)
+        return v / np.pi
+
+    def _scaled_dh(self, x : int | float, h : int | float):
+        q = x / (self.compact_support * h)
+        if q <= 0.5: v = -3*(1 + 2*q**2 * (6*q - 5))
+        else: v = -6 * (1 - 2*q) * (q - 1)**2
+        return v / np.pi
 
 class WendlandC4Kernel(_BaseKernel, object):
     r"""
@@ -329,5 +460,12 @@ class WendlandC4Kernel(_BaseKernel, object):
             h : int | float,
     ):
         q = x / (self.compact_support * h)
-        if q > 1: return 0
         return 495/(256*np.pi)*(1-q)**6*(35./3.*q**2+6*q+1)
+
+    def _scaled_dr(self, x : int | float, h : int | float):
+        q = x / (self.compact_support * h)
+        return -1155/(32*np.pi * self.compact_support**2) * (1-q)**5 * (1+5*q)
+
+    def _scaled_dh(self, x : int | float, h : int | float):
+        q = x / (self.compact_support * h)
+        return -165/(256*np.pi) * (1-q)**5 * (9 + 45*q - 5*q**2 - 385*q**3)

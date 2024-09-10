@@ -1,100 +1,51 @@
 #!/usr/bin/env python3
 
-# Start restore code
-def get_compress_code():
-    import os
-    
-    compress_filename = 'compress'
-    if not os.path.exists(compress_filename):
-        raise FileNotFoundError(compress_filename)
-
-    code = {
-        'static variables' : '',
-        'print_progress' : '',
-    }
-    state = {key:'waiting' for key in code.keys()}
-    with open(compress_filename, 'r') as f:
-        
-        for line in f:
-            # Stop if we're done getting info from compress script
-            for value in state.values():
-                if value != 'done': break
-            else: break
-
-            skip = False
-            for key, val in state.items():
-                if val == 'waiting' and line.startswith('# Start extract ' + key):
-                    state[key] = 'listening'
-                    skip = True
-                    break
-                if val == 'listening' and line.startswith('# Stop extract ' + key):
-                    state[key] = 'done'
-                    skip = True
-                    break
-                
-            # Skip this line if it doesn't contain the code we need
-            if skip: continue
-
-            for key, val in state.items():
-                if val == 'listening':
-                    code[key] += line
-
-    # Get constant variable values:
-    #    zipname
-    #    size_identifier
-    #    times_identifier
-    #    compression_kwargs
-    # and print_progress function
-    return code
-# Stop restore code
-    
-
-
-if __name__ == '__main__':
+def extract(
+        quiet : bool = False,
+        no_remove : bool = False,
+):
     import zipfile
     import os
     import shutil
     import time
-    import argparse
+    from importlib.util import spec_from_loader, module_from_spec
+    from importlib.machinery import SourceFileLoader 
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--quiet', action='store_true')
-    parser.add_argument('--no-remove', action='store_true')
-    args = parser.parse_args()
-
-    code = get_compress_code()
-    for script in code.values():
-        exec(script)
-
-        
-    if not os.path.exists(zipname):
-        raise FileNotFoundError(zipname +". Please run ./compress first.")
+    spec = spec_from_loader('compress', SourceFileLoader('compress', 'compress'))
+    compress = module_from_spec(spec)
+    spec.loader.exec_module(compress)
+    
+    if not os.path.exists(compress.zipname):
+        raise FileNotFoundError(compress.zipname +". Please run ./compress first.")
 
     extracted_size = 0.
     extracted = []
     try:
         with zipfile.ZipFile(
-                zipname,
+                compress.zipname,
                 mode = 'r',
-                **compression_kwargs
+                **compress.compression_kwargs
         ) as zfile:
-            total = int(zfile.read(size_identifier).decode('utf-8'))
-            lines = zfile.read(times_identifier).decode('utf-8').split('\n')
+            total = int(zfile.read(compress.size_identifier).decode('utf-8'))
+            lines = zfile.read(compress.times_identifier).decode('utf-8').split('\n')
             times = {}
             for line in lines:
                 if not line.strip(): continue
                 _file, atime, mtime = line.split()
                 times[_file] = (float(atime), float(mtime))
             
-            if not args.quiet: print_progress(0)
             for zinfo in zfile.infolist():
-                if zinfo.filename in [size_identifier, times_identifier]: continue
+                if zinfo.filename in [
+                        compress.size_identifier,
+                        compress.times_identifier
+                ]: continue
                 zfile.extract(zinfo)
                 os.utime(zinfo.filename, times = times[zinfo.filename])
                 
                 extracted += [zinfo.filename]
                 extracted_size += os.path.getsize(zinfo.filename)
-                if not args.quiet: print_progress(extracted_size / total * 100)
+                if not quiet: compress.print_progress(extracted_size / total * 100)
+            if not quiet: print()
     except:
         # If something goes wrong, remove the files we extracted
         directories = []
@@ -112,4 +63,17 @@ if __name__ == '__main__':
         raise
 
     # If nothing went wrong, remove the archive
-    if not args.no_remove: os.remove(zipname)
+    if not no_remove: os.remove(compress.zipname)
+
+if __name__ == '__main__':
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--quiet', action='store_true')
+    parser.add_argument('--no-remove', action='store_true')
+    args = parser.parse_args()
+    
+    extract(
+        quiet = args.quiet,
+        no_remove = args.no_remove,
+    )

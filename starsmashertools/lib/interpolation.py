@@ -32,7 +32,7 @@ class Interpolator(object):
         raise NotImplementedError
 
     def is_in_bounds(self, *args, **kwargs):
-        """
+        r"""
         Return a boolean mask that indicates which of the given array elements
         are considered within the bounds of this interpolator.
 
@@ -101,7 +101,7 @@ class BilinearInterpolator(Interpolator, object):
         return numerator / denominator
 
     def is_in_bounds(self, x, y):
-        """
+        r"""
         Get a boolean mask array that indicates which of the elements in ``x``
         and ``y`` are within the interpolator bounds.
         

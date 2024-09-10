@@ -4,6 +4,9 @@ from starsmashertools.preferences import Pref
 import numpy as np
 from starsmashertools.helpers.apidecorator import api
 import starsmashertools.helpers.argumentenforcer
+import copy
+import warnings
+import typing
 
 try:
     import matplotlib.axes
@@ -11,10 +14,515 @@ try:
 except ImportError:
     has_matplotlib = False
 
-# Given the mass of a collection of particles and coordinates in args, return
-# the center of mass in each of those args
+class Integral(object):
+    r"""
+    The base class for implementing numerical integration techniques. This class
+    cannot be used directly. Only classes which inherit from this class and 
+    overrides :meth:`~._integrate` can be used.
+
+    Attributes
+    ----------
+    func : :class:`typing.Callable`
+        The integrand. Must accept a single argument, which is the integration
+        variable and is a 1D :class:`numpy.ndarray`\. It must return a 1D
+        :class:`numpy.ndarray` of the same length.
+
+    lower : int, float, None, default = None
+        The lower integration bound. If `None`\, then the integration starts at
+        the first value in the integration variable ``x`` supplied in 
+        :meth:`~.__call__`\.
+
+    upper : int, float, None, default = None
+        The upper integration bound. If `None`\, then the integration stops at
+        the last value in the integration variable ``x`` supplied in 
+        :meth:`~.__call__`\.
+    """
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def __init__(
+            self,
+            func : typing.Callable,
+            lower : int | float | type(None) = None,
+            upper : int | float | type(None) = None,
+    ):
+        self.func = func
+        self._lower = lower
+        self._upper = upper
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def _integrate(self, x : np.ndarray):
+        r"""
+        Invoked by :meth:`~.__call__` to obtain the integral. This method must 
+        be overridden in child classes. This is where the actual integration 
+        takes place.
+
+        Parameters
+        ----------
+        x : :class:`numpy.ndarray`
+            The integration variable as a 1D array. The first value is always 
+            the lower integration limit and the last value is always the upper
+            integration limit, each as returned by :meth:`~.get_lower` and 
+            :meth:`~.get_upper`\.
+        """
+        raise NotImplementedError
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def __call__(self, x : list | tuple | np.ndarray):
+        r"""
+        Calculate the integral. Integration steps proceed using the values in
+        ``x``\.
+
+        Parameters
+        ----------
+        x : list, tuple, :class:`numpy.ndarray`
+            The integration variable as a 1D array.
+        
+        Returns
+        -------
+        result : float
+            The result of the integration.
+        """
+        if isinstance(x, (list, tuple)): x = np.asarray(x)
+        lower = self.get_lower(x)
+        upper = self.get_upper(x)
+        if x[0] > lower: raise ValueError("The lower integration bound must be in range of the provided x values")
+        if x[-1] < upper: raise ValueError("The upper integration bound must be in range of the provided x values")
+        return self._integrate(x[(lower <= x) & (x <= upper)])
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def get_lower(
+            self,
+            x : list | tuple | np.ndarray,
+    ):
+        r"""
+        Obtain the lower integration bound for the given integration variable
+        ``x``\. If ``lower`` given in :meth:`~.__init__` was `None`\, then the
+        lower bound is the first value of ``x``\.
+        
+        Parameters
+        ----------
+        x : list, tuple, :class:`numpy.ndarray`
+            The integration variable as a 1D array.
+
+        Returns
+        -------
+        lower : float
+            The lower integration bound, which is either ``x[0]`` or ``lower``
+            from :meth:`~.__init__`\.
+
+        See Also
+        --------
+        :meth:`~.get_upper`
+        """
+        if isinstance(x, (list, tuple)): x = np.asarray(x)
+        if self._lower is None: return float(x[0])
+        return float(self._lower)
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def get_upper(
+            self,
+            x : list | tuple | np.ndarray,
+    ):
+        r"""
+        Obtain the upper integration bound for the given integration variable
+        ``x``\. If ``lower`` given in :meth:`~.__init__` was `None`\, then the
+        upper bound is the first value of ``x``\.
+        
+        Parameters
+        ----------
+        x : list, tuple, :class:`numpy.ndarray`
+            The integration variable as a 1D array.
+
+        Returns
+        -------
+        upper : float
+            The upper integration bound, which is either ``x[0]`` or ``upper``
+            from :meth:`~.__init__`\.
+
+        See Also
+        --------
+        :meth:`~.get_lower`
+        """
+        if isinstance(x, (list, tuple)): x = np.asarray(x)
+        if self._lower is None: return float(x[-1])
+        return float(self._upper)
+
+
+class Trapezoidal(Integral, object):
+    r"""
+    Non-uniform grid trapezoidal rule integration:
+
+    .. math::
+        :nowrap:
+
+        \int_\mathrm{lower}^\mathrm{upper}f(x)\,dx \approx \frac{1}{2}\sum_{k=1}^N \left[f(x_{k-1}) + f(x_k)\right] (x_k - x_{k-1})
+    
+    See Also
+    --------
+    :class:`~.Integral`
+    """
+    
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def _integrate(self, x : np.ndarray):
+        r"""
+        See Also
+        --------
+        :meth:`~.Integral._integrate`
+        """
+        y = self.func(x)
+        return 0.5 * np.sum((y[:-1] + y[1:]) * (x[1:] - x[:-1]))
+
+@starsmashertools.helpers.argumentenforcer.enforcetypes
 @api
-def center_of_mass(m, *args):
+def get_integral_by_name(name : str):
+    r"""
+    Returns the integral class whose class name or ``name`` attribute matches
+    the given name.
+
+    Parameters
+    ----------
+    name : str
+        The name of the integral class.
+
+    Returns
+    -------
+    integral : :class:`~.Integral`
+    """
+    for subclass in Integral.__subclasses__():
+        if name == subclass.__name__: return subclass
+        if not hasattr(subclass, 'name'): continue
+        if name == subclass.name: return subclass
+    raise ValueError("Integral class of name '%s' not found" % name)
+
+
+
+
+@starsmashertools.helpers.argumentenforcer.enforcetypes
+@api
+def G(
+        x : int | float | list | tuple | np.ndarray,
+        h : int | float | list | tuple | np.ndarray,
+        *args,
+        gflag : int = 1,
+        **kwargs
+):
+    r"""
+    The :math:`G(x,h)` function defined in Equation (A2) of 
+    `Gaburov et al. (2010) <Gaburov>`_:
+
+    .. math::
+        :nowrap:
+
+        G(x,h) \equiv V(4h-4|x-h|,h)
+    
+
+    .. _Gaburov: https://ui.adsabs.harvard.edu/abs/2010MNRAS.402..105G/abstract
+    
+    Parameters
+    ----------
+    x : int, float, list, tuple, :class:`numpy.ndarray`
+        The inter-particle distance :math:`|\vec{r}_i-\vec{r}_j|`\. If an 
+        array-like argument is given, it must have the same shape as ``h``\.
+
+    h : int, float, list, tuple, :class:`numpy.ndarray`
+        The kernel smoothing lengths. If an array-like argument is given, it 
+        must have the same shape as ``x``\.
+
+    gflag : int, default = 1
+        If 0, then the function follows equation (A2) in Gaburov et al. (2010).
+        If 1, then the function is the same, except that G=1 where x/h < 1. A
+        value of 1 is the StarSmasher default. If gflag has any other value, a
+        ValueError is raised.
+
+    Other Parameters
+    ----------------
+    *args
+        Other positional arguments are passed directly to :func:`~.V`\.
+
+    **kwargs
+        Other keyword arguments are passed directly to :func:`~.V`\.
+
+    Returns
+    -------
+    ret : int, float, :class:`numpy.ndarray`
+        If array-like arguments were given for ``x`` and ``h``\, ``ret`` is a
+        :class:`numpy.ndarray`\. Otherwise, ``ret`` is an int or float.
+
+    See Also
+    --------
+    :func:`~.V`
+    """
+    if gflag not in [0,1]:
+        raise ValueError("Invalid gflag value %d. gflag must be 0 or 1."%gflag)
+    if isinstance(x, (list, tuple)): x = np.asarray(x)
+    if isinstance(h, (list, tuple)): h = np.asarray(h)
+
+    if gflag == 1 and not isinstance(x, np.ndarray) and x/h < 1: return 1
+
+    ret = V(4*h - 4*abs(x - h), h, *args, **kwargs)
+    if gflag == 1 and isinstance(ret, np.ndarray): ret[x/h < 1] = 1
+    return ret
+
+
+@api
+def V(
+        x : int | float | list | tuple | np.ndarray,
+        h : int | float | list | tuple | np.ndarray,
+        kernel : int | str | type(type) = 'cubic spline',
+        resolution : int = 100,
+        integral : str | Integral = 'Trapezoidal',
+):
+    r"""
+    Equation (A3) of `Gaburov et al. (2010) <Gaburov>`_. Used in conjunction 
+    with :func:`~.G`\:
+
+    .. math::
+        :nowrap:
+
+        V(x,h) \equiv 4\pi \int_0^x x^2 W(x,h)\,dx
+    
+    
+    .. _Gaburov: https://ui.adsabs.harvard.edu/abs/2010MNRAS.402..105G/abstract
+
+    Parameters
+    ----------
+    x : int, float, list, tuple, np.ndarray
+        The value :math:`4h - 4|x-h|` from :meth:`~.G` where :math:`x` is an 
+        inter-particle distance.
+    
+    h : int, float, list, tuple, np.ndarray
+        The kernel smoothing length.
+    
+    kernel : int, str, :class:`~.lib.kernel._BaseKernel`\, default = ``'cubic spline'``
+        The kernel function :math:`W(x,h)`\. In StarSmasher, the cubic spline
+        function is used regardless of the value of ``nkernel``\.
+
+    Other Parameters
+    ----------------
+    resolution : int, default = 100
+        The number of integration steps to take.
+
+    integral : str, :class:`~.Integral`\, default = 'Trapezoidal'
+        The name of the integration method to use.
+
+    Returns
+    -------
+    :class:`numpy.ndarray` or float
+        If ``x`` and ``h`` are array-like, the return type is 
+        :class:`numpy.ndarray` with the same shape as ``x`` and ``h``\. 
+        Otherwise, a single value is returned.
+
+    See Also
+    --------
+    :func:`~.G`
+    """
+    import starsmashertools.lib.kernels
+
+    starsmashertools.helpers.argumentenforcer.enforcetypes({
+        'x' : [int, float, list, tuple, np.ndarray],
+        'h' : [int, float, list, tuple, np.ndarray],
+        'kernel' : [int, str, starsmashertools.lib.kernels._BaseKernel],
+        'resolution' : [int],
+        'integral' : [str, Integral],
+    })
+    
+    if isinstance(kernel, int):
+        kernel = starsmashertools.lib.kernels.get_by_nkernel(kernel)()
+    elif isinstance(kernel, str):
+        kernel = starsmashertools.lib.kernels.get_by_name(kernel)()
+    
+    if not isinstance(x, (int, float)) and not isinstance(h, (int, float)):
+        if np.asarray(x).shape != np.asarray(h).shape:
+            raise ValueError("Arguments 'x' and 'h' must have the same shapes if they are array-like")
+        
+    if not isinstance(x, (int, float)) and isinstance(h, (int, float)):
+        h = np.full(x.shape, h)
+
+    if isinstance(integral, str):
+        integral = get_integral_by_name(integral)
+    
+    # h is now the same type as x
+    if not isinstance(x, (int, float)):
+        return 4*np.pi*np.asarray([
+            integral(
+                lambda s: s**2 * np.asarray([kernel(_s, _h) for _s in s]),
+                0, _x,
+            )(np.linspace(0, _x, resolution)) for _x, _h in zip(x, h)
+        ])
+    else:
+        return 4*np.pi*integral(
+            lambda s: s**2 * np.asarray([kernel(_s, h) for _s in s]),
+            0, x,
+        )(np.linspace(0, x, resolution))
+
+
+@api
+def dV(
+        x : int | float | list | tuple | np.ndarray,
+        h : int | float | list | tuple | np.ndarray,
+        kernel : int | str | type(type) = 'cubic spline',
+):
+    r"""
+    The spatial derivative of :func:`~.V`\, :math:`\nabla V`\.
+    """
+    import starsmashertools.lib.kernels
+
+    starsmashertools.helpers.argumentenforcer.enforcetypes({
+        'x' : [int, float, list, tuple, np.ndarray],
+        'h' : [int, float, list, tuple, np.ndarray],
+        'kernel' : [int, str, starsmashertools.lib.kernels._BaseKernel],
+    })
+
+    if isinstance(kernel, int):
+        kernel = starsmashertools.lib.kernels.get_by_nkernel(kernel)()
+    elif isinstance(kernel, str):
+        kernel = starsmashertools.lib.kernels.get_by_name(kernel)()
+
+    if not isinstance(x, (int, float)) and not isinstance(h, (int, float)):
+        if np.asarray(x).shape != np.asarray(h).shape:
+            raise ValueError("Arguments 'x' and 'h' must have the same shapes if they are array-like")
+        
+    if not isinstance(x, (int, float)) and isinstance(h, (int, float)):
+        h = np.full(x.shape, h)
+
+    # h is now the same type as x
+    if not isinstance(x, (int, float)):
+        return 4 * np.pi * np.array([_x**2 * kernel(_x,_h) for _x,_h in zip(x,h)])
+    else:
+        return 4 * np.pi * x**2 * kernel(x, h)
+    
+
+@starsmashertools.helpers.argumentenforcer.enforcetypes
+@api
+def dG(
+        x : int | float | list | tuple | np.ndarray,
+        h : int | float | list | tuple | np.ndarray,
+        *args,
+        gflag : int = 1,
+        **kwargs
+):
+    r"""
+    The spatial derivative of :func:`~.G`\, :math:`\nabla G`\.
+    """
+    if gflag not in [0,1]:
+        raise ValueError("Invalid gflag value %d. gflag must be 0 or 1."%gflag)
+    if isinstance(x, (list, tuple)): x = np.asarray(x)
+    if isinstance(h, (list, tuple)): h = np.asarray(h)
+    if not isinstance(x, np.ndarray) and x/h < 1 and gflag == 1: return 0
+    ret = dV(4*h - 4*abs(x - h), h, *args, **kwargs)
+    if gflag == 1 and isinstance(ret, np.ndarray): ret[x/h < 1] = 0
+    return ret
+
+
+@starsmashertools.helpers.argumentenforcer.enforcetypes
+@api
+def dGdh(
+        x : int | float | list | tuple | np.ndarray,
+        h : int | float | list | tuple | np.ndarray,
+        *args,
+        gflag : int = 1,
+        **kwargs
+):
+    r"""
+    Derivative of :func:`~.G` with respect to the smoothing length :math:`h`\:
+    :math:`\partial G/\partial h`\.
+    """
+    if gflag not in [0,1]:
+        raise ValueError("Invalid gflag value %d. gflag must be 0 or 1."%gflag)
+    if isinstance(x, (list, tuple)): x = np.asarray(x)
+    if isinstance(h, (list, tuple)): h = np.asarray(h)
+    if not isinstance(x, np.ndarray) and x/h < 1 and gflag == 1: return 0
+    ret = dVdh(4*h - 4*abs(x - h), h, *args, **kwargs)
+    if gflag == 1 and isinstance(ret, np.ndarray): ret[x/h < 1] = 0
+    return ret
+    
+@starsmashertools.helpers.argumentenforcer.enforcetypes
+@api
+def dVdh(
+        x : int | float | list | tuple | np.ndarray,
+        h : int | float | list | tuple | np.ndarray,
+        kernel : int | str | type(type) = 'cubic spline',
+        resolution : int = 100,
+        integral : str | Integral = 'Trapezoidal',
+):
+    r"""
+    Derivative of :func:`~.V` with respect to the smoothing length :math:`h`\:
+    :math:`\partial V/\partial h`\.
+    """
+    import starsmashertools.lib.kernels
+
+    starsmashertools.helpers.argumentenforcer.enforcetypes({
+        'x' : [int, float, list, tuple, np.ndarray],
+        'h' : [int, float, list, tuple, np.ndarray],
+        'kernel' : [int, str, starsmashertools.lib.kernels._BaseKernel],
+        'resolution' : [int],
+        'integral' : [str, Integral],
+    })
+    
+    if isinstance(kernel, int):
+        kernel = starsmashertools.lib.kernels.get_by_nkernel(kernel)()
+    elif isinstance(kernel, str):
+        kernel = starsmashertools.lib.kernels.get_by_name(kernel)()
+    
+    if not isinstance(x, (int, float)) and not isinstance(h, (int, float)):
+        if np.asarray(x).shape != np.asarray(h).shape:
+            raise ValueError("Arguments 'x' and 'h' must have the same shapes if they are array-like")
+        
+    if not isinstance(x, (int, float)) and isinstance(h, (int, float)):
+        h = np.full(x.shape, h)
+
+    if isinstance(integral, str):
+        integral = get_integral_by_name(integral)
+    
+    # h is now the same type as x
+    if not isinstance(x, (int, float)):
+        return 4*np.pi*np.asarray([
+            integral(
+                lambda s: s**2 * np.asarray([kernel.dh(_s, _h) for _s in s]),
+                0, _x,
+            )(np.linspace(0, _x, resolution)) for _x, _h in zip(x, h)
+        ])
+    else:
+        return 4*np.pi*integral(
+            lambda s: s**2 * np.asarray([kernel.dh(_s, h) for _s in s]),
+            0, x,
+        )(np.linspace(0, x, resolution))
+    
+@api
+def center_of_mass(
+        m : list | tuple | np.ndarray,
+        *args,
+):
+    r"""
+    Given the mass of a collection of particles and coordinates in args, return
+    the center of mass in each of those args.
+    
+    The "center of mass" of any quantity :math:`A` is obtained as:
+    
+    .. math::
+        :nowrap:
+
+        A_\mathrm{com} = \frac{\sum_i m_i A_i}{\sum_i m_i}
+
+    This calculation is performed for each member of ``*args``\.
+
+    Parameters
+    ----------
+    m : list, tuple, :class:`numpy.ndarray`
+        The masses of the particles. It is converted to a :class:`numpy.ndarray`
+        before the calculations.
+    
+    Other Parameters
+    ----------------
+    *args
+        The quantities to use for the center of mass calculation.
+    """
+    m = np.asarray(m)
     total_mass = np.sum(m)
     result = np.zeros(len(args))
     for i, arg in enumerate(args):
@@ -95,7 +603,7 @@ def rotate(
         yangle : float | int | np.float_ | np.integer = 0,
         zangle : float | int | np.float_ | np.integer = 0,
 ):
-    """
+    r"""
     Rotate the given ``x``\, ``y``\, and ``z`` points using an Euler rotation.
 
     An Euler rotation can be understood as follows. Imagine the x, y, and z axes
@@ -166,7 +674,7 @@ def rotate_spherical(
         theta : float | int | np.float_ | np.integer = 0,
         phi : float | int | np.float_ | np.integer = 0,
 ):
-    """
+    r"""
     Uses :func:`~.rotate` twice to perform a correct spherical coordinates
     rotation.
     
@@ -218,7 +726,14 @@ def rotate_spherical(
 
 
 
-@starsmashertools.preferences.use
+
+
+
+
+
+
+
+
 class EffGravPot(object):
     r"""
     A class for working with effective gravitational potentials in an
@@ -255,408 +770,410 @@ class EffGravPot(object):
     @api
     def __init__(
             self,
-            output : starsmashertools.lib.output.Output,
-            as_point_masses : bool = Pref('as_point_masses', True),
-            **kwargs
+            m : list | tuple | np.ndarray,
+            x : list | tuple | np.ndarray,
+            y : list | tuple | np.ndarray,
+            z : list | tuple | np.ndarray,
+            period : int | float = 0.,
+            G : int | float | type(None) = None,
     ):
         r"""
         Class constructor.
 
         Parameters
         ----------
-        output : :class:`~.lib.output.Output`
-            The output file to calculate the gravitational potentials for. If
-            ``as_point_masses = True``\, the particles are separated based on
-            the star they belong to using 
-            :meth:`~.lib.binary.Binary.get_primary_IDs` and 
-            :meth:`~.lib.binary.Binary.get_secondary_IDs`\. If the output
-            belongs to a :class:`~.lib.dynamical.Dynamical` simulation, a search
-            will be done to find its parent binary simulation.
+        m : list, tuple, :class:`numpy.ndarray`
+            Masses of the particles. Must be 1D.
 
-            Particles which are detected as ejecta are not processed.
+        x : list, tuple, :class:`numpy.ndarray`
+            x-positions of the particles. Must be 1D and have the same length as
+            ``m``\.
 
+        y : list, tuple, :class:`numpy.ndarray`
+            y-positions of the particles. Must be 1D and have the same length as
+            ``m``\.
+
+        z : list, tuple, :class:`numpy.ndarray`
+            z-positions of the particles. Must be 1D and have the same length as
+            ``m``\.
+        
         Other Parameters
         ----------------
-        as_point_masses : bool, default = ``Pref('as_point_masses', True)``
-            If `True`\, the center of mass for the particles in the primary and
-            secondary stars are each calculated and used as the point masses in
-            the first equation for :math:`\varphi` above. Otherwise, the
-            calculation proceeds using the second equation.
+        period : int, float, default = 0.
+            The oribtal period of the binary system.
 
+        G : int, float, :class:`~.lib.units.Unit`\, None, default = None
+            The value of the gravitational constant. If `None`\, the value 
+            stored in the constants in :mod:`~.starsmashertools.lib.units` is 
+            used. If a :class:`~.lib.units.Unit` is given, it is converted to a
+            :py:class:`float`\.
         """
-        self._output = None
-        self._as_point_masses = as_point_masses
 
-        self._data = {
-            'com1' : None,
-            'com2' : None,
-            'com' : None,
-            'M1' : None,
-            'M2' : None,
-            'omega2' : None,
-        }
-        self.output = output # Updates the data for the first time
+        if G is None:
+            from starsmashertools.lib.units import constants
+            G = constants['G']
+        self.G = float(G)
 
-    @property
-    def output(self): return self._output
-    
-    @output.setter
-    def output(self, value):
-        if self._output == value: return
-        self._output = value
-        self._update_data()
+        self.m = np.asarray(m)
+        self.xyz = np.column_stack((x,y,z))
+        self.period = period
 
-    @property
-    def as_point_masses(self): return self._as_point_masses
+        self._com = center_of_mass(self.m, x, y, z)
+        
+        self._omega = 2 * np.pi / self.period
 
-    @as_point_masses.setter
-    def as_point_masses(self, value : bool):
-        if self._as_point_masses == value: return
-        if not self._as_point_masses and value:
-            self._update_data()
-        self._as_point_masses = value
-
-    def _update_data(self):
-        import starsmashertools.lib.binary
-        import starsmashertools.lib.dynamical
-        import starsmashertools
-
-        self._data['omega2'] = float((2*np.pi / self._output.simulation.get_period(
-            self._output
-        )))**2
-
-        if isinstance(self._output.simulation, starsmashertools.lib.binary.Binary):
-            self._data['com1'], self._data['com2'] = self._output.simulation.get_COMs(
-                self._output,
-            )
-            self._data['M1'] = self._output.simulation.get_primary_mass()
-            self._data['M2'] = self._output.simulation.get_secondary_mass()
-            
-        elif isinstance(self._output.simulation, starsmashertools.lib.dynamical.Dynamical):
-            binary = self._output.simulation.get_binary()
-            
-            # Get the primary star COM
-            with starsmashertools.mask(
-                    self._output,
-                    ~self._output['unbound'] & np.isin(
-                        self._output['ID'], binary.get_primary_IDs(),
-                        assume_unique = True,
-                    ),
-                    copy = False,
-            ) as masked:
-                self._data['com1'] = center_of_mass(
-                    masked['am'], masked['x'], masked['y'], masked['z'],
-                )
-                self._data['M1'] = np.sum(masked['am'])
-            # Get the secondary star COM
-            with starsmashertools.mask(
-                    self._output,
-                    ~self._output['unbound'] & np.isin(
-                        self._output['ID'], binary.get_secondary_IDs(),
-                        assume_unique = True,
-                    ),
-                    copy = False,
-            ) as masked:
-                self._data['com2'] = center_of_mass(
-                    masked['am'], masked['x'], masked['y'], masked['z'],
-                )
-                self._data['M2'] = np.sum(masked['am'])
-
-            # The rotation frequency can be obtained as v/r where r is the
-            # distance from the center of mass of a body with tangential
-            # velocity v. We obtain the net tangential velocities of both bodies
-            # and check to make sure they agree: they should be almost equal in
-            # magnitude and pointing in opposite directions. Otherwise, there is
-            # probably no orbit.
-            
-        else:
-            raise TypeError("Effective gravitational potential plots are available only for simulations of type Binary or Dynamical, not '%s'" % type(self._output.simulation).__name__)
-
-        # Get the overall COM
-        with starsmashertools.mask(self._output, ~self._output['unbound']) as masked:
-            self._data['com'] = center_of_mass(
-                masked['am'], masked['x'], masked['y'], masked['z'],
-            )
-
-        # convert all to cgs
-        for key in ['com1', 'com2', 'com']:
-            self._data[key] *= float(self._output.simulation.units.length)
-        for key in ['M1', 'M2']:
-            self._data[key] *= float(self._output.simulation.units.mass)
-    
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def get(
             self,
-            x : list | tuple | np.ndarray,
-            y : list | tuple | np.ndarray,
-            as_point_masses : bool | type(None) = None,
+            positions : list | tuple | np.ndarray,
     ):
         r"""
+        Sample the effective gravitational potential :math:`\varphi` field at 
+        the given positions.
+
         Parameters
         ----------
-        x : list, tuple, :class:`numpy.ndarray`
-            The ``x`` positions to get the effective gravitational potential at.
-            Must have the same shape as ``y`` and ``z``\. Values must be in
-            units of cm.
-        
-        y : list, tuple, :class:`numpy.ndarray`
-            The ``y`` positions to get the effective gravitational potential at.
-            Must have the same shape as ``x`` and ``z``\. Values must be in
-            units of cm.
-        
-        z : float, list, tuple, :class:`numpy.ndarray`
-            The ``z`` positions to get the effective gravitational potential at.
-            Must have the same shape as ``x`` and ``y``\. Values must be in
-            units of cm.
-
-        Other Parameters
-        ----------------
-        as_point_masses : bool, None, default = None
-            If `None`\, the value from :meth:`~.__init__` will be used.
+        positions : list, tuple, :class:`numpy.ndarray`
+            The x, y, and z positions to get the effective gravitational 
+            potential at. Must have a shape (N,3).
 
         Returns
         -------
         :class:`numpy.ndarray`
-            The effective gravitational potentials at positions ``(x, y, z)``\,
-            in cgs units.
+            The effective gravitational potential at positions ``(x, y, z)``\. 
+            The result is an array of magnitudes with the same length as ``x``\,
+            ``y``\, and ``z``\.
         """
-        from starsmashertools.lib.units import constants
-        import warnings
+        if isinstance(positions, (list, tuple)):
+            positions = np.asarray(positions)
+        if len(positions.shape) != 2:
+            raise ValueError("Argument 'positions' must be a 2D array")
+        if positions.shape[1] != 3:
+            raise ValueError("Argument 'positions' must have shape (N,3), not %s" % str(positions.shape))
         
-        if as_point_masses is None: as_point_masses = self.as_point_masses
+        result = np.full(len(positions), np.nan)
+        rcom2s = ((positions - self._com)**2).sum(axis = -1)
         
-        G = float(constants['G'])
-        com1 = self._data['com1']
-        com2 = self._data['com2']
-        com = self._data['com']
-        M1 = self._data['M1']
-        M2 = self._data['M2']
-        omega2 = self._data['omega2']
-        
-        xy = np.stack((x, y), axis = -1)
-        result = np.zeros(x.shape)
-        
-        if not as_point_masses:
-            with starsmashertools.mask(
-                    self._output, ~self._output['unbound'], copy = False
-            ) as masked:
-                xyzi = np.column_stack((masked['x'], masked['y'], masked['z']))
-                m = masked['am'] * float(self._output.simulation.units['am'])
-            xyzi *= float(self._output.simulation.units.length)
-            xyi = xyzi[:,:2]
+        for i, pos in enumerate(positions):
+            r = np.sqrt(((pos - self.xyz)**2).sum(axis = -1))
+            result[i] = -(self.m / r).sum()
+        return result * self.G - 0.5*self._omega**2*rcom2s
 
-            # Maybe it's fastest to loop over the particles...
-            for i, (_xy, _m) in enumerate(zip(xyi, m)):
-                result -= G*_m/np.sqrt(np.sum((xy - _xy)**2, axis = -1))
-            rcom2 = np.sum((xy - com[:2])**2,axis = -1)
-            result += -0.5*omega2*rcom2
-            return result
-        else:
-            r1 = np.sqrt(np.sum((xy - com1[:2])**2, axis = -1))
-            r2 = np.sqrt(np.sum((xy - com2[:2])**2, axis = -1))
-            rcom2 = np.sum((xy - com[:2])**2, axis = -1)
-            with warnings.catch_warnings():
-                warnings.simplefilter('ignore')
-                return -G*M1/r1 - G*M2/r2 - 0.5*omega2*rcom2
-
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
-    def get_gradient(self, *args, **kwargs):
-        """
-        Get the 3D gradient of the effective gravitational potential.
-
-        Other Parameters
+    def get_gradient(
+            self,
+            positions : list | tuple | np.ndarray,
+    ):
+        r"""
+        Sample the effective gravitational potential gradient 
+        :math:`\nabla\varphi` field at the given positions. This is the same as
+        negative the gravitational acceleration vector, since 
+        :math:`m\vec{g}=\vec{F}=-m\nabla\varphi`\.
+        
+        Parameters
         ----------
-        *args
-            Positional arguments are passed directly to :meth:`~.get`\.
-        
-        **kwargs
-            Keyword arguments are passed directly to :meth:`~.get`\.
-        
+        positions : list, tuple, :class:`numpy.ndarray`
+            The x, y, and z positions to get the effective gravitational 
+            potential gradient at. Must have a shape (n,3).
+
         Returns
         -------
-        :class:`numpy.ndarray`\, :class:`numpy.ndarray`\, :class:`numpy.ndarray`
-            The gradient of the effective gravitational potential in the x, y,
-            and z directions respectively.
-
-        See Also
-        --------
-        :meth:`~.get`
-        :meth:`numpy.gradient`
+        :class:`numpy.ndarray`
+            The gradient of the effective gravitational potential at positions
+            ``(x, y, z)``\. The result is an array of 3-vectors, with the same
+            length as ``x``\, ``y``\, and ``z``\.
         """
-        return np.gradient(self.get_potential(*args, **kwargs))
+        if not isinstance(positions[0], (list, tuple, np.ndarray)):
+            positions = np.asarray([positions])
+        
+        result = np.full((len(positions), 3), np.nan)
+        for i, pos in enumerate(positions):
+            dxyz = pos - self.xyz # destination - origin
+            
+            # distance magnitude squared (row sum)
+            r2 = np.sum(dxyz**2, axis = 1)
+            r = np.sqrt(r2)
 
-
+            # divide each x, y, and z component of the offsets by the magnitude
+            # of that offset
+            directions = dxyz / r[:,None]
+            
+            # \vec{g} (column sum)
+            g = -np.sum(directions * (self.G * self.m / r2)[:, None], axis = 0)
+            
+            # centripetal acceleration here
+            a = -self._omega**2 * (pos - self._com) # destination - origin
+            
+            result[i] = -(g + a)
+        return result
+    
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def get_lagrange(
             self,
-            n : int,
-            resolution : int = 1000,
-            return_potential : bool = False
+            which : list | tuple | np.ndarray = [1,2,3],
+            extent_frac : int | float = 5.,
     ):
-        """
-        Get the n'th Lagrange point
+        r"""
+        Get the n'th Lagrange points.
 
         Parameters
         ----------
-        n : int
-            The Lagrange point to obtain. Must be 1, 2, 3, 4, or 5.
-
-        resolution : int, default = 1000
-            How many positions to search in the parameter space.
-
+        which : list, tuple, :class:`numpy.ndarray`, default = ``[1,2,3]``
+            The Lagrange points to obtain. Currently only :math:`L_1`\, 
+            :math:`L_2`\, and :math:`L_3` are supported. 
+        
         Other Parameters
         ----------------
-        return_potential : bool, default = False
-            If `True`\, also returns the effective gravitational potential
-            corresponding with the Lagrange point.
+        extent_frac : int, float, default = 5.
+            The fraction of the maximum extent to search. The extent is the 
+            distance of the farthest-away particle. We search beyond that 
+            particle by this amount to sample :math:`\varphi`\.
 
         Returns
         -------
         :class:`numpy.ndarray`
-            A NumPy array of shape (3,) with the x, y, and z positions of the 
-            Lagrange point specified by ``n``\.
-
-        float
-            The effective gravitational potential at the Lagrange point if
-            ``return_potential = True``
+            A NumPy array of shape (n,3) with the x, y, and z positions of the 
+            Lagrange points where n is the length of ``which``\.
         """
-        starsmashertools.helpers.argumentenforcer.enforcevalues({
-            'n' : [1, 2, 3, 4, 5],
-        })
-
-        com1 = self._data['com1']
-        com2 = self._data['com2']
-        diff = com2 - com1 # destination - origin
-        distance = np.sqrt(np.dot(diff, diff))
-        direction = diff / distance
+        import warnings
         
-        if n == 1: # L1 is always located between M1 and M2
-            origin = com1 #- 4*distance * direction
-            span = np.linspace(0, distance, resolution)
-            direc = direction
-            #print(positions)
-        elif n == 2: # L2 is always located behind M2
-            # Take a guess that we should search twice the distance behind M2
-            origin = com2
-            span = np.linspace(0, 2*distance, resolution)
-            direc = direction
-        elif n == 3: # L3 is always located behind M1
-            # Take a guess to search twice the distance behind M1
-            origin = com1
-            span = np.linspace(0, 2*distance, resolution)
-            direc = -direction
-        else: raise NotImplementedError # Not sure yet.
+        # Start at the COM, and find the gradient. If it truly is a binary
+        # system, then the COM is always somewhere between the two stars. We
+        # want to check along the line connecting the two stars. To find that
+        # line, we first move radially outward from the COM until we locate two
+        # local minima in \phi and a local maximum in \phi
+        gradcom = self.get_gradient(self._com)[0]
 
-        positions = origin + span[:,None] * direc
+        ret = np.full((len(which), 3), np.nan)
+
+        if any([i in which for i in range(1, 3 + 1)]):
+            # Obtain a bunch of sample points up until the centripetal
+            # acceleration is greater than the gravitational acceleration
+            r2s = np.sum((self.xyz - self._com)**2, axis=1)
+
+            # The location of the closest star is in the direction of the
+            # specific net force, |\vec{F}/m| = |\nabla\varphi|.
+            warnings.filterwarnings(action='ignore')
+            direction = gradcom / np.sqrt(np.sum(gradcom**2))
+            warnings.resetwarnings()
+
+            max_extent = np.sqrt(np.amax(r2s))
+            # search around the area
+            samples = np.linspace(-max_extent, max_extent, 1000)[:,None] * extent_frac * direction
+            phis = self.get(samples)
+
+            # For debugging:
+            #import matplotlib.pyplot as plt
+            #import time
+            #fig, ax = plt.subplots()
+            #ax.plot(samples[:,0], phis)
+            #plt.show()
+            #while plt.fignum_exists(fig.number):
+            #    fig.canvas.flush_events()
+            #    time.sleep(1.e-3)
+            #quit()
+
+            # Split the searched area into 3 segments, containing the 3 Lagrange
+            # points. We mark the separated segments by assigning NaN to some
+            # values, and then we split the region on NaNs.
+
+            # Move along the samples to find the places where phi was
+            # increasing, but is now starting to decrease.
+            boundaries = []
+            decreasing = False
+            for i, phi in enumerate(phis[:-1]):
+                if phis[i+1] <= phi:
+                    if decreasing: continue
+                    else: boundaries += [i]
+                    decreasing = True
+                elif phis[i+1] > phi:
+                    decreasing = False
+
+            if len(boundaries) != 3:
+                print(boundaries)
+                raise Exception("Failed to split the region into 3 distinct groups: number of boundaries found != 3")
+            
+            idx1 = boundaries[0] + np.argmin(phis[boundaries[0]:boundaries[1]])
+            idx2 = boundaries[1] + np.argmin(phis[boundaries[1]:boundaries[2]])
+            phis[idx1] = np.nan
+            samples[idx1] = np.full(3, np.nan)
+            phis[idx2] = np.nan
+            samples[idx2] = np.full(3, np.nan)
+            
+            # https://stackoverflow.com/a/14606271
+            points = []
+            for i in np.ma.clump_unmasked(np.ma.masked_invalid(phis)):
+                s = samples[i]
+                p = phis[i]
+
+                points += [s[np.argmax(p)]]
+
+            points = np.asarray(points)
+
+            # For debugging:
+            #import matplotlib.pyplot as plt
+            #fig, ax = plt.subplots()
+            #for x,y in zip(points, phis):
+            #    ax.scatter(x[0], y)
+            #plt.show()
+            #quit()
+            
+            # Thus, the "line" connecting the stars must be parallel to the
+            # direction of the gradient. The first 3 Lagrange points are located
+            # on that line.
+
+            # Search in the direction first, then negative the direction next to
+            # obtain all the Lagrange points. We distinguish between them after.
+            # (looking for the 3 maxima on the line)
+            #
+            # In one direction, phi will first decrease until passing through
+            # the COM of one of the stars, where phi = -inf. After, phi will
+            # increase to a maximum and then decrease again forever.
+            #
+            # In the other direction, phi will first increase until a maximum,
+            # then decrease until passing through the COM of the other star,
+            # where phi = inf. Then phi will increase to another maximum, and
+            # thereafter phi decreases again forever.
+            
+            if len(points) != 3:
+                raise Exception("Located a number of Lagrange points != 3:\n" + str(points))
+
+            center = np.mean(points, axis = 0)
+            extrema = []
+            not_extrema = []
+            for i, point in enumerate(points):
+                to_center = center - point
+                warnings.filterwarnings(action ='ignore')
+                to_center /= np.sqrt(np.sum(to_center**2)) # normalize
+                warnings.resetwarnings()
+                for other in points:
+                    if point is other: continue
+                    diff = other - point # destination - origin
+                    warnings.filterwarnings(action = 'ignore')
+                    direc = diff / np.sqrt(np.sum(diff**2))
+                    warnings.resetwarnings()
+                    # ahat dot bhat = cos(theta)
+                    # if cos(theta) == 1, it's the same direction
+                    # if cos(theta) == -1, it's the opposite direction
+                    if np.dot(direc, to_center) <= 0:
+                        not_extrema += [i]
+                        break
+                else: extrema += [i]
+
+            if len(not_extrema) != 1:
+                raise Exception("Expected one non-extrema point")
+
+            # L1 is between L2 and L3
+            ret[0] = points[not_extrema[0]]
+            
+            # At the extrema, phi is larger behind the larger mass (L3)
+            idx = np.argsort(self.get(points[extrema]))
+            ret[1] = points[extrema[idx[0]]]
+            ret[2] = points[extrema[idx[1]]]
+
+        # TODO: find Lagrange points 4 and 5
+                
+        return ret
+
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def get_contours(
+            self,
+            values : list | tuple | np.ndarray,
+            extent : list | tuple | np.ndarray,
+            z : int | float = 0.,
+            resolution : list | tuple | np.ndarray = (100, 100),
+            name : str = 'threaded',
+            **kwargs
+    ):
+        r"""
+        Obtain vertices of equipotential contour lines for the given effective
+        gravitational potential values. This method requires 
+        `contourpy <https://pypi.org/project/contourpy/>`_ to be installed.
         
-        pot = self.get(positions[:,0], positions[:,1])
+        Parameters
+        ----------
+        values : list, tuple, :class:`numpy.ndarray`
+            An array of effective gravitational potential values for which to
+            find the lines of equipotential.
 
-        mpot = np.abs(pot)
-        potmin = np.nanmin(mpot[np.isfinite(mpot)])
-        potmax = np.nanmax(mpot[np.isfinite(mpot)])
-        mpot -= potmin
-        mpot /= potmax - potmin
+        Other Parameters
+        ----------------
+        extent : list, tuple, :class:`numpy.ndarray`
+            The physical extents in which to search for the equipotential lines.
+            Together with ``zplane`` and ``resolution``\, this defines the grid
+            of positions that will be searched.
+
+        z : int, float, default = 0.
+            The :math:`z` location of the search grid.
+
+        resolution : list, tuple, :class:`numpy.ndarray`\, default = (100, 100)
+            The grid resolution on which to calculate the contour lines.
+
+        name : str, default = 'threaded'
+            The ``name`` keyword argument to 
+            :func:`contourpy.contour_generator`\. This sets the algorithm used.
         
-        idx = np.isfinite(pot)
-        pot = pot[idx]
-        positions = positions[idx]
+        **kwargs
+            Other keyword arguments are passed directly to 
+            :func:`contourpy.contour_generator`\.
 
-        idx = np.nanargmin(mpot)
+        Returns
+        -------
+        lines : list
+            A list of vertices as :class:`numpy.ndarray` each with shape (N,2).
+            The length of the list is the same as the length of ``values``\.
+
+        Raises
+        ------
+        :py:class:`ImportError`
+            If contourpy is not installed, an :py:class:`ImportError` is raised.
+
+        :py:class:`ValueError`
+            If ``name`` is ``mpl2005`` or ``mpl2014``\, or if ``line_type`` in
+            ``**kwargs`` is not ``'Separate'``\.
+        """
+        try:
+            import contourpy
+        except ImportError as e:
+            e.message += '\nTry "pip install contourpy", or visit https://contourpy.readthedocs.io/en/v1.3.0/installation.html for installation instructions.'
+            raise e
+
+        if name in ['mpl2014', 'mpl2005']:
+            raise ValueError("Algorithm 'mpl2014' is not supported")
+
+        kwargs['line_type'] = kwargs.get('line_type', 'Separate')
+        if kwargs['line_type'] not in ['Separate', contourpy.LineType.Separate]:
+            raise ValueError("Keyword argument 'line_type' must be 'Separate', not '%s'" % str(kwargs['line_type']))
+
+        x = np.linspace(extent[0], extent[1], resolution[0])
+        y = np.linspace(extent[2], extent[3], resolution[1])
+
+        positions = np.column_stack((
+            np.repeat(x, resolution[1]),
+            np.tile(y, resolution[0]),
+            np.full(np.prod(resolution), z)
+        ))
         
-        if return_potential: return positions[idx], pot[idx]
-        return positions[idx]
+        generator = contourpy.contour_generator(
+            x = x,
+            y = y,
+            z = np.swapaxes(self.get(positions).reshape(resolution), 0, 1),
+            name = name,
+            **kwargs
+        )
+        
+        lines = []
+        for value in values:
+            line = []
+            for vertices in generator.lines(value):
+                line += vertices.tolist()
+                line += [[np.nan, np.nan]]
+            lines += [np.asarray(line)]
 
-    if has_matplotlib:
-        @starsmashertools.helpers.argumentenforcer.enforcetypes
-        @api
-        def get_equipotentials(
-                self,
-                potentials : list | tuple | np.ndarray,
-                extent : list | tuple | np.ndarray | type(None) = None,
-                normalize : bool = True,
-                resolution : list | tuple | type(None) = None,
-        ):
-            """
-            Find the positions of the equipotential contours corresponding with 
-            the given effective gravitational potentials.
-
-            Note that this requires Matplotlib.
-
-            Parameters
-            ----------
-            potentials : list, tuple, :class:`numpy.ndarray`
-                The effective gravitational potentials for which to find the 
-                contours of effective gravitational equipotentials.
-            
-            Other Parameters
-            ----------------
-            extent : list, tuple, :class:`numpy.ndarray`, None, default = None
-                Array of ``[xmin, xmax, ymin, ymax]`` for plotting purposes. If
-                `None`\, defaults to the current ``axes`` limits.
-            
-            Returns
-            -------
-            list
-                A list of :class:`numpy.ndarray` objects with the same length as
-                the given ``potentials``\. Each element is an (N,3) array of 
-                positions.
-            """
-            import starsmashertools.mpl.axes
-            import matplotlib.pyplot as plt
-
-            fig = plt.figure(
-                figsize = (8, 8),
-            )
-            ax = fig.add_axes([0, 0, 1, 1])
-
-            potentials = np.asarray(potentials)
-
-            if extent is None:
-                extent = list(ax.get_xlim()) + list(ax.get_ylim())
-
-            if resolution is None:
-                res = starsmashertools.mpl.axes.get_resolution(ax)
-            else: res = resolution
-            
-            x =  np.linspace(extent[0], extent[1], res[0])
-            y =  np.linspace(extent[2], extent[3], res[1])
-            x, y = np.meshgrid(x, y)
-
-            pot = self.get(x, y)
-
-            # Normalizing to enable this to work
-            if normalize:
-                pot = np.abs(pot)
-                idx = np.isfinite(pot)
-                potmin = np.nanmin(pot[idx])
-                potmax = np.nanmax(pot[idx])
-                pot -= potmin
-                pot /= potmax - potmin
-                potentials = np.abs(potentials)
-                potentials -= potmin
-                potentials /= potmax - potmin
-            
-            order = np.argsort(potentials)
-            
-            cs = ax.contour(
-                pot,
-                potentials[order],
-                origin = 'lower',
-                extent = extent,
-                cmap = 'tab10',
-            )
-
-            plt.close(fig)
-            
-            ret = []
-            for s in order:
-                segments = cs.allsegs[s]
-                xy = []
-                for j, s in enumerate(segments):
-                    xy += s.tolist()
-                    xy += [[np.nan, np.nan]]
-                    
-                ret += [np.asarray(xy)]
-            return ret
+        return lines
+        

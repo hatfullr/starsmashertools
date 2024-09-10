@@ -27,7 +27,7 @@ except ImportError:
 
 @starsmashertools.preferences.use
 class Simulation(object):
-    """
+    r"""
     The base class for handling StarSmasher simulations.
 
     Attributes
@@ -73,7 +73,7 @@ class Simulation(object):
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def __init__(self, directory : str):
-        """
+        r"""
         Parameters
         ----------
         directory : str
@@ -85,13 +85,13 @@ class Simulation(object):
         import starsmashertools.lib.archive
         
         # Prepare the directory string
-        directory = starsmashertools.helpers.path.realpath(directory.strip())
+        self.directory = starsmashertools.helpers.path.realpath(
+            directory.strip()
+        )
         
         # Validate the directory
-        if not Simulation.valid_directory(directory):
-            raise Simulation.InvalidDirectoryError(directory)
-
-        self.directory = directory
+        if not Simulation.valid_directory(self.directory):
+            raise Simulation.InvalidDirectoryError(self.directory)
 
         super(Simulation, self).__init__()
         
@@ -175,7 +175,7 @@ class Simulation(object):
     
     @api
     def __eq__(self, other):
-        """
+        r"""
         Returns
         -------
         bool
@@ -191,7 +191,7 @@ class Simulation(object):
 
     @api
     def __getitem__(self, key):
-        """
+        r"""
         Obtain a key value from :attr:`~.input`\.
         """
         return self.input[key]
@@ -342,6 +342,119 @@ class Simulation(object):
         filename = self._get_compression_filename()
         if not starsmashertools.helpers.path.isfile(filename): return False
         return starsmashertools.helpers.compressiontask.CompressionTask.isCompressedFile(filename)
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def get_nusegpus(
+            self,
+            outputs : list | tuple | type(None) = None,
+    ):
+        r"""
+        Returns the value of ``nusegpus`` for individual 
+        :class:`~.output.Output` objects originating from this simulation. For
+        each output file, the log file corresponding to that output file is
+        checked for the phrase ``using cpus to calculate gravity w/ 
+        ngravprocs=``\, as written in ``init.f`` in StarSmasher. If the phrase
+        is present, then ``nusegpus=0`` for that output file. Otherwise,
+        ``nusegpus=1``\.
+
+        Other Parameters
+        ----------------
+        outputs : list, tuple, None, default = None
+            If not ``None``\, the value of ``nusegpus`` for all output files in
+            this simulation are returned. Otherwise, only those in the given
+            list are returned. The elements of the given list or tuple can be
+            either :py:class:`str`\, representing file paths,
+            :class:`~.output.Output`\, or a mix of the two.
+        
+        Returns
+        -------
+        nusegpus : :class:`numpy.ndarray`
+            A 1D integer array containing the values of ``nusegpus`` from the
+            StarSmasher simulation for each provided :class:`~.output.Output`\.
+
+        See Also
+        --------
+        :meth:`~.get_nselfgravity`
+        """
+        import starsmashertools.lib.logfile
+        import starsmashertools.helpers.path
+
+        if outputs is None: outputs = self.get_output()
+        paths = [output.path if isinstance(output, starsmashertools.lib.output.Output) else output for output in outputs]
+        logfiles = self.get_logfiles()
+        nusegpus = np.zeros(len(outputs), dtype = int)
+        for logfile in logfiles:
+            has = np.asarray(logfile.has_output_files(paths))
+            if not has.any(): continue
+            try:
+                logfile.get('using cpus to calculate gravity w/ ngravprocs=')
+                nusegpus[has] = 0
+            except starsmashertools.lib.logfile.LogFile.PhraseNotFoundError:
+                nusegpus[has] = 1
+        return nusegpus
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def get_nselfgravity(
+            self,
+            outputs : list | tuple | type(None) = None,
+    ):
+        r"""
+        Return the value of ``nselfgravity`` that StarSmasher had at runtime 
+        when creating the given output files.
+
+        It can be ambiguous in the StarSmasher outputs whether or not GPUs were
+        used, or if only CPUs were used. If GPUs were used, then the value of 
+        ``nselfgravity`` given as input is overwritten by 
+        ``subroutine set_nusegpus``\, which comes from file ``gpu_grav.f`` by
+        default. If the user compiled StarSmasher with the ``cpu`` option in
+        'make' command, then ``subroutine set_nusegpus`` from ``cpu_grav.f`` is
+        used instead. The value of ``nselfgravity=1`` in ``gpu_grav.f``\, as 
+        well as ``nusegpus=1``\, overwriting any input values.
+        
+        Thus, here we check the value of ``nusegpus`` for each output file using
+        :meth:`~.get_nusegpus`\. If any have ``nusegpus=0``\, then we return
+        ``self['nselfgravity']`` for those.
+
+        Other Parameters
+        ----------------
+        outputs : list, tuple, None, default = None
+            If not ``None``\, the value of ``nusegpus`` for all output files in
+            this simulation are returned. Otherwise, only those in the given
+            list are returned. The elements of the given list or tuple can be
+            either :py:class:`str`\, representing file paths,
+            :class:`~.output.Output`\, or a mix of the two.
+        
+        Returns
+        -------
+        nselfgravity : :class:`numpy.ndarray`
+            A 1D integer array containing the values of ``nselfgravity`` from
+            the StarSmasher simulation for each provided 
+            :class:`~.output.Output`\.
+
+        See Also
+        --------
+        :meth:`~.get_nusegpus`
+        """
+        # 0 where CPUs used, 1 where GPUs used
+        nselfgravity = self.get_nusegpus(outputs)
+        nselfgravity[nselfgravity == 0] = self['nselfgravity']
+        return nselfgravity
+
+    @api
+    def get_kernel(self):
+        r"""
+        Calls :func:`~.lib.kernel.get_by_nkernel` with this simulation's 
+        ``nkernel`` input value.
+        
+        Returns
+        -------
+        kernel : :class:`~.lib.kernel._BaseKernel`
+            The kernel function used by this simulation.
+        """
+        import starsmashertools.lib.kernel
+        return starsmashertools.lib.kernel.get_by_nkernel(self['nkernel'])
         
     @api
     def get_search_directory(self):
@@ -356,6 +469,32 @@ class Simulation(object):
         import starsmashertools.helpers.path
         search_directory = self.preferences.get('search directory')
         return starsmashertools.helpers.path.realpath(search_directory)
+
+    @api
+    def get_source_files(self):
+        r"""
+        Obtain the files in the simulation directory that correspond with the
+        `StarSmasher` source Fortran code.
+
+        Yields
+        ------
+        file : :class:`~.helpers.fortran.FortranFile`
+            The Fortran file from `StarSmasher`\'s source code.
+        """
+        import starsmashertools.helpers.fortran
+        import starsmashertools.helpers.path
+        
+        src = starsmashertools.helpers.path.get_src(self.directory)
+        if src is None:
+            raise Simulation.InvalidDirectoryError("No source directory found in simulation directory '%s'" % self.directory)
+        for path in starsmashertools.helpers.path.find_files(src):
+            ret = None
+            try:
+                ret = starsmashertools.helpers.fortran.FortranFile(path)
+            except starsmashertools.helpers.fortran.FortranFile.FileExtensionError:
+                pass
+            if ret is None: continue
+            yield ret
     
     @api
     def get_compressed_properties(self):
@@ -422,9 +561,13 @@ class Simulation(object):
         
         if self._logfiles is None:
             self._logfiles = []
-            for _path in starsmashertools.lib.logfile.find(self.directory, **kwargs):
-                if starsmashertools.helpers.path.getsize(_path) > 0:
-                    self._logfiles += [starsmashertools.lib.logfile.LogFile(_path, self)]
+            for _path in starsmashertools.lib.logfile.find(
+                    self.directory, **kwargs
+            ):
+                if starsmashertools.helpers.path.getsize(_path) <= 0: continue
+                self._logfiles += [starsmashertools.lib.logfile.LogFile(
+                    _path, self
+                )]
 
         all_files = [logfile for logfile in self._logfiles]
         if include_joined:

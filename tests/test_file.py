@@ -288,10 +288,7 @@ test4test9
                         _mode, locked = output_queue.get()
                         self.assertEqual(_mode, mode2, msg="process got wrong mode")
                         self.assertEqual(expected, locked, msg = "Mode failed: '%s', '%s'" % (mode1, mode2))
-    
 
-
-        
 if __name__ == "__main__":
     unittest.main(failfast=True)
 

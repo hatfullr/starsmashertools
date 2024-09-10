@@ -8,7 +8,7 @@ import tempfile
 import os
 
 def is_path_from_stems(path, stems):
-    """ Check all the given stems to see if the given path starts with one of 
+    r""" Check all the given stems to see if the given path starts with one of 
     them. """
     if isinstance(path, str): return path in stems
     if len(path) == 0: return False
@@ -57,7 +57,7 @@ collections.abc.KeysView.register(nested_dict_keys)
 
 
 class nested_dict_branches(nested_dict_keys):
-    """
+    r"""
     This is similar to :class:`~.nested_dict_keys`\, but only the keys which 
     reference non-dict values are included. These are the "branches" of the 
     nested dict "tree". The values of these keys are the "leaves".
@@ -84,7 +84,7 @@ class nested_dict_branches(nested_dict_keys):
 collections.abc.KeysView.register(nested_dict_branches)
 
 class nested_dict_stems(nested_dict_keys):
-    """
+    r"""
     Similar to :class:`~.nested_dict_keys`\, but the keys included are either 
     those which don't point to a leaf, or those which do point to a leaf but
     have a path length of 1 (at the root of the tree).
@@ -128,7 +128,7 @@ class nested_dict_values(collections.abc.ValuesView):
 collections.abc.ValuesView.register(nested_dict_values)
 
 class nested_dict_leaves(nested_dict_values):
-    """
+    r"""
     The "leaves" are the values at the end of each "branch" in the nested dict
     "tree". Leaves are never of type :py:class:`dict`\.
     """
@@ -206,7 +206,7 @@ collections.abc.ItemsView.register(nested_dict_flowers)
 
 
 class NestedDict(dict, object):
-    """
+    r"""
     Nested dictionaries quickly become hard to handle in Python. This class is
     intended to make it easier. It works like a regular :py:class:`dict`\, but
     keys can be specified as a list of nest levels. For example, consider a
@@ -332,21 +332,21 @@ class NestedDict(dict, object):
     def __ne__(self, other): return not (self == other)
     
     def branches(self, *args, **kwargs):
-        """ Keys in the nested dictionary which point to "leaves" in the nested
+        r""" Keys in the nested dictionary which point to "leaves" in the nested
         dict "tree". Each "leaf" is not a :py:class:`dict`\, by definition. """
         return nested_dict_branches(self, *args, **kwargs)
     def stems(self, *args, **kwargs):
-        """ Keys in the nested dictionary which don't point to "leaves" in the
+        r""" Keys in the nested dictionary which don't point to "leaves" in the
         nested dict "tree", but rather point to further nesting levels in the
         tree. """
         return nested_dict_stems(self, *args, **kwargs)
     def leaves(self, *args, **kwargs):
-        """ Non-dict values in the nested dict "tree". Each of these values
+        r""" Non-dict values in the nested dict "tree". Each of these values
         correspond to a key, given by :meth:`~.branches`\. """
         return nested_dict_leaves(self, *args, **kwargs)
 
     def flowers(self, *args, **kwargs):
-        """ A combination of branches and leaves, in the same way that keys and
+        r""" A combination of branches and leaves, in the same way that keys and
         values are combined to form "items" in a :py:class:`dict`\. """
         return nested_dict_flowers(self, *args, **kwargs)
 
@@ -414,7 +414,7 @@ class NestedDict(dict, object):
             self[key] = val
 
     def to_dict(self):
-        """ Return a copy of this NestedDict as a regular Python 
+        r""" Return a copy of this NestedDict as a regular Python 
         :py:class:`dict`\. """
         ret = {}
         for branch, leaf in self.flowers():
@@ -429,7 +429,7 @@ class NestedDict(dict, object):
         return ret
 
     def get_stems(self, branch):
-        """ Given a branch, return its stems. """
+        r""" Given a branch, return its stems. """
         if branch not in self.branches(): raise KeyError(branch)
         if isinstance(branch, str): branch = (branch,)
         for stem in self.stems():
@@ -444,8 +444,8 @@ class NestedDict(dict, object):
             child : str | tuple,
             parent : str | tuple,
     ):
-        """ Returns `True` if the given ``child`` branch is contained within the
-        given ``parent`` branch, and `False` otherwise. For example, if
+        r""" Returns `True` if the given ``child`` branch is contained within 
+        the given ``parent`` branch, and `False` otherwise. For example, if
         ``child = ('root', 'item', 'leaf')`` and ``parent = ('root',)``\, then
         the result is `True`\. However, if ``parent = ('root', 'other')``\, then
         the result is `False`\. 
@@ -468,7 +468,7 @@ class NestedDict(dict, object):
             filename : str | pathlib.Path,
             branches : list | tuple | type(None) = None,
     ):
-        """
+        r"""
         Save the :class:`~.NestedDict` to a file. If the file already exists,
         the object is saved to a temporary file which is then renamed to the
         given ``filename``\. Otherwise, the file is created with ``filename``\.
@@ -523,7 +523,7 @@ class NestedDict(dict, object):
             filename : str | pathlib.Path,
             branches : list | tuple | type(None) = None,
     ):
-        """
+        r"""
         Load a file which was saved by :meth:`~.save`\.
 
         Parameters

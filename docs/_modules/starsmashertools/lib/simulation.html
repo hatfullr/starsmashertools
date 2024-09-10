@@ -112,7 +112,7 @@
 <a class="viewcode-back" href="../../../lib/starsmashertools.lib.simulation.html#starsmashertools.lib.simulation.Simulation">[docs]</a>
 <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">preferences</span><span class="o">.</span><span class="n">use</span>
 <span class="k">class</span> <span class="nc">Simulation</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    The base class for handling StarSmasher simulations.</span>
 
 <span class="sd">    Attributes</span>
@@ -160,7 +160,7 @@
     <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">directory</span> <span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        directory : str</span>
@@ -172,13 +172,13 @@
         <span class="kn">import</span> <span class="nn">starsmashertools.lib.archive</span>
         
         <span class="c1"># Prepare the directory string</span>
-        <span class="n">directory</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">realpath</span><span class="p">(</span><span class="n">directory</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">directory</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">realpath</span><span class="p">(</span>
+            <span class="n">directory</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="p">)</span>
         
         <span class="c1"># Validate the directory</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">Simulation</span><span class="o">.</span><span class="n">valid_directory</span><span class="p">(</span><span class="n">directory</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="n">Simulation</span><span class="o">.</span><span class="n">InvalidDirectoryError</span><span class="p">(</span><span class="n">directory</span><span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">directory</span> <span class="o">=</span> <span class="n">directory</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">Simulation</span><span class="o">.</span><span class="n">valid_directory</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">directory</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">Simulation</span><span class="o">.</span><span class="n">InvalidDirectoryError</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">directory</span><span class="p">)</span>
 
         <span class="nb">super</span><span class="p">(</span><span class="n">Simulation</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         
@@ -265,7 +265,7 @@
 <a class="viewcode-back" href="../../../lib/starsmashertools.lib.simulation.html#starsmashertools.lib.simulation.Simulation.__eq__">[docs]</a>
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        bool</span>
@@ -284,7 +284,7 @@
 <a class="viewcode-back" href="../../../lib/starsmashertools.lib.simulation.html#starsmashertools.lib.simulation.Simulation.__getitem__">[docs]</a>
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Obtain a key value from :attr:`~.input`\.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="p">[</span><span class="n">key</span><span class="p">]</span></div>
@@ -448,6 +448,128 @@
         <span class="n">filename</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_compression_filename</span><span class="p">()</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span> <span class="k">return</span> <span class="kc">False</span>
         <span class="k">return</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">compressiontask</span><span class="o">.</span><span class="n">CompressionTask</span><span class="o">.</span><span class="n">isCompressedFile</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Simulation.get_nusegpus">
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.simulation.html#starsmashertools.lib.simulation.Simulation.get_nusegpus">[docs]</a>
+    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="nf">get_nusegpus</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">outputs</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the value of ``nusegpus`` for individual </span>
+<span class="sd">        :class:`~.output.Output` objects originating from this simulation. For</span>
+<span class="sd">        each output file, the log file corresponding to that output file is</span>
+<span class="sd">        checked for the phrase ``using cpus to calculate gravity w/ </span>
+<span class="sd">        ngravprocs=``\, as written in ``init.f`` in StarSmasher. If the phrase</span>
+<span class="sd">        is present, then ``nusegpus=0`` for that output file. Otherwise,</span>
+<span class="sd">        ``nusegpus=1``\.</span>
+
+<span class="sd">        Other Parameters</span>
+<span class="sd">        ----------------</span>
+<span class="sd">        outputs : list, tuple, None, default = None</span>
+<span class="sd">            If not ``None``\, the value of ``nusegpus`` for all output files in</span>
+<span class="sd">            this simulation are returned. Otherwise, only those in the given</span>
+<span class="sd">            list are returned. The elements of the given list or tuple can be</span>
+<span class="sd">            either :py:class:`str`\, representing file paths,</span>
+<span class="sd">            :class:`~.output.Output`\, or a mix of the two.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        nusegpus : :class:`numpy.ndarray`</span>
+<span class="sd">            A 1D integer array containing the values of ``nusegpus`` from the</span>
+<span class="sd">            StarSmasher simulation for each provided :class:`~.output.Output`\.</span>
+
+<span class="sd">        See Also</span>
+<span class="sd">        --------</span>
+<span class="sd">        :meth:`~.get_nselfgravity`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.lib.logfile</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.path</span>
+
+        <span class="k">if</span> <span class="n">outputs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="n">outputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_output</span><span class="p">()</span>
+        <span class="n">paths</span> <span class="o">=</span> <span class="p">[</span><span class="n">output</span><span class="o">.</span><span class="n">path</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">Output</span><span class="p">)</span> <span class="k">else</span> <span class="n">output</span> <span class="k">for</span> <span class="n">output</span> <span class="ow">in</span> <span class="n">outputs</span><span class="p">]</span>
+        <span class="n">logfiles</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_logfiles</span><span class="p">()</span>
+        <span class="n">nusegpus</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">outputs</span><span class="p">),</span> <span class="n">dtype</span> <span class="o">=</span> <span class="nb">int</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">logfile</span> <span class="ow">in</span> <span class="n">logfiles</span><span class="p">:</span>
+            <span class="n">has</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">logfile</span><span class="o">.</span><span class="n">has_output_files</span><span class="p">(</span><span class="n">paths</span><span class="p">))</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">has</span><span class="o">.</span><span class="n">any</span><span class="p">():</span> <span class="k">continue</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">logfile</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;using cpus to calculate gravity w/ ngravprocs=&#39;</span><span class="p">)</span>
+                <span class="n">nusegpus</span><span class="p">[</span><span class="n">has</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">except</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">logfile</span><span class="o">.</span><span class="n">LogFile</span><span class="o">.</span><span class="n">PhraseNotFoundError</span><span class="p">:</span>
+                <span class="n">nusegpus</span><span class="p">[</span><span class="n">has</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">nusegpus</span></div>
+
+
+<div class="viewcode-block" id="Simulation.get_nselfgravity">
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.simulation.html#starsmashertools.lib.simulation.Simulation.get_nselfgravity">[docs]</a>
+    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="nf">get_nselfgravity</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">outputs</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the value of ``nselfgravity`` that StarSmasher had at runtime </span>
+<span class="sd">        when creating the given output files.</span>
+
+<span class="sd">        It can be ambiguous in the StarSmasher outputs whether or not GPUs were</span>
+<span class="sd">        used, or if only CPUs were used. If GPUs were used, then the value of </span>
+<span class="sd">        ``nselfgravity`` given as input is overwritten by </span>
+<span class="sd">        ``subroutine set_nusegpus``\, which comes from file ``gpu_grav.f`` by</span>
+<span class="sd">        default. If the user compiled StarSmasher with the ``cpu`` option in</span>
+<span class="sd">        &#39;make&#39; command, then ``subroutine set_nusegpus`` from ``cpu_grav.f`` is</span>
+<span class="sd">        used instead. The value of ``nselfgravity=1`` in ``gpu_grav.f``\, as </span>
+<span class="sd">        well as ``nusegpus=1``\, overwriting any input values.</span>
+<span class="sd">        </span>
+<span class="sd">        Thus, here we check the value of ``nusegpus`` for each output file using</span>
+<span class="sd">        :meth:`~.get_nusegpus`\. If any have ``nusegpus=0``\, then we return</span>
+<span class="sd">        ``self[&#39;nselfgravity&#39;]`` for those.</span>
+
+<span class="sd">        Other Parameters</span>
+<span class="sd">        ----------------</span>
+<span class="sd">        outputs : list, tuple, None, default = None</span>
+<span class="sd">            If not ``None``\, the value of ``nusegpus`` for all output files in</span>
+<span class="sd">            this simulation are returned. Otherwise, only those in the given</span>
+<span class="sd">            list are returned. The elements of the given list or tuple can be</span>
+<span class="sd">            either :py:class:`str`\, representing file paths,</span>
+<span class="sd">            :class:`~.output.Output`\, or a mix of the two.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        nselfgravity : :class:`numpy.ndarray`</span>
+<span class="sd">            A 1D integer array containing the values of ``nselfgravity`` from</span>
+<span class="sd">            the StarSmasher simulation for each provided </span>
+<span class="sd">            :class:`~.output.Output`\.</span>
+
+<span class="sd">        See Also</span>
+<span class="sd">        --------</span>
+<span class="sd">        :meth:`~.get_nusegpus`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># 0 where CPUs used, 1 where GPUs used</span>
+        <span class="n">nselfgravity</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_nusegpus</span><span class="p">(</span><span class="n">outputs</span><span class="p">)</span>
+        <span class="n">nselfgravity</span><span class="p">[</span><span class="n">nselfgravity</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;nselfgravity&#39;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">nselfgravity</span></div>
+
+
+<div class="viewcode-block" id="Simulation.get_kernel">
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.simulation.html#starsmashertools.lib.simulation.Simulation.get_kernel">[docs]</a>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="nf">get_kernel</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calls :func:`~.lib.kernel.get_by_nkernel` with this simulation&#39;s </span>
+<span class="sd">        ``nkernel`` input value.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        kernel : :class:`~.lib.kernel._BaseKernel`</span>
+<span class="sd">            The kernel function used by this simulation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.lib.kernel</span>
+        <span class="k">return</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">kernel</span><span class="o">.</span><span class="n">get_by_nkernel</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;nkernel&#39;</span><span class="p">])</span></div>
+
         
 <div class="viewcode-block" id="Simulation.get_search_directory">
 <a class="viewcode-back" href="../../../lib/starsmashertools.lib.simulation.html#starsmashertools.lib.simulation.Simulation.get_search_directory">[docs]</a>
@@ -464,6 +586,35 @@
         <span class="kn">import</span> <span class="nn">starsmashertools.helpers.path</span>
         <span class="n">search_directory</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">preferences</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;search directory&#39;</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">realpath</span><span class="p">(</span><span class="n">search_directory</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Simulation.get_source_files">
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.simulation.html#starsmashertools.lib.simulation.Simulation.get_source_files">[docs]</a>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="nf">get_source_files</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Obtain the files in the simulation directory that correspond with the</span>
+<span class="sd">        `StarSmasher` source Fortran code.</span>
+
+<span class="sd">        Yields</span>
+<span class="sd">        ------</span>
+<span class="sd">        file : :class:`~.helpers.fortran.FortranFile`</span>
+<span class="sd">            The Fortran file from `StarSmasher`\&#39;s source code.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.fortran</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.path</span>
+        
+        <span class="n">src</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">get_src</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">directory</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">src</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">Simulation</span><span class="o">.</span><span class="n">InvalidDirectoryError</span><span class="p">(</span><span class="s2">&quot;No source directory found in simulation directory &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">directory</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">find_files</span><span class="p">(</span><span class="n">src</span><span class="p">):</span>
+            <span class="n">ret</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">ret</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">fortran</span><span class="o">.</span><span class="n">FortranFile</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+            <span class="k">except</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">fortran</span><span class="o">.</span><span class="n">FortranFile</span><span class="o">.</span><span class="n">FileExtensionError</span><span class="p">:</span>
+                <span class="k">pass</span>
+            <span class="k">if</span> <span class="n">ret</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="k">continue</span>
+            <span class="k">yield</span> <span class="n">ret</span></div>
 
     
 <div class="viewcode-block" id="Simulation.get_compressed_properties">
@@ -539,9 +690,13 @@
         
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_logfiles</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_logfiles</span> <span class="o">=</span> <span class="p">[]</span>
-            <span class="k">for</span> <span class="n">_path</span> <span class="ow">in</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">logfile</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">directory</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-                <span class="k">if</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getsize</span><span class="p">(</span><span class="n">_path</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">_logfiles</span> <span class="o">+=</span> <span class="p">[</span><span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">logfile</span><span class="o">.</span><span class="n">LogFile</span><span class="p">(</span><span class="n">_path</span><span class="p">,</span> <span class="bp">self</span><span class="p">)]</span>
+            <span class="k">for</span> <span class="n">_path</span> <span class="ow">in</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">logfile</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">directory</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+            <span class="p">):</span>
+                <span class="k">if</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getsize</span><span class="p">(</span><span class="n">_path</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span> <span class="k">continue</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_logfiles</span> <span class="o">+=</span> <span class="p">[</span><span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">logfile</span><span class="o">.</span><span class="n">LogFile</span><span class="p">(</span>
+                    <span class="n">_path</span><span class="p">,</span> <span class="bp">self</span>
+                <span class="p">)]</span>
 
         <span class="n">all_files</span> <span class="o">=</span> <span class="p">[</span><span class="n">logfile</span> <span class="k">for</span> <span class="n">logfile</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_logfiles</span><span class="p">]</span>
         <span class="k">if</span> <span class="n">include_joined</span><span class="p">:</span>

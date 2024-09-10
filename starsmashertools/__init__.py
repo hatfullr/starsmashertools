@@ -122,7 +122,7 @@ except Exception as e:
 @starsmashertools.helpers.argumentenforcer.enforcetypes
 @api
 def get_simulation(directory : str):
-    """
+    r"""
     Obtain a ``StarSmasher`` simulation from a directory.
     
     Parameters
@@ -150,7 +150,7 @@ def get_simulation(directory : str):
 @starsmashertools.helpers.argumentenforcer.enforcetypes
 @api
 def get_type(directory : str):
-    """
+    r"""
     Find the type of simulation located at the given directory.
 
     Parameters
@@ -182,7 +182,7 @@ def get_type(directory : str):
 
 @api
 def relaxation(*args, **kwargs):
-    """
+    r"""
     Get a :class:`~.lib.relaxation.Relaxation` type ``StarSmasher`` simulation.
 
     Other Parameters
@@ -204,7 +204,7 @@ def relaxation(*args, **kwargs):
 
 @api
 def binary(*args, **kwargs):
-    """
+    r"""
     Get a :class:`~.lib.binary.Binary` type ``StarSmasher`` simulation.
 
     Other Parameters
@@ -226,7 +226,7 @@ def binary(*args, **kwargs):
 
 @api
 def dynamical(*args, **kwargs):
-    """
+    r"""
     Get a :class:`~.lib.dynamical.Dynamical` type ``StarSmasher`` simulation.
 
     Other Parameters
@@ -248,7 +248,7 @@ def dynamical(*args, **kwargs):
 
 @api
 def iterator(*args, **kwargs):
-    """
+    r"""
     Obtain a :class:`~.lib.output.OutputIterator` that can be used to iterate
     through output files. Using an iterator in this way is usually faster than
     looping through the files normally because an
@@ -281,7 +281,7 @@ def get_particles(
         output,
         particles : np.ndarray | list | tuple,
 ):
-    """
+    r"""
     Mask the given output file such that it contains only the particles
     specified by ``particles``\.
 
@@ -378,7 +378,7 @@ def mask(
         mask : np.ndarray | list | tuple,
         copy : bool = True,
 ):
-    """
+    r"""
     Apply a mask to the given :class:`~.lib.output.Output` object that hides
     selected particles.
 
@@ -444,7 +444,7 @@ def interpolate(
         outputs,
         values : list,
 ):
-    """
+    r"""
     Maybe don't trust this function in this version of starsmashertools.
 
     Returns a function that performs a 1D linear interpolation between the
@@ -548,7 +548,7 @@ def interpolate(
 @starsmashertools.helpers.argumentenforcer.enforcetypes
 @api
 def get_data_files(path : list | tuple):
-    """
+    r"""
     Search the defaults and user directories for a file. Raises a 
     :py:class:`FileNotFoundError` if the given path cannot be found in either
     the defaults or user directories.
@@ -608,7 +608,7 @@ def get_data_files(path : list | tuple):
 
 @api
 def get_format_sheets():
-    """
+    r"""
     Returns
     -------
     sheets : list
@@ -837,7 +837,7 @@ def _get_decorators():
 @api
 @starsmashertools.helpers.argumentenforcer.enforcetypes
 def report(simulations : list | tuple):
-    """
+    r"""
     Generate a report for a list of given 
     :class:`~.lib.simulation.Simulation`\s. The report appears as a table of 
     values, where each row is a Simulation and each column is a quantity related
@@ -857,6 +857,14 @@ def report(simulations : list | tuple):
     return starsmashertools.lib.report.Report(simulations)
 
 
+class StarSmasherError(Exception):
+    r"""
+    This error will have an identical message to one found in the StarSmasher
+    source code.
+    """
+    @api
+    def __init__(self, *args, **kwargs): # Defined just to add to documentation
+        return super(StarSmasherError, self).__init__(*args, **kwargs)
 
 
 
