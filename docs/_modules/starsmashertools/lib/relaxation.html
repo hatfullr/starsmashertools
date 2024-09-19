@@ -303,6 +303,106 @@
         <span class="n">ret</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">G</span> <span class="o">*</span> <span class="n">mr</span> <span class="o">/</span> <span class="n">r</span> <span class="o">-</span> <span class="n">u</span><span class="p">)</span> <span class="o">*</span> <span class="n">m</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">Unit</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">energy</span><span class="o">.</span><span class="n">label</span><span class="p">)</span></div>
 
+
+<div class="viewcode-block" id="Relaxation.get_initial_shells">
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.relaxation.html#starsmashertools.lib.relaxation.Relaxation.get_initial_shells">[docs]</a>
+    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="nf">get_initial_shells</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">output</span> <span class="p">:</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">Output</span> <span class="o">|</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">tolerance</span> <span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.e-4</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Each StarSmasher star is initialized by creating many SPH particles in</span>
+<span class="sd">        a close-packed hexagonal lattice (Kittel, 1976), a configuration that is</span>
+<span class="sd">        stable to perturbations (Lombardi et al., 2006). The process creates</span>
+<span class="sd">        particles that share radial positions with several other particles, </span>
+<span class="sd">        forming an analogue to &quot;shells&quot; in stellar evolution code MESA. Each</span>
+<span class="sd">        particle in a shell is spread out on the shell in some distribution.</span>
+
+<span class="sd">        Shells are detected by checking for differences in particle radial </span>
+<span class="sd">        positions. First all the particles are sorted by their radial positions,</span>
+<span class="sd">        then the relative fractional difference </span>
+<span class="sd">        :math:`\delta=|r_{i+1} - r_i|/((|r_{i+1}| + |r_i|)/2)` is calculated.</span>
+<span class="sd">        A shell is detected whenever :math:`\delta &gt; \mathrm{tolerance}`\.</span>
+<span class="sd">        </span>
+<span class="sd">        Other Parameters</span>
+<span class="sd">        ----------------</span>
+<span class="sd">        output : :class:`~.lib.output.Output`\, ``None``\, default = ``None``</span>
+<span class="sd">            The output file to obtain shells for. If ``None``\, then the very</span>
+<span class="sd">            first output file in this relaxation is used.</span>
+<span class="sd">        </span>
+<span class="sd">        tolerance : float, default = 1.e-4</span>
+<span class="sd">            The threshold by which a change in particle radial positions is</span>
+<span class="sd">            detected as a change in shells.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        shells : list</span>
+<span class="sd">            Each element is a :class:`~.Shell`\, which contains the</span>
+<span class="sd">            particle indices associated with each shell and the radial position</span>
+<span class="sd">            of each shell.</span>
+<span class="sd">        </span>
+<span class="sd">        See Also</span>
+<span class="sd">        --------</span>
+<span class="sd">        Kittel, C. 1976, Introduction to solid state physics (Wiley)</span>
+
+<span class="sd">        Lombardi, J. C., J., Proulx, Z. F., Dooley, K. L., et al. 2006, ApJ, 640, 441, doi: 10.1086/499938</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools</span>
+        
+        <span class="k">if</span> <span class="n">output</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_output</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">r2</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">((</span><span class="n">output</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">],</span> <span class="n">output</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">],</span> <span class="n">output</span><span class="p">[</span><span class="s1">&#39;z&#39;</span><span class="p">]))</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+        
+        <span class="n">shells</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">with</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">mask</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">r2</span><span class="p">))</span> <span class="k">as</span> <span class="n">masked</span><span class="p">:</span>
+            <span class="c1"># This sorts particles by squared radial positions</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">])</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">])</span>
+            <span class="n">z</span> <span class="o">=</span> <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;z&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="p">[</span><span class="s1">&#39;z&#39;</span><span class="p">])</span>
+            <span class="n">r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">((</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">z</span><span class="p">))</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">))</span>
+            <span class="n">mr</span> <span class="o">=</span> <span class="mi">0</span> <span class="c1"># mass coordinate</span>
+            <span class="n">shell_mass</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">particles</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">ID</span><span class="p">,</span> <span class="n">r0</span><span class="p">,</span> <span class="n">r1</span><span class="p">,</span> <span class="n">mi</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+                    <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;ID&#39;</span><span class="p">][:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+                    <span class="n">r</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+                    <span class="n">r</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span>
+                    <span class="n">masked</span><span class="p">[</span><span class="s1">&#39;am&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">units</span><span class="p">[</span><span class="s1">&#39;am&#39;</span><span class="p">]),</span>
+            <span class="p">):</span>
+                <span class="n">particles</span><span class="o">.</span><span class="n">update</span><span class="p">([</span><span class="n">ID</span><span class="p">])</span>
+                <span class="n">mr</span> <span class="o">+=</span> <span class="n">mi</span>
+                <span class="n">shell_mass</span> <span class="o">+=</span> <span class="n">mi</span>
+                <span class="n">delta</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="nb">abs</span><span class="p">(</span><span class="n">r1</span> <span class="o">-</span> <span class="n">r0</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">r0</span><span class="p">)</span> <span class="o">+</span> <span class="nb">abs</span><span class="p">(</span><span class="n">r1</span><span class="p">))</span> <span class="c1"># rel frac diff</span>
+                <span class="k">if</span> <span class="n">delta</span> <span class="o">&gt;</span> <span class="n">tolerance</span><span class="p">:</span> <span class="c1"># shell detected</span>
+                    <span class="n">shells</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Shell</span><span class="p">(</span>
+                        <span class="n">particles</span><span class="p">,</span>
+                        <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">r0</span> <span class="o">+</span> <span class="n">r1</span><span class="p">),</span>
+                        <span class="n">mr</span><span class="p">,</span>
+                        <span class="n">shell_mass</span><span class="p">,</span>
+                    <span class="p">)]</span>
+                    <span class="n">particles</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span> <span class="c1"># reset</span>
+                    <span class="n">shell_mass</span> <span class="o">=</span> <span class="mi">0</span>
+            
+            <span class="c1"># Add one final shell for the outermost particles</span>
+            <span class="k">if</span> <span class="n">particles</span><span class="p">:</span>
+                <span class="n">dr</span> <span class="o">=</span> <span class="n">shells</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">r</span> <span class="o">-</span> <span class="n">shells</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">r</span>
+                <span class="n">shells</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Shell</span><span class="p">(</span>
+                    <span class="n">particles</span><span class="p">,</span>
+                    <span class="n">shells</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">r</span> <span class="o">+</span> <span class="n">dr</span><span class="p">,</span>
+                    <span class="n">mr</span><span class="p">,</span>
+                    <span class="n">shell_mass</span><span class="p">,</span>
+                <span class="p">)]</span>
+        <span class="k">return</span> <span class="n">shells</span></div>
+
+
+
+    
+    
+
+            
+            
     
 
 <div class="viewcode-block" id="Relaxation.Profile">
@@ -473,6 +573,101 @@
                 <span class="n">eint_interest</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">linear_interpolate</span><span class="p">(</span><span class="n">mcenter</span><span class="p">,</span> <span class="n">eint</span><span class="p">,</span> <span class="n">minterest</span><span class="p">)</span>
                 <span class="n">epot_interest</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">linear_interpolate</span><span class="p">(</span><span class="n">mass</span><span class="p">,</span> <span class="n">epot</span><span class="p">,</span> <span class="n">minterest</span><span class="p">)</span>
                 <span class="k">return</span> <span class="n">diff0</span> <span class="o">/</span> <span class="n">etot_interest</span><span class="p">,</span> <span class="n">diff1</span> <span class="o">/</span> <span class="n">eint_interest</span><span class="p">,</span> <span class="n">diff2</span> <span class="o">/</span> <span class="n">epot_interest</span></div>
+</div>
+
+
+
+
+<div class="viewcode-block" id="Shell">
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.relaxation.html#starsmashertools.lib.relaxation.Shell">[docs]</a>
+<span class="k">class</span> <span class="nc">Shell</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Holds information about particles which form a concentric shell in a </span>
+<span class="sd">    relaxation. This generally only applies to the initial state of the</span>
+<span class="sd">    to-be-relaxed star.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    particles : :class:`numpy.ndarray`</span>
+<span class="sd">        An array of unique particle indices associated with this shell. Particle</span>
+<span class="sd">        indices are expected to be unique among all shells.</span>
+
+<span class="sd">    r : float</span>
+<span class="sd">        The radial position in cm corresponding to the surface of this shell.</span>
+<span class="sd">    </span>
+<span class="sd">    mr : float</span>
+<span class="sd">        The mass coordinate in grams at the surface of this shell.</span>
+
+<span class="sd">    mass : float</span>
+<span class="sd">        The total mass in grams of the particles assocaited with this shell.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="Shell.__init__">
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.relaxation.html#starsmashertools.lib.relaxation.Shell.__init__">[docs]</a>
+    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">particles</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="nb">set</span><span class="p">,</span>
+            <span class="n">r</span> <span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+            <span class="n">mr</span> <span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+            <span class="n">mass</span> <span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">particles</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">particles</span><span class="p">),</span> <span class="n">dtype</span> <span class="o">=</span> <span class="nb">int</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">r</span> <span class="o">=</span> <span class="n">r</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mr</span> <span class="o">=</span> <span class="n">mr</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mass</span> <span class="o">=</span> <span class="n">mass</span></div>
+
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="k">return</span> <span class="s1">&#39;Shell(</span><span class="si">%f</span><span class="s1">, n=</span><span class="si">%d</span><span class="s1">)&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">r</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">particles</span><span class="p">))</span>
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Shell.get_overlapping_particles">
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.relaxation.html#starsmashertools.lib.relaxation.Shell.get_overlapping_particles">[docs]</a>
+    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="nf">get_overlapping_particles</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">r</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+            <span class="n">radii</span> <span class="p">:</span> <span class="nb">list</span> <span class="o">|</span> <span class="nb">tuple</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+            <span class="n">which</span> <span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;both&#39;</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the indices of the particles whose kernels intersect the</span>
+<span class="sd">        imaginary spherical surface defined by this shell&#39;s radial position.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        r : list, tuple, :class:`numpy.ndarray`</span>
+<span class="sd">            The radial positions of the particles. Must have the same shape as</span>
+<span class="sd">            ``radii`` and must be in units of cm.</span>
+
+<span class="sd">        radii : list, tuple, :class:`numpy.ndarray`</span>
+<span class="sd">            The sizes of the particle kernels. Must have the same shape as ``r``</span>
+<span class="sd">            and must be in units of cm.</span>
+
+<span class="sd">        Other Parameters</span>
+<span class="sd">        ----------------</span>
+<span class="sd">        which : str, default = ``&#39;both&#39;``</span>
+<span class="sd">            The kind of overlap to calculate. If ``&#39;inner&#39;``\, then particles</span>
+<span class="sd">            are only considered overlapping if they are positioned within the</span>
+<span class="sd">            shell, :math:`r_i &lt; r_\mathrm{shell}`\. If ``&#39;outer&#39;`` then </span>
+<span class="sd">            particles are only considered overlapping if they are positioned </span>
+<span class="sd">            outside the shell, :math:`r_i &gt; r_\mathrm{shell}`\. If ``&#39;both&#39;``\,</span>
+<span class="sd">            then no restraints on the overlapping are used.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        is_overlapping : :class:`numpy.ndarray`</span>
+<span class="sd">            An array of boolean values with the same shape as ``r`` and</span>
+<span class="sd">            ``radii``\, where ``True`` values indicate an overlap.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcevalues</span><span class="p">({</span>
+            <span class="s1">&#39;which&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="s1">&#39;inner&#39;</span><span class="p">,</span> <span class="s1">&#39;outer&#39;</span><span class="p">,</span> <span class="s1">&#39;both&#39;</span><span class="p">],</span>
+        <span class="p">})</span>
+        <span class="n">is_overlapping</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">r</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">r</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">radii</span>
+        <span class="k">if</span> <span class="n">which</span> <span class="o">==</span> <span class="s1">&#39;inner&#39;</span><span class="p">:</span> <span class="n">is_overlapping</span> <span class="o">&amp;=</span> <span class="n">r</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">r</span>
+        <span class="k">elif</span> <span class="n">which</span> <span class="o">==</span> <span class="s1">&#39;outer&#39;</span><span class="p">:</span> <span class="n">is_overlapping</span> <span class="o">&amp;=</span> <span class="n">r</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">r</span>
+        <span class="k">return</span> <span class="n">is_overlapping</span></div>
 </div>
 
 </pre></div>

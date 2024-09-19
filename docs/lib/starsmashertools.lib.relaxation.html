@@ -72,7 +72,17 @@
 <li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.relaxation.Relaxation.Profile"><code class="docutils literal notranslate"><span class="pre">Relaxation.Profile</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.relaxation.Relaxation.get_binding_energy"><code class="docutils literal notranslate"><span class="pre">Relaxation.get_binding_energy()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.relaxation.Relaxation.get_final_extents"><code class="docutils literal notranslate"><span class="pre">Relaxation.get_final_extents()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.relaxation.Relaxation.get_initial_shells"><code class="docutils literal notranslate"><span class="pre">Relaxation.get_initial_shells()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.relaxation.Relaxation.get_profilefile"><code class="docutils literal notranslate"><span class="pre">Relaxation.get_profilefile()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.relaxation.Shell"><code class="docutils literal notranslate"><span class="pre">Shell</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.relaxation.Shell.particles"><code class="docutils literal notranslate"><span class="pre">Shell.particles</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.relaxation.Shell.r"><code class="docutils literal notranslate"><span class="pre">Shell.r</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.relaxation.Shell.mr"><code class="docutils literal notranslate"><span class="pre">Shell.mr</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.relaxation.Shell.mass"><code class="docutils literal notranslate"><span class="pre">Shell.mass</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.relaxation.Shell.__init__"><code class="docutils literal notranslate"><span class="pre">Shell.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.relaxation.Shell.get_overlapping_particles"><code class="docutils literal notranslate"><span class="pre">Shell.get_overlapping_particles()</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -192,10 +202,136 @@ keyword <code class="docutils literal notranslate"><span class="pre">radial</spa
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.relaxation.Relaxation.get_initial_shells">
+<span class="sig-name descname"><span class="pre">get_initial_shells</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="starsmashertools.lib.output.html#starsmashertools.lib.output.Output" title="starsmashertools.lib.output.Output"><span class="pre">Output</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tolerance</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><span class="pre">float</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0001</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/relaxation.html#Relaxation.get_initial_shells"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.relaxation.Relaxation.get_initial_shells" title="Link to this definition"></a></dt>
+<dd><p>Each StarSmasher star is initialized by creating many SPH particles in
+a close-packed hexagonal lattice (Kittel, 1976), a configuration that is
+stable to perturbations (Lombardi et al., 2006). The process creates
+particles that share radial positions with several other particles,
+forming an analogue to “shells” in stellar evolution code MESA. Each
+particle in a shell is spread out on the shell in some distribution.</p>
+<p>Shells are detected by checking for differences in particle radial
+positions. First all the particles are sorted by their radial positions,
+then the relative fractional difference
+<span class="math notranslate nohighlight">\(\delta=|r_{i+1} - r_i|/((|r_{i+1}| + |r_i|)/2)\)</span> is calculated.
+A shell is detected whenever <span class="math notranslate nohighlight">\(\delta &gt; \mathrm{tolerance}\)</span>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>output</strong> (<a class="reference internal" href="starsmashertools.lib.output.html#starsmashertools.lib.output.Output" title="starsmashertools.lib.output.Output"><code class="xref py py-class docutils literal notranslate"><span class="pre">Output</span></code></a>, <code class="docutils literal notranslate"><span class="pre">None</span></code>, default = <code class="docutils literal notranslate"><span class="pre">None</span></code>) – The output file to obtain shells for. If <code class="docutils literal notranslate"><span class="pre">None</span></code>, then the very
+first output file in this relaxation is used.</p></li>
+<li><p><strong>tolerance</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><em>float</em></a><em>, </em><em>default = 1.e-4</em>) – The threshold by which a change in particle radial positions is
+detected as a change in shells.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>shells</strong> – Each element is a <a class="reference internal" href="#starsmashertools.lib.relaxation.Shell" title="starsmashertools.lib.relaxation.Shell"><code class="xref py py-class docutils literal notranslate"><span class="pre">Shell</span></code></a>, which contains the
+particle indices associated with each shell and the radial position
+of each shell.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)">list</a></p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><code class="xref py py-obj docutils literal notranslate"><span class="pre">Kittel</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">C.</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">Introduction</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">Lombardi</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">J.</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">J.</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">Proulx</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">Z.</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">Dooley</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">K.</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">et</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">ApJ</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">640</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">441</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">doi</span></code></p>
+</div>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="starsmashertools.lib.relaxation.Relaxation.get_profilefile">
 <span class="sig-name descname"><span class="pre">get_profilefile</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/relaxation.html#Relaxation.get_profilefile"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.relaxation.Relaxation.get_profilefile" title="Link to this definition"></a></dt>
 <dd><p>Returns the path to the stellar profile from which this relaxation was
 created, as given by the value of <code class="docutils literal notranslate"><span class="pre">profilefile</span></code> in the sph.input file.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="starsmashertools.lib.relaxation.Shell">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Shell</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">particles</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><span class="pre">list</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.12)"><span class="pre">tuple</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#set" title="(in Python v3.12)"><span class="pre">set</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">r</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><span class="pre">float</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">mr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><span class="pre">float</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">mass</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><span class="pre">float</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/relaxation.html#Shell"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.relaxation.Shell" title="Link to this definition"></a></dt>
+<dd><p>Holds information about particles which form a concentric shell in a
+relaxation. This generally only applies to the initial state of the
+to-be-relaxed star.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="starsmashertools.lib.relaxation.Shell.particles">
+<span class="sig-name descname"><span class="pre">particles</span></span><a class="headerlink" href="#starsmashertools.lib.relaxation.Shell.particles" title="Link to this definition"></a></dt>
+<dd><p>An array of unique particle indices associated with this shell. Particle
+indices are expected to be unique among all shells.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="starsmashertools.lib.relaxation.Shell.r">
+<span class="sig-name descname"><span class="pre">r</span></span><a class="headerlink" href="#starsmashertools.lib.relaxation.Shell.r" title="Link to this definition"></a></dt>
+<dd><p>The radial position in cm corresponding to the surface of this shell.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)">float</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="starsmashertools.lib.relaxation.Shell.mr">
+<span class="sig-name descname"><span class="pre">mr</span></span><a class="headerlink" href="#starsmashertools.lib.relaxation.Shell.mr" title="Link to this definition"></a></dt>
+<dd><p>The mass coordinate in grams at the surface of this shell.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)">float</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="starsmashertools.lib.relaxation.Shell.mass">
+<span class="sig-name descname"><span class="pre">mass</span></span><a class="headerlink" href="#starsmashertools.lib.relaxation.Shell.mass" title="Link to this definition"></a></dt>
+<dd><p>The total mass in grams of the particles assocaited with this shell.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)">float</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.relaxation.Shell.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">particles</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><span class="pre">list</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.12)"><span class="pre">tuple</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#set" title="(in Python v3.12)"><span class="pre">set</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">r</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><span class="pre">float</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">mr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><span class="pre">float</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">mass</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><span class="pre">float</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/relaxation.html#Shell.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.relaxation.Shell.__init__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.relaxation.Shell.get_overlapping_particles">
+<span class="sig-name descname"><span class="pre">get_overlapping_particles</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><span class="pre">list</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.12)"><span class="pre">tuple</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.1)"><span class="pre">ndarray</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">radii</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.12)"><span class="pre">list</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.12)"><span class="pre">tuple</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.1)"><span class="pre">ndarray</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">which</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'both'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/relaxation.html#Shell.get_overlapping_particles"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.relaxation.Shell.get_overlapping_particles" title="Link to this definition"></a></dt>
+<dd><p>Return the indices of the particles whose kernels intersect the
+imaginary spherical surface defined by this shell’s radial position.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>r</strong> (list, tuple, <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></a>) – The radial positions of the particles. Must have the same shape as
+<code class="docutils literal notranslate"><span class="pre">radii</span></code> and must be in units of cm.</p></li>
+<li><p><strong>radii</strong> (list, tuple, <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></a>) – The sizes of the particle kernels. Must have the same shape as <code class="docutils literal notranslate"><span class="pre">r</span></code>
+and must be in units of cm.</p></li>
+<li><p><strong>which</strong> (str, default = <code class="docutils literal notranslate"><span class="pre">'both'</span></code>) – The kind of overlap to calculate. If <code class="docutils literal notranslate"><span class="pre">'inner'</span></code>, then particles
+are only considered overlapping if they are positioned within the
+shell, <span class="math notranslate nohighlight">\(r_i &lt; r_\mathrm{shell}\)</span>. If <code class="docutils literal notranslate"><span class="pre">'outer'</span></code> then
+particles are only considered overlapping if they are positioned
+outside the shell, <span class="math notranslate nohighlight">\(r_i &gt; r_\mathrm{shell}\)</span>. If <code class="docutils literal notranslate"><span class="pre">'both'</span></code>,
+then no restraints on the overlapping are used.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>is_overlapping</strong> – An array of boolean values with the same shape as <code class="docutils literal notranslate"><span class="pre">r</span></code> and
+<code class="docutils literal notranslate"><span class="pre">radii</span></code>, where <code class="docutils literal notranslate"><span class="pre">True</span></code> values indicate an overlap.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></a></p>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>

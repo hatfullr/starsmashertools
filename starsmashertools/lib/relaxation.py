@@ -209,6 +209,103 @@ class Relaxation(starsmashertools.lib.simulation.Simulation, object):
         
         ret = np.sum((G * mr / r - u) * m)
         return starsmashertools.lib.units.Unit(ret, self.units.energy.label)
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def get_initial_shells(
+            self,
+            output : starsmashertools.lib.output.Output | type(None) = None,
+            tolerance : float = 1.e-4,
+    ):
+        r"""
+        Each StarSmasher star is initialized by creating many SPH particles in
+        a close-packed hexagonal lattice (Kittel, 1976), a configuration that is
+        stable to perturbations (Lombardi et al., 2006). The process creates
+        particles that share radial positions with several other particles, 
+        forming an analogue to "shells" in stellar evolution code MESA. Each
+        particle in a shell is spread out on the shell in some distribution.
+
+        Shells are detected by checking for differences in particle radial 
+        positions. First all the particles are sorted by their radial positions,
+        then the relative fractional difference 
+        :math:`\delta=|r_{i+1} - r_i|/((|r_{i+1}| + |r_i|)/2)` is calculated.
+        A shell is detected whenever :math:`\delta > \mathrm{tolerance}`\.
+        
+        Other Parameters
+        ----------------
+        output : :class:`~.lib.output.Output`\, ``None``\, default = ``None``
+            The output file to obtain shells for. If ``None``\, then the very
+            first output file in this relaxation is used.
+        
+        tolerance : float, default = 1.e-4
+            The threshold by which a change in particle radial positions is
+            detected as a change in shells.
+
+        Returns
+        -------
+        shells : list
+            Each element is a :class:`~.Shell`\, which contains the
+            particle indices associated with each shell and the radial position
+            of each shell.
+        
+        See Also
+        --------
+        Kittel, C. 1976, Introduction to solid state physics (Wiley)
+
+        Lombardi, J. C., J., Proulx, Z. F., Dooley, K. L., et al. 2006, ApJ, 640, 441, doi: 10.1086/499938
+        """
+        import starsmashertools
+        
+        if output is None: output = self.get_output(0)
+        r2 = (np.column_stack((output['x'], output['y'], output['z']))**2).sum(axis = 1)
+        
+        shells = []
+        with starsmashertools.mask(output, np.argsort(r2)) as masked:
+            # This sorts particles by squared radial positions
+            x = masked['x'] * float(self.units['x'])
+            y = masked['y'] * float(self.units['y'])
+            z = masked['z'] * float(self.units['z'])
+            r = np.sqrt((np.column_stack((x,y,z))**2).sum(axis = 1))
+            mr = 0 # mass coordinate
+            shell_mass = 0
+            particles = set()
+            for ID, r0, r1, mi in zip(
+                    masked['ID'][:-1],
+                    r[:-1],
+                    r[1:],
+                    masked['am'] * float(self.units['am']),
+            ):
+                particles.update([ID])
+                mr += mi
+                shell_mass += mi
+                delta = 2 * abs(r1 - r0) / (abs(r0) + abs(r1)) # rel frac diff
+                if delta > tolerance: # shell detected
+                    shells += [Shell(
+                        particles,
+                        0.5 * (r0 + r1),
+                        mr,
+                        shell_mass,
+                    )]
+                    particles = set() # reset
+                    shell_mass = 0
+            
+            # Add one final shell for the outermost particles
+            if particles:
+                dr = shells[-1].r - shells[-2].r
+                shells += [Shell(
+                    particles,
+                    shells[-1].r + dr,
+                    mr,
+                    shell_mass,
+                )]
+        return shells
+
+
+    
+    
+
+            
+            
     
 
     class Profile(dict, object):
@@ -368,3 +465,89 @@ class Relaxation(starsmashertools.lib.simulation.Simulation, object):
                 eint_interest = starsmashertools.math.linear_interpolate(mcenter, eint, minterest)
                 epot_interest = starsmashertools.math.linear_interpolate(mass, epot, minterest)
                 return diff0 / etot_interest, diff1 / eint_interest, diff2 / epot_interest
+
+
+
+class Shell(object):
+    r"""
+    Holds information about particles which form a concentric shell in a 
+    relaxation. This generally only applies to the initial state of the
+    to-be-relaxed star.
+
+    Attributes
+    ----------
+    particles : :class:`numpy.ndarray`
+        An array of unique particle indices associated with this shell. Particle
+        indices are expected to be unique among all shells.
+
+    r : float
+        The radial position in cm corresponding to the surface of this shell.
+    
+    mr : float
+        The mass coordinate in grams at the surface of this shell.
+
+    mass : float
+        The total mass in grams of the particles assocaited with this shell.
+    """
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def __init__(
+            self,
+            particles : list | tuple | set,
+            r : float,
+            mr : float,
+            mass : float,
+    ):
+        self.particles = np.asarray(list(particles), dtype = int)
+        self.r = r
+        self.mr = mr
+        self.mass = mass
+
+    def __str__(self): return 'Shell(%f, n=%d)' % (self.r, len(self.particles))
+    def __repr__(self): return str(self)
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
+    def get_overlapping_particles(
+            self,
+            r : list | tuple | np.ndarray,
+            radii : list | tuple | np.ndarray,
+            which : str = 'both',
+    ):
+        r"""
+        Return the indices of the particles whose kernels intersect the
+        imaginary spherical surface defined by this shell's radial position.
+
+        Parameters
+        ----------
+        r : list, tuple, :class:`numpy.ndarray`
+            The radial positions of the particles. Must have the same shape as
+            ``radii`` and must be in units of cm.
+
+        radii : list, tuple, :class:`numpy.ndarray`
+            The sizes of the particle kernels. Must have the same shape as ``r``
+            and must be in units of cm.
+
+        Other Parameters
+        ----------------
+        which : str, default = ``'both'``
+            The kind of overlap to calculate. If ``'inner'``\, then particles
+            are only considered overlapping if they are positioned within the
+            shell, :math:`r_i < r_\mathrm{shell}`\. If ``'outer'`` then 
+            particles are only considered overlapping if they are positioned 
+            outside the shell, :math:`r_i > r_\mathrm{shell}`\. If ``'both'``\,
+            then no restraints on the overlapping are used.
+
+        Returns
+        -------
+        is_overlapping : :class:`numpy.ndarray`
+            An array of boolean values with the same shape as ``r`` and
+            ``radii``\, where ``True`` values indicate an overlap.
+        """
+        starsmashertools.helpers.argumentenforcer.enforcevalues({
+            'which' : ['inner', 'outer', 'both'],
+        })
+        is_overlapping = np.abs(r - self.r) <= radii
+        if which == 'inner': is_overlapping &= r < self.r
+        elif which == 'outer': is_overlapping &= r > self.r
+        return is_overlapping
