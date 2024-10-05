@@ -32,7 +32,7 @@ def find(
     return matches
 
 
-    
+
 class LogFile(object):
     class PhraseNotFoundError(Exception): pass
     
@@ -203,8 +203,6 @@ class LogFile(object):
             self.buffer.seek(index)
             end_idx = self.buffer.find(bstring2)
             ret = self.buffer.read(end_idx - index).decode('utf-8').strip()
-
-        
         
         if throw_error:
             raise LogFile.PhraseNotFoundError(string)
@@ -350,9 +348,9 @@ class LogFile(object):
         start = len(self.header)
         self.buffer.seek(start)
         end = self.buffer.size()
-
+        
         toget += first_iteration['iteration']
-
+        
         for number in toget:
             tomatch = (startline + '%8d') % number
             index = self.buffer.find(
@@ -373,7 +371,7 @@ class LogFile(object):
                 break
             
             start = self.buffer.tell()
-
+            
             # This code scales worse than above because it has to read the log
             # file at the front and back before seeking ahead. We do the front-
             # back seeking above before the loop to save time.

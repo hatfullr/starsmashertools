@@ -150,9 +150,12 @@ def getmtime(path):
     #    best way to preserve exact times is to use the st_atime_ns and
     #    st_mtime_ns fields from the os.stat() result object with the ns
     #    parameter to utime().
-    stat_result = os.stat(path)
-    return int(stat_result.st_mtime_ns * 1e-9)
-    #return os.path.getmtime(path)
+    return int(getmtimens(path) * 1e-9)
+
+def getmtimens(path):
+    if starsmashertools.helpers.ssh.isRemote(path):
+        raise NotImplementedError
+    return os.stat(path).st_mtime_ns
 
 def rename(path, newpath):
     if starsmashertools.helpers.ssh.isRemote(path):

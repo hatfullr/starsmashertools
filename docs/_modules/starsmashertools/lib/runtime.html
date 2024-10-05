@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>starsmashertools.lib.runtime &mdash; starsmashertools</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../../../_static/documentation_options.js?v=61ccec80"></script>
+        <script src="../../../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            starsmashertools
+          </a>
+              <div class="version">
+                14.12.0
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../index.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../cliprograms.html">CLI Programs</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../starsmashertools.helpers.html">helpers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../starsmashertools.lib.html">lib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../starsmashertools.math.html">math</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../starsmashertools.mpl.html">mpl</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">starsmashertools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">starsmashertools.lib.runtime</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for starsmashertools.lib.runtime</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">starsmashertools.helpers.argumentenforcer</span>
+<span class="kn">from</span> <span class="nn">starsmashertools.helpers.apidecorator</span> <span class="kn">import</span> <span class="n">api</span>
+<span class="kn">import</span> <span class="nn">starsmashertools.lib.simulation</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+
+<div class="viewcode-block" id="Runtime">
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.runtime.html#starsmashertools.lib.runtime.Runtime">[docs]</a>
+<span class="k">class</span> <span class="nc">Runtime</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Contains information about the processes and meta information for a</span>
+<span class="sd">    :class:`~.lib.simulation.Simulation`\, regarding specifically things that</span>
+<span class="sd">    occurred during when the simulation was running, such as, e.g., total wall</span>
+<span class="sd">    time.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="Runtime.__init__">
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.runtime.html#starsmashertools.lib.runtime.Runtime.__init__">[docs]</a>
+    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">simulation</span> <span class="p">:</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">Simulation</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">simulation</span> <span class="o">=</span> <span class="n">simulation</span></div>
+
+
+<div class="viewcode-block" id="Runtime.get_wall_time">
+<a class="viewcode-back" href="../../../lib/starsmashertools.lib.runtime.html#starsmashertools.lib.runtime.Runtime.get_wall_time">[docs]</a>
+    <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
+    <span class="nd">@api</span>
+    <span class="k">def</span> <span class="nf">get_wall_time</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">include_joined</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the total amount of time that the simulation spent running, in real</span>
+<span class="sd">        time.</span>
+<span class="sd">        </span>
+<span class="sd">        Other Parameters</span>
+<span class="sd">        ----------------</span>
+<span class="sd">        include_joined : bool, default = False</span>
+<span class="sd">            If ``True``\, the result includes the wall times of all joined</span>
+<span class="sd">            simulations. Otherwise, the result is only the wall time of this</span>
+<span class="sd">            simulation directory.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        walltime : :class:`~.units.Unit`</span>
+<span class="sd">            The total wall time.</span>
+<span class="sd">        </span>
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        :py:class:`IndexError`</span>
+<span class="sd">            This is raised when the simulation is missing output files.</span>
+<span class="sd">        </span>
+<span class="sd">        :py:class:`FileNotFoundError`</span>
+<span class="sd">            This is raised when the simulation is missing log files. This is</span>
+<span class="sd">            also raised if the first output file in a log cannot be located in</span>
+<span class="sd">            the simulation directory.</span>
+<span class="sd">        </span>
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        File modification times in a simulation are expected to be preserved. If</span>
+<span class="sd">        the modification times are not preserved, then this method will return</span>
+<span class="sd">        erroneous results.</span>
+
+<span class="sd">        Each time a simulation starts, it produces its first output file on the</span>
+<span class="sd">        first iteration always. This method relies on that fact.</span>
+
+<span class="sd">        Unfortunately, there is no way to capture the initialization (init.f)</span>
+<span class="sd">        time, as StarSmasher does not create any trackable files at the start of</span>
+<span class="sd">        the initialization. As such, the results of this method do not include</span>
+<span class="sd">        the code initialization times.</span>
+
+<span class="sd">        If a log file produced no output files, then the simulation may still</span>
+<span class="sd">        have produced a restartrad.sph checkpoint file during the run. Such a </span>
+<span class="sd">        log is checked for the phrase &#39;checkpt: writing local checkpt file at </span>
+<span class="sd">        nit=&#39;. If that phrase cannot be found, it is assumed that the simulation</span>
+<span class="sd">        did not advance at all while writing that log file, and so contributes</span>
+<span class="sd">        nothing to the wall time.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.lib.units</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.helpers.path</span>
+        <span class="kn">import</span> <span class="nn">starsmashertools.math</span>
+        
+        <span class="n">logfiles</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">get_logfiles</span><span class="p">(</span><span class="n">include_joined</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">logfiles</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="s2">&quot;No log files found in simulation &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">directory</span><span class="p">)</span>
+        
+        <span class="c1"># We should sort the logfiles by their iteration numbers</span>
+        <span class="n">first_iterations</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">logfile</span> <span class="ow">in</span> <span class="n">logfiles</span><span class="p">:</span>
+            <span class="n">first</span> <span class="o">=</span> <span class="n">logfile</span><span class="o">.</span><span class="n">get_first_iteration</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">first</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="n">first_iterations</span> <span class="o">+=</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="s1">&#39;NaN&#39;</span><span class="p">)]</span>
+            <span class="k">else</span><span class="p">:</span> <span class="n">first_iterations</span> <span class="o">+=</span> <span class="p">[</span><span class="n">first</span><span class="p">[</span><span class="s1">&#39;iteration&#39;</span><span class="p">]]</span>
+        <span class="n">first_iterations</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">first_iterations</span><span class="p">)</span>
+        
+        <span class="n">logfiles</span> <span class="o">=</span> <span class="p">[</span><span class="n">logfiles</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">first_iterations</span><span class="p">)</span> <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">first_iterations</span><span class="p">[</span><span class="n">i</span><span class="p">])]</span>
+        
+        <span class="n">outputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">get_output</span><span class="p">(</span><span class="n">include_joined</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
+        <span class="n">basenames</span> <span class="o">=</span> <span class="p">[</span><span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span>
+            <span class="n">output</span><span class="o">.</span><span class="n">path</span>
+        <span class="p">)</span> <span class="k">for</span> <span class="n">output</span> <span class="ow">in</span> <span class="n">outputs</span><span class="p">]</span>
+        
+        <span class="c1"># Simulations can be stopped and restarted. Thus, we cannot directly</span>
+        <span class="c1"># rely on the file modification times. Instead, we must check each log</span>
+        <span class="c1"># file.</span>
+        <span class="n">durations</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">logfiles</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">logfile</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">logfiles</span><span class="p">):</span>
+            <span class="n">first</span> <span class="o">=</span> <span class="n">logfile</span><span class="o">.</span><span class="n">get_first_output_file</span><span class="p">(</span><span class="n">throw_error</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">first</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># The code may have ran but not produced any output files. In</span>
+                <span class="c1"># this case, check to see if a restartrad.sph file was produced</span>
+                <span class="c1"># during this log file.</span>
+                
+                <span class="k">if</span> <span class="n">logfile</span><span class="o">.</span><span class="n">buffer</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
+                        <span class="s1">&#39;checkpt: writing local checkpt file at nit=&#39;</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">),</span>
+                        <span class="nb">len</span><span class="p">(</span><span class="n">logfile</span><span class="o">.</span><span class="n">header</span><span class="p">),</span>
+                <span class="p">)</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span> <span class="c1"># Failed to find phrase</span>
+                    <span class="c1"># This log file contributes nothing to the wall time.</span>
+                    <span class="k">continue</span>
+
+                <span class="c1"># Here the log file is for a run that produced no output, but</span>
+                <span class="c1"># did advance the simulation. We have no way of knowing how long</span>
+                <span class="c1"># this part of the run took.</span>
+                <span class="n">durations</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span> <span class="c1"># re-evaluate below</span>
+                <span class="k">continue</span>
+
+            <span class="c1"># &quot;first&quot; is only the output file&#39;s basename. It should be unique,</span>
+            <span class="c1"># though...</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">index</span> <span class="o">=</span> <span class="n">basenames</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">first</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="s2">&quot;Log file &#39;</span><span class="si">%s</span><span class="s2">&#39; claims to have created output &#39;</span><span class="si">%s</span><span class="s2">&#39;, but that file does not exist in the simulation directory &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">logfile</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">first</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">directory</span><span class="p">))</span> <span class="kn">from</span> <span class="nn">e</span>
+
+            <span class="n">start_timestamp</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getmtimens</span><span class="p">(</span>
+                <span class="n">outputs</span><span class="p">[</span><span class="n">index</span><span class="p">]</span><span class="o">.</span><span class="n">path</span><span class="p">,</span>
+            <span class="p">)</span> <span class="o">*</span> <span class="mf">1.e-9</span>
+            <span class="n">end_timestamp</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getmtimens</span><span class="p">(</span>
+                <span class="n">logfile</span><span class="o">.</span><span class="n">path</span><span class="p">,</span>
+            <span class="p">)</span> <span class="o">*</span> <span class="mf">1.e-9</span>
+            
+            <span class="n">durations</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">end_timestamp</span> <span class="o">-</span> <span class="n">start_timestamp</span>
+
+        <span class="c1"># linear interpolate the durations for which a log file wrote a</span>
+        <span class="c1"># checkpoint file, but did not write any output files.</span>
+        <span class="n">durations</span><span class="p">[</span><span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">durations</span><span class="p">)]</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">linear_interpolate</span><span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">logfiles</span><span class="p">))[</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">durations</span><span class="p">)],</span>
+            <span class="n">durations</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">durations</span><span class="p">)],</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">logfiles</span><span class="p">))[</span><span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">durations</span><span class="p">)],</span>
+        <span class="p">)</span>
+
+        <span class="n">walltime</span> <span class="o">=</span> <span class="n">starsmashertools</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">units</span><span class="o">.</span><span class="n">Unit</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">durations</span><span class="p">),</span> <span class="s1">&#39;s&#39;</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="n">include_joined</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">simulation</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">joined_simulations</span><span class="p">:</span>
+                <span class="n">walltime</span> <span class="o">+=</span> <span class="n">simulation</span><span class="o">.</span><span class="n">runtime</span><span class="o">.</span><span class="n">get_wall_time</span><span class="p">(</span>
+                    <span class="n">include_joined</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                <span class="p">)</span>
+        <span class="k">return</span> <span class="n">walltime</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Roger Hatfull.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>  
+
+  <style>
+         .wy-nav-content { max-width: none; }
+  </style>
+
+
+
+</body>
+</html>
