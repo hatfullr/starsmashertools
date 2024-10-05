@@ -17,6 +17,7 @@ lib
       starsmashertools.lib.ray
       starsmashertools.lib.relaxation
       starsmashertools.lib.report
+      starsmashertools.lib.runtime
       starsmashertools.lib.simulation
       starsmashertools.lib.table
       starsmashertools.lib.units

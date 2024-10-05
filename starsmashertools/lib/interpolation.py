@@ -1,7 +1,32 @@
 import starsmashertools.helpers.argumentenforcer
 import numpy as np
 
-class OutOfBoundsError(ValueError, object): pass
+class OutOfBoundsError(ValueError, object):
+    def __init__(self, interpolator, x, y):
+        offenders = np.where(~interpolator.is_in_bounds(x, y))[0]
+        message = """
+   xmin, xmax = {xmin:f}, {xmax:f}
+   ymin, ymax = {ymin:f}, {ymax:f}
+   x = {x:s}
+   y = {y:s}
+   offenders:
+      {offenders:s}
+        """.format(
+            xmin = interpolator.xmin,
+            xmax = interpolator.xmax,
+            ymin = interpolator.ymin,
+            ymax = interpolator.ymax,
+            x = str(x),
+            y = str(y),
+            offenders = '{:>5s} {:>15s}  {:>15s}'.format(
+                'index', 'x', 'y'
+            ) + '\n' + '\n'.join(['      {i:>5d} {x:>15.7E}, {y:>15.7E}'.format(
+                i = i,
+                x = float(x[offenders[i]]),
+                y = float(y[offenders[i]]),
+            ) for i in range(len(offenders))]),
+        )
+        super(OutOfBoundsError, self).__init__(message.rstrip())
 
 class Interpolator(object):
     @starsmashertools.helpers.argumentenforcer.enforcetypes
@@ -63,7 +88,7 @@ class BilinearInterpolator(Interpolator, object):
 
     def get_bounds(self, x, y):
         if not np.all(self.is_in_bounds(x, y)):
-            raise OutOfBoundsError("\n   xmin, xmax = %f, %f\n   ymin, ymax = %f, %f\n   x = %s\n   y = %s" % (self.xmin, self.xmax, self.ymin, self.ymax, str(x), str(y)))
+            raise OutOfBoundsError(self, x, y)
 
         x = np.asarray(x)
         y = np.asarray(y)
@@ -119,7 +144,6 @@ class BilinearInterpolator(Interpolator, object):
             interpolation bounds and `False` indicates that the point is outside
             the interpolation bounds.
         """
-
         x = np.asarray(x)
         y = np.asarray(y)
         eps = np.finfo(float).eps

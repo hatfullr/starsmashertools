@@ -118,7 +118,7 @@
 
 
 
-    
+
 <div class="viewcode-block" id="LogFile">
 <a class="viewcode-back" href="../../../lib/starsmashertools.lib.logfile.html#starsmashertools.lib.logfile.LogFile">[docs]</a>
 <span class="k">class</span> <span class="nc">LogFile</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
@@ -308,8 +308,6 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="n">index</span><span class="p">)</span>
             <span class="n">end_idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">bstring2</span><span class="p">)</span>
             <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">end_idx</span> <span class="o">-</span> <span class="n">index</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
-
-        
         
         <span class="k">if</span> <span class="n">throw_error</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">LogFile</span><span class="o">.</span><span class="n">PhraseNotFoundError</span><span class="p">(</span><span class="n">string</span><span class="p">)</span>
@@ -476,9 +474,9 @@
         <span class="n">start</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="n">start</span><span class="p">)</span>
         <span class="n">end</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="o">.</span><span class="n">size</span><span class="p">()</span>
-
+        
         <span class="n">toget</span> <span class="o">+=</span> <span class="n">first_iteration</span><span class="p">[</span><span class="s1">&#39;iteration&#39;</span><span class="p">]</span>
-
+        
         <span class="k">for</span> <span class="n">number</span> <span class="ow">in</span> <span class="n">toget</span><span class="p">:</span>
             <span class="n">tomatch</span> <span class="o">=</span> <span class="p">(</span><span class="n">startline</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="si">%8d</span><span class="s1">&#39;</span><span class="p">)</span> <span class="o">%</span> <span class="n">number</span>
             <span class="n">index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
@@ -500,7 +498,7 @@
             
             <span class="n">start</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="o">.</span><span class="n">tell</span><span class="p">()</span></div>
 
-
+            
             <span class="c1"># This code scales worse than above because it has to read the log</span>
             <span class="c1"># file at the front and back before seeking ahead. We do the front-</span>
             <span class="c1"># back seeking above before the loop to save time.</span>

@@ -83,6 +83,7 @@ class Simulation(object):
         import starsmashertools.lib.output
         import starsmashertools.helpers.path
         import starsmashertools.lib.archive
+        import starsmashertools.lib.runtime
         
         # Prepare the directory string
         self.directory = starsmashertools.helpers.path.realpath(
@@ -107,6 +108,8 @@ class Simulation(object):
         
         self.archive = starsmashertools.lib.archive.SimulationArchive(self)
         self.archive.on_nosave_disabled += [self._update_joined_simulations]
+        
+        self.runtime = starsmashertools.lib.runtime.Runtime(self)
             
     def __hash__(self):
         return hash(self.directory)
@@ -578,8 +581,12 @@ class Simulation(object):
                 )
         
         if all_files: # Sort the log files by modification times
-            modtimes = [starsmashertools.helpers.path.getmtime(p.path) for p in all_files]
-            self._logfiles = [x for _, x in sorted(zip(modtimes, all_files), key=lambda pair: pair[0])]
+            modtimes = np.asarray([starsmashertools.helpers.path.getmtime(
+                p.path
+            ) for p in all_files])
+            self._logfiles = [x for _, x in sorted(zip(
+                modtimes, all_files
+            ), key=lambda pair: pair[0])]
         
         return all_files
 
@@ -1418,11 +1425,11 @@ class Simulation(object):
         import starsmashertools.helpers.string
         filenames = self.get_outputfiles(include_joined = include_joined)
         filenames = np.asarray(filenames, dtype = object)
-
+        
         if len(args) == 1:
             yield starsmashertools.lib.output.Output(filenames[args[0]], self)
             return
-
+        
         # We accept the input if only either
         #    - (start, stop, step) are valid and not None, or
         #    - Exactly one of times, time_range, or indices are not None
@@ -1431,7 +1438,7 @@ class Simulation(object):
             'time_range' : time_range is not None,
             'indices' : indices is not None,
         }
-
+        
         num_used = sum([1 if item else 0 for item in modes.values()])
         if num_used == 0: # Use slicing
             #if start is not None and stop is None and step is None:
@@ -1491,7 +1498,7 @@ class Simulation(object):
             else: filenames = filenames[idx0:idx1:step]
         else:
             raise ValueError("No mode specified. Check your keyword arguments.")
-
+        
         for filename in filenames:
             yield starsmashertools.lib.output.Output(filename, self)
 

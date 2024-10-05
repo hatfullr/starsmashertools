@@ -146,18 +146,21 @@ class TEOS(Table, object):
         if isinstance(which, int): which = self._header_order[which]
         if isinstance(rho, float): rho = np.asarray([rho])
         if isinstance(u, float): u = np.asarray([u])
-
+        
         rho = np.asarray(rho)
         u = np.asarray(u)
-
+        
         if rho.shape != u.shape:
             raise Exception("rho and u must have the same dimensions. Found rho with shape %s and u with shape %s" % (str(rho.shape), str(u.shape)))
         
         result = np.full(rho.shape, np.nan)
-        idx = np.logical_and(rho != 0, u != 0)
+        idx = u != 0
         
         # Create interpolators on-the-fly
-        result[idx] = self.get_interpolator(which)(np.log10(rho[idx]), np.log10(u[idx]))
+        result[idx] = self.get_interpolator(which)(
+            np.log10(rho[idx]),
+            np.log10(u[idx]),
+        )
         if isinstance(result, np.ndarray):
             if not result.shape: return float(result)
             if len(result.shape) == 1 and len(result) == 1: return result[0]

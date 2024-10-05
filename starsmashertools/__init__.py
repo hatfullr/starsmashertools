@@ -21,11 +21,13 @@ LOCK_DIRECTORY = os.path.join(DATA_DIRECTORY, 'locks')
 DEFAULTS_DIRECTORY = os.path.join(DATA_DIRECTORY, 'defaults')
 USER_DIRECTORY = os.path.join(DATA_DIRECTORY, 'user')
 TEST_DIRECTORY = os.path.join(SOURCE_DIRECTORY, 'tests')
+PROJECT_DIRECTORY = os.path.join(USER_DIRECTORY, 'project')
 for directory in [
         DATA_DIRECTORY,
         DEFAULTS_DIRECTORY,
         LOCK_DIRECTORY,
         USER_DIRECTORY,
+        PROJECT_DIRECTORY,
 ]:
     if not os.path.isdir(directory): os.makedirs(directory)
 
@@ -856,6 +858,163 @@ def report(simulations : list | tuple):
     import starsmashertools.lib.report
     return starsmashertools.lib.report.Report(simulations)
 
+
+
+
+# This may appear in a future version of starsmashertools...
+#@api
+#@starsmashertools.helpers.argumentenforcer.enforcetypes
+#def save_project(path : str, overwrite : bool = False):
+#    r"""
+#    Save the current project located at ``data/user/project`` to a project file
+#    with the given name.
+#
+#    Parameters
+#    ----------
+#    path : str
+#        The file path for where to save the current project. If the path does 
+#        not end with ``.ssproj``\, it will be appended. If the path has no file
+#        separators, it will be saved in directory 
+#        ``starsmashertools/data/user``\.
+#
+#    Other Parameters
+#    ----------------
+#    overwrite : bool, default = False
+#        If ``False``\, a :class:`FileExistsError` will be raised if a file at
+#        the given ``path`` already exists. Otherwise, the file will be 
+#        overwritten.
+#
+#    Raises
+#    ------
+#    :class:`FileExistsError`
+#        If ``overwrite = False`` and ``path`` already exists, this error is
+#        raised.
+#
+#    Notes
+#    -----
+#    A project is a collection of codes that extends the functionality of
+#    starsmashertools by adding functions and class methods that become 
+#    accessible simply by having a project file in the project directory 
+#    (``starsmashertools/data/users/project``\).
+#
+#    The project directory can contain any number of Python scripts. When
+#    starsmashertools is imported from any Python script, it will first check the
+#    project directory for any additional or overriding methods and functions. 
+#    Each method/function must be located in a file of the expected path. For 
+#    example, to define a new function in starsmashertools.lib, it can be 
+#    included in ``starsmashertools/project/lib/__init__.py``\. To add a new 
+#    method to a class, such as ``starsmashertools.lib.simulation.Simulation``\, 
+#    there must exist a file at ``starsmashertools/project/lib/simulation.py``, 
+#    with a class ``Simulation``. That  class can then contain any number of new
+#    methods, or existing methods can be overridden.
+#
+#    See Also
+#    --------
+#    :func:`~.load_project`
+#    """
+#    import os
+#    import zipfile
+#    
+#    if os.sep not in path: path = os.path.join(USER_DIRECTORY, path)
+#    if not path.endswith('.ssproj'): path += '.ssproj'
+#
+#    print(path)
+#    if os.path.exists(path) and not overwrite:
+#        raise FileExistsError("Set keyword overwrite = True if overwriting is intended: '%s'" % path)
+#
+#    def get_files(directory):
+#        with os.scandir(directory) as it:
+#            for entry in it:
+#                if entry.is_dir():
+#                    yield from get_files(entry.path)
+#                    continue
+#                yield entry.path
+#    
+#    zfile = zipfile.ZipFile(
+#            path, 'w',
+#            compression = zipfile.ZIP_DEFLATED,
+#            compresslevel = 9,
+#    )
+#    for _file in get_files(PROJECT_DIRECTORY):
+#        print(_file)
+#        #print(os.path.relpath(_file, start = PROJECT_DIRECTORY))
+#        zfile.write(
+#            _file,
+#            arcname = os.path.relpath(_file, start = PROJECT_DIRECTORY),
+#        )
+#    zfile.close()
+#
+#    print(zfile.namelist())
+
+
+
+#@api
+#@starsmashertools.helpers.argumentenforcer.enforcetypes
+#def load_project(path : str, overwrite : bool = False):
+#    r"""
+#    Load the given project file to the project directory 
+#    ``starsmashertools/data/user/project``\. If the project file contains any 
+#    files that would overwrite existing files in the project directory, those 
+#    files will be overwritten if ``overwrite = True``\.
+#
+#    Parameters
+#    ----------
+#    path : str
+#        The path to the project file. If it does not end with ``.ssproj``\, it
+#        will be appended. If a file separator does not appear in the path, it
+#        is assumed that the file resides in ``starsmashertools/data/user``\.
+#    
+#    Other Parameters
+#    ----------------
+#    overwrite : bool, default = False
+#        If ``False``\, none of the existing files in the project directory will
+#        be overwritten. If ``True``\, any file found in the project directory 
+#        that also exists in the project file will be overwritten.
+#
+#    Raises
+#    ------
+#    :class:`FileNotFoundError`
+#        If ``path`` does not exist, this error is raised.
+#
+#    Notes
+#    -----
+#    A project is a collection of codes that extends the functionality of
+#    starsmashertools by adding functions and class methods that become 
+#    accessible simply by having a project file in the project directory 
+#    (``starsmashertools/data/users/project``\).
+#
+#    The project directory can contain any number of Python scripts. When
+#    starsmashertools is imported from any Python script, it will first check the
+#    project directory for any additional or overriding methods and functions. 
+#    Each method/function must be located in a file of the expected path. For 
+#    example, to define a new function in starsmashertools.lib, it can be 
+#    included in ``starsmashertools/project/lib/__init__.py``\. To add a new 
+#    method to a class, such as ``starsmashertools.lib.simulation.Simulation``\, 
+#    there must exist a file at ``starsmashertools/project/lib/simulation.py``, 
+#    with a class ``Simulation``. That  class can then contain any number of new
+#    methods, or existing methods can be overridden.
+#    
+#    See Also
+#    --------
+#    :func:`~.save_project`
+#    """
+#    import os
+#    import zipfile
+#    
+#    if os.sep not in path: path = os.path.join(USER_DIRECTORY, path)
+#    if not path.endswith('.ssproj'): path += '.ssproj'
+#    if not os.path.exists(path): raise FileNotFoundError(path)
+#
+#    with zipfile.ZipFile(
+#            path, 'r',
+#            compression = zipfile.ZIP_DEFLATED,
+#            compresslevel = 9,
+#    ) as f:
+#        for info in f.infolist():
+#            print(info.filename)
+        
+        
+    
 
 class StarSmasherError(Exception):
     r"""
