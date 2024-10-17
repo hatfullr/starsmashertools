@@ -22,13 +22,97 @@ class Runtime(object):
 
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
+    def get_wall_durations(
+            self,
+            include_joined : bool = False,
+    ):
+        r"""
+        Get the amount of physical time that the simulation spent running, for
+        each log file it produced.
+
+        Other Parameters
+        ----------------
+        include_joined : bool, default = False
+            If ``True``\, the result includes the wall times of all joined
+            simulations. Otherwise, the result is only the wall time of this
+            simulation directory.
+
+        Yields
+        ------
+        float, :class:`~.lib.logfile.LogFile`
+            The physical duration and associated log file.
+        """
+        import starsmashertools.lib.units
+        import starsmashertools.helpers.path
+        import starsmashertools.math
+        
+        logfiles = self.simulation.get_logfiles(include_joined = include_joined)
+        if not logfiles:
+            raise FileNotFoundError("No log files found in simulation '%s'" % self.simulation.directory)
+        
+        # We should sort the logfiles by their iteration numbers
+        first_iterations = []
+        for logfile in logfiles:
+            first = logfile.get_first_iteration()
+            if first is None: first_iterations += [float('NaN')]
+            else: first_iterations += [first['iteration']]
+        first_iterations = np.asarray(first_iterations)
+        
+        logfiles = [logfiles[i] for i in np.argsort(first_iterations) if np.isfinite(first_iterations[i])]
+        
+        outputs = self.simulation.get_output(include_joined = include_joined)
+        basenames = [starsmashertools.helpers.path.basename(
+            output.path
+        ) for output in outputs]
+        
+        # Simulations can be stopped and restarted. Thus, we cannot directly
+        # rely on the file modification times. Instead, we must check each log
+        # file.
+        durations = np.zeros(len(logfiles))
+        for i, logfile in enumerate(logfiles):
+            first = logfile.get_first_output_file(throw_error = False)
+            if first is None:
+                # The code may have ran but not produced any output files. In
+                # this case, check to see if a restartrad.sph file was produced
+                # during this log file.
+                
+                if logfile.buffer.find(
+                        'checkpt: writing local checkpt file at nit='.encode('utf-8'),
+                        len(logfile.header),
+                ) == -1: # Failed to find phrase
+                    # This log file contributes nothing to the wall time.
+                    continue
+
+                # Here the log file is for a run that produced no output, but
+                # did advance the simulation. We have no way of knowing how long
+                # this part of the run took.
+                yield np.nan, logfile
+                continue
+
+            # "first" is only the output file's basename. It should be unique,
+            # though...
+            try:
+                index = basenames.index(first)
+            except ValueError as e:
+                raise FileNotFoundError("Log file '%s' claims to have created output '%s', but that file does not exist in the simulation directory '%s'" % (logfile.path, first, self.simulation.directory)) from e
+
+            start_timestamp = starsmashertools.helpers.path.getmtimens(
+                outputs[index].path,
+            ) * 1.e-9
+            end_timestamp = starsmashertools.helpers.path.getmtimens(
+                logfile.path,
+            ) * 1.e-9
+
+            yield end_timestamp - start_timestamp, logfile
+
+    @starsmashertools.helpers.argumentenforcer.enforcetypes
+    @api
     def get_wall_time(
             self,
             include_joined : bool = False,
     ):
         r"""
-        Get the total amount of time that the simulation spent running, in real
-        time.
+        Get the total amount of physical time that the simulation spent running.
         
         Other Parameters
         ----------------
@@ -73,77 +157,22 @@ class Runtime(object):
         did not advance at all while writing that log file, and so contributes
         nothing to the wall time.
         """
-        import starsmashertools.lib.units
-        import starsmashertools.helpers.path
         import starsmashertools.math
-        
-        logfiles = self.simulation.get_logfiles(include_joined = False)
-        if not logfiles:
-            raise FileNotFoundError("No log files found in simulation '%s'" % self.simulation.directory)
-        
-        # We should sort the logfiles by their iteration numbers
-        first_iterations = []
-        for logfile in logfiles:
-            first = logfile.get_first_iteration()
-            if first is None: first_iterations += [float('NaN')]
-            else: first_iterations += [first['iteration']]
-        first_iterations = np.asarray(first_iterations)
-        
-        logfiles = [logfiles[i] for i in np.argsort(first_iterations) if np.isfinite(first_iterations[i])]
-        
-        outputs = self.simulation.get_output(include_joined = False)
-        basenames = [starsmashertools.helpers.path.basename(
-            output.path
-        ) for output in outputs]
-        
-        # Simulations can be stopped and restarted. Thus, we cannot directly
-        # rely on the file modification times. Instead, we must check each log
-        # file.
-        durations = np.zeros(len(logfiles))
-        for i, logfile in enumerate(logfiles):
-            first = logfile.get_first_output_file(throw_error = False)
-            if first is None:
-                # The code may have ran but not produced any output files. In
-                # this case, check to see if a restartrad.sph file was produced
-                # during this log file.
-                
-                if logfile.buffer.find(
-                        'checkpt: writing local checkpt file at nit='.encode('utf-8'),
-                        len(logfile.header),
-                ) == -1: # Failed to find phrase
-                    # This log file contributes nothing to the wall time.
-                    continue
+        import starsmashertools.lib.units
 
-                # Here the log file is for a run that produced no output, but
-                # did advance the simulation. We have no way of knowing how long
-                # this part of the run took.
-                durations[i] = np.nan # re-evaluate below
-                continue
-
-            # "first" is only the output file's basename. It should be unique,
-            # though...
-            try:
-                index = basenames.index(first)
-            except ValueError as e:
-                raise FileNotFoundError("Log file '%s' claims to have created output '%s', but that file does not exist in the simulation directory '%s'" % (logfile.path, first, self.simulation.directory)) from e
-
-            start_timestamp = starsmashertools.helpers.path.getmtimens(
-                outputs[index].path,
-            ) * 1.e-9
-            end_timestamp = starsmashertools.helpers.path.getmtimens(
-                logfile.path,
-            ) * 1.e-9
-            
-            durations[i] = end_timestamp - start_timestamp
-
+        durations = []
+        for duration, logfile in self.get_wall_durations(include_joined=False):
+            durations += [duration]
+        durations = np.asarray(durations)
+        
         # linear interpolate the durations for which a log file wrote a
         # checkpoint file, but did not write any output files.
         durations[~np.isfinite(durations)] = starsmashertools.math.linear_interpolate(
-            np.arange(len(logfiles))[np.isfinite(durations)],
+            np.arange(len(durations))[np.isfinite(durations)],
             durations[np.isfinite(durations)],
-            np.arange(len(logfiles))[~np.isfinite(durations)],
+            np.arange(len(durations))[~np.isfinite(durations)],
         )
-
+        
         walltime = starsmashertools.lib.units.Unit(sum(durations), 's')
         
         if include_joined:

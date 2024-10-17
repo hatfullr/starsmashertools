@@ -70,6 +70,7 @@
 <li class="toctree-l2 current"><a class="current reference internal" href="#">runtime</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#starsmashertools.lib.runtime.Runtime"><code class="docutils literal notranslate"><span class="pre">Runtime</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.runtime.Runtime.__init__"><code class="docutils literal notranslate"><span class="pre">Runtime.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.runtime.Runtime.get_wall_durations"><code class="docutils literal notranslate"><span class="pre">Runtime.get_wall_durations()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#starsmashertools.lib.runtime.Runtime.get_wall_time"><code class="docutils literal notranslate"><span class="pre">Runtime.get_wall_time()</span></code></a></li>
 </ul>
 </li>
@@ -124,13 +125,29 @@ time.</p>
 <dd></dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="starsmashertools.lib.runtime.Runtime.get_wall_time">
-<span class="sig-name descname"><span class="pre">get_wall_time</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">include_joined</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/runtime.html#Runtime.get_wall_time"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.runtime.Runtime.get_wall_time" title="Link to this definition"></a></dt>
-<dd><p>Get the total amount of time that the simulation spent running, in real
-time.</p>
+<dt class="sig sig-object py" id="starsmashertools.lib.runtime.Runtime.get_wall_durations">
+<span class="sig-name descname"><span class="pre">get_wall_durations</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">include_joined</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/runtime.html#Runtime.get_wall_durations"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.runtime.Runtime.get_wall_durations" title="Link to this definition"></a></dt>
+<dd><p>Get the amount of physical time that the simulation spent running, for
+each log file it produced.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>include_joined</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><em>bool</em></a><em>, </em><em>default = False</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, the result includes the wall times of all joined
+<dd class="field-odd"><p><strong>include_joined</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a><em>, </em><em>default = False</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, the result includes the wall times of all joined
+simulations. Otherwise, the result is only the wall time of this
+simulation directory.</p>
+</dd>
+<dt class="field-even">Yields<span class="colon">:</span></dt>
+<dd class="field-even"><p>float, <a class="reference internal" href="starsmashertools.lib.logfile.html#starsmashertools.lib.logfile.LogFile" title="starsmashertools.lib.logfile.LogFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">LogFile</span></code></a> – The physical duration and associated log file.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="starsmashertools.lib.runtime.Runtime.get_wall_time">
+<span class="sig-name descname"><span class="pre">get_wall_time</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">include_joined</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/runtime.html#Runtime.get_wall_time"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.runtime.Runtime.get_wall_time" title="Link to this definition"></a></dt>
+<dd><p>Get the total amount of physical time that the simulation spent running.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>include_joined</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a><em>, </em><em>default = False</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, the result includes the wall times of all joined
 simulations. Otherwise, the result is only the wall time of this
 simulation directory.</p>
 </dd>
@@ -142,8 +159,8 @@ simulation directory.</p>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
-<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#IndexError" title="(in Python v3.12)"><strong>IndexError</strong></a> – This is raised when the simulation is missing output files.</p></li>
-<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#FileNotFoundError" title="(in Python v3.12)"><strong>FileNotFoundError</strong></a> – This is raised when the simulation is missing log files. This is
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#IndexError" title="(in Python v3.13)"><strong>IndexError</strong></a> – This is raised when the simulation is missing output files.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#FileNotFoundError" title="(in Python v3.13)"><strong>FileNotFoundError</strong></a> – This is raised when the simulation is missing log files. This is
     also raised if the first output file in a log cannot be located in
     the simulation directory.</p></li>
 </ul>
