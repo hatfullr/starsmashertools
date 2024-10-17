@@ -35,7 +35,11 @@ def find(
 
 
 class LogFile(object):
-    class PhraseNotFoundError(Exception): pass
+    class PhraseNotFoundError(Exception):
+        def __init__(self, message, *args, **kwargs):
+            super(LogFile.PhraseNotFoundError, self).__init__(
+                "'%s'" % str(message), *args, **kwargs
+            )
     
     @api
     def __init__(self, path, simulation):
