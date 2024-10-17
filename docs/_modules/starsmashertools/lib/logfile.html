@@ -294,11 +294,9 @@
             <span class="n">index</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">bstring</span><span class="p">)</span>
             <span class="n">end_idx</span> <span class="o">=</span> <span class="n">buffer</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">buffer</span><span class="o">.</span><span class="n">size</span><span class="p">())</span>
             <span class="n">buffer</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="n">index</span><span class="p">)</span>
-            <span class="n">ret</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">buffer</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">end_idx</span> <span class="o">-</span> <span class="n">index</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
-        
-        <span class="k">return</span> <span class="n">ret</span></div>
+            <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">buffer</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">end_idx</span> <span class="o">-</span> <span class="n">index</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span></div>
 
-
+    
 <div class="viewcode-block" id="LogFile.get_start_time">
 <a class="viewcode-back" href="../../../lib/starsmashertools.lib.logfile.html#starsmashertools.lib.logfile.LogFile.get_start_time">[docs]</a>
     <span class="nd">@api</span>
@@ -312,11 +310,9 @@
             <span class="n">index</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">bstring</span><span class="p">)</span>
             <span class="n">end_idx</span> <span class="o">=</span> <span class="n">buffer</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">buffer</span><span class="o">.</span><span class="n">size</span><span class="p">())</span>
             <span class="n">buffer</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="n">index</span><span class="p">)</span>
-            <span class="n">ret</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">buffer</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">end_idx</span> <span class="o">-</span> <span class="n">index</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
-        
-        <span class="k">return</span> <span class="n">ret</span></div>
+            <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">buffer</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">end_idx</span> <span class="o">-</span> <span class="n">index</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span></div>
 
-
+    
 <div class="viewcode-block" id="LogFile.get_first_output_file">
 <a class="viewcode-back" href="../../../lib/starsmashertools.lib.logfile.html#starsmashertools.lib.logfile.LogFile.get_first_output_file">[docs]</a>
     <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
@@ -331,18 +327,16 @@
         <span class="n">bstring2</span> <span class="o">=</span> <span class="n">string2</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span>
         <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_buffer</span><span class="p">()</span> <span class="k">as</span> <span class="n">buffer</span><span class="p">:</span>
             <span class="n">index</span> <span class="o">=</span> <span class="n">buffer</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">bstring</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="p">),</span> <span class="n">buffer</span><span class="o">.</span><span class="n">size</span><span class="p">())</span>
-            <span class="n">ret</span> <span class="o">=</span> <span class="kc">None</span>
             <span class="k">if</span> <span class="n">index</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
                 <span class="n">index</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">bstring</span><span class="p">)</span>
                 <span class="n">buffer</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="n">index</span><span class="p">)</span>
                 <span class="n">end_idx</span> <span class="o">=</span> <span class="n">buffer</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">bstring2</span><span class="p">)</span>
-                <span class="n">ret</span> <span class="o">=</span> <span class="n">buffer</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">end_idx</span> <span class="o">-</span> <span class="n">index</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                <span class="k">return</span> <span class="n">buffer</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">end_idx</span> <span class="o">-</span> <span class="n">index</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
         
         <span class="k">if</span> <span class="n">throw_error</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">LogFile</span><span class="o">.</span><span class="n">PhraseNotFoundError</span><span class="p">(</span><span class="n">string</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">ret</span></div>
+            <span class="k">raise</span> <span class="n">LogFile</span><span class="o">.</span><span class="n">PhraseNotFoundError</span><span class="p">(</span><span class="n">string</span><span class="p">)</span></div>
 
-
+    
 <div class="viewcode-block" id="LogFile.get_last_output_file">
 <a class="viewcode-back" href="../../../lib/starsmashertools.lib.logfile.html#starsmashertools.lib.logfile.LogFile.get_last_output_file">[docs]</a>
     <span class="nd">@starsmashertools</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">argumentenforcer</span><span class="o">.</span><span class="n">enforcetypes</span>
@@ -357,18 +351,16 @@
         <span class="n">bstring2</span> <span class="o">=</span> <span class="n">string2</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span>
         <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_buffer</span><span class="p">()</span> <span class="k">as</span> <span class="n">buffer</span><span class="p">:</span>
             <span class="n">index</span> <span class="o">=</span> <span class="n">buffer</span><span class="o">.</span><span class="n">rfind</span><span class="p">(</span><span class="n">bstring</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="p">),</span> <span class="n">buffer</span><span class="o">.</span><span class="n">size</span><span class="p">())</span>
-            <span class="n">ret</span> <span class="o">=</span> <span class="kc">None</span>
             <span class="k">if</span> <span class="n">index</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
                 <span class="n">index</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">bstring</span><span class="p">)</span>
                 <span class="n">buffer</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="n">index</span><span class="p">)</span>
                 <span class="n">end_idx</span> <span class="o">=</span> <span class="n">buffer</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">bstring2</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">buffer</span><span class="o">.</span><span class="n">size</span><span class="p">())</span>
-                <span class="n">ret</span> <span class="o">=</span> <span class="n">buffer</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">end_idx</span> <span class="o">-</span> <span class="n">index</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                <span class="k">return</span> <span class="n">buffer</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">end_idx</span> <span class="o">-</span> <span class="n">index</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
         
         <span class="k">if</span> <span class="n">throw_error</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">LogFile</span><span class="o">.</span><span class="n">PhraseNotFoundError</span><span class="p">(</span><span class="n">string</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">ret</span></div>
+            <span class="k">raise</span> <span class="n">LogFile</span><span class="o">.</span><span class="n">PhraseNotFoundError</span><span class="p">(</span><span class="n">string</span><span class="p">)</span></div>
 
-
+    
 <div class="viewcode-block" id="LogFile.get_number_of_iterations">
 <a class="viewcode-back" href="../../../lib/starsmashertools.lib.logfile.html#starsmashertools.lib.logfile.LogFile.get_number_of_iterations">[docs]</a>
     <span class="nd">@api</span>

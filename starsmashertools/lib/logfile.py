@@ -195,10 +195,8 @@ class LogFile(object):
             index += len(bstring)
             end_idx = buffer.find(b'\n', index, buffer.size())
             buffer.seek(index)
-            ret = float(buffer.read(end_idx - index).decode('utf-8').strip())
-        
-        return ret
-
+            return float(buffer.read(end_idx - index).decode('utf-8').strip())
+    
     @api
     def get_start_time(self):
         string = 'time='
@@ -210,10 +208,8 @@ class LogFile(object):
             index += len(bstring)
             end_idx = buffer.find(b'\n', index, buffer.size())
             buffer.seek(index)
-            ret = float(buffer.read(end_idx - index).decode('utf-8').strip())
-        
-        return ret
-
+            return float(buffer.read(end_idx - index).decode('utf-8').strip())
+    
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def get_first_output_file(
@@ -226,17 +222,15 @@ class LogFile(object):
         bstring2 = string2.encode('utf-8')
         with self.get_buffer() as buffer:
             index = buffer.find(bstring, len(self.header), buffer.size())
-            ret = None
             if index != -1:
                 index += len(bstring)
                 buffer.seek(index)
                 end_idx = buffer.find(bstring2)
-                ret = buffer.read(end_idx - index).decode('utf-8').strip()
+                return buffer.read(end_idx - index).decode('utf-8').strip()
         
         if throw_error:
             raise LogFile.PhraseNotFoundError(string)
-        return ret
-
+    
     @starsmashertools.helpers.argumentenforcer.enforcetypes
     @api
     def get_last_output_file(
@@ -249,17 +243,15 @@ class LogFile(object):
         bstring2 = string2.encode('utf-8')
         with self.get_buffer() as buffer:
             index = buffer.rfind(bstring, len(self.header), buffer.size())
-            ret = None
             if index != -1:
                 index += len(bstring)
                 buffer.seek(index)
                 end_idx = buffer.find(bstring2, index, buffer.size())
-                ret = buffer.read(end_idx - index).decode('utf-8').strip()
+                return buffer.read(end_idx - index).decode('utf-8').strip()
         
         if throw_error:
             raise LogFile.PhraseNotFoundError(string)
-        return ret
-
+    
     @api
     def get_number_of_iterations(self):
         first = self.get_first_iteration()
