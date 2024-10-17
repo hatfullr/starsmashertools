@@ -75,13 +75,14 @@ class Runtime(object):
                 # The code may have ran but not produced any output files. In
                 # this case, check to see if a restartrad.sph file was produced
                 # during this log file.
-                
-                if logfile.buffer.find(
-                        'checkpt: writing local checkpt file at nit='.encode('utf-8'),
-                        len(logfile.header),
-                ) == -1: # Failed to find phrase
-                    # This log file contributes nothing to the wall time.
-                    continue
+
+                with logfile.get_buffer() as buffer:
+                    if buffer.find(
+                            'checkpt: writing local checkpt file at nit='.encode('utf-8'),
+                            len(logfile.header),
+                    ) == -1: # Failed to find phrase
+                        # This log file contributes nothing to the wall time.
+                        continue
 
                 # Here the log file is for a run that produced no output, but
                 # did advance the simulation. We have no way of knowing how long

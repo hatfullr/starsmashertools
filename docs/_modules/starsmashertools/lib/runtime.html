@@ -165,13 +165,14 @@
                 <span class="c1"># The code may have ran but not produced any output files. In</span>
                 <span class="c1"># this case, check to see if a restartrad.sph file was produced</span>
                 <span class="c1"># during this log file.</span>
-                
-                <span class="k">if</span> <span class="n">logfile</span><span class="o">.</span><span class="n">buffer</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
-                        <span class="s1">&#39;checkpt: writing local checkpt file at nit=&#39;</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">),</span>
-                        <span class="nb">len</span><span class="p">(</span><span class="n">logfile</span><span class="o">.</span><span class="n">header</span><span class="p">),</span>
-                <span class="p">)</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span> <span class="c1"># Failed to find phrase</span>
-                    <span class="c1"># This log file contributes nothing to the wall time.</span>
-                    <span class="k">continue</span>
+
+                <span class="k">with</span> <span class="n">logfile</span><span class="o">.</span><span class="n">get_buffer</span><span class="p">()</span> <span class="k">as</span> <span class="n">buffer</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">buffer</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
+                            <span class="s1">&#39;checkpt: writing local checkpt file at nit=&#39;</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">),</span>
+                            <span class="nb">len</span><span class="p">(</span><span class="n">logfile</span><span class="o">.</span><span class="n">header</span><span class="p">),</span>
+                    <span class="p">)</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span> <span class="c1"># Failed to find phrase</span>
+                        <span class="c1"># This log file contributes nothing to the wall time.</span>
+                        <span class="k">continue</span>
 
                 <span class="c1"># Here the log file is for a run that produced no output, but</span>
                 <span class="c1"># did advance the simulation. We have no way of knowing how long</span>
