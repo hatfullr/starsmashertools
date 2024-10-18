@@ -713,8 +713,7 @@ Otherwise, only this simulation will be searched.</p></li>
 <dl class="py method">
 <dt class="sig sig-object py" id="starsmashertools.lib.simulation.Simulation.get_output_headers">
 <span class="sig-name descname"><span class="pre">get_output_headers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/starsmashertools/lib/simulation.html#Simulation.get_output_headers"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#starsmashertools.lib.simulation.Simulation.get_output_headers" title="Link to this definition"></a></dt>
-<dd><p>Read all the headers of the output files in this simulation and return
-them as a dictionary.</p>
+<dd><p>Read and yield all the headers of the output files in this simulation.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -724,12 +723,8 @@ them as a dictionary.</p>
 <a class="reference internal" href="#starsmashertools.lib.simulation.Simulation.get_output_generator" title="starsmashertools.lib.simulation.Simulation.get_output_generator"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get_output_generator()</span></code></a>.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>A generator which yields output file headers, which are of type
-<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>generator</p>
+<dt class="field-even">Yields<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>dict</em> – A dictionary containing the output file headers.</p>
 </dd>
 </dl>
 <div class="admonition seealso">

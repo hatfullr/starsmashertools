@@ -1555,8 +1555,7 @@ class Simulation(object):
     @api
     def get_output_headers(self, *args, **kwargs):
         r"""
-        Read all the headers of the output files in this simulation and return
-        them as a dictionary.
+        Read and yield all the headers of the output files in this simulation.
         
         Other Parameters
         ----------------
@@ -1567,13 +1566,12 @@ class Simulation(object):
         **kwargs
             Keyword arguments are passed directly to 
             :meth:`~.get_output_generator`\.
-
-        Returns
-        -------
-        generator
-            A generator which yields output file headers, which are of type
-            :py:class:`dict`\.
-
+        
+        Yields
+        ------
+        dict
+            A dictionary containing the output file headers.
+        
         See Also
         --------
         :meth:`~.get_output_generator`

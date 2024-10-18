@@ -1735,8 +1735,7 @@
     <span class="nd">@api</span>
     <span class="k">def</span> <span class="nf">get_output_headers</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Read all the headers of the output files in this simulation and return</span>
-<span class="sd">        them as a dictionary.</span>
+<span class="sd">        Read and yield all the headers of the output files in this simulation.</span>
 <span class="sd">        </span>
 <span class="sd">        Other Parameters</span>
 <span class="sd">        ----------------</span>
@@ -1747,13 +1746,12 @@
 <span class="sd">        **kwargs</span>
 <span class="sd">            Keyword arguments are passed directly to </span>
 <span class="sd">            :meth:`~.get_output_generator`\.</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        generator</span>
-<span class="sd">            A generator which yields output file headers, which are of type</span>
-<span class="sd">            :py:class:`dict`\.</span>
-
+<span class="sd">        </span>
+<span class="sd">        Yields</span>
+<span class="sd">        ------</span>
+<span class="sd">        dict</span>
+<span class="sd">            A dictionary containing the output file headers.</span>
+<span class="sd">        </span>
 <span class="sd">        See Also</span>
 <span class="sd">        --------</span>
 <span class="sd">        :meth:`~.get_output_generator`</span>
